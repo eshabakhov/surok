@@ -49,6 +49,7 @@ final class XsLoadDraftTest {
             ),
             Matchers.allOf(
                 Matchers.containsString("id=\"load-draft\""),
+                Matchers.containsString("Пятидневная"),
                 Matchers.containsString("Обязательная по плану"),
                 Matchers.containsString("data-current=\"5\""),
                 Matchers.containsString("data-proposed=\"3\""),

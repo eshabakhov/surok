@@ -3,11 +3,16 @@
  */
 package com.eshabakhov.surok.media;
 
+import com.eshabakhov.surok.PrItems;
+import com.eshabakhov.surok.federal.curriculum.Curriculum;
+import com.eshabakhov.surok.federal.curriculum.LvLocalized;
+import com.eshabakhov.surok.federal.curriculum.WkLocalized;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
@@ -24,6 +29,99 @@ import org.junit.jupiter.params.provider.ValueSource;
  * @since 0.0.1
  */
 final class XsClasspathTest {
+
+    /**
+     * Verifies forms display translated titles while submitting stable codes.
+     *
+     * @param view Form view
+     * @param stylesheet Page stylesheet
+     * @param selection Selected attribute
+     * @throws Exception If levels cannot be printed
+     */
+    @ParameterizedTest
+    @CsvSource({
+        "create, federal-curriculums, ''",
+        "edit, federal-curriculum, ' selected=\"\"'"
+    })
+    void displaysRussianLevelsInCurriculumForms(
+        final String view, final String stylesheet, final String selection
+    ) throws Exception {
+        MatcherAssert.assertThat(
+            "The curriculum form lost Russian titles or changed the submitted level",
+            new XsClasspath(
+                String.format("xslt/%s.xsl", stylesheet), view
+            ).transform(
+                new MdXml("surok").with(
+                    "levels", new PrItems(
+                        "level", List.of(Curriculum.Level.values()).stream()
+                            .map(level -> new LvLocalized(level, Locale.forLanguageTag("ru")))
+                            .toList()
+                    )
+                ).print().replace(
+                    "</surok>",
+                    """
+                    <curriculums><curriculum><id>17</id><level>BASIC</level>
+                    </curriculum></curriculums></surok>
+                    """
+                )
+            ),
+            Matchers.allOf(
+                Matchers.containsString("value=\"PRIMARY\">Начальное общее образование</option>"),
+                Matchers.containsString("value=\"SECONDARY\">Среднее общее образование</option>"),
+                Matchers.containsString(
+                    String.format(
+                        "value=\"BASIC\"%s>Основное общее образование</option>", selection
+                    )
+                )
+            )
+        );
+    }
+
+    /**
+     * Verifies forms display translated titles while submitting stable codes.
+     *
+     * @param view Form view
+     * @param stylesheet Page stylesheet
+     * @param selection Selected attribute
+     * @throws Exception If weeks cannot be printed
+     */
+    @ParameterizedTest
+    @CsvSource({
+        "create, federal-curriculums, ''",
+        "edit, federal-curriculum, ' selected=\"\"'"
+    })
+    void displaysRussianWeeksInCurriculumForms(
+        final String view, final String stylesheet, final String selection
+    ) throws Exception {
+        MatcherAssert.assertThat(
+            "The curriculum form lost Russian titles or changed the submitted week",
+            new XsClasspath(
+                String.format("xslt/%s.xsl", stylesheet), view
+            ).transform(
+                new MdXml("surok").with(
+                    "weeks", new PrItems(
+                        "week", List.of(Curriculum.Week.values()).stream()
+                            .map(week -> new WkLocalized(week, Locale.forLanguageTag("ru")))
+                            .toList()
+                    )
+                ).print().replace(
+                    "</surok>",
+                    """
+                    <curriculums><curriculum><id>17</id><week>SIX_DAYS</week>
+                    </curriculum></curriculums></surok>
+                    """
+                )
+            ),
+            Matchers.allOf(
+                Matchers.containsString("value=\"FIVE_DAYS\">Пятидневная</option>"),
+                Matchers.containsString(
+                    String.format(
+                        "value=\"SIX_DAYS\"%s>Шестидневная</option>", selection
+                    )
+                )
+            )
+        );
+    }
 
     /**
      * Verifies headers use build metadata even with unfiltered stylesheets.

@@ -6,6 +6,7 @@ package com.eshabakhov.surok.federal.curriculum;
 import com.eshabakhov.surok.Filters;
 import com.eshabakhov.surok.Media;
 import com.eshabakhov.surok.Page;
+import com.eshabakhov.surok.PrItems;
 import com.eshabakhov.surok.Sorts;
 import com.eshabakhov.surok.User;
 import com.eshabakhov.surok.federal.curriculum.input.CrInputHttp;
@@ -27,6 +28,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import org.jooq.DSLContext;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -349,7 +351,17 @@ public class CrsHttp {
             new CsToken((CsrfToken) request.getAttribute(CsrfToken.class.getName()))
         ).print(
             new MdXslt(
-                new MdXml("surok").with("path", request.getRequestURI()),
+                new MdXml("surok").with("path", request.getRequestURI()).with(
+                    "levels", new PrItems(
+                        "level", List.of(Curriculum.Level.values()).stream()
+                            .map(level -> new LvLocalized(level, request.getLocale())).toList()
+                    )
+                ).with(
+                    "weeks", new PrItems(
+                        "week", List.of(Curriculum.Week.values()).stream()
+                            .map(week -> new WkLocalized(week, request.getLocale())).toList()
+                    )
+                ),
                 new XsClasspath(stylesheet, view)
             )
         );

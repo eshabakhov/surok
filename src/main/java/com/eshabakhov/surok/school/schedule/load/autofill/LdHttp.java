@@ -9,6 +9,8 @@ import com.eshabakhov.surok.User;
 import com.eshabakhov.surok.federal.curriculum.CrOffered;
 import com.eshabakhov.surok.federal.curriculum.CrsPostgres;
 import com.eshabakhov.surok.federal.curriculum.Curriculum;
+import com.eshabakhov.surok.federal.curriculum.LvLocalized;
+import com.eshabakhov.surok.federal.curriculum.WkLocalized;
 import com.eshabakhov.surok.media.AcHttp;
 import com.eshabakhov.surok.media.MdJson;
 import com.eshabakhov.surok.media.MdXml;
@@ -54,8 +56,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 /**
  * One planning draft resource per school schedule, without API route aliases.
- * For example, PUT replaces the draft, PUT /curriculum switches its plan,
- * and POST /application applies mandatory hours and saved grade additions.
+ * For example, PUT replaces the draft and POST /application applies its load.
  * JSON input and JSON/XML output use application/vnd.surok.load-draft.v1 media types.
  *
  * @since 0.0.1
@@ -340,6 +341,18 @@ public class LdHttp {
                                 new MdXslt(
                                     new MdXml("surok").with("path", request.getRequestURI()),
                                     new XsClasspath("xslt/load-draft.xsl", view)
+                                )
+                            ).with(
+                                "levels", new PrItems(
+                                    "level", List.of(Curriculum.Level.values()).stream()
+                                        .map(level -> new LvLocalized(level, request.getLocale()))
+                                        .toList()
+                                )
+                            ).with(
+                                "weeks", new PrItems(
+                                    "week", List.of(Curriculum.Week.values()).stream()
+                                        .map(week -> new WkLocalized(week, request.getLocale()))
+                                        .toList()
                                 )
                             ).with("school", new SlBrief(source))
                                 .with("schedule", new SdBrief(selected))

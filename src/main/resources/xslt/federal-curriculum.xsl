@@ -95,11 +95,11 @@
             </xsl:call-template>
             <xsl:call-template name="info-row">
                 <xsl:with-param name="label" select="'Уровень:'"/>
-                <xsl:with-param name="value" select="$curriculum/level"/>
+                <xsl:with-param name="value" select="/surok/levels/level[code = $curriculum/level]/title"/>
             </xsl:call-template>
             <xsl:call-template name="info-row">
                 <xsl:with-param name="label" select="'Неделя:'"/>
-                <xsl:with-param name="value" select="$curriculum/week"/>
+                <xsl:with-param name="value" select="/surok/weeks/week[code = $curriculum/week]/title"/>
             </xsl:call-template>
             <xsl:call-template name="info-row">
                 <xsl:with-param name="label" select="'Версия:'"/>

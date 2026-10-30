@@ -87,14 +87,7 @@
     <xsl:template name="offer">
                 <section class="draft-offer" data-plan="{id}">
             <xsl:if test="id != string($chosen)"><xsl:attribute name="hidden">hidden</xsl:attribute></xsl:if>
-            <p class="draft-meta"><xsl:choose>
-                <xsl:when test="level = 'PRIMARY'">Начальное общее образование</xsl:when>
-                <xsl:when test="level = 'BASIC'">Основное общее образование</xsl:when>
-                <xsl:otherwise>Среднее общее образование</xsl:otherwise>
-            </xsl:choose><xsl:text> · </xsl:text><xsl:choose>
-                <xsl:when test="week = 'FIVE_DAYS'">Пятидневная неделя</xsl:when>
-                <xsl:otherwise>Шестидневная неделя</xsl:otherwise>
-            </xsl:choose></p>
+            <p class="draft-meta"><xsl:value-of select="/surok/levels/level[code = current()/level]/title"/><xsl:text> · </xsl:text><xsl:value-of select="/surok/weeks/week[code = current()/week]/title"/></p>
             <xsl:if test="description != ''"><p><xsl:value-of select="description"/></p></xsl:if>
             <details class="draft-requirements"><summary>Состав плана и часы по классам (<xsl:value-of select="count(requirements/requirement)"/>)</summary>
                 <div class="data-table-wrap"><table class="shadcn-table"><caption class="draft-sr-only">Требования федерального плана</caption>

@@ -166,9 +166,9 @@
                                 <xsl:value-of select="title"/>
                             </span>
                             <div class="card-item-period-label">
-                                <span><xsl:value-of select="level"/></span>
+                                <span><xsl:value-of select="/surok/levels/level[code = current()/level]/title"/></span>
                                 <xsl:text> · </xsl:text>
-                                <span><xsl:value-of select="week"/></span>
+                                <span><xsl:value-of select="/surok/weeks/week[code = current()/week]/title"/></span>
                                 <xsl:text> · </xsl:text>
                                 <span><xsl:value-of select="year"/></span>
                             </div>

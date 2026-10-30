@@ -7,6 +7,7 @@ import com.eshabakhov.surok.User;
 import com.eshabakhov.surok.user.AuthUser;
 import com.eshabakhov.surok.user.Roles;
 import com.eshabakhov.surok.user.UrPostgres;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -116,6 +117,64 @@ final class CrsHttpTest {
                 TRUNCATE TABLE public.federal_curriculum RESTART IDENTITY CASCADE
                 """
         ).execute();
+    }
+
+    /**
+     * Verifies translated levels reach page lists, details and forms.
+     *
+     * @param path Curriculum route
+     * @param type Accepted representation
+     * @param expected Visible title or serialized field
+     * @throws Exception If the request fails
+     */
+    @ParameterizedTest
+    @CsvSource({
+        "'', text/html, Основное общее образование",
+        "/fragment, text/html, Основное общее образование",
+        "/1, text/html, Основное общее образование",
+        "/create, text/html, Начальное общее образование",
+        "/1/edit, text/html, Среднее общее образование"
+    })
+    void displaysRussianEducationLevels(
+        final String path, final String type, final String expected
+    ) throws Exception {
+        MatcherAssert.assertThat(
+            "The curriculum representation omitted the Russian education level",
+            this.mvc.perform(
+                MockMvcRequestBuilders.get(String.format("/federal/curriculums%s", path))
+                    .session(this.session()).header("Accept", type)
+            ).andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8),
+            Matchers.containsString(expected)
+        );
+    }
+
+    /**
+     * Verifies translated weeks reach page lists, details and forms.
+     *
+     * @param path Curriculum route
+     * @param type Accepted representation
+     * @param expected Visible title or serialized field
+     * @throws Exception If the request fails
+     */
+    @ParameterizedTest
+    @CsvSource({
+        "'', text/html, Пятидневная",
+        "/fragment, text/html, Пятидневная",
+        "/1, text/html, Пятидневная",
+        "/create, text/html, Шестидневная",
+        "/1/edit, text/html, Шестидневная"
+    })
+    void displaysRussianStudyWeeks(
+        final String path, final String type, final String expected
+    ) throws Exception {
+        MatcherAssert.assertThat(
+            "The curriculum representation omitted the Russian study week",
+            this.mvc.perform(
+                MockMvcRequestBuilders.get(String.format("/federal/curriculums%s", path))
+                    .session(this.session()).header("Accept", type)
+            ).andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8),
+            Matchers.containsString(expected)
+        );
     }
 
     @ParameterizedTest
