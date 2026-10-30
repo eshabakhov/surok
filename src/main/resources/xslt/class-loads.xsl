@@ -57,7 +57,7 @@
                                         <span class="load-additional">Вариативная</span>
                                     </xsl:if>
                                 </td>
-                                <td class="td-mono"><xsl:value-of select="hours"/></td>
+                                <td><xsl:value-of select="hours"/></td>
                             </tr>
                         </xsl:for-each>
                     </tbody>

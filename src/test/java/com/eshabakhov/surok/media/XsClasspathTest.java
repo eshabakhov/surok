@@ -31,6 +31,26 @@ import org.junit.jupiter.params.provider.ValueSource;
 final class XsClasspathTest {
 
     /**
+     * Verifies federal navigation precedes school management on every page family.
+     *
+     * @param stylesheet Page stylesheet
+     * @throws Exception If fixture data cannot be read
+     */
+    @ParameterizedTest
+    @ValueSource(strings = {"schedules", "federal-curriculums"})
+    void placesFederalNavigationBeforeSchoolManagement(final String stylesheet) throws Exception {
+        final String page = new XsClasspath(String.format("xslt/%s.xsl", stylesheet), "list")
+            .transform(Files.readString(Path.of("src/test/resources/pages.xml")));
+        MatcherAssert.assertThat(
+            "The federal navigation did not precede general and school navigation",
+            page.substring(page.indexOf("<aside"), page.indexOf("</aside>")),
+            Matchers.stringContainsInOrder(
+                "Федеральный стандарт", "Планы", "Предметы", "Общее", "Школы"
+            )
+        );
+    }
+
+    /**
      * Verifies forms display translated titles while submitting stable codes.
      *
      * @param view Form view

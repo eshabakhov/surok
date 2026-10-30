@@ -6,6 +6,12 @@
     min-width: 640px;
 }
 
+.loads-table thead th:last-child,
+.loads-table tbody td:last-child {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
 .load-additional {
     display: block;
     color: var(--muted-fg);

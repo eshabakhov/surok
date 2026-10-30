@@ -126,10 +126,13 @@
         <div class="school-info">
             <div class="info-row"><span class="info-label">ID:</span><span class="info-value"><xsl:value-of select="$selected/id"/></span></div>
             <div class="info-row"><span class="info-label">Название:</span><span class="info-value"><xsl:value-of select="$selected/name"/></span></div>
-        </div>
-        <div class="tabs-list schedule-loads">
-            <a class="tab-trigger" href="{$base}/{$selected/id}/loads"
-               title="Учебная нагрузка классов">Учебная нагрузка</a>
+            <div class="info-row">
+                <span class="info-label">Нагрузка:</span>
+                <span class="info-value">
+                    <a class="schedule-loads-link" href="{$base}/{$selected/id}/loads"
+                       title="Перейти к учебной нагрузке">Перейти к учебной нагрузке</a>
+                </span>
+            </div>
         </div>
         <div class="stat-grid schedule-statistics">
             <div class="stat-card">

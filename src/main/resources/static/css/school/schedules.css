@@ -143,11 +143,17 @@
     }
 }
 
-.schedule-loads,
 .schedule-statistics {
     margin-top: 1.5rem;
+    width: 100%;
 }
 
-.schedule-statistics {
-    width: 100%;
+.schedule-loads-link {
+    color: var(--fg);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+.schedule-loads-link:hover {
+    color: var(--muted-fg);
 }

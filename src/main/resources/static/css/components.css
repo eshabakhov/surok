@@ -268,77 +268,75 @@
 
 /* ── Table ── */
 .data-table-wrap {
+    min-width: 0;
     overflow-x: auto;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--card);
+    box-shadow: var(--shadow-sm);
 }
 
-table.shadcn-table {
+.data-table,
+.shadcn-table {
     width: 100%;
-    border-collapse: collapse;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-family: inherit;
     font-size: .875rem;
-}
-
-.data-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: .875rem;
+    line-height: 1.5;
     background: var(--card);
 }
 
-.data-table th {
+.data-table thead th,
+.shadcn-table thead th {
     padding: .75rem 1rem;
     text-align: left;
-    font-size: .75rem;
-    font-weight: 600;
-    letter-spacing: .04em;
-    text-transform: uppercase;
+    font-size: inherit;
+    font-weight: 500;
     color: var(--muted-fg);
     border-bottom: 1px solid var(--border);
     white-space: nowrap;
-    background: var(--card);
-}
-
-table.shadcn-table thead th {
-    padding: .75rem 1rem;
-    text-align: left;
-    font-size: .75rem;
-    font-weight: 600;
-    letter-spacing: .04em;
-    text-transform: uppercase;
-    color: var(--muted-fg);
-    border-bottom: 1px solid var(--border);
-    white-space: nowrap;
-    background: var(--card);
-}
-
-table.shadcn-table thead th:first-child { padding-left: 1.5rem; }
-
-table.shadcn-table thead th:last-child  {
-    padding-right: 1.5rem;
-    text-align: right;
+    background: var(--muted);
 }
 
 .data-table td,
-table.shadcn-table tbody td {
+.data-table tbody th,
+.shadcn-table tbody th,
+.shadcn-table tbody td {
     padding: .875rem 1rem;
     border-bottom: 1px solid var(--border);
     color: var(--fg);
     vertical-align: middle;
 }
 
-table.shadcn-table tbody td:first-child { padding-left: 1.5rem; }
-table.shadcn-table tbody td:last-child  { padding-right: 1.5rem; }
+.shadcn-table tbody th {
+    text-align: left;
+    font-weight: 500;
+}
+
+.shadcn-table thead th:first-child { padding-left: 1.5rem; }
+
+.shadcn-table thead th:last-child  {
+    padding-right: 1.5rem;
+}
+
+.shadcn-table tbody th:first-child,
+.shadcn-table tbody td:first-child { padding-left: 1.5rem; }
+.shadcn-table tbody td:last-child  { padding-right: 1.5rem; }
 
 .data-table tbody tr:last-child td,
-table.shadcn-table tbody tr:last-child td {
+.data-table tbody tr:last-child th,
+.shadcn-table tbody tr:last-child th,
+.shadcn-table tbody tr:last-child td {
     border-bottom: none;
 }
 
-table.shadcn-table tbody tr {
+.shadcn-table tbody tr {
     transition: background var(--ease);
 }
 
 .data-table tbody tr:hover,
-table.shadcn-table tbody tr:hover {
+.shadcn-table tbody tr:hover {
     background: var(--muted);
 }
 

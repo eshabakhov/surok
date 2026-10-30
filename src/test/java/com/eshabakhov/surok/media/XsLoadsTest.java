@@ -58,7 +58,9 @@ final class XsLoadsTest {
         MatcherAssert.assertThat(
             page.substring(page.indexOf("<aside"), page.indexOf("</aside>")),
             Matchers.allOf(
-                Matchers.containsString("href=\"/schools/3/schedules/9/loads\""),
+                Matchers.containsString("href=\"/schools/3/schedules/9\""),
+                Matchers.containsString("class=\"sidebar-schedule-link active\""),
+                Matchers.not(Matchers.containsString("Учебная нагрузка")),
                 Matchers.containsString("Учебный год"),
                 Matchers.not(Matchers.containsString("/buildings/7")),
                 Matchers.not(Matchers.containsString("/classes/7")),

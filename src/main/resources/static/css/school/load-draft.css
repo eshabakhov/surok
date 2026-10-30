@@ -129,7 +129,7 @@
     position: sticky;
     top: 0;
     z-index: 2;
-    background: var(--card);
+    background: var(--muted);
 }
 
 .draft-table tr > th:first-child {
@@ -141,6 +141,7 @@
 
 .draft-table thead th:first-child {
     z-index: 3;
+    background: var(--muted);
 }
 
 .draft-table td {
