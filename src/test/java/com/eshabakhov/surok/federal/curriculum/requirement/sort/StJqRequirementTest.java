@@ -64,13 +64,10 @@ final class StJqRequirementTest {
                     Integer.class
                 ).asc(),
                 DSL.field(
-                    DSL.name("public", "federal_curriculum_requirement", "subject_name"),
+                    DSL.name("public", "subject", "name"),
                     String.class
                 ).asc(),
-                DSL.field(
-                    DSL.name("public", "federal_curriculum_requirement", "weekly_hours"),
-                    Integer.class
-                ).asc(),
+                DSL.field(DSL.name("hours"), Integer.class).asc(),
                 DSL.field(
                     DSL.name("public", "federal_curriculum_requirement", "part_type"),
                     String.class

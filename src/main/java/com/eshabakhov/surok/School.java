@@ -3,11 +3,11 @@
  */
 package com.eshabakhov.surok;
 
+import com.eshabakhov.surok.federal.subject.Subjects;
 import com.eshabakhov.surok.school.SchoolInput;
 import com.eshabakhov.surok.school.building.Buildings;
 import com.eshabakhov.surok.school.schedule.Schedules;
 import com.eshabakhov.surok.school.schoolclass.SchoolClasses;
-import com.eshabakhov.surok.school.subject.Subjects;
 import com.eshabakhov.surok.school.teacher.Teachers;
 
 /**

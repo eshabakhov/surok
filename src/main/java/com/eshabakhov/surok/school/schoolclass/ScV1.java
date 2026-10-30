@@ -32,6 +32,11 @@ public final class ScV1 implements SchoolClass {
     }
 
     @Override
+    public int grade() throws Exception {
+        return this.origin.grade();
+    }
+
+    @Override
     public <T> Media<T> print(final Media<T> media) throws Exception {
         return this.origin.print(media).include(
             "id", "name", "grade", "litera"

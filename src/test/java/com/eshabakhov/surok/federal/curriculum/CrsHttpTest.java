@@ -7,8 +7,11 @@ import com.eshabakhov.surok.User;
 import com.eshabakhov.surok.user.AuthUser;
 import com.eshabakhov.surok.user.Roles;
 import com.eshabakhov.surok.user.UrPostgres;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.regex.Pattern;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.jooq.DSLContext;
@@ -21,14 +24,17 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextImpl;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.csrf.CsrfToken;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
@@ -46,7 +52,16 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  * @checkstyle ProhibitFieldsInTestClassesCheck (1000 lines)
  */
 @Testcontainers
+@DirtiesContext
 @SpringBootTest
+@Sql(
+    statements = """
+        INSERT INTO subject (id, origin, name)
+        VALUES (516, 'FEDERAL', 'After'),
+        (504, 'FEDERAL', 'Mathematics')
+        ON CONFLICT DO NOTHING;
+        """
+)
 @AutoConfigureMockMvc
 @SuppressWarnings({
     "PMD.UnusedPrivateMethod", "UnusedMethod",
@@ -87,8 +102,9 @@ final class CrsHttpTest {
         this.ctx.resultQuery(
             """
                 INSERT INTO public.federal_curriculum_requirement (id, federal_curriculum_id, grade,
-                subject_name, weekly_hours, part_type, is_deleted)
-                VALUES (7, 1, 5, 'Mathematics', 5, 'MANDATORY', false)
+                subject_id, hours, part_type, is_deleted)
+                VALUES (7, 1, 5, (SELECT id FROM subject WHERE name = 'Mathematics'
+                AND NOT is_deleted), 5, 'MANDATORY', false)
                 """
         ).execute();
     }
@@ -125,7 +141,7 @@ final class CrsHttpTest {
                 .header("Accept", String.format("text/html;q=0.1,%s;q=0.9", expected))
         ).andExpect(MockMvcResultMatchers.status().isOk()).andExpect(
             MockMvcResultMatchers.content().contentTypeCompatibleWith(expected)
-        ).andExpect(MockMvcResultMatchers.content().string(Matchers.not(Matchers.isEmptyString())));
+        ).andExpect(MockMvcResultMatchers.content().string(Matchers.not(Matchers.emptyString())));
     }
 
     @ParameterizedTest
@@ -181,17 +197,17 @@ final class CrsHttpTest {
         "/create, federal-curriculum-v2, xml",
         "/1/edit, federal-curriculum-v2, json",
         "/1/edit, federal-curriculum-v1, xml",
-        "/1/requirements/create, federal-curriculum-requirement-v1, json",
-        "/1/requirements/create, federal-curriculum-requirement-v1, xml",
-        "/1/requirements/7/edit, federal-curriculum-requirement-v1, json",
-        "/1/requirements/7/edit, federal-curriculum-requirement-v1, xml"
+        "/1/requirements, federal-curriculum-requirement-v1, json",
+        "/1/requirements, federal-curriculum-requirement-v1, xml",
+        "/1/requirements/7, federal-curriculum-requirement-v1, json",
+        "/1/requirements/7, federal-curriculum-requirement-v1, xml"
     })
     void negotiatesBeforeMutation(
         final String path, final String resource, final String format
     ) throws Exception {
         final String expected = String.format("application/vnd.surok.%s+%s", resource, format);
         final int status;
-        if (path.endsWith("/create")) {
+        if (path.endsWith("/create") || path.endsWith("/requirements")) {
             status = 201;
         } else {
             status = 200;
@@ -221,7 +237,7 @@ final class CrsHttpTest {
     )
     void rejectsUnsupportedAcceptBeforeMutation(final String header) throws Exception {
         for (final String path : List.of(
-            "/create", "/1/edit", "/1/requirements/create", "/1/requirements/7/edit"
+            "/create", "/1/edit", "/1/requirements", "/1/requirements/7"
         )) {
             this.mvc.perform(this.authorized(path).header("Accept", header))
                 .andExpect(MockMvcResultMatchers.status().isNotAcceptable());
@@ -231,7 +247,8 @@ final class CrsHttpTest {
                 """
                     SELECT title AS value FROM public.federal_curriculum
                     UNION ALL
-                    SELECT subject_name AS value FROM public.federal_curriculum_requirement
+                    SELECT subject.name AS value FROM public.federal_curriculum_requirement
+                    JOIN public.subject ON subject.id = federal_curriculum_requirement.subject_id
                     """
             ).fetch().getValues("value", String.class),
             Matchers.containsInAnyOrder("Basic plan", "Mathematics")
@@ -242,8 +259,8 @@ final class CrsHttpTest {
     @CsvSource({
         "/create, /federal/curriculums/[0-9]+",
         "/1/edit, /federal/curriculums/1",
-        "/1/requirements/create, /federal/curriculums/1/requirements",
-        "/1/requirements/7/edit, /federal/curriculums/1/requirements"
+        "/1/requirements, /federal/curriculums/1/requirements",
+        "/1/requirements/7, /federal/curriculums/1/requirements"
     })
     void redirectsHtmlMutation(final String path, final String location) throws Exception {
         this.mvc.perform(this.authorized(path).accept(MediaType.TEXT_HTML))
@@ -274,14 +291,249 @@ final class CrsHttpTest {
         );
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = {"", "/fragment", "/1", "/1/requirements", "/1/requirements/fragment"})
+    void letsReadersBrowseTheStandard(final String path) throws Exception {
+        MatcherAssert.assertThat(
+            "An authenticated reader could not browse the federal standard",
+            this.mvc.perform(
+                MockMvcRequestBuilders.get(String.format("/federal/curriculums%s", path))
+                    .session(this.session(Roles.RoleEnum.VIEWER)).accept(MediaType.TEXT_HTML)
+            ).andReturn().getResponse().getStatus(),
+            Matchers.is(200)
+        );
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"/create", "/1/edit"})
+    void hidesProtectedFormsFromReaders(final String path) throws Exception {
+        MatcherAssert.assertThat(
+            "A reader could open an administrative curriculum form",
+            this.mvc.perform(
+                MockMvcRequestBuilders.get(String.format("/federal/curriculums%s", path))
+                    .session(this.session(Roles.RoleEnum.VIEWER)).accept(MediaType.TEXT_HTML)
+            ).andReturn().getResponse().getStatus(),
+            Matchers.is(403)
+        );
+    }
+
+    @ParameterizedTest
+    @ValueSource(
+        strings = {"/create", "/1/edit", "/1/requirements", "/1/requirements/7"}
+    )
+    void rejectsReaderMutationsWithValidCsrf(final String path) throws Exception {
+        MatcherAssert.assertThat(
+            "A reader changed a federal resource despite valid CSRF protection",
+            this.mvc.perform(
+                this.authorized(path, Roles.RoleEnum.VIEWER).accept(MediaType.TEXT_HTML)
+            ).andReturn().getResponse().getStatus(),
+            Matchers.is(403)
+        );
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "/1/requirements, 999999",
+        "/1/requirements/7, 999999",
+        "/1/requirements, 103",
+        "/1/requirements/7, 103",
+        "/1/requirements, 107",
+        "/1/requirements/7, 107"
+    })
+    void rejectsUnavailableOrSchoolSubjects(final String path, final String subject)
+        throws Exception {
+        this.ctx.execute(
+            "INSERT INTO school (id, name) VALUES (97, 'Лицей') ON CONFLICT DO NOTHING"
+        );
+        this.ctx.execute(
+            """
+            INSERT INTO subject (id, school_id, origin, name, is_deleted)
+            VALUES (103, NULL, 'FEDERAL', 'Удалённый предмет', true),
+                (107, 97, 'SCHOOL', 'Робототехника', false) ON CONFLICT DO NOTHING
+            """
+        );
+        MatcherAssert.assertThat(
+            "A requirement accepted an unavailable or school subject",
+            this.mvc.perform(
+                this.authorized(path, Roles.RoleEnum.ADMIN).param("subjectId", subject)
+                    .accept("application/vnd.surok.federal-curriculum-requirement-v1+json")
+            ).andReturn().getResponse().getStatus(),
+            Matchers.is(400)
+        );
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"/1", "/1/requirements/7"})
+    void rejectsReaderRemovalWithValidCsrf(final String path) throws Exception {
+        MatcherAssert.assertThat(
+            "A reader deleted a federal plan or requirement",
+            this.mvc.perform(
+                this.authorized(path, Roles.RoleEnum.VIEWER, HttpMethod.DELETE)
+                    .accept(MediaType.TEXT_HTML)
+            ).andReturn().getResponse().getStatus(),
+            Matchers.is(403)
+        );
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "'', federal-curriculums.v1", "/1, federal-curriculum-v1",
+        "/1/requirements, federal-curriculum-requirements.v1",
+        "/1/requirements/7, federal-curriculum-requirement-v1"
+    })
+    void letsReadersRetrieveVersionedResources(final String path, final String resource)
+        throws Exception {
+        MatcherAssert.assertThat(
+            "An authenticated reader could not retrieve a versioned federal representation",
+            this.mvc.perform(
+                MockMvcRequestBuilders.get(String.format("/federal/curriculums%s", path))
+                    .session(this.session(Roles.RoleEnum.VIEWER))
+                    .accept(String.format("application/vnd.surok.%s+json", resource))
+            ).andReturn().getResponse().getStatus(),
+            Matchers.is(200)
+        );
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "PRIMARY, 1, true", "PRIMARY, 4, true", "PRIMARY, 5, false",
+        "PRIMARY, 10, false", "BASIC, 4, false", "BASIC, 5, true",
+        "BASIC, 9, true", "BASIC, 10, false", "SECONDARY, 4, false",
+        "SECONDARY, 9, false", "SECONDARY, 10, true", "SECONDARY, 11, true"
+    })
+    void validatesRequirementGradesAgainstThePlanLevel(
+        final String level, final String grade, final boolean valid
+    ) throws Exception {
+        this.ctx.execute(
+            "UPDATE federal_curriculum SET education_level = ?::education_level_type WHERE id = 1",
+            level
+        );
+        final List<Integer> statuses = new ArrayList<>(2);
+        for (final String action : List.of("", "/7")) {
+            statuses.add(
+                this.mvc.perform(
+                    this.authorized(
+                        MockMvcRequestBuilders.post(
+                            String.format("/federal/curriculums/1/requirements%s", action)
+                        )
+                    ).contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                        .param("grade", grade).param("hours", "3").param(
+                            "subjectId", Map.of("", "516", "/7", "504").get(action)
+                        )
+                        .param("partType", "MANDATORY")
+                        .accept("application/vnd.surok.federal-curriculum-requirement-v1+json")
+                ).andReturn().getResponse().getStatus()
+            );
+        }
+        final List<Integer> expected;
+        if (valid) {
+            expected = List.of(201, 200);
+        } else {
+            expected = List.of(400, 400);
+        }
+        MatcherAssert.assertThat(
+            "The API accepted an inapplicable grade or rejected a grade of the plan level",
+            statuses,
+            Matchers.is(expected)
+        );
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"create", "7/edit"})
+    void preservesRequirementsWhenTheGradeIsOutsideThePlan(final String action) throws Exception {
+        this.mvc.perform(
+            this.authorized(
+                MockMvcRequestBuilders.post(
+                    String.format("/federal/curriculums/1/requirements%s", action)
+                )
+            ).contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                .param("grade", "3").param("hours", "7")
+                .param("subjectId", "516").param("partType", "MANDATORY")
+                .accept("application/vnd.surok.federal-curriculum-requirement-v1+json")
+        );
+        MatcherAssert.assertThat(
+            "An invalid grade changed the saved requirements",
+            this.ctx.fetch(
+                """
+                SELECT grade, subject.name AS subject_name, hours
+                FROM federal_curriculum_requirement
+                JOIN subject ON subject.id = federal_curriculum_requirement.subject_id
+                """
+            ).intoMaps(),
+            Matchers.is(
+                List.of(Map.of("grade", 5, "subject_name", "Mathematics", "hours", 5))
+            )
+        );
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "PRIMARY, 1 2 3 4, ''", "BASIC, 5 6 7 8 9, ''", "SECONDARY, 10 11, ''",
+        "PRIMARY, 1 2 3 4, /fragment", "BASIC, 5 6 7 8 9, /fragment",
+        "SECONDARY, 10 11, /fragment"
+    })
+    void offersOnlyGradesOfThePlanInRequirementForms(
+        final String level, final String grades, final String suffix
+    ) throws Exception {
+        this.ctx.execute(
+            "UPDATE federal_curriculum SET education_level = ?::education_level_type WHERE id = 1",
+            level
+        );
+        final List<String> expected = new ArrayList<>(2);
+        expected.add(grades);
+        if (suffix.isEmpty()) {
+            expected.add(grades);
+        }
+        MatcherAssert.assertThat(
+            "A requirement form offered grades outside the plan level",
+            Pattern.compile(
+                "<select[^>]*(?:grade-number|requirement-grade-input)\"[^>]*>(.*?)</select>",
+                Pattern.DOTALL
+            ).matcher(
+                this.mvc.perform(
+                    MockMvcRequestBuilders.get(
+                        String.format("/federal/curriculums/1/requirements%s", suffix)
+                    ).session(this.session()).accept(MediaType.TEXT_HTML)
+                ).andReturn().getResponse().getContentAsString()
+            ).results().map(
+                select -> Pattern.compile("<option[^>]*value=\"([0-9]+)\"")
+                    .matcher(select.group(1)).results().map(option -> option.group(1)).toList()
+            ).map(values -> String.join(" ", values)).toList(),
+            Matchers.is(expected)
+        );
+    }
+
+    private MockHttpServletRequestBuilder authorized(final String path, final Roles.RoleEnum role)
+        throws Exception {
+        return this.authorized(path, role, HttpMethod.POST);
+    }
+
+    private MockHttpServletRequestBuilder authorized(
+        final String path, final Roles.RoleEnum role, final HttpMethod method
+    ) throws Exception {
+        final MockHttpSession session = this.session(role);
+        final MvcResult page = this.mvc.perform(
+            MockMvcRequestBuilders.get("/federal/subjects").session(session)
+        ).andReturn();
+        final CsrfToken token = (CsrfToken) page.getRequest().getAttribute(
+            CsrfToken.class.getName()
+        );
+        return MockMvcRequestBuilders.request(method, String.format("/federal/curriculums%s", path))
+            .session(session).cookie(page.getResponse().getCookies())
+            .header(token.getHeaderName(), token.getToken())
+            .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+            .param("grade", "6")
+            .param("hours", "2").param("partType", "MANDATORY");
+    }
+
     private MockHttpServletRequestBuilder authorized(final String path) throws Exception {
         return this.authorized(
             MockMvcRequestBuilders.post(String.format("/federal/curriculums%s", path))
         ).contentType(MediaType.APPLICATION_FORM_URLENCODED)
             .param("title", "After").param("level", "BASIC").param("week", "FIVE_DAYS")
             .param("version", "2").param("year", "2026/2027").param("description", "Description")
-            .param("grade", "6").param("subjectName", "After").param("weeklyHours", "2")
-            .param("partType", "OPTIONAL");
+            .param("grade", "6").param("subjectId", "516").param("hours", "2")
+            .param("partType", "MANDATORY");
     }
 
     private MockHttpServletRequestBuilder authorized(final MockHttpServletRequestBuilder request)
@@ -298,6 +550,10 @@ final class CrsHttpTest {
     }
 
     private MockHttpSession session() throws Exception {
+        return this.session(Roles.RoleEnum.ADMIN);
+    }
+
+    private MockHttpSession session(final Roles.RoleEnum role) throws Exception {
         final User user = new UrPostgres(
             this.ctx,
             this.ctx.resultQuery(
@@ -310,7 +566,7 @@ final class CrsHttpTest {
                 null
             ).fetchSingle("id", Long.class)
         );
-        user.roles().grant(Roles.RoleEnum.ADMIN);
+        user.roles().grant(role);
         final AuthUser principal = new AuthUser(user);
         final MockHttpSession session = new MockHttpSession();
         session.setAttribute(

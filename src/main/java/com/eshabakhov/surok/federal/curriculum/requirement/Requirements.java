@@ -16,6 +16,24 @@ import com.eshabakhov.surok.Sorts;
 public interface Requirements extends Printable {
 
     /**
+     * Selects the optional requirement for a grade, or an empty collection if unspecified.
+     *
+     * @param grade School grade
+     * @return Optional requirements
+     * @throws Exception If selection fails
+     */
+    Iterable<Requirement> optional(int grade) throws Exception;
+
+    /**
+     * Checks total additional hours for each class against the grade's optional requirement.
+     *
+     * @param grade School grade
+     * @param hours Additional hours per class
+     * @throws Exception If the requirement is missing or the total exceeds its maximum
+     */
+    void check(int grade, int hours) throws Exception;
+
+    /**
      * Creates a new federal curriculum requirement.
      *
      * @param input Federal curriculum requirement input

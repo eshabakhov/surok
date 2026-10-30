@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.PostgreSQLContainer;
@@ -37,6 +38,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  * @checkstyle ProhibitFieldsInTestClassesCheck (1000 lines)
  */
 @Testcontainers
+@DirtiesContext
 @SpringBootTest
 @SuppressWarnings({"PMD.UnusedPrivateMethod", "UnusedMethod"})
 final class SlsPostgresTest {
@@ -171,7 +173,7 @@ final class SlsPostgresTest {
      * @return Empty school collection
      */
     private Schools collection() {
-        this.ctx.execute("TRUNCATE TABLE public.school RESTART IDENTITY CASCADE");
+        this.ctx.execute("TRUNCATE TABLE public.school, subject RESTART IDENTITY CASCADE");
         return new SlsPostgres(this.ctx);
     }
 

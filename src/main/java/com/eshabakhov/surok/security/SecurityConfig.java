@@ -6,6 +6,8 @@ package com.eshabakhov.surok.security;
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;
+import io.swagger.v3.oas.models.media.ObjectSchema;
+import io.swagger.v3.oas.models.media.XML;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
 import jakarta.servlet.DispatcherType;
@@ -40,9 +42,11 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 /**
  * Spring security config.
+ * Includes OpenAPI security schemes and XML response metadata.
  *
  * @since 0.0.1
  * @checkstyle LambdaBodyLengthCheck (1000 lines)
+ * @checkstyle ClassFanOutComplexityCheck (6 lines)
  */
 @Configuration
 @EnableWebSecurity
@@ -290,7 +294,9 @@ public class SecurityConfig {
                 .title("Surok API")
                 .version(build.getVersion())
             ).components(
-                new Components().addSecuritySchemes(
+                new Components().addSchemas(
+                    "LoadDraftXml", new ObjectSchema().xml(new XML().name("draft"))
+                ).addSecuritySchemes(
                     "Basic auth",
                     new SecurityScheme()
                         .type(SecurityScheme.Type.HTTP)

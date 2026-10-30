@@ -32,33 +32,11 @@ public final class MdJson implements Media<ObjectNode> {
     /** Whether the included fields are restricted. */
     private final boolean restricted;
 
-    /** Whether nested printable values must be accumulated. */
-    private final boolean multiple;
-
     /**
      * Creates an empty JSON media.
      */
     public MdJson() {
-        this(
-            new ObjectNode(JsonNodeFactory.instance),
-            new LinkedHashSet<>(0),
-            false,
-            false
-        );
-    }
-
-    /**
-     * Creates an empty JSON media.
-     *
-     * @param multiple Whether nested printable values must be accumulated
-     */
-    private MdJson(final boolean multiple) {
-        this(
-            new ObjectNode(JsonNodeFactory.instance),
-            new LinkedHashSet<>(0),
-            false,
-            multiple
-        );
+        this(new ObjectNode(JsonNodeFactory.instance), new LinkedHashSet<>(0), false);
     }
 
     /**
@@ -67,18 +45,15 @@ public final class MdJson implements Media<ObjectNode> {
      * @param node Collected values
      * @param fields Included fields
      * @param restricted Whether fields are restricted
-     * @param multiple Whether nested printable values must be accumulated
      */
     private MdJson(
         final ObjectNode node,
         final Set<String> fields,
-        final boolean restricted,
-        final boolean multiple
+        final boolean restricted
     ) {
         this.node = node;
         this.fields = fields;
         this.restricted = restricted;
-        this.multiple = multiple;
     }
 
     @Override
@@ -88,7 +63,7 @@ public final class MdJson implements Media<ObjectNode> {
             copied.put(name, value);
         }
         return new MdJson(
-            copied, this.fields, this.restricted, this.multiple
+            copied, this.fields, this.restricted
         );
     }
 
@@ -99,7 +74,7 @@ public final class MdJson implements Media<ObjectNode> {
             copied.put(name, value);
         }
         return new MdJson(
-            copied, this.fields, this.restricted, this.multiple
+            copied, this.fields, this.restricted
         );
     }
 
@@ -110,7 +85,7 @@ public final class MdJson implements Media<ObjectNode> {
             copied.put(name, value);
         }
         return new MdJson(
-            copied, this.fields, this.restricted, this.multiple
+            copied, this.fields, this.restricted
         );
     }
 
@@ -121,7 +96,7 @@ public final class MdJson implements Media<ObjectNode> {
             copied.put(name, value);
         }
         return new MdJson(
-            copied, this.fields, this.restricted, this.multiple
+            copied, this.fields, this.restricted
         );
     }
 
@@ -132,13 +107,11 @@ public final class MdJson implements Media<ObjectNode> {
         final boolean allowed = this.allowed(name);
         final ObjectNode printed;
         if (allowed) {
-            printed = value.print(new MdJson(true)).print();
+            printed = value.print(new MdJson()).print();
         } else {
             printed = JsonNodeFactory.instance.objectNode();
         }
-        if (allowed && this.multiple) {
-            copied.withArray(name).add(printed);
-        } else if (
+        if (
             allowed
                 && printed.size() == 1
                 && printed.elements().next().isArray()
@@ -148,7 +121,7 @@ public final class MdJson implements Media<ObjectNode> {
             copied.set(name, printed);
         }
         return new MdJson(
-            copied, this.fields, this.restricted, this.multiple
+            copied, this.fields, this.restricted
         );
     }
 
@@ -156,7 +129,7 @@ public final class MdJson implements Media<ObjectNode> {
     public MdJson with(final Printable value) throws Exception {
         final ObjectNode copied = this.node.deepCopy();
         final ArrayNode items = JsonNodeFactory.instance.arrayNode();
-        final ObjectNode printed = value.print(new MdJson(true)).print();
+        final ObjectNode printed = value.print(new MdJson()).print();
         if (!printed.isEmpty()) {
             final JsonNode selected = printed.elements().next();
             if (selected.isArray()) {
@@ -169,7 +142,7 @@ public final class MdJson implements Media<ObjectNode> {
             copied.set("items", items);
         }
         return new MdJson(
-            copied, this.fields, this.restricted, this.multiple
+            copied, this.fields, this.restricted
         );
     }
 
@@ -189,8 +162,22 @@ public final class MdJson implements Media<ObjectNode> {
             );
         }
         return new MdJson(
-            copied, this.fields, this.restricted, this.multiple
+            copied, this.fields, this.restricted
         );
+    }
+
+    @Override
+    public MdJson items(final String name, final Iterable<? extends Printable> values)
+        throws Exception {
+        final ObjectNode copied = this.node.deepCopy();
+        if (this.allowed("items")) {
+            final ArrayNode items = JsonNodeFactory.instance.arrayNode();
+            for (final Printable value : values) {
+                items.add(value.print(new MdJson()).print());
+            }
+            copied.set("items", items);
+        }
+        return new MdJson(copied, this.fields, this.restricted);
     }
 
     @Override
@@ -213,8 +200,7 @@ public final class MdJson implements Media<ObjectNode> {
         return new MdJson(
             copied,
             Collections.unmodifiableSet(included),
-            true,
-            this.multiple
+            true
         );
     }
 

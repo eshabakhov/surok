@@ -7,82 +7,52 @@ import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 /**
- * Teaching load XSLT views and canonical form fields.
+ * Read-only teaching load views with draft navigation.
  *
  * @since 0.0.1
  */
 final class XsLoadsTest {
 
-    @ParameterizedTest
-    @ValueSource(strings = {"list", "create", "edit"})
-    void printsProtectedFormsAndExternalAssets(final String view) {
+    @Test
+    void directsAllLoadChangesToTheDraft() {
         MatcherAssert.assertThat(
+            "The load page still offered a separate manual editor",
+            XsLoadsTest.page("list"),
+            Matchers.allOf(
+                Matchers.containsString("href=\"/schools/3/schedules/9/loads/draft\""),
+                Matchers.not(Matchers.containsString("/loads/create")),
+                Matchers.not(Matchers.containsString("/loads/7/edit")),
+                Matchers.not(Matchers.containsString("load-delete")),
+                Matchers.not(Matchers.containsString("<form")),
+                Matchers.not(Matchers.containsString("<dialog"))
+            )
+        );
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"list", "details"})
+    void printsReadOnlyPagesWithExternalAssets(final String view) {
+        MatcherAssert.assertThat(
+            "The read-only load page lost its assets or exposed a manual editor",
             XsLoadsTest.page(view),
             Matchers.allOf(
-                Matchers.containsString("name=\"_csrf\" type=\"hidden\" value=\"token\""),
-                Matchers.containsString("name=\"schoolClassId\""),
-                Matchers.containsString("name=\"subjectId\""),
-                Matchers.containsString("name=\"hoursPerWeek\""),
                 Matchers.containsString("href=\"/css/school/class-loads.css\""),
                 Matchers.containsString("src=\"/js/school/class-loads.js\""),
-                Matchers.not(Matchers.containsString("onclick=")),
-                Matchers.not(Matchers.containsString("style=")),
+                Matchers.containsString("href=\"/schools/3/schedules/9/loads/draft\""),
+                Matchers.not(Matchers.containsString("name=\"hours\"")),
+                Matchers.not(Matchers.containsString("/loads/7/edit")),
+                Matchers.not(Matchers.containsString("load-delete")),
+                Matchers.not(Matchers.containsString("<form")),
                 Matchers.not(Matchers.containsString("/api/"))
             )
         );
     }
 
-    @Test
-    void createsWithoutCopyingExistingFields() {
-        MatcherAssert.assertThat(
-            XsLoadsTest.page("create"),
-            Matchers.allOf(
-                Matchers.containsString("action=\"/schools/3/schedules/9/loads/create\""),
-                Matchers.containsString("name=\"hoursPerWeek\""),
-                Matchers.containsString("value=\"\""),
-                Matchers.not(Matchers.containsString("selected=\"\""))
-            )
-        );
-    }
-
-    @Test
-    void keepsSelectedEditingFields() {
-        MatcherAssert.assertThat(
-            XsLoadsTest.page("edit"),
-            Matchers.allOf(
-                Matchers.containsString("action=\"/schools/3/schedules/9/loads/7/edit\""),
-                Matchers.containsString("value=\"10\" selected=\"\">5А</option>"),
-                Matchers.containsString("value=\"30\" selected=\"\">Математика</option>"),
-                Matchers.containsString("value=\"5\""),
-                Matchers.containsString("Сохранить")
-            )
-        );
-    }
-
-    @Test
-    void offersAnAccessibleCreationDialog() {
-        MatcherAssert.assertThat(
-            XsLoadsTest.page("list"),
-            Matchers.allOf(
-                Matchers.containsString("<dialog class=\"load-dialog\" id=\"load-create-dialog\""),
-                Matchers.containsString("aria-labelledby=\"load-dialog-title\""),
-                Matchers.containsString("data-open-load-dialog=\"true\""),
-                Matchers.containsString("data-close-load-dialog=\"true\""),
-                Matchers.containsString("href=\"/schools/3/schedules/9/loads/create\""),
-                Matchers.containsString("href=\"/schools/3/schedules/9/loads/7/edit\""),
-                Matchers.containsString("data-uri=\"/schools/3/schedules/9/loads/7\""),
-                Matchers.containsString("data-redirect=\"/schools/3/schedules/9/loads\""),
-                Matchers.not(Matchers.containsString("/delete"))
-            )
-        );
-    }
-
     @ParameterizedTest
-    @ValueSource(strings = {"list", "create", "details", "edit"})
+    @ValueSource(strings = {"list", "details"})
     void keepsScheduleContextInNavigation(final String view) {
         final String page = XsLoadsTest.page(view);
         MatcherAssert.assertThat(
@@ -94,25 +64,6 @@ final class XsLoadsTest {
                 Matchers.not(Matchers.containsString("/classes/7")),
                 Matchers.not(Matchers.containsString("/classes/10")),
                 Matchers.not(Matchers.containsString("/subjects/30"))
-            )
-        );
-    }
-
-    @ParameterizedTest
-    @CsvSource({
-        "input, положительное целое число часов",
-        "duplicate, уже существует"
-    })
-    void displaysSafeValidationMessages(final String error, final String expected) {
-        MatcherAssert.assertThat(
-            new XsClasspath("xslt/class-loads.xsl", "create").transform(
-                XsLoadsTest.document().replace(
-                    "<error></error>", String.format("<error>%s</error>", error)
-                )
-            ),
-            Matchers.allOf(
-                Matchers.containsString("role=\"alert\""),
-                Matchers.containsString(expected)
             )
         );
     }
@@ -145,7 +96,7 @@ final class XsLoadsTest {
                     document.substring(document.indexOf("</load>") + "</load>".length())
                 )
             ),
-            Matchers.containsString("Нет данных. Добавьте нагрузку.")
+            Matchers.containsString("Нагрузка пока не заполнена. Перейдите в автозаполнение.")
         );
     }
 
@@ -163,9 +114,9 @@ final class XsLoadsTest {
                 <csrf><parameter>_csrf</parameter><token>token</token></csrf><error></error>
                 <classes><school-class><id>10</id><name>5А</name></school-class></classes>
                 <subjects><subject><id>30</id><name>Математика</name></subject></subjects>
-                <loads><load><id>7</id><schoolClassId>10</schoolClassId>
-                    <schoolClassName>5А</schoolClassName><subjectId>30</subjectId>
-                    <subjectName>Математика</subjectName><hoursPerWeek>5</hoursPerWeek>
+                <loads><load><id>7</id><schoolClass><id>10</id><name>5А</name></schoolClass>
+                    <subject><id>30</id><name>Математика</name><origin>FEDERAL</origin></subject>
+                    <hours>5</hours>
                 </load><page><offset>1</offset><limit>15</limit><total>30</total>
                     <totalPages>2</totalPages><hasNext>true</hasNext><hasPrev>false</hasPrev>
                 </page></loads>

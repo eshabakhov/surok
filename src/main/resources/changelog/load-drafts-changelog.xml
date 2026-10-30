@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+    https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.4.xsd">
+    <changeSet id="load-drafts/v1/10-27-2026/tables" author="Shabakhov_Eset">
+        <sql>
+            <![CDATA[
+            CREATE TABLE public.load_draft (
+                schedule_id bigint PRIMARY KEY REFERENCES public.schedule(id) ON DELETE CASCADE,
+                curriculum_id bigint NOT NULL REFERENCES public.federal_curriculum(id),
+                updated_at timestamptz NOT NULL DEFAULT NOW()
+            );
+            CREATE TABLE public.load_draft_addition (
+                schedule_id bigint NOT NULL REFERENCES public.load_draft(schedule_id)
+                    ON DELETE CASCADE,
+                grade integer NOT NULL CHECK (grade BETWEEN 1 AND 11),
+                subject_id bigint NOT NULL REFERENCES public.subject(id),
+                hours integer NOT NULL CHECK (hours >= 0),
+                PRIMARY KEY (schedule_id, grade, subject_id)
+            );
+            COMMENT ON COLUMN public.load_draft_addition.hours
+                IS 'Weekly additional hours for each class in the grade; zero removes the load';
+            ]]>
+        </sql>
+        <rollback>
+            DROP TABLE public.load_draft_addition;
+            DROP TABLE public.load_draft;
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

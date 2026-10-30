@@ -54,7 +54,7 @@ import org.springframework.web.server.ResponseStatusException;
 @RestController
 @RequestMapping("/federal/curriculums")
 @Tag(name = "Federal Curriculums")
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("isAuthenticated()")
 public class CrsHttp {
 
     /** JOOQ context. */
@@ -101,6 +101,7 @@ public class CrsHttp {
         responseCode = "302",
         description = "HTML client redirected to the created curriculum"
     )
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> create(
         @RequestParam final MultiValueMap<String, String> parameters,
         final HttpServletRequest request
@@ -152,6 +153,11 @@ public class CrsHttp {
                     final String view;
                     final String uri = request.getRequestURI();
                     if (uri != null && uri.endsWith("/edit")) {
+                        if (!request.isUserInRole("ADMIN")) {
+                            throw new ResponseStatusException(
+                                HttpStatus.FORBIDDEN, "Only administrators can change curricula"
+                            );
+                        }
                         view = "edit";
                     } else {
                         view = "details";
@@ -204,6 +210,7 @@ public class CrsHttp {
         description = "HTML client redirected to the updated curriculum"
     )
     @ApiResponse(responseCode = "404", description = "Curriculum not found")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> revise(
         @PathVariable final long curriculum,
         @RequestParam final MultiValueMap<String, String> parameters,
@@ -257,6 +264,11 @@ public class CrsHttp {
                     if (uri != null && uri.endsWith("/fragment")) {
                         view = "list-fragment";
                     } else if (uri != null && uri.endsWith("/create")) {
+                        if (!request.isUserInRole("ADMIN")) {
+                            throw new ResponseStatusException(
+                                HttpStatus.FORBIDDEN, "Only administrators can change curricula"
+                            );
+                        }
                         view = "create";
                     } else {
                         view = "list";
@@ -290,6 +302,7 @@ public class CrsHttp {
         description = "Federal curriculum removed"
     )
     @ApiResponse(responseCode = "404", description = "Curriculum not found")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> remove(
         @PathVariable(name = "curriculum") final long id
     ) throws Exception {

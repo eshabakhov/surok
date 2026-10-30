@@ -25,8 +25,10 @@ import org.jooq.DSLContext;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.jdbc.Sql;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -39,7 +41,15 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  * @checkstyle NoJavadocForPrivateMethodsCheck (1000 lines)
  */
 @Testcontainers
+@DirtiesContext
 @SpringBootTest
+@Sql(
+    statements = """
+        INSERT INTO subject (id, origin, name)
+        VALUES (514, 'FEDERAL', 'Математика')
+        ON CONFLICT DO NOTHING;
+        """
+)
 @SuppressWarnings({"PMD.UnusedPrivateMethod", "UnusedMethod"})
 final class RqsSelectedTest {
 
@@ -110,7 +120,7 @@ final class RqsSelectedTest {
     @Test
     void exposesSelectedItems() {
         final Iterable<Requirement> items = List.of(
-            new RqPostgres(this.ctx, 1L)
+            new RqMandatory(this.ctx, 1L)
         );
         MatcherAssert.assertThat(
             "Selected requirements must expose their items",
@@ -129,7 +139,7 @@ final class RqsSelectedTest {
             "Selected requirements must print items and pagination",
             new RqsSelected(
                 this.prepare(3L),
-                List.of(new RqV1(new RqPostgres(this.ctx, 3L))),
+                List.of(new RqV1(new RqMandatory(this.ctx, 3L))),
                 new ResponsePage(new PageRequest(10, 2), 25)
             ).print(new MdJson()).print(),
             Matchers.is(
@@ -137,9 +147,10 @@ final class RqsSelectedTest {
                     "items",
                     JsonNodeFactory.instance.arrayNode().add(
                         JsonNodeFactory.instance.objectNode().put("id", 3L)
-                            .put("grade", 5)
-                            .put("subjectName", "Математика")
-                            .put("weeklyHours", 6)
+                            .put("grade", 5).<ObjectNode>set(
+                                "subject", JsonNodeFactory.instance.objectNode().put("id", 514L)
+                                    .put("name", "Математика").put("origin", "FEDERAL")
+                            ).put("hours", 6)
                             .put("partType", "MANDATORY")
                     )
                 ).<ObjectNode>set(
@@ -190,9 +201,10 @@ final class RqsSelectedTest {
             this.ctx.execute(
                 """
                 INSERT INTO public.federal_curriculum_requirement
-                (id, federal_curriculum_id, grade, subject_name, weekly_hours,
+                (id, federal_curriculum_id, grade, subject_id, hours,
                 part_type, is_deleted)
-                VALUES (?, 1, 5, 'Математика', 6, 'MANDATORY', false)
+                VALUES (?, 1, 5, (SELECT id FROM subject WHERE name = 'Математика'
+                AND NOT is_deleted), 6, 'MANDATORY', false)
                 """,
                 id
             );
@@ -209,7 +221,7 @@ final class RqsSelectedTest {
     private RequirementInput input(final String grade) {
         return new RqInputPart(
             new RqInputHours(
-                new RqInputSubject(new RqInputGrade(new RqInput(), grade), "Математика"),
+                new RqInputSubject(new RqInputGrade(new RqInput(), grade), "514"),
                 "6"
             ),
             "MANDATORY"

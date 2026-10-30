@@ -271,6 +271,84 @@ final class XsClasspathTest {
         }
     }
 
+    @ParameterizedTest
+    @ValueSource(
+        strings = {"federal-curriculums", "federal-curriculum", "federal-curriculum-requirements"}
+    )
+    void hidesFederalEditingControlsFromReaders(final String stylesheet) {
+        MatcherAssert.assertThat(
+            "A reader page exposed federal editing controls or lost the standard navigation",
+            new XsClasspath(String.format("xslt/%s.xsl", stylesheet), "list").transform(
+                """
+                <surok><user><admin>false</admin></user>
+                <curriculums><curriculum><id>17</id><title>Основной план</title>
+                <requirements><requirement><id>23</id><grade>5</grade>
+                <subject><id>1</id><name>Математика</name><origin>FEDERAL</origin></subject>
+                <hours>5</hours>
+                <partType>MANDATORY</partType></requirement></requirements>
+                </curriculum></curriculums></surok>
+                """
+            ),
+            Matchers.allOf(
+                Matchers.containsString("Федеральный стандарт"),
+                Matchers.containsString("href=\"/federal/curriculums\""),
+                Matchers.containsString("href=\"/federal/subjects\""),
+                Matchers.not(Matchers.containsString("href=\"/federal/curriculums/create\"")),
+                Matchers.not(Matchers.containsString("href=\"/federal/curriculums/17/edit\"")),
+                Matchers.not(Matchers.containsString("class=\"requirements-add\"")),
+                Matchers.not(Matchers.containsString("class=\"requirement-action")),
+                Matchers.not(Matchers.containsString("btn-delete-curriculum"))
+            )
+        );
+    }
+
+    @Test
+    void offersCatalogueSubjectsAndExplicitAdditionalLimits() {
+        MatcherAssert.assertThat(
+            "Requirement forms accepted free text or omitted the additional hours limit",
+            new XsClasspath("xslt/federal-curriculum-requirements.xsl", "list").transform(
+                """
+                <surok><user><admin>true</admin></user>
+                <csrf><parameter>_csrf</parameter><token>защита</token></csrf>
+                <subjects><subject><id>29</id><name>Физика</name></subject></subjects>
+                <firstGrade>5</firstGrade><lastGrade>9</lastGrade>
+                <curriculums><curriculum><id>17</id><title>План</title>
+                <requirements/></curriculum></curriculums></surok>
+                """
+            ),
+            Matchers.allOf(
+                Matchers.containsString("<select id=\"subject-name\""),
+                Matchers.containsString("<select id=\"filter-subject\""),
+                Matchers.containsString("value=\"Физика\""),
+                Matchers.containsString("/federal/curriculums/17/requirements"),
+                Matchers.containsString("value=\"OPTIONAL\""),
+                Matchers.containsString("name=\"hours\""),
+                Matchers.containsString("name=\"selection\""),
+                Matchers.containsString(">Дополнительные предметы</option>"),
+                Matchers.not(Matchers.containsString("id=\"requirement-kind\"")),
+                Matchers.not(Matchers.containsString("id=\"maximum-hours\"")),
+                Matchers.containsString("name=\"_csrf\""),
+                Matchers.containsString("min=\"0\""),
+                Matchers.not(Matchers.containsString("<input id=\"subject-name\""))
+            )
+        );
+    }
+
+    @Test
+    void identifiesAdditionalSubjectsOnTheLoadPage() throws Exception {
+        MatcherAssert.assertThat(
+            "The load page did not explain how additional hours are counted",
+            new XsClasspath("xslt/class-loads.xsl", "list").transform(
+                Files.readString(Path.of("src/test/resources/pages.xml"))
+                    .replace("<origin>FEDERAL</origin>", "<origin>SCHOOL</origin>")
+            ),
+            Matchers.allOf(
+                Matchers.containsString("class=\"load-additional\">Вариативная</span>"),
+                Matchers.containsString("учитываются в вариативной нагрузке класса")
+            )
+        );
+    }
+
     private static String page(final String entity, final String view, final boolean error) {
         return new XsClasspath(String.format("xslt/%ss.xsl", entity), view)
             .transform(XsClasspathTest.document(entity, error));

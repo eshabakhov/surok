@@ -30,9 +30,14 @@ final class FlCdRequirementBySubjectTest {
                 DSL.trueCondition().and(
                     DSL.condition(
                         """
-                            federal_curriculum_requirement.subject_name ILIKE ?
+                            EXISTS (
+                                SELECT 1 FROM public.subject
+                                WHERE subject.id = federal_curriculum_requirement.subject_id
+                                    AND subject.name = ?
+                                    AND subject.is_deleted = false
+                            )
                             """,
-                        "%Mathematics%"
+                        "Mathematics"
                     )
                 )
             )
@@ -51,9 +56,14 @@ final class FlCdRequirementBySubjectTest {
                 DSL.trueCondition().and(
                     DSL.condition(
                         """
-                            federal_curriculum_requirement.subject_name ILIKE ?
+                            EXISTS (
+                                SELECT 1 FROM public.subject
+                                WHERE subject.id = federal_curriculum_requirement.subject_id
+                                    AND subject.name = ?
+                                    AND subject.is_deleted = false
+                            )
                             """,
-                        "%Я%"
+                        "Я"
                     )
                 )
             )

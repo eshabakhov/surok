@@ -96,11 +96,8 @@ requires real `YA_ID` and `YA_SECRET`; local defaults support password login.
 Before launching `SurokApplication` from an IDE, run `./mvnw process-classes`
 to generate build metadata and prepare XSLT resources in `target/classes`.
 
-Frontend checks can also run separately with `npm ci` and `npm run lint` (JDK 21
-is required). HTMLHint checks pages rendered from XSLT with sample data in
-`tools/html-fixture.xml`; the generated HTML is saved in `target/html-lint`.
-The application and HTML checks share the same HTML output formatter, including
-the HTML5 doctype, attribute order and explicit boolean attribute values.
+JavaScript and CSS checks can also run separately with `npm ci` and
+`npm run lint`.
 
 After editing the application, run `docker compose up --build` again to see
 the changes. If a command fails, include the command and its log in the issue.

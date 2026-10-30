@@ -1,3 +1,1 @@
-SELECT *
-FROM public.subject
-WHERE ((subject.id = ?) AND (subject.school_id = ?)) AND (subject.is_deleted = ?)
+SELECT id FROM public.subject WHERE id = ? AND (school_id = ? OR origin = 'FEDERAL') AND is_deleted = ?

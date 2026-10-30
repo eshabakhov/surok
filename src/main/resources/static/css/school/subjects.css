@@ -142,3 +142,12 @@
         width: 100%;
     }
 }
+
+.subject-form-field select {
+    width: 100%;
+    padding: .625rem .75rem;
+    border: 1px solid var(--border-color, #e5e7eb);
+    border-radius: .5rem;
+    background: var(--bg-card, #fff);
+    font: inherit;
+}

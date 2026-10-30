@@ -19,13 +19,13 @@ import org.junit.jupiter.params.provider.ValueSource;
 final class RqInputHoursTest {
 
     @ParameterizedTest
-    @ValueSource(strings = {" -2147483648 ", "0", " 2147483647 "})
+    @ValueSource(strings = {" 7 ", "0", " 2147483647 "})
     void printsIntegerHours(final String hours) throws Exception {
         MatcherAssert.assertThat(
             "Hours must be parsed and printed without surrounding spaces",
             new RqInputHours(new RqInput(), hours)
                 .print(new MdRqInput()).print(),
-            Matchers.is(Map.of("weeklyHours", hours.trim()))
+            Matchers.is(Map.of("hours", hours.trim()))
         );
     }
 
@@ -49,7 +49,7 @@ final class RqInputHoursTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"four", "2147483648", "-2147483649"})
+    @ValueSource(strings = {"four", "2147483648", "-2147483649", "-1", " -2147483648 "})
     void rejectsInvalidHours(final String hours) {
         Assertions.assertThrows(
             RequirementInputException.class,

@@ -9,6 +9,7 @@
                 doctype-system="about:legacy-compat"/>
 
     <xsl:param name="view"/>
+    <xsl:variable name="editable" select="/surok/user/admin = 'true'"/>
 
     <xsl:template match="/">
         <xsl:choose>
@@ -70,48 +71,41 @@
                 </p>
             </div>
         </div>
-        <form class="requirements-add" id="requirements-add" method="post">
-            <xsl:attribute name="action">
-                <xsl:value-of select="concat('/federal/curriculums/', $curriculum/id, '/requirements/create')"/>
-            </xsl:attribute>
-            <xsl:call-template name="csrf-input"/>
-            <fieldset class="requirements-group requirements-group-add">
-                <legend>Добавление требования</legend>
-                <div class="requirements-grid requirements-grid-add">
-                    <label class="requirements-field requirements-field-grade"
-                           for="grade-number">
-                        <input id="grade-number"
-                               name="grade"
-                               type="number"
-                               max="11"
-                               min="1"
-                               placeholder="Класс"
-                               required="required"/>
-                    </label>
-                    <label class="requirements-field" for="subject-name">
-                        <input id="subject-name"
-                               name="subjectName"
-                               type="text"
-                               placeholder="Предмет"
-                               required="required"/>
-                    </label>
-                    <label class="requirements-field requirements-field-hours"
-                           for="weekly-hours">
-                        <input id="weekly-hours"
-                               name="weeklyHours"
-                               type="number"
-                               min="1"
-                               placeholder="Часов/нед."
-                               required="required"/>
-                    </label>
-                    <select name="partType" required="required">
-                        <option value="MANDATORY">MANDATORY</option>
-                        <option value="OPTIONAL">OPTIONAL</option>
-                    </select>
-                    <button class="btn-primary" type="submit">Сохранить</button>
-                </div>
-            </fieldset>
-        </form>
+        <xsl:if test="$editable">
+            <form class="requirements-add" id="requirements-add" method="post">
+                <xsl:attribute name="action">
+                    <xsl:value-of select="concat('/federal/curriculums/', $curriculum/id, '/requirements')"/>
+                </xsl:attribute>
+                <xsl:call-template name="csrf-input"/>
+                <fieldset class="requirements-group requirements-group-add">
+                    <legend>Добавить требование</legend>
+                    <div class="requirements-grid requirements-grid-add">
+                        <label class="requirements-field requirements-field-grade"
+                               for="grade-number">
+                            <select id="grade-number" name="grade" required="required">
+                                <option value="">Класс</option>
+                                <xsl:call-template name="grade-options"/>
+                            </select>
+                        </label>
+                        <label class="requirements-field" for="subject-name">
+                            <select id="subject-name" name="selection" required="required">
+                                <option value="">Выберите предмет</option>
+                                <option value="OPTIONAL">Дополнительные предметы</option>
+                                <xsl:call-template name="subject-options"/>
+                            </select>
+                        </label>
+                        <label class="requirements-field requirements-field-hours"
+                               for="requirement-hours">
+                            <input id="requirement-hours" name="hours" type="number" min="0"
+                                   step="1" placeholder="Часов/нед." required="required"
+                                   aria-label="Часов в неделю" aria-describedby="requirement-hours-hint"/>
+                        </label>
+                        <button class="btn-primary" type="submit">Сохранить</button>
+                    </div>
+                    <p id="requirement-hours-hint" class="page-subtitle" aria-live="polite">Для предмета — обязательные часы в неделю, для дополнительных предметов — общий максимум на каждый класс параллели.</p>
+                </fieldset>
+            </form>
+        </xsl:if>
         <fieldset class="requirements-group requirements-search">
             <legend>Поиск требований</legend>
             <div class="requirements-grid requirements-grid-search">
@@ -123,18 +117,23 @@
                            placeholder="Класс"/>
                 </label>
                 <label class="requirements-field" for="filter-subject">
-                    <input id="filter-subject"
-                           type="text"
-                           placeholder="Поиск по предмету..."/>
+                    <select id="filter-subject">
+                        <option value="">Все предметы</option>
+                        <xsl:call-template name="subject-options"><xsl:with-param name="identifiers" select="false()"/></xsl:call-template>
+                    </select>
                 </label>
                 <select id="filter-part">
                     <option value="">Все части</option>
-                    <option value="MANDATORY">MANDATORY</option>
-                    <option value="OPTIONAL">OPTIONAL</option>
+                    <option value="MANDATORY">Обязательная</option>
+                    <option value="OPTIONAL">Вариативная</option>
                 </select>
             </div>
         </fieldset>
         <xsl:call-template name="requirements-results"/>
+        <p class="page-subtitle">Обязательные часы назначаются по федеральному предмету.
+            Вариативное требование задаёт максимум для каждого класса параллели;
+            предметы и часы выбирает школа. Ноль запрещает вариативную нагрузку.
+            Если требования для параллели нет, лимит не задан.</p>
     </xsl:template>
 
     <xsl:template name="requirements-results">
@@ -178,7 +177,9 @@
                             <xsl:with-param name="requirements"
                                             select="$requirements"/>
                         </xsl:call-template>
-                        <th class="requirements-actions-heading">Действия</th>
+                        <xsl:if test="$editable">
+                            <th class="requirements-actions-heading">Действия</th>
+                        </xsl:if>
                     </tr>
                 </thead>
                 <tbody id="requirements-body">
@@ -187,7 +188,8 @@
                     </xsl:attribute>
                     <xsl:if test="not($requirements/requirement)">
                         <tr id="requirements-empty">
-                            <td class="empty-state" colspan="5">
+                            <td class="empty-state">
+                                <xsl:attribute name="colspan"><xsl:value-of select="4 + number($editable)"/></xsl:attribute>
                                 <xsl:text>Требования пока не добавлены.</xsl:text>
                             </td>
                         </tr>
@@ -196,100 +198,128 @@
                         <tr class="requirement-row">
                             <xsl:attribute name="data-grade"><xsl:value-of select="grade"/></xsl:attribute>
                             <xsl:attribute name="data-part"><xsl:value-of select="partType"/></xsl:attribute>
-                            <xsl:attribute name="data-subject"><xsl:value-of select="subjectName"/></xsl:attribute>
+                            <xsl:attribute name="data-hours"><xsl:value-of select="hours"/></xsl:attribute>
+                            <xsl:attribute name="data-subject"><xsl:value-of select="subject/id"/></xsl:attribute>
                             <td class="requirement-grade">
                                 <span class="requirement-value"><xsl:value-of select="grade"/></span>
-                                <input class="requirement-input requirement-grade-input"
-                                       type="number"
-                                       min="1"
-                                       max="11">
-                                    <xsl:attribute name="value"><xsl:value-of select="grade"/></xsl:attribute>
-                                </input>
+                                <xsl:if test="$editable">
+                                    <label class="requirement-label">
+                                        <xsl:attribute name="for"><xsl:value-of select="concat('requirement-', id, '-grade')"/></xsl:attribute>
+                                        <xsl:text>Класс</xsl:text>
+                                        <select class="requirement-input requirement-grade-input">
+                                            <xsl:attribute name="id"><xsl:value-of select="concat('requirement-', id, '-grade')"/></xsl:attribute>
+                                            <option value="">Класс</option>
+                                            <xsl:call-template name="grade-options">
+                                                <xsl:with-param name="selected" select="grade"/>
+                                            </xsl:call-template>
+                                        </select>
+                                    </label>
+                                </xsl:if>
                             </td>
                             <td class="requirement-subject">
-                                <span class="requirement-value"><xsl:value-of select="subjectName"/></span>
-                                <input class="requirement-input requirement-subject-input"
-                                       type="text">
-                                    <xsl:attribute name="value"><xsl:value-of select="subjectName"/></xsl:attribute>
-                                </input>
+                                <span>
+                                    <xsl:attribute name="class"><xsl:if test="partType = 'MANDATORY'">requirement-value</xsl:if></xsl:attribute>
+                                    <xsl:choose>
+                                        <xsl:when test="partType = 'OPTIONAL'">Дополнительные предметы</xsl:when>
+                                        <xsl:otherwise><xsl:value-of select="subject/name"/></xsl:otherwise>
+                                    </xsl:choose>
+                                </span>
+                                <xsl:if test="$editable and partType = 'MANDATORY'">
+                                    <label class="requirement-label">
+                                        <xsl:attribute name="for"><xsl:value-of select="concat('requirement-', id, '-subject')"/></xsl:attribute>
+                                        <xsl:text>Предмет</xsl:text>
+                                        <select class="requirement-input requirement-subject-input">
+                                            <xsl:attribute name="id"><xsl:value-of select="concat('requirement-', id, '-subject')"/></xsl:attribute>
+                                            <option value="">Выберите предмет</option>
+                                            <xsl:call-template name="subject-options">
+                                                <xsl:with-param name="selected" select="subject/id"/>
+                                            </xsl:call-template>
+                                        </select>
+                                    </label>
+                                </xsl:if>
                             </td>
                             <td class="requirement-hours">
-                                <span class="requirement-value"><xsl:value-of select="weeklyHours"/></span>
-                                <input class="requirement-input requirement-hours-input"
-                                       type="number"
-                                       min="1">
-                                    <xsl:attribute name="value"><xsl:value-of select="weeklyHours"/></xsl:attribute>
-                                </input>
+                                <span class="requirement-value"><xsl:if test="partType = 'OPTIONAL'">До </xsl:if><xsl:value-of select="hours"/></span>
+                                <xsl:if test="$editable">
+                                    <label class="requirement-label">
+                                        <xsl:attribute name="for"><xsl:value-of select="concat('requirement-', id, '-hours')"/></xsl:attribute>
+                                        <xsl:text>Часов в неделю</xsl:text>
+                                        <input class="requirement-input requirement-hours-input"
+                                               type="number"
+                                               step="1">
+                                            <xsl:attribute name="min"><xsl:value-of select="number(partType = 'MANDATORY')"/></xsl:attribute>
+                                            <xsl:attribute name="id"><xsl:value-of select="concat('requirement-', id, '-hours')"/></xsl:attribute>
+                                            <xsl:attribute name="value"><xsl:value-of select="hours"/></xsl:attribute>
+                                        </input>
+                                    </label>
+                                </xsl:if>
                             </td>
                             <td class="requirement-part">
-                                <span class="requirement-value"><xsl:value-of select="partType"/></span>
-                                <select class="requirement-input requirement-part-input">
-                                    <option value="MANDATORY">
-                                        <xsl:if test="partType = 'MANDATORY'">
-                                            <xsl:attribute name="selected">selected</xsl:attribute>
-                                        </xsl:if>
-                                        <xsl:text>MANDATORY</xsl:text>
-                                    </option>
-                                    <option value="OPTIONAL">
-                                        <xsl:if test="partType = 'OPTIONAL'">
-                                            <xsl:attribute name="selected">selected</xsl:attribute>
-                                        </xsl:if>
-                                        <xsl:text>OPTIONAL</xsl:text>
-                                    </option>
-                                </select>
+                                <span class="requirement-value">
+                                    <xsl:choose>
+                                        <xsl:when test="partType = 'MANDATORY'">Обязательная</xsl:when>
+                                        <xsl:otherwise>Вариативная</xsl:otherwise>
+                                    </xsl:choose>
+                                </span>
                             </td>
-                            <td>
-                                <div class="td-actions">
-                                    <button class="requirement-action requirement-edit"
-                                            type="button"
-                                            title="Редактировать">
-                                        <xsl:call-template name="edit-icon"/>
-                                    </button>
-                                    <button class="requirement-action requirement-delete"
-                                            type="button"
-                                            title="Удалить">
-                                        <xsl:attribute name="data-curriculum"><xsl:value-of select="$curriculum/id"/></xsl:attribute>
-                                        <xsl:attribute name="data-id"><xsl:value-of select="id"/></xsl:attribute>
-                                        <xsl:attribute name="data-name"><xsl:value-of select="subjectName"/></xsl:attribute>
-                                        <xsl:call-template name="cross-icon"/>
-                                    </button>
-                                    <button class="requirement-action requirement-save"
-                                            type="button"
-                                            title="Сохранить">
-                                        <svg xmlns="http://www.w3.org/2000/svg"
-                                             fill="none"
-                                             stroke="currentColor"
-                                             stroke-width="2.5"
-                                             viewBox="0 0 24 24">
-                                            <polyline points="20 6 9 17 4 12"/>
-                                        </svg>
-                                    </button>
-                                    <button class="requirement-action requirement-cancel"
-                                            type="button"
-                                            title="Отмена">
-                                        <xsl:call-template name="cross-icon"/>
-                                    </button>
-                                    <form class="requirement-edit-form"
-                                          method="post">
-                                        <xsl:attribute name="action">
-                                            <xsl:value-of select="concat('/federal/curriculums/', $curriculum/id, '/requirements/', id, '/edit')"/>
-                                        </xsl:attribute>
-                                        <xsl:call-template name="csrf-input"/>
-                                        <input class="requirement-form-grade"
-                                               name="grade"
-                                               type="hidden"/>
-                                        <input class="requirement-form-subject"
-                                               name="subjectName"
-                                               type="hidden"/>
-                                        <input class="requirement-form-hours"
-                                               name="weeklyHours"
-                                               type="hidden"/>
-                                        <input class="requirement-form-part"
-                                               name="partType"
-                                               type="hidden"/>
-                                    </form>
-                                </div>
-                            </td>
+                            <xsl:if test="$editable">
+                                <td>
+                                    <div class="td-actions">
+                                        <button class="requirement-action requirement-edit"
+                                                type="button"
+                                                title="Редактировать">
+                                            <xsl:call-template name="edit-icon"/>
+                                        </button>
+                                        <button class="requirement-action requirement-delete"
+                                                type="button"
+                                                title="Удалить">
+                                            <xsl:attribute name="data-curriculum"><xsl:value-of select="$curriculum/id"/></xsl:attribute>
+                                            <xsl:attribute name="data-id"><xsl:value-of select="id"/></xsl:attribute>
+                                            <xsl:attribute name="data-name">
+                                                <xsl:choose>
+                                                    <xsl:when test="partType = 'OPTIONAL'">Вариативная нагрузка, <xsl:value-of select="grade"/> класс</xsl:when>
+                                                    <xsl:otherwise><xsl:value-of select="subject/name"/></xsl:otherwise>
+                                                </xsl:choose>
+                                            </xsl:attribute>
+                                            <xsl:call-template name="cross-icon"/>
+                                        </button>
+                                        <button class="requirement-action requirement-save"
+                                                type="button"
+                                                title="Сохранить">
+                                            <svg xmlns="http://www.w3.org/2000/svg"
+                                                 fill="none"
+                                                 stroke="currentColor"
+                                                 stroke-width="2.5"
+                                                 viewBox="0 0 24 24">
+                                                <polyline points="20 6 9 17 4 12"/>
+                                            </svg>
+                                        </button>
+                                        <button class="requirement-action requirement-cancel"
+                                                type="button"
+                                                title="Отмена">
+                                            <xsl:call-template name="cross-icon"/>
+                                        </button>
+                                        <form class="requirement-edit-form"
+                                              method="post">
+                                            <xsl:attribute name="action">
+                                                <xsl:value-of select="concat('/federal/curriculums/', $curriculum/id, '/requirements/', id)"/>
+                                            </xsl:attribute>
+                                            <xsl:call-template name="csrf-input"/>
+                                            <input class="requirement-form-grade"
+                                                   name="grade"
+                                                   type="hidden"/>
+                                            <xsl:if test="partType = 'MANDATORY'">
+                                                <input class="requirement-form-subject"
+                                                       name="subjectId" type="hidden"/>
+                                            </xsl:if>
+                                            <input class="requirement-form-hours" name="hours" type="hidden"/>
+                                            <input class="requirement-form-part"
+                                                   name="partType"
+                                                   type="hidden"/>
+                                        </form>
+                                    </div>
+                                </td>
+                            </xsl:if>
                         </tr>
                     </xsl:for-each>
                 </tbody>
@@ -300,6 +330,42 @@
                 <xsl:with-param name="ellipsis" select="'...'"/>
             </xsl:call-template>
         </div>
+    </xsl:template>
+
+    <xsl:template name="grade-options">
+        <xsl:param name="selected" select="''"/>
+        <xsl:param name="grade" select="/surok/firstGrade"/>
+        <xsl:if test="$grade &lt;= /surok/lastGrade">
+            <option>
+                <xsl:attribute name="value"><xsl:value-of select="$grade"/></xsl:attribute>
+                <xsl:if test="$grade = $selected">
+                    <xsl:attribute name="selected">selected</xsl:attribute>
+                </xsl:if>
+                <xsl:value-of select="$grade"/>
+            </option>
+            <xsl:call-template name="grade-options">
+                <xsl:with-param name="selected" select="$selected"/>
+                <xsl:with-param name="grade" select="$grade + 1"/>
+            </xsl:call-template>
+        </xsl:if>
+    </xsl:template>
+
+    <xsl:template name="subject-options">
+        <xsl:param name="selected" select="''"/>
+        <xsl:param name="identifiers" select="true()"/>
+        <xsl:for-each select="/surok/subjects/subject">
+            <xsl:sort select="name"/>
+            <option>
+                <xsl:attribute name="value"><xsl:choose>
+                    <xsl:when test="$identifiers"><xsl:value-of select="id"/></xsl:when>
+                    <xsl:otherwise><xsl:value-of select="name"/></xsl:otherwise>
+                </xsl:choose></xsl:attribute>
+                <xsl:if test="id = $selected">
+                    <xsl:attribute name="selected">selected</xsl:attribute>
+                </xsl:if>
+                <xsl:value-of select="name"/>
+            </option>
+        </xsl:for-each>
     </xsl:template>
 
     <xsl:template name="sort-heading">

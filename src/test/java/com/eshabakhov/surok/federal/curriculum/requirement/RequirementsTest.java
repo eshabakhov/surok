@@ -10,14 +10,17 @@ import com.eshabakhov.surok.federal.curriculum.requirement.input.RqInputPart;
 import com.eshabakhov.surok.federal.curriculum.requirement.input.RqInputSubject;
 import com.eshabakhov.surok.media.MdJson;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.jdbc.Sql;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -30,7 +33,15 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  * @checkstyle NoJavadocForPrivateMethodsCheck (1000 lines)
  */
 @Testcontainers
+@DirtiesContext
 @SpringBootTest
+@Sql(
+    statements = """
+        INSERT INTO subject (id, origin, name)
+        VALUES (514, 'FEDERAL', 'Математика')
+        ON CONFLICT DO NOTHING;
+        """
+)
 @SuppressWarnings({"PMD.UnusedPrivateMethod", "UnusedMethod"})
 final class RequirementsTest {
 
@@ -65,9 +76,10 @@ final class RequirementsTest {
             Matchers.is(
                 JsonNodeFactory.instance.objectNode()
                     .put("id", 7L)
-                    .put("grade", 7)
-                    .put("subjectName", "Математика")
-                    .put("weeklyHours", 6)
+                    .put("grade", 7).<ObjectNode>set(
+                        "subject", JsonNodeFactory.instance.objectNode().put("id", 514L)
+                            .put("name", "Математика").put("origin", "FEDERAL")
+                    ).put("hours", 6)
                     .put("partType", "MANDATORY")
             )
         );
@@ -92,9 +104,10 @@ final class RequirementsTest {
             this.ctx.execute(
                 """
                 INSERT INTO public.federal_curriculum_requirement
-                (id, federal_curriculum_id, grade, subject_name, weekly_hours,
+                (id, federal_curriculum_id, grade, subject_id, hours,
                 part_type, is_deleted)
-                VALUES (?, 1, 5, 'Математика', 6, 'MANDATORY', false)
+                VALUES (?, 1, 5, (SELECT id FROM subject WHERE name = 'Математика'
+                AND NOT is_deleted), 6, 'MANDATORY', false)
                 """,
                 id
             );
@@ -111,7 +124,7 @@ final class RequirementsTest {
     private RequirementInput input(final String grade) {
         return new RqInputPart(
             new RqInputHours(
-                new RqInputSubject(new RqInputGrade(new RqInput(), grade), "Математика"),
+                new RqInputSubject(new RqInputGrade(new RqInput(), grade), "514"),
                 "6"
             ),
             "MANDATORY"

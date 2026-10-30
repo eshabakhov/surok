@@ -45,7 +45,7 @@ public final class FlCdRequirementBySubject implements FlConditional {
                     new ClasspathSql(
                         "curriculum/requirement/conditions/by-subject-name.sql"
                     ).text(),
-                    String.format("%%%s%%", this.subject.trim())
+                    this.subject.trim()
                 )
             );
         }

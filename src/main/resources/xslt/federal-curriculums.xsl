@@ -67,19 +67,21 @@
                 <h1>Федеральные учебные планы</h1>
                 <p class="page-subtitle">Справочник нормативных учебных планов для школ</p>
             </div>
-            <a class="btn btn-primary federal-curriculums-add"
-               href="/federal/curriculums/create"
-               title="Добавить федеральный учебный план в систему">
-                <svg xmlns="http://www.w3.org/2000/svg"
-                     fill="none"
-                     stroke="currentColor"
-                     stroke-width="2"
-                     viewBox="0 0 24 24">
-                    <line x1="12" x2="12" y1="5" y2="19"/>
-                    <line x1="5" x2="19" y1="12" y2="12"/>
-                </svg>
-                <xsl:text>Добавить план</xsl:text>
-            </a>
+            <xsl:if test="/surok/user/admin = 'true'">
+                <a class="btn btn-primary federal-curriculums-add"
+                   href="/federal/curriculums/create"
+                   title="Добавить федеральный учебный план в систему">
+                    <svg xmlns="http://www.w3.org/2000/svg"
+                         fill="none"
+                         stroke="currentColor"
+                         stroke-width="2"
+                         viewBox="0 0 24 24">
+                        <line x1="12" x2="12" y1="5" y2="19"/>
+                        <line x1="5" x2="19" y1="12" y2="12"/>
+                    </svg>
+                    <xsl:text>Добавить план</xsl:text>
+                </a>
+            </xsl:if>
         </div>
         <div class="federal-curriculums-content">
             <div class="search-wrap federal-curriculums-search">

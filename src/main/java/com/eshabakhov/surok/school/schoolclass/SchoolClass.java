@@ -20,6 +20,14 @@ public interface SchoolClass extends Printable {
     Long uid();
 
     /**
+     * Grade used to select applicable federal curriculum requirements.
+     *
+     * @return School grade
+     * @throws Exception If the class cannot be read
+     */
+    int grade() throws Exception;
+
+    /**
      * Revises the class using the supplied input.
      *
      * @param input SchoolClass input

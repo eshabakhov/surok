@@ -30,6 +30,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.PostgreSQLContainer;
@@ -43,6 +44,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  * @checkstyle ProhibitFieldsInTestClassesCheck (1000 lines)
  */
 @Testcontainers
+@DirtiesContext
 @SpringBootTest
 @SuppressWarnings({
     "PMD.UnusedPrivateMethod", "UnusedMethod", "PMD.UnitTestContainsTooManyAsserts"
@@ -94,7 +96,7 @@ final class CbsPostgresTest {
     void truncateSchools() {
         this.ctx.resultQuery(
             """
-                TRUNCATE TABLE public.school RESTART IDENTITY CASCADE
+                TRUNCATE TABLE public.school, subject RESTART IDENTITY CASCADE
                 """
         ).execute();
     }

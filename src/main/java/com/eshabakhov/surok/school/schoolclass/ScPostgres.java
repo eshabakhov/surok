@@ -25,6 +25,9 @@ public final class ScPostgres implements SchoolClass {
     /** Class identifier. */
     private final Long id;
 
+    /** Whether archived records are readable. */
+    private final boolean archived;
+
     /**
      * New school class.
      *
@@ -32,13 +35,30 @@ public final class ScPostgres implements SchoolClass {
      * @param id Class identifier
      */
     public ScPostgres(final DSLContext ctx, final Long id) {
+        this(ctx, id, false);
+    }
+
+    /**
+     * New school class with optional access to historical records.
+     *
+     * @param ctx Database context
+     * @param id Entity identifier
+     * @param archived Whether archived records are readable
+     */
+    public ScPostgres(final DSLContext ctx, final Long id, final boolean archived) {
         this.ctx = ctx;
         this.id = id;
+        this.archived = archived;
     }
 
     @Override
     public Long uid() {
         return this.id;
+    }
+
+    @Override
+    public int grade() throws Exception {
+        return this.details().get("grade", Integer.class);
     }
 
     @Override
@@ -84,14 +104,7 @@ public final class ScPostgres implements SchoolClass {
 
     @Override
     public <T> Media<T> print(final Media<T> media) throws Exception {
-        final Record selected = this.ctx.resultQuery(
-            new ClasspathSql("school-class/find-details.sql").text(), this.id, false
-        ).fetchOne();
-        if (selected == null) {
-            throw new SchoolClassNotFoundException(
-                String.format("School class with id=%d not found", this.id)
-            );
-        }
+        final Record selected = this.details();
         return media.with("id", selected.get("id", Long.class)).with(
             "name", String.format(
                 "%d%s", selected.get("grade", Integer.class),
@@ -99,5 +112,17 @@ public final class ScPostgres implements SchoolClass {
             )
         ).with("grade", selected.get("grade", Integer.class))
             .with("litera", selected.get("litera", String.class));
+    }
+
+    private Record details() throws Exception {
+        final Record selected = this.ctx.resultQuery(
+            new ClasspathSql("school-class/find-details.sql").text(), this.id, this.archived
+        ).fetchOne();
+        if (selected == null) {
+            throw new SchoolClassNotFoundException(
+                String.format("School class with id=%d not found", this.id)
+            );
+        }
+        return selected;
     }
 }

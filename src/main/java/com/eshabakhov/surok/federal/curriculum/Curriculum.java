@@ -6,6 +6,7 @@ package com.eshabakhov.surok.federal.curriculum;
 import com.eshabakhov.surok.Media;
 import com.eshabakhov.surok.Printable;
 import com.eshabakhov.surok.federal.curriculum.requirement.Requirements;
+import java.util.List;
 
 /**
  * Federal curriculum plan domain entity.
@@ -23,6 +24,14 @@ public interface Curriculum extends Printable {
      * @return Curriculum ID
      */
     Long uid();
+
+    /**
+     * Lists the grades belonging to this curriculum's education level.
+     *
+     * @return Ordered grades, or an empty list when the curriculum is unavailable
+     * @throws Exception If the education level cannot be read
+     */
+    List<Integer> grades() throws Exception;
 
     /**
      * Revises this curriculum with the supplied input.

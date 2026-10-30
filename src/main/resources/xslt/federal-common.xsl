@@ -22,24 +22,36 @@
                         </svg>
                         <span class="sidebar-link-label">Школы</span>
                     </a>
-                    <a class="sidebar-link"
-                       href="/federal/curriculums"
-                       title="Федеральные планы">
-                        <svg xmlns="http://www.w3.org/2000/svg"
-                             fill="none"
-                             stroke="currentColor"
-                             stroke-width="2"
-                             viewBox="0 0 24 24">
-                            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
-                            <path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5z"/>
-                            <path d="M8 7h8"/>
-                            <path d="M8 11h8"/>
-                            <path d="M8 15h5"/>
-                        </svg>
-                        <span class="sidebar-link-label">Федеральные планы</span>
-                    </a>
                 </xsl:if>
+
+                <div class="sidebar-section">Федеральный стандарт</div>
+                <a class="sidebar-link"
+                   href="/federal/curriculums"
+                   title="Федеральные планы">
+                    <svg xmlns="http://www.w3.org/2000/svg"
+                         fill="none"
+                         stroke="currentColor"
+                         stroke-width="2"
+                         viewBox="0 0 24 24">
+                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                        <path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5z"/>
+                        <path d="M8 7h8"/>
+                        <path d="M8 11h8"/>
+                        <path d="M8 15h5"/>
+                    </svg>
+                    <span class="sidebar-link-label">Планы</span>
+                </a>
+
+                <a class="sidebar-link" href="/federal/subjects" title="Предметы">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor"
+                         stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                        <path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5z"/>
+                    </svg>
+                    <span class="sidebar-link-label">Предметы</span>
+                </a>
                 <xsl:call-template name="school-navigation"/>
+
             </nav>
         </aside>
     </xsl:template>

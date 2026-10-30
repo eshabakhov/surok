@@ -61,15 +61,12 @@ public final class StsJqRequirement implements StsJooq {
             );
             fields.add(
                 DSL.field(
-                    DSL.name("public", "federal_curriculum_requirement", "subject_name"),
+                    DSL.name("public", "subject", "name"),
                     String.class
                 ).asc()
             );
             fields.add(
-                DSL.field(
-                    DSL.name("public", "federal_curriculum_requirement", "weekly_hours"),
-                    Integer.class
-                ).asc()
+                DSL.field(DSL.name("hours"), Integer.class).asc()
             );
             fields.add(
                 DSL.field(

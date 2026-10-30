@@ -26,6 +26,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.context.SecurityContextImpl;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.csrf.CsrfToken;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
@@ -44,6 +45,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  * @checkstyle ProhibitFieldsInTestClassesCheck (1000 lines)
  */
 @Testcontainers
+@DirtiesContext
 @SpringBootTest
 @AutoConfigureMockMvc
 @SuppressWarnings({
@@ -101,7 +103,7 @@ final class CbsHttpTest {
     void truncateSchools() {
         this.ctx.resultQuery(
             """
-                TRUNCATE TABLE public.school RESTART IDENTITY CASCADE
+                TRUNCATE TABLE public.school, subject RESTART IDENTITY CASCADE
                 """
         ).execute();
     }

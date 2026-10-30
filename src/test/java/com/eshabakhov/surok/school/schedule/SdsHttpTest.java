@@ -26,6 +26,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.context.SecurityContextImpl;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.csrf.CsrfToken;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
@@ -44,6 +45,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  * @checkstyle ProhibitFieldsInTestClassesCheck (1000 lines)
  */
 @Testcontainers
+@DirtiesContext
 @SpringBootTest
 @AutoConfigureMockMvc
 @SuppressWarnings({
@@ -93,7 +95,7 @@ final class SdsHttpTest {
     void truncateSchools() {
         this.ctx.resultQuery(
             """
-                TRUNCATE TABLE public.school RESTART IDENTITY CASCADE
+                TRUNCATE TABLE public.school, subject RESTART IDENTITY CASCADE
                 """
         ).execute();
     }
@@ -260,7 +262,7 @@ final class SdsHttpTest {
                 MockMvcRequestBuilders.get(String.format("/schools/1/schedules%s", path))
                     .session(this.session(Roles.RoleEnum.DIRECTOR, 1L))
             ).andExpect(MockMvcResultMatchers.status().isOk()).andExpect(
-                MockMvcResultMatchers.content().string(Matchers.not(Matchers.isEmptyString()))
+                MockMvcResultMatchers.content().string(Matchers.not(Matchers.emptyString()))
             );
         }
     }
@@ -728,14 +730,15 @@ final class SdsHttpTest {
         ).execute();
         this.ctx.resultQuery(
             """
-            INSERT INTO public.subject (id, school_id, name)
-            VALUES (50, 1, 'Математика'), (60, 2, 'Другой предмет')
+            INSERT INTO subject (id, school_id, origin, name)
+        VALUES (50, 1, 'SCHOOL', 'Математика'),
+        (60, 2, 'SCHOOL', 'Другой предмет')
             """
         ).execute();
         this.ctx.resultQuery(
             """
             INSERT INTO public.class_curriculum
-                (id, schedule_id, school_class_id, subject_id, hours_per_week)
+                (id, schedule_id, school_class_id, subject_id, hours)
             VALUES (100, 10, 30, 50, 5), (101, 10, 31, 50, 3), (102, 20, 40, 60, 2)
             """
         ).execute();
@@ -765,10 +768,10 @@ final class SdsHttpTest {
                 .accept("application/vnd.surok.class-loads.v1+json")
         ).andExpect(MockMvcResultMatchers.status().isOk())
             .andExpect(MockMvcResultMatchers.jsonPath("$.page.total").value(2)).andExpect(
-                MockMvcResultMatchers.jsonPath("$.items[0].subjectName").value("Математика")
+                MockMvcResultMatchers.jsonPath("$.items[0].subject.name").value("Математика")
             );
         this.mvc.perform(
-            MockMvcRequestBuilders.get("/schools/1/schedules/10/loads/create")
+            MockMvcRequestBuilders.get("/schools/1/schedules/10/loads/draft")
                 .session(this.session(Roles.RoleEnum.DIRECTOR, 1L)).accept(MediaType.TEXT_HTML)
         ).andExpect(MockMvcResultMatchers.status().isOk()).andExpect(
             MockMvcResultMatchers.content().string(Matchers.containsString("Renamed"))
@@ -778,7 +781,7 @@ final class SdsHttpTest {
                 MockMvcRequestBuilders.delete("/schools/1/schedules/10"), Roles.RoleEnum.DIRECTOR
             )
         ).andExpect(MockMvcResultMatchers.status().isNoContent());
-        for (final String suffix : List.of("", "/loads", "/loads/100", "/loads/create")) {
+        for (final String suffix : List.of("", "/loads", "/loads/100", "/loads/draft")) {
             this.mvc.perform(
                 MockMvcRequestBuilders.get(String.format("/schools/1/schedules/10%s", suffix))
                     .session(this.session(Roles.RoleEnum.VIEWER, 1L)).accept(MediaType.TEXT_HTML)

@@ -11,6 +11,11 @@ import com.eshabakhov.surok.federal.curriculum.requirement.RequirementAlreadyExi
 import com.eshabakhov.surok.federal.curriculum.requirement.RequirementFailedCreateException;
 import com.eshabakhov.surok.federal.curriculum.requirement.RequirementNotFoundException;
 import com.eshabakhov.surok.federal.curriculum.requirement.input.RequirementInputException;
+import com.eshabakhov.surok.federal.subject.SubjectAlreadyExistsException;
+import com.eshabakhov.surok.federal.subject.SubjectFailedCreateException;
+import com.eshabakhov.surok.federal.subject.SubjectNotFoundException;
+import com.eshabakhov.surok.federal.subject.SubjectReadOnlyException;
+import com.eshabakhov.surok.federal.subject.input.SubjectInputException;
 import com.eshabakhov.surok.school.SchoolFailedCreateException;
 import com.eshabakhov.surok.school.SchoolNotFoundException;
 import com.eshabakhov.surok.school.building.BuildingAlreadyExistsException;
@@ -25,18 +30,13 @@ import com.eshabakhov.surok.school.schedule.ScheduleAlreadyExistsException;
 import com.eshabakhov.surok.school.schedule.ScheduleFailedCreateException;
 import com.eshabakhov.surok.school.schedule.ScheduleNotFoundException;
 import com.eshabakhov.surok.school.schedule.input.ScheduleInputException;
-import com.eshabakhov.surok.school.schedule.load.LoadAlreadyExistsException;
-import com.eshabakhov.surok.school.schedule.load.LoadFailedCreateException;
 import com.eshabakhov.surok.school.schedule.load.LoadNotFoundException;
-import com.eshabakhov.surok.school.schedule.load.input.LoadInputException;
+import com.eshabakhov.surok.school.schedule.load.autofill.LoadDraftNotFoundException;
+import com.eshabakhov.surok.school.schedule.load.autofill.LoadInputException;
 import com.eshabakhov.surok.school.schoolclass.SchoolClassAlreadyExistsException;
 import com.eshabakhov.surok.school.schoolclass.SchoolClassFailedCreateException;
 import com.eshabakhov.surok.school.schoolclass.SchoolClassNotFoundException;
 import com.eshabakhov.surok.school.schoolclass.input.SchoolClassInputException;
-import com.eshabakhov.surok.school.subject.SubjectAlreadyExistsException;
-import com.eshabakhov.surok.school.subject.SubjectFailedCreateException;
-import com.eshabakhov.surok.school.subject.SubjectNotFoundException;
-import com.eshabakhov.surok.school.subject.input.SubjectInputException;
 import com.eshabakhov.surok.school.teacher.TeacherAlreadyExistsException;
 import com.eshabakhov.surok.school.teacher.TeacherFailedCreateException;
 import com.eshabakhov.surok.school.teacher.TeacherNotFoundException;
@@ -112,6 +112,20 @@ public final class RestResponseEntityExceptionHandler extends ResponseEntityExce
     }
 
     /**
+     * Reject an unauthorized mutation of a shared subject.
+     *
+     * @param request Incoming request
+     * @param exception Rejected mutation
+     * @return Forbidden response
+     */
+    @ExceptionHandler(SubjectReadOnlyException.class)
+    public static ResponseEntity<String> handleReadOnlySubject(
+        final HttpServletRequest request, final SubjectReadOnlyException exception
+    ) {
+        return new ErHttp(request, HttpStatus.FORBIDDEN, exception.getMessage()).response();
+    }
+
+    /**
      * Handle a missing resource.
      *
      * @param request Incoming request
@@ -126,6 +140,7 @@ public final class RestResponseEntityExceptionHandler extends ResponseEntityExce
             SchoolNotFoundException.class,
             SchoolClassNotFoundException.class,
             LoadNotFoundException.class,
+            LoadDraftNotFoundException.class,
             ScheduleNotFoundException.class,
             SubjectNotFoundException.class,
             TeacherNotFoundException.class
@@ -162,7 +177,6 @@ public final class RestResponseEntityExceptionHandler extends ResponseEntityExce
             BuildingAlreadyExistsException.class,
             CabinetAlreadyExistsException.class,
             ScheduleAlreadyExistsException.class,
-            LoadAlreadyExistsException.class,
             SchoolClassAlreadyExistsException.class,
             SubjectAlreadyExistsException.class,
             TeacherAlreadyExistsException.class
@@ -187,7 +201,6 @@ public final class RestResponseEntityExceptionHandler extends ResponseEntityExce
             CabinetFailedCreateException.class,
             SchoolFailedCreateException.class,
             SchoolClassFailedCreateException.class,
-            LoadFailedCreateException.class,
             ScheduleFailedCreateException.class,
             SubjectFailedCreateException.class,
             TeacherFailedCreateException.class

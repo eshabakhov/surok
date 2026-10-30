@@ -19,13 +19,13 @@ import org.junit.jupiter.params.provider.ValueSource;
 final class RqInputSubjectTest {
 
     @ParameterizedTest
-    @ValueSource(strings = {" Mathematics ", "A"})
+    @ValueSource(strings = {"173", "29"})
     void printsTrimmedSubject(final String subject) throws Exception {
         MatcherAssert.assertThat(
             "Subject must be printed without surrounding spaces",
             new RqInputSubject(new RqInput(), subject)
                 .print(new MdRqInput()).print(),
-            Matchers.is(Map.of("subjectName", subject.trim()))
+            Matchers.is(Map.of("subjectId", subject.trim()))
         );
     }
 

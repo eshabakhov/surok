@@ -4,7 +4,9 @@
 package com.eshabakhov.surok;
 
 /**
- * Printable collection items.
+ * Printable collection items, including an explicitly empty collection.
+ * For example, {@code media.with("classes", new PrItems("class", classes))}
+ * prints a JSON array or an XML container with repeated class elements.
  *
  * @since 0.0.1
  */
@@ -32,10 +34,6 @@ public final class PrItems implements Printable {
 
     @Override
     public <T> Media<T> print(final Media<T> media) throws Exception {
-        Media<T> printed = media;
-        for (final Printable item : this.items) {
-            printed = printed.with(this.name, item);
-        }
-        return printed;
+        return media.items(this.name, this.items);
     }
 }
