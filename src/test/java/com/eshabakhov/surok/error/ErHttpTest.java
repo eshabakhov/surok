@@ -3,7 +3,6 @@
  */
 package com.eshabakhov.surok.error;
 
-import jakarta.servlet.RequestDispatcher;
 import java.util.Map;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
@@ -17,7 +16,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockHttpServletRequest;
 
 /**
- * Error pages, data formats and safe servlet fallbacks.
+ * Error pages and data formats, including unsupported Accept headers.
  *
  * @since 0.0.1
  */
@@ -126,32 +125,6 @@ final class ErHttpTest {
                 Matchers.containsString("&lt;script&gt;alert(1)&lt;/script&gt;"),
                 Matchers.not(Matchers.containsString("<script>alert(1)</script>"))
             )
-        );
-    }
-
-    @Test
-    void hidesServletExceptionDetails() {
-        final MockHttpServletRequest request = ErHttpTest.request("application/json");
-        request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE, 500);
-        request.setAttribute(RequestDispatcher.ERROR_MESSAGE, "SQL password=secret");
-        request.setAttribute(
-            RequestDispatcher.ERROR_EXCEPTION, new IllegalStateException("secret")
-        );
-        MatcherAssert.assertThat(
-            new ErrorHttp().page(request).getBody(),
-            Matchers.allOf(
-                Matchers.containsString("\"status\":500"),
-                Matchers.not(Matchers.containsString("secret")),
-                Matchers.not(Matchers.containsString("SQL"))
-            )
-        );
-    }
-
-    @Test
-    void fallsBackWhenServletStatusIsMissing() {
-        MatcherAssert.assertThat(
-            new ErrorHttp().page(ErHttpTest.request("text/html")).getStatusCode(),
-            Matchers.is(HttpStatus.INTERNAL_SERVER_ERROR)
         );
     }
 

@@ -8,7 +8,6 @@ import com.eshabakhov.surok.federal.curriculum.CurriculumFailedCreateException;
 import com.eshabakhov.surok.federal.curriculum.CurriculumNotFoundException;
 import com.eshabakhov.surok.federal.curriculum.input.CurriculumInputException;
 import com.eshabakhov.surok.federal.curriculum.requirement.RequirementAlreadyExistsException;
-import com.eshabakhov.surok.federal.curriculum.requirement.RequirementFailedCreateException;
 import com.eshabakhov.surok.federal.curriculum.requirement.RequirementNotFoundException;
 import com.eshabakhov.surok.federal.curriculum.requirement.input.RequirementInputException;
 import com.eshabakhov.surok.federal.subject.SubjectAlreadyExistsException;
@@ -42,31 +41,44 @@ import com.eshabakhov.surok.school.teacher.TeacherFailedCreateException;
 import com.eshabakhov.surok.school.teacher.TeacherNotFoundException;
 import com.eshabakhov.surok.school.teacher.input.TeacherInputException;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.servlet.HandlerExceptionResolver;
+import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 /**
  * Global exception handler for REST controllers.
  *
  * <p>This class provides centralized exception handling for all
- * REST controllers in the application.</p>
+ * REST controllers in the application, including a last-resort resolver after
+ * the MVC resolvers have checked specific exceptions and their causes.</p>
  *
  * @since 0.0.1
  */
 @ControllerAdvice
+@Order(Ordered.LOWEST_PRECEDENCE)
 @SuppressWarnings(
     "PMD.ProhibitPublicStaticMethods"
 )
-public final class RestResponseEntityExceptionHandler extends ResponseEntityExceptionHandler {
+public final class RestResponseEntityExceptionHandler extends ResponseEntityExceptionHandler
+    implements HandlerExceptionResolver {
 
     private RestResponseEntityExceptionHandler() { }
 
@@ -197,7 +209,6 @@ public final class RestResponseEntityExceptionHandler extends ResponseEntityExce
     @ExceptionHandler(
         {
             CurriculumFailedCreateException.class,
-            RequirementFailedCreateException.class,
             CabinetFailedCreateException.class,
             SchoolFailedCreateException.class,
             SchoolClassFailedCreateException.class,
@@ -208,6 +219,62 @@ public final class RestResponseEntityExceptionHandler extends ResponseEntityExce
     )
     public static ResponseEntity<String> handleServerException(final HttpServletRequest request) {
         return new ErHttp(request, HttpStatus.INTERNAL_SERVER_ERROR).response();
+    }
+
+    /**
+     * Handle an authorization failure raised by a controller.
+     *
+     * @param request Incoming request
+     * @return Forbidden response
+     */
+    @ExceptionHandler(AccessDeniedException.class)
+    public static ResponseEntity<String> handleAccessDeniedException(
+        final HttpServletRequest request
+    ) {
+        return new ErHttp(request, HttpStatus.FORBIDDEN).response();
+    }
+
+    /**
+     * Handle an authentication failure raised by a controller.
+     *
+     * @param request Incoming request
+     * @return Authentication challenge
+     */
+    @ExceptionHandler(AuthenticationException.class)
+    public static ResponseEntity<String> handleAuthenticationException(
+        final HttpServletRequest request
+    ) {
+        final ResponseEntity<String> error = new ErHttp(
+            request, HttpStatus.UNAUTHORIZED
+        ).response();
+        return ResponseEntity.status(error.getStatusCode()).headers(error.getHeaders())
+            .header(HttpHeaders.WWW_AUTHENTICATE, "Basic realm=\"Surok\"").body(error.getBody());
+    }
+
+    @Override
+    public ModelAndView resolveException(
+        final HttpServletRequest request, final HttpServletResponse response,
+        final Object handler, final Exception exception
+    ) {
+        this.logger.error("Request processing failed", exception);
+        if (!response.isCommitted()) {
+            final ResponseEntity<String> error = new ErHttp(
+                request, HttpStatus.INTERNAL_SERVER_ERROR
+            ).response();
+            response.setStatus(error.getStatusCode().value());
+            response.setCharacterEncoding(StandardCharsets.UTF_8.name());
+            error.getHeaders().forEach(
+                (name, values) -> values.forEach(value -> response.addHeader(name, value))
+            );
+            if (error.getBody() != null) {
+                try {
+                    response.getWriter().write(error.getBody());
+                } catch (final IOException failure) {
+                    throw new UncheckedIOException("Failed to write the error response", failure);
+                }
+            }
+        }
+        return new ModelAndView();
     }
 
     @Override

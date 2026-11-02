@@ -7,13 +7,13 @@ import com.eshabakhov.surok.User;
 import com.eshabakhov.surok.user.AuthUser;
 import com.eshabakhov.surok.user.Roles;
 import com.eshabakhov.surok.user.UrsPostgres;
-import jakarta.servlet.DispatcherType;
-import jakarta.servlet.RequestDispatcher;
 import java.util.UUID;
+import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -39,10 +39,14 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  */
 @Testcontainers
 @DirtiesContext
-@SpringBootTest
+@SpringBootTest(
+    properties = {
+        "app.security.docs.enabled=true", "logging.level.com.eshabakhov.surok.error=OFF"
+    }
+)
 @AutoConfigureMockMvc
 @SuppressWarnings("PMD.UnitTestShouldIncludeAssert")
-final class ErrorHttpTest {
+final class RestResponseEntityExceptionHandlerTest {
 
     /** Test database. */
     @Container
@@ -56,14 +60,17 @@ final class ErrorHttpTest {
     private final DSLContext ctx;
 
     @Autowired
-    ErrorHttpTest(final MockMvc mvc, final DSLContext ctx) {
+    RestResponseEntityExceptionHandlerTest(final MockMvc mvc, final DSLContext ctx) {
         this.mvc = mvc;
         this.ctx = ctx;
     }
 
     @ParameterizedTest
     @ValueSource(
-        strings = {"/schools/999999999", "/federal/curriculums/999999999", "/css/missing.css"}
+        strings = {
+            "/schools/999999999", "/federal/curriculums/999999999",
+            "/css/missing.css", "/несуществующий-ресурс"
+        }
     )
     void rendersMissingResources(final String path) throws Exception {
         this.mvc.perform(
@@ -72,7 +79,7 @@ final class ErrorHttpTest {
             )
         ).andExpect(MockMvcResultMatchers.status().isNotFound()).andExpect(
             MockMvcResultMatchers.content().contentTypeCompatibleWith(MediaType.TEXT_HTML)
-        ).andExpect(ErrorHttpTest.page(404));
+        ).andExpect(RestResponseEntityExceptionHandlerTest.page(404));
     }
 
     @Test
@@ -96,7 +103,7 @@ final class ErrorHttpTest {
                     SecurityMockMvcRequestPostProcessors.user(this.administrator())
                 )
         ).andExpect(MockMvcResultMatchers.status().isBadRequest())
-            .andExpect(ErrorHttpTest.page(400));
+            .andExpect(RestResponseEntityExceptionHandlerTest.page(400));
     }
 
     @Test
@@ -120,7 +127,7 @@ final class ErrorHttpTest {
                 .with(SecurityMockMvcRequestPostProcessors.csrf())
         ).andExpect(MockMvcResultMatchers.status().isMethodNotAllowed()).andExpect(
             MockMvcResultMatchers.header().string("Allow", Matchers.containsString("GET"))
-        ).andExpect(ErrorHttpTest.page(405));
+        ).andExpect(RestResponseEntityExceptionHandlerTest.page(405));
     }
 
     @Test
@@ -130,7 +137,7 @@ final class ErrorHttpTest {
                 .contentType(MediaType.APPLICATION_JSON).content("{}")
                 .with(SecurityMockMvcRequestPostProcessors.csrf())
         ).andExpect(MockMvcResultMatchers.status().isUnsupportedMediaType())
-            .andExpect(ErrorHttpTest.page(415));
+            .andExpect(RestResponseEntityExceptionHandlerTest.page(415));
     }
 
     @ParameterizedTest
@@ -162,7 +169,7 @@ final class ErrorHttpTest {
             MockMvcRequestBuilders.post("/users/register").accept(MediaType.TEXT_HTML)
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
         ).andExpect(MockMvcResultMatchers.status().isForbidden())
-            .andExpect(ErrorHttpTest.page(403));
+            .andExpect(RestResponseEntityExceptionHandlerTest.page(403));
     }
 
     @Test
@@ -171,26 +178,80 @@ final class ErrorHttpTest {
             MockMvcRequestBuilders.get("/schools").accept(MediaType.TEXT_HTML)
                 .with(SecurityMockMvcRequestPostProcessors.user("reader").roles("VIEWER"))
         ).andExpect(MockMvcResultMatchers.status().isForbidden())
-            .andExpect(ErrorHttpTest.page(403));
+            .andExpect(RestResponseEntityExceptionHandlerTest.page(403));
     }
 
     @Test
-    void permitsAnonymousErrorDispatchWithoutLeakingDetails() throws Exception {
-        this.mvc.perform(
-            MockMvcRequestBuilders.get("/error").with(
-                request -> {
-                    request.setDispatcherType(DispatcherType.ERROR);
-                    return request;
-                }
-            ).requestAttr(RequestDispatcher.ERROR_STATUS_CODE, 500)
-                .requestAttr(RequestDispatcher.ERROR_MESSAGE, "password=secret")
-                .accept(MediaType.TEXT_HTML)
-        ).andExpect(MockMvcResultMatchers.status().isInternalServerError())
-            .andExpect(ErrorHttpTest.page(500)).andExpect(
-                MockMvcResultMatchers.content().string(
-                    Matchers.not(Matchers.containsString("secret"))
+    void leavesErrorPathUnmapped() throws Exception {
+        MatcherAssert.assertThat(
+            "The error path still exposed a dedicated endpoint",
+            this.mvc.perform(
+                MockMvcRequestBuilders.get("/error").accept(MediaType.APPLICATION_JSON).with(
+                    SecurityMockMvcRequestPostProcessors.user("читатель").roles("ADMIN")
                 )
-            );
+            ).andReturn().getResponse().getStatus(),
+            Matchers.is(404)
+        );
+    }
+
+    @Test
+    void omitsErrorOperationsFromApiDocumentation() throws Exception {
+        this.mvc.perform(
+            MockMvcRequestBuilders.get("/api-docs").with(
+                SecurityMockMvcRequestPostProcessors.user("читатель").roles("ADMIN")
+            )
+        ).andExpect(
+            MockMvcResultMatchers.jsonPath("$.paths", Matchers.not(Matchers.hasKey("/error")))
+        );
+    }
+
+    @ParameterizedTest
+    @CsvSource(
+        {
+            "text/html,text/html", "application/vnd.surok.school-v1+json,application/json",
+            "application/vnd.surok.school-v1+xml,application/xml"
+        }
+    )
+    void returnsUnexpectedFailuresInTheOriginalResponse(final String accept, final String type)
+        throws Exception {
+        MatcherAssert.assertThat(
+            "An unexpected database failure escaped the resource response or exposed its details",
+            this.mvc.perform(
+                MockMvcRequestBuilders.post("/schools").accept(accept)
+                    .contentType("application/vnd.surok.school-v1+json")
+                    .content("{\"name\":\"Секретная\\u0000школа\"}")
+                    .with(SecurityMockMvcRequestPostProcessors.csrf()).with(
+                        SecurityMockMvcRequestPostProcessors.user(this.administrator())
+                    )
+            ).andReturn().getResponse(),
+            Matchers.allOf(
+                Matchers.hasProperty("status", Matchers.is(500)),
+                Matchers.hasProperty("contentType", Matchers.startsWith(type)),
+                Matchers.hasProperty("forwardedUrl", Matchers.nullValue()),
+                Matchers.hasProperty("redirectedUrl", Matchers.nullValue()),
+                Matchers.hasProperty(
+                    "contentAsString", Matchers.allOf(
+                        Matchers.containsString("500"),
+                        Matchers.not(Matchers.containsString("Секретная")),
+                        Matchers.not(Matchers.containsString("SQL"))
+                    )
+                )
+            )
+        );
+    }
+
+    @Test
+    void preservesSpecificUserExceptionHandling() throws Exception {
+        MatcherAssert.assertThat(
+            "The generic exception handler replaced the user validation response",
+            this.mvc.perform(
+                MockMvcRequestBuilders.post("/api/users").accept(MediaType.APPLICATION_JSON)
+                    .contentType(MediaType.APPLICATION_JSON).content("{}").with(
+                        SecurityMockMvcRequestPostProcessors.user("читатель").roles("ADMIN")
+                    )
+            ).andReturn().getResponse().getStatus(),
+            Matchers.is(400)
+        );
     }
 
     @ParameterizedTest
@@ -211,9 +272,15 @@ final class ErrorHttpTest {
      */
     @DynamicPropertySource
     static void properties(final DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", ErrorHttpTest.POSTGRES::getJdbcUrl);
-        registry.add("spring.datasource.username", ErrorHttpTest.POSTGRES::getUsername);
-        registry.add("spring.datasource.password", ErrorHttpTest.POSTGRES::getPassword);
+        registry.add(
+            "spring.datasource.url", RestResponseEntityExceptionHandlerTest.POSTGRES::getJdbcUrl
+        );
+        registry.add(
+            "spring.datasource.username", RestResponseEntityExceptionHandlerTest.POSTGRES::getUsername
+        );
+        registry.add(
+            "spring.datasource.password", RestResponseEntityExceptionHandlerTest.POSTGRES::getPassword
+        );
         registry.add("spring.liquibase.enabled", () -> true);
     }
 
