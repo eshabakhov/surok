@@ -5,6 +5,7 @@ package com.eshabakhov.surok.federal.curriculum;
 
 import com.eshabakhov.surok.Media;
 import com.eshabakhov.surok.federal.curriculum.requirement.Requirements;
+import java.util.List;
 
 /**
  * Version 2 implementation of {@link Curriculum}.
@@ -25,6 +26,11 @@ public final class CrV2 implements Curriculum {
      */
     public CrV2(final Curriculum origin) {
         this.origin = origin;
+    }
+
+    @Override
+    public List<Integer> grades() throws Exception {
+        return this.origin.grades();
     }
 
     @Override

@@ -3,10 +3,10 @@
  */
 package com.eshabakhov.surok.school;
 
+import com.eshabakhov.surok.federal.subject.SbsPostgres;
 import com.eshabakhov.surok.school.building.BdsPostgres;
 import com.eshabakhov.surok.school.schedule.SdsPostgres;
 import com.eshabakhov.surok.school.schoolclass.ScsPostgres;
-import com.eshabakhov.surok.school.subject.SbsPostgres;
 import com.eshabakhov.surok.school.teacher.ThsPostgres;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.AfterEach;
@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.PostgreSQLContainer;
@@ -27,6 +28,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  * @checkstyle ProhibitFieldsInTestClassesCheck (1000 lines)
  */
 @Testcontainers
+@DirtiesContext
 @SpringBootTest
 @SuppressWarnings({"PMD.UnusedPrivateMethod", "UnusedMethod"})
 final class SlPostgresTest {
@@ -51,7 +53,7 @@ final class SlPostgresTest {
     void truncateSchool() {
         this.ctx.resultQuery(
             """
-                TRUNCATE TABLE public.school CASCADE
+                TRUNCATE TABLE public.school, subject CASCADE
                 """
         ).execute();
     }

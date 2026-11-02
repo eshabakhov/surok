@@ -5,6 +5,7 @@ package com.eshabakhov.surok.federal.curriculum;
 
 import com.eshabakhov.surok.Media;
 import com.eshabakhov.surok.federal.curriculum.requirement.Requirements;
+import java.util.List;
 
 /**
  * Curriculum representation with its requirements.
@@ -31,6 +32,11 @@ public final class CrWithRequirements implements Curriculum {
     ) {
         this.origin = origin;
         this.requirements = requirements;
+    }
+
+    @Override
+    public List<Integer> grades() throws Exception {
+        return this.origin.grades();
     }
 
     @Override

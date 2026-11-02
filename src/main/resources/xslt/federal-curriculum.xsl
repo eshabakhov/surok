@@ -65,23 +65,25 @@
             <div>
                 <h1 class="title-with-action">
                     <span><xsl:value-of select="$curriculum/title"/></span>
-                    <a class="btn-icon-edit"
-                       title="Редактировать"
-                       aria-label="Редактировать">
-                        <xsl:attribute name="href">
-                            <xsl:value-of select="concat('/federal/curriculums/', $curriculum/id, '/edit')"/>
-                        </xsl:attribute>
-                        <svg xmlns="http://www.w3.org/2000/svg"
-                             fill="none"
-                             height="15"
-                             stroke="currentColor"
-                             stroke-width="2"
-                             viewBox="0 0 24 24"
-                             width="15">
-                            <path d="M12 20h9"/>
-                            <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>
-                        </svg>
-                    </a>
+                    <xsl:if test="/surok/user/admin = 'true'">
+                        <a class="btn-icon-edit"
+                           title="Редактировать"
+                           aria-label="Редактировать">
+                            <xsl:attribute name="href">
+                                <xsl:value-of select="concat('/federal/curriculums/', $curriculum/id, '/edit')"/>
+                            </xsl:attribute>
+                            <svg xmlns="http://www.w3.org/2000/svg"
+                                 fill="none"
+                                 height="15"
+                                 stroke="currentColor"
+                                 stroke-width="2"
+                                 viewBox="0 0 24 24"
+                                 width="15">
+                                <path d="M12 20h9"/>
+                                <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>
+                            </svg>
+                        </a>
+                    </xsl:if>
                 </h1>
                 <p class="page-subtitle">Информация о федеральном учебном плане</p>
             </div>
@@ -93,11 +95,11 @@
             </xsl:call-template>
             <xsl:call-template name="info-row">
                 <xsl:with-param name="label" select="'Уровень:'"/>
-                <xsl:with-param name="value" select="$curriculum/level"/>
+                <xsl:with-param name="value" select="/surok/levels/level[code = $curriculum/level]/title"/>
             </xsl:call-template>
             <xsl:call-template name="info-row">
                 <xsl:with-param name="label" select="'Неделя:'"/>
-                <xsl:with-param name="value" select="$curriculum/week"/>
+                <xsl:with-param name="value" select="/surok/weeks/week[code = $curriculum/week]/title"/>
             </xsl:call-template>
             <xsl:call-template name="info-row">
                 <xsl:with-param name="label" select="'Версия:'"/>
@@ -131,18 +133,20 @@
                 </span>
             </div>
         </div>
-        <div class="details-footer-actions">
-            <button class="btn-outline-action curriculum-delete btn-delete-curriculum"
-                    type="submit">
-                <xsl:attribute name="data-id">
-                    <xsl:value-of select="$curriculum/id"/>
-                </xsl:attribute>
-                <xsl:attribute name="data-name">
-                    <xsl:value-of select="$curriculum/title"/>
-                </xsl:attribute>
-                <xsl:text>Удалить план</xsl:text>
-            </button>
-        </div>
+        <xsl:if test="/surok/user/admin = 'true'">
+            <div class="details-footer-actions">
+                <button class="btn-outline-action curriculum-delete btn-delete-curriculum"
+                        type="submit">
+                    <xsl:attribute name="data-id">
+                        <xsl:value-of select="$curriculum/id"/>
+                    </xsl:attribute>
+                    <xsl:attribute name="data-name">
+                        <xsl:value-of select="$curriculum/title"/>
+                    </xsl:attribute>
+                    <xsl:text>Удалить план</xsl:text>
+                </button>
+            </div>
+        </xsl:if>
     </xsl:template>
 
     <xsl:template name="info-row">

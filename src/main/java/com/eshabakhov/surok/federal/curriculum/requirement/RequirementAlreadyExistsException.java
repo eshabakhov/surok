@@ -16,6 +16,15 @@ public final class RequirementAlreadyExistsException extends Exception {
      * @since 0.0.1
      */
     public RequirementAlreadyExistsException() {
-        super("Federal curriculum requirement already exists");
+        this(null);
+    }
+
+    /**
+     * New conflict preserving the database constraint failure.
+     *
+     * @param cause Original failure
+     */
+    public RequirementAlreadyExistsException(final Throwable cause) {
+        super("Federal curriculum requirement already exists", cause);
     }
 }

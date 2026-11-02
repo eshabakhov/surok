@@ -26,6 +26,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 import org.springframework.security.web.csrf.CsrfToken;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
@@ -44,6 +45,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  * @checkstyle ProhibitFieldsInTestClassesCheck (1000 lines)
  */
 @Testcontainers
+@DirtiesContext
 @SpringBootTest
 @AutoConfigureMockMvc
 @SuppressWarnings({"PMD.UnitTestShouldIncludeAssert", "UnusedMethod"})
@@ -83,7 +85,7 @@ final class AccountHttpTest {
     @AfterEach
     void truncateAccounts() {
         this.ctx.execute(
-            "TRUNCATE TABLE public.school, public.\"user\" RESTART IDENTITY CASCADE"
+            "TRUNCATE TABLE public.school, subject, public.\"user\" RESTART IDENTITY CASCADE"
         );
     }
 

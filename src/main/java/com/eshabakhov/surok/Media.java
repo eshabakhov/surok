@@ -71,6 +71,25 @@ public interface Media<T> {
     Media<T> with(Printable value) throws Exception;
 
     /**
+     * Prints collection elements at the current level, including an empty collection.
+     * XML uses the supplied element name; JSON exposes the collection as an items array.
+     * For example, a named parent can embed {@code new PrItems("class", classes)}.
+     *
+     * @param name Singular element name
+     * @param values Collection elements
+     * @return Updated media
+     * @throws Exception If an element cannot be printed
+     */
+    default Media<T> items(final String name, final Iterable<? extends Printable> values)
+        throws Exception {
+        Media<T> result = this;
+        for (final Printable value : values) {
+            result = result.with(name, value);
+        }
+        return result;
+    }
+
+    /**
      * Adds result pagination to the media.
      *
      * @param name Field name

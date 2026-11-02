@@ -38,9 +38,11 @@ public final class RqInputHours implements RequirementInput {
             );
         }
         try {
-            return this.origin.print(media).with(
-                "weeklyHours", Integer.valueOf(this.hours.trim())
-            );
+            final int value = Integer.parseInt(this.hours.trim());
+            if (value < 0) {
+                throw new RequirementInputException("Requirement hours must not be negative");
+            }
+            return this.origin.print(media).with("hours", value);
         } catch (final NumberFormatException exception) {
             throw new RequirementInputException(
                 String.format(

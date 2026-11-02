@@ -26,6 +26,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.context.SecurityContextImpl;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.csrf.CsrfToken;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
@@ -44,6 +45,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  * @checkstyle ProhibitFieldsInTestClassesCheck (1000 lines)
  */
 @Testcontainers
+@DirtiesContext
 @SpringBootTest
 @AutoConfigureMockMvc
 @SuppressWarnings({
@@ -93,7 +95,7 @@ final class ThsHttpTest {
     void truncateSchools() {
         this.ctx.resultQuery(
             """
-                TRUNCATE TABLE public.school RESTART IDENTITY CASCADE
+                TRUNCATE TABLE public.school, subject RESTART IDENTITY CASCADE
                 """
         ).execute();
     }
@@ -260,7 +262,7 @@ final class ThsHttpTest {
                 MockMvcRequestBuilders.get(String.format("/schools/1/teachers%s", path))
                     .session(this.session(Roles.RoleEnum.DIRECTOR, 1L))
             ).andExpect(MockMvcResultMatchers.status().isOk()).andExpect(
-                MockMvcResultMatchers.content().string(Matchers.not(Matchers.isEmptyString()))
+                MockMvcResultMatchers.content().string(Matchers.not(Matchers.emptyString()))
             );
         }
     }

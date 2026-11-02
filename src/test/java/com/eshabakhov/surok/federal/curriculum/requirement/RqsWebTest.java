@@ -28,8 +28,10 @@ import org.jooq.DSLContext;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.jdbc.Sql;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -42,7 +44,15 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  * @checkstyle NoJavadocForPrivateMethodsCheck (1000 lines)
  */
 @Testcontainers
+@DirtiesContext
 @SpringBootTest
+@Sql(
+    statements = """
+        INSERT INTO subject (id, origin, name)
+        VALUES (514, 'FEDERAL', 'Математика')
+        ON CONFLICT DO NOTHING;
+        """
+)
 @SuppressWarnings({"PMD.UnusedPrivateMethod", "UnusedMethod"})
 final class RqsWebTest {
 
@@ -186,9 +196,10 @@ final class RqsWebTest {
             this.ctx.execute(
                 """
                 INSERT INTO public.federal_curriculum_requirement
-                (id, federal_curriculum_id, grade, subject_name, weekly_hours,
+                (id, federal_curriculum_id, grade, subject_id, hours,
                 part_type, is_deleted)
-                VALUES (?, 1, 5, 'Математика', 6, 'MANDATORY', false)
+                VALUES (?, 1, 5, (SELECT id FROM subject WHERE name = 'Математика'
+                AND NOT is_deleted), 6, 'MANDATORY', false)
                 """,
                 id
             );
@@ -205,7 +216,7 @@ final class RqsWebTest {
     private RequirementInput input(final String grade) {
         return new RqInputPart(
             new RqInputHours(
-                new RqInputSubject(new RqInputGrade(new RqInput(), grade), "Математика"),
+                new RqInputSubject(new RqInputGrade(new RqInput(), grade), "514"),
                 "6"
             ),
             "MANDATORY"

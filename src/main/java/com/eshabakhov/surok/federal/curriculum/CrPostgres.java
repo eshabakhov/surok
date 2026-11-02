@@ -8,6 +8,7 @@ import com.eshabakhov.surok.federal.curriculum.input.MdCrInput;
 import com.eshabakhov.surok.federal.curriculum.requirement.Requirements;
 import com.eshabakhov.surok.federal.curriculum.requirement.RqsPostgres;
 import com.eshabakhov.surok.sql.ClasspathSql;
+import java.util.List;
 import java.util.Map;
 import org.jooq.DSLContext;
 
@@ -38,6 +39,15 @@ public final class CrPostgres implements Curriculum {
     public CrPostgres(final DSLContext ctx, final Long fid) {
         this.ctx = ctx;
         this.fid = fid;
+    }
+
+    @Override
+    public List<Integer> grades() throws Exception {
+        return List.copyOf(
+            this.ctx.resultQuery(
+                new ClasspathSql("curriculum/grades.sql").text(), this.fid
+            ).fetch("grade", Integer.class)
+        );
     }
 
     @Override

@@ -41,15 +41,6 @@
                         </xsl:if>
                         <span><xsl:value-of select="name"/></span>
                     </a>
-                    <xsl:if test="id = /surok/schedule/id">
-                        <a class="sidebar-subnav-link active" title="Учебная нагрузка"
-                           href="{$school-path}/schedules/{id}/loads">
-                            <xsl:if test="not(/surok/loads)">
-                                <xsl:attribute name="class">sidebar-subnav-link</xsl:attribute>
-                            </xsl:if>
-                            <xsl:text>Учебная нагрузка</xsl:text>
-                        </a>
-                    </xsl:if>
                 </xsl:for-each>
             </div>
         </xsl:if>

@@ -3,11 +3,16 @@
  */
 package com.eshabakhov.surok.media;
 
+import com.eshabakhov.surok.PrItems;
+import com.eshabakhov.surok.federal.curriculum.Curriculum;
+import com.eshabakhov.surok.federal.curriculum.LvLocalized;
+import com.eshabakhov.surok.federal.curriculum.WkLocalized;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
@@ -24,6 +29,119 @@ import org.junit.jupiter.params.provider.ValueSource;
  * @since 0.0.1
  */
 final class XsClasspathTest {
+
+    /**
+     * Verifies federal navigation precedes school management on every page family.
+     *
+     * @param stylesheet Page stylesheet
+     * @throws Exception If fixture data cannot be read
+     */
+    @ParameterizedTest
+    @ValueSource(strings = {"schedules", "federal-curriculums"})
+    void placesFederalNavigationBeforeSchoolManagement(final String stylesheet) throws Exception {
+        final String page = new XsClasspath(String.format("xslt/%s.xsl", stylesheet), "list")
+            .transform(Files.readString(Path.of("src/test/resources/pages.xml")));
+        MatcherAssert.assertThat(
+            "The federal navigation did not precede general and school navigation",
+            page.substring(page.indexOf("<aside"), page.indexOf("</aside>")),
+            Matchers.stringContainsInOrder(
+                "Федеральный стандарт", "Планы", "Предметы", "Общее", "Школы"
+            )
+        );
+    }
+
+    /**
+     * Verifies forms display translated titles while submitting stable codes.
+     *
+     * @param view Form view
+     * @param stylesheet Page stylesheet
+     * @param selection Selected attribute
+     * @throws Exception If levels cannot be printed
+     */
+    @ParameterizedTest
+    @CsvSource({
+        "create, federal-curriculums, ''",
+        "edit, federal-curriculum, ' selected=\"\"'"
+    })
+    void displaysRussianLevelsInCurriculumForms(
+        final String view, final String stylesheet, final String selection
+    ) throws Exception {
+        MatcherAssert.assertThat(
+            "The curriculum form lost Russian titles or changed the submitted level",
+            new XsClasspath(
+                String.format("xslt/%s.xsl", stylesheet), view
+            ).transform(
+                new MdXml("surok").with(
+                    "levels", new PrItems(
+                        "level", List.of(Curriculum.Level.values()).stream()
+                            .map(level -> new LvLocalized(level, Locale.forLanguageTag("ru")))
+                            .toList()
+                    )
+                ).print().replace(
+                    "</surok>",
+                    """
+                    <curriculums><curriculum><id>17</id><level>BASIC</level>
+                    </curriculum></curriculums></surok>
+                    """
+                )
+            ),
+            Matchers.allOf(
+                Matchers.containsString("value=\"PRIMARY\">Начальное общее образование</option>"),
+                Matchers.containsString("value=\"SECONDARY\">Среднее общее образование</option>"),
+                Matchers.containsString(
+                    String.format(
+                        "value=\"BASIC\"%s>Основное общее образование</option>", selection
+                    )
+                )
+            )
+        );
+    }
+
+    /**
+     * Verifies forms display translated titles while submitting stable codes.
+     *
+     * @param view Form view
+     * @param stylesheet Page stylesheet
+     * @param selection Selected attribute
+     * @throws Exception If weeks cannot be printed
+     */
+    @ParameterizedTest
+    @CsvSource({
+        "create, federal-curriculums, ''",
+        "edit, federal-curriculum, ' selected=\"\"'"
+    })
+    void displaysRussianWeeksInCurriculumForms(
+        final String view, final String stylesheet, final String selection
+    ) throws Exception {
+        MatcherAssert.assertThat(
+            "The curriculum form lost Russian titles or changed the submitted week",
+            new XsClasspath(
+                String.format("xslt/%s.xsl", stylesheet), view
+            ).transform(
+                new MdXml("surok").with(
+                    "weeks", new PrItems(
+                        "week", List.of(Curriculum.Week.values()).stream()
+                            .map(week -> new WkLocalized(week, Locale.forLanguageTag("ru")))
+                            .toList()
+                    )
+                ).print().replace(
+                    "</surok>",
+                    """
+                    <curriculums><curriculum><id>17</id><week>SIX_DAYS</week>
+                    </curriculum></curriculums></surok>
+                    """
+                )
+            ),
+            Matchers.allOf(
+                Matchers.containsString("value=\"FIVE_DAYS\">Пятидневная</option>"),
+                Matchers.containsString(
+                    String.format(
+                        "value=\"SIX_DAYS\"%s>Шестидневная</option>", selection
+                    )
+                )
+            )
+        );
+    }
 
     /**
      * Verifies headers use build metadata even with unfiltered stylesheets.
@@ -269,6 +387,84 @@ final class XsClasspathTest {
                 )
             );
         }
+    }
+
+    @ParameterizedTest
+    @ValueSource(
+        strings = {"federal-curriculums", "federal-curriculum", "federal-curriculum-requirements"}
+    )
+    void hidesFederalEditingControlsFromReaders(final String stylesheet) {
+        MatcherAssert.assertThat(
+            "A reader page exposed federal editing controls or lost the standard navigation",
+            new XsClasspath(String.format("xslt/%s.xsl", stylesheet), "list").transform(
+                """
+                <surok><user><admin>false</admin></user>
+                <curriculums><curriculum><id>17</id><title>Основной план</title>
+                <requirements><requirement><id>23</id><grade>5</grade>
+                <subject><id>1</id><name>Математика</name><origin>FEDERAL</origin></subject>
+                <hours>5</hours>
+                <partType>MANDATORY</partType></requirement></requirements>
+                </curriculum></curriculums></surok>
+                """
+            ),
+            Matchers.allOf(
+                Matchers.containsString("Федеральный стандарт"),
+                Matchers.containsString("href=\"/federal/curriculums\""),
+                Matchers.containsString("href=\"/federal/subjects\""),
+                Matchers.not(Matchers.containsString("href=\"/federal/curriculums/create\"")),
+                Matchers.not(Matchers.containsString("href=\"/federal/curriculums/17/edit\"")),
+                Matchers.not(Matchers.containsString("class=\"requirements-add\"")),
+                Matchers.not(Matchers.containsString("class=\"requirement-action")),
+                Matchers.not(Matchers.containsString("btn-delete-curriculum"))
+            )
+        );
+    }
+
+    @Test
+    void offersCatalogueSubjectsAndExplicitAdditionalLimits() {
+        MatcherAssert.assertThat(
+            "Requirement forms accepted free text or omitted the additional hours limit",
+            new XsClasspath("xslt/federal-curriculum-requirements.xsl", "list").transform(
+                """
+                <surok><user><admin>true</admin></user>
+                <csrf><parameter>_csrf</parameter><token>защита</token></csrf>
+                <subjects><subject><id>29</id><name>Физика</name></subject></subjects>
+                <firstGrade>5</firstGrade><lastGrade>9</lastGrade>
+                <curriculums><curriculum><id>17</id><title>План</title>
+                <requirements/></curriculum></curriculums></surok>
+                """
+            ),
+            Matchers.allOf(
+                Matchers.containsString("<select id=\"subject-name\""),
+                Matchers.containsString("<select id=\"filter-subject\""),
+                Matchers.containsString("value=\"Физика\""),
+                Matchers.containsString("/federal/curriculums/17/requirements"),
+                Matchers.containsString("value=\"OPTIONAL\""),
+                Matchers.containsString("name=\"hours\""),
+                Matchers.containsString("name=\"selection\""),
+                Matchers.containsString(">Дополнительные предметы</option>"),
+                Matchers.not(Matchers.containsString("id=\"requirement-kind\"")),
+                Matchers.not(Matchers.containsString("id=\"maximum-hours\"")),
+                Matchers.containsString("name=\"_csrf\""),
+                Matchers.containsString("min=\"0\""),
+                Matchers.not(Matchers.containsString("<input id=\"subject-name\""))
+            )
+        );
+    }
+
+    @Test
+    void identifiesAdditionalSubjectsOnTheLoadPage() throws Exception {
+        MatcherAssert.assertThat(
+            "The load page did not explain how additional hours are counted",
+            new XsClasspath("xslt/class-loads.xsl", "list").transform(
+                Files.readString(Path.of("src/test/resources/pages.xml"))
+                    .replace("<origin>FEDERAL</origin>", "<origin>SCHOOL</origin>")
+            ),
+            Matchers.allOf(
+                Matchers.containsString("class=\"load-additional\">Вариативная</span>"),
+                Matchers.containsString("учитываются в вариативной нагрузке класса")
+            )
+        );
     }
 
     private static String page(final String entity, final String view, final boolean error) {

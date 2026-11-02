@@ -11,7 +11,10 @@ import com.eshabakhov.surok.User;
 import com.eshabakhov.surok.federal.curriculum.CrWithRequirements;
 import com.eshabakhov.surok.federal.curriculum.CrsPostgres;
 import com.eshabakhov.surok.federal.curriculum.CrsSingle;
+import com.eshabakhov.surok.federal.curriculum.Curriculum;
+import com.eshabakhov.surok.federal.curriculum.requirement.input.RqInputForm;
 import com.eshabakhov.surok.federal.curriculum.requirement.input.RqInputHttp;
+import com.eshabakhov.surok.federal.subject.SbsFederal;
 import com.eshabakhov.surok.media.AcHttp;
 import com.eshabakhov.surok.media.MdJson;
 import com.eshabakhov.surok.media.MdXml;
@@ -31,6 +34,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Map;
 import org.jooq.DSLContext;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -43,6 +47,8 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -58,7 +64,7 @@ import org.springframework.web.server.ResponseStatusException;
 @RestController
 @RequestMapping("/federal/curriculums/{curriculum}/requirements")
 @Tag(name = "Federal Curriculum Requirements")
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("isAuthenticated()")
 public class RqsHttp {
 
     /** JOOQ context. */
@@ -119,12 +125,17 @@ public class RqsHttp {
                     } else {
                         view = "list";
                     }
+                    final Curriculum curriculum = new CrsPostgres(this.ctx).curriculum(current);
                     yield this.web(request, view).with(
+                        "subjects", new SbsFederal(this.ctx)
+                    ).with("firstGrade", curriculum.grades().getFirst()).with(
+                        "lastGrade", curriculum.grades().getLast()
+                    ).with(
                         "curriculums",
                         new CrsSingle(
                             new CrsPostgres(this.ctx),
                             new CrWithRequirements(
-                                new CrsPostgres(this.ctx).curriculum(current),
+                                curriculum,
                                 new RqsWeb(selected, filters, sorts)
                             )
                         )
@@ -204,7 +215,7 @@ public class RqsHttp {
      * @throws Exception If creation fails
      */
     @PostMapping(
-        value = "/create",
+        consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE,
         produces = {
             MediaType.TEXT_HTML_VALUE,
             "application/vnd.surok.federal-curriculum-requirement-v1+json",
@@ -220,6 +231,7 @@ public class RqsHttp {
         responseCode = "302",
         description = "HTML client redirected to the requirements"
     )
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> create(
         @PathVariable("curriculum") final long current,
         @RequestParam final MultiValueMap<String, String> parameters,
@@ -227,7 +239,9 @@ public class RqsHttp {
     ) throws Exception {
         return RqsHttp.result(
             new AcHttp(request, "federal-curriculum-requirement-v1").type(),
-            new RqsPostgres(this.ctx, current).create(new RqInputHttp(parameters)),
+            new RqsPostgres(this.ctx, current).create(
+                new RqInputForm(parameters.toSingleValueMap())
+            ),
             HttpStatus.CREATED, current
         );
     }
@@ -243,7 +257,8 @@ public class RqsHttp {
      * @throws Exception If update fails
      */
     @PostMapping(
-        value = "/{requirement}/edit",
+        value = "/{requirement}",
+        consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE,
         produces = {
             MediaType.TEXT_HTML_VALUE,
             "application/vnd.surok.federal-curriculum-requirement-v1+json",
@@ -260,6 +275,7 @@ public class RqsHttp {
         description = "HTML client redirected to the requirements"
     )
     @ApiResponse(responseCode = "404", description = "Requirement not found")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> revise(
         @PathVariable("curriculum") final long current,
         @PathVariable final long requirement,
@@ -274,10 +290,74 @@ public class RqsHttp {
     }
 
     /**
+     * Creates either requirement kind from versioned API fields.
+     *
+     * @param current Curriculum identity
+     * @param fields Requirement fields
+     * @param request HTTP request
+     * @return Created requirement
+     * @throws Exception If creation fails
+     */
+    @PostMapping(
+        consumes = "application/vnd.surok.federal-curriculum-requirement-v1+json",
+        produces = {
+            MediaType.TEXT_HTML_VALUE,
+            "application/vnd.surok.federal-curriculum-requirement-v1+json",
+            "application/vnd.surok.federal-curriculum-requirement-v1+xml"
+        }
+    )
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> add(
+        @PathVariable("curriculum") final long current,
+        @RequestBody final Map<String, String> fields,
+        final HttpServletRequest request
+    ) throws Exception {
+        return RqsHttp.result(
+            new AcHttp(request, "federal-curriculum-requirement-v1").type(),
+            new RqsPostgres(this.ctx, current).create(new RqInputHttp(fields)),
+            HttpStatus.CREATED, current
+        );
+    }
+
+    /**
+     * Replaces the fields of an existing requirement without changing its kind.
+     *
+     * @param current Curriculum identity
+     * @param requirement Requirement identity
+     * @param fields Requirement fields
+     * @param request HTTP request
+     * @return Updated requirement
+     * @throws Exception If revision fails
+     */
+    @PutMapping(
+        value = "/{requirement}",
+        consumes = "application/vnd.surok.federal-curriculum-requirement-v1+json",
+        produces = {
+            MediaType.TEXT_HTML_VALUE,
+            "application/vnd.surok.federal-curriculum-requirement-v1+json",
+            "application/vnd.surok.federal-curriculum-requirement-v1+xml"
+        }
+    )
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> update(
+        @PathVariable("curriculum") final long current,
+        @PathVariable final long requirement,
+        @RequestBody final Map<String, String> fields,
+        final HttpServletRequest request
+    ) throws Exception {
+        return RqsHttp.result(
+            new AcHttp(request, "federal-curriculum-requirement-v1").type(),
+            new RqsPostgres(this.ctx, current).revise(requirement, new RqInputHttp(fields)),
+            HttpStatus.OK, current
+        );
+    }
+
+    /**
      * Removes a curriculum requirement.
      *
      * @param current Curriculum ID
      * @param requirement Requirement ID
+     * @param request HTTP request
      * @return Empty response
      * @throws Exception If removal fails
      */
@@ -288,10 +368,13 @@ public class RqsHttp {
         description = "Federal curriculum requirement removed"
     )
     @ApiResponse(responseCode = "404", description = "Requirement not found")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> remove(
         @PathVariable("curriculum") final long current,
-        @PathVariable final long requirement
+        @PathVariable final long requirement,
+        final HttpServletRequest request
     ) throws Exception {
+        new AcHttp(request, "federal-curriculum-requirement-v1").type();
         new RqsPostgres(this.ctx, current).remove(requirement);
         return ResponseEntity.noContent().build();
     }

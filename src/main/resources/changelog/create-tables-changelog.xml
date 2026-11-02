@@ -88,15 +88,19 @@
             <![CDATA[
             CREATE TABLE public.subject(
                id bigserial PRIMARY KEY,
-               school_id bigint NOT NULL,
+               school_id bigint REFERENCES public.school(id),
+               origin varchar NOT NULL DEFAULT 'SCHOOL',
                name varchar NOT NULL,
-               is_deleted boolean DEFAULT FALSE,
-               CONSTRAINT fk_school_subject_id
-                   FOREIGN KEY (school_id)
-                       REFERENCES public.school(id)
-                       ON DELETE RESTRICT
-                       ON UPDATE CASCADE
+               is_deleted boolean NOT NULL DEFAULT FALSE,
+               CONSTRAINT subject_scope CHECK (
+                   (origin = 'FEDERAL' AND school_id IS NULL)
+                   OR (origin = 'SCHOOL' AND school_id IS NOT NULL)
+               )
             );
+            CREATE UNIQUE INDEX uq_federal_subject_name ON public.subject (lower(btrim(name)))
+                WHERE origin = 'FEDERAL' AND is_deleted = false;
+            CREATE UNIQUE INDEX uq_school_subject_name ON public.subject (school_id, lower(btrim(name)))
+                WHERE origin = 'SCHOOL' AND is_deleted = false;
             ]]>
         </sql>
     </changeSet>
@@ -197,7 +201,7 @@
                 schedule_id bigint NOT NULL,
                 school_class_id bigint NOT NULL,
                 subject_id bigint NOT NULL,
-                hours_per_week integer NOT NULL CHECK (hours_per_week > 0),
+                hours integer NOT NULL CHECK (hours > 0),
                 CONSTRAINT fk_curriculum_schedule
                   FOREIGN KEY (schedule_id)
                       REFERENCES schedule(id)
@@ -212,6 +216,7 @@
                       ON DELETE RESTRICT,
                 UNIQUE (schedule_id, school_class_id, subject_id)
             );
+            COMMENT ON COLUMN class_curriculum.hours IS 'Teaching hours per week for one class';
             ]]>
         </sql>
     </changeSet>
@@ -301,8 +306,8 @@
                 id bigserial PRIMARY KEY,
                 federal_curriculum_id bigint NOT NULL,
                 grade integer NOT NULL,
-                subject_name varchar NOT NULL,
-                weekly_hours integer NOT NULL,
+                subject_id bigint REFERENCES public.subject(id),
+                hours integer NOT NULL,
                 part_type curriculum_part_type NOT NULL,
                 is_deleted boolean NOT NULL DEFAULT FALSE,
                 created_at timestamptz NOT NULL DEFAULT NOW(),
@@ -314,9 +319,19 @@
                         ON UPDATE CASCADE,
                 CONSTRAINT chk_federal_curriculum_requirement_grade
                     CHECK (grade BETWEEN 1 AND 11),
-                CONSTRAINT chk_federal_curriculum_requirement_weekly_hours
-                    CHECK (weekly_hours > 0)
+                CONSTRAINT chk_federal_curriculum_requirement_fields CHECK (
+                    (part_type = 'MANDATORY' AND subject_id IS NOT NULL AND hours > 0)
+                    OR (part_type = 'OPTIONAL' AND subject_id IS NULL AND hours >= 0)
+                )
             );
+            CREATE UNIQUE INDEX uq_requirement_mandatory
+                ON public.federal_curriculum_requirement (federal_curriculum_id, grade, subject_id)
+                WHERE part_type = 'MANDATORY' AND NOT is_deleted;
+            COMMENT ON COLUMN public.federal_curriculum_requirement.hours
+                IS 'Weekly hours per class: mandatory load or optional maximum';
+            CREATE UNIQUE INDEX uq_requirement_optional
+                ON public.federal_curriculum_requirement (federal_curriculum_id, grade)
+                WHERE part_type = 'OPTIONAL' AND NOT is_deleted;
             ]]>
         </sql>
     </changeSet>

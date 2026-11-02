@@ -34,12 +34,7 @@ public final class ClV1 implements ClassLoad {
     @Override
     public <T> Media<T> print(final Media<T> media) throws Exception {
         return this.origin.print(media).include(
-            "id", "schoolClassId", "schoolClassName", "subjectId", "subjectName", "hoursPerWeek"
+            "id", "schoolClass", "subject", "hours"
         );
-    }
-
-    @Override
-    public ClassLoad revise(final ClassLoadInput input) throws Exception {
-        return this.origin.revise(input);
     }
 }

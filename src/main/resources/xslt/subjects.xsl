@@ -6,7 +6,12 @@
     <xsl:param name="view"/>
     <xsl:variable name="entries" select="/surok/subjects"/>
     <xsl:variable name="selected" select="$entries/subject[$view = 'details' or $view = 'edit']"/>
-    <xsl:variable name="base" select="concat($school-path, '/subjects')"/>
+    <xsl:variable name="catalogue" select="not(/surok/school)"/>
+    <xsl:variable name="editable" select="($catalogue and /surok/user/admin = 'true') or (not($catalogue) and /surok/editable = 'true')"/>
+    <xsl:variable name="base"><xsl:choose>
+        <xsl:when test="$catalogue">/federal/subjects</xsl:when>
+        <xsl:otherwise><xsl:value-of select="concat($school-path, '/subjects')"/></xsl:otherwise>
+    </xsl:choose></xsl:variable>
 
     <xsl:template match="/">
         <xsl:choose>
@@ -17,9 +22,10 @@
 
     <xsl:template name="page-title">
         <xsl:choose>
-            <xsl:when test="$view = 'create'">Новый предмет</xsl:when>
+            <xsl:when test="$view = 'create'">Добавить предмет</xsl:when>
             <xsl:when test="$view = 'edit'">Редактировать предмет</xsl:when>
             <xsl:when test="$view = 'details'"><xsl:value-of select="$selected/name"/></xsl:when>
+            <xsl:when test="$catalogue">Предметы</xsl:when>
             <xsl:otherwise><xsl:value-of select="concat($school/name, ' - предметы')"/></xsl:otherwise>
         </xsl:choose>
     </xsl:template>
@@ -34,10 +40,14 @@
             <xsl:when test="$view = 'details'"><xsl:call-template name="details"/></xsl:when>
             <xsl:otherwise>
                 <div class="page-title-row">
-                    <div><h1>Предметы</h1><p class="page-subtitle">Управление предметами школы</p></div>
+                    <div><h1>Предметы</h1><p class="page-subtitle"><xsl:choose>
+                        <xsl:when test="$catalogue">Общий справочник федеральных предметов</xsl:when>
+                        <xsl:otherwise>Федеральные и дополнительные предметы школы</xsl:otherwise>
+                    </xsl:choose></p></div>
+                    <xsl:if test="$editable">
                     <a class="btn btn-primary subjects-add"
                        href="{$base}/create"
-                       title="Добавить предмет в школу">
+                       title="Добавить предмет">
                         <svg xmlns="http://www.w3.org/2000/svg"
                              fill="none"
                              stroke="currentColor"
@@ -48,6 +58,7 @@
                         </svg>
                         <xsl:text>Добавить предмет</xsl:text>
                     </a>
+                    </xsl:if>
                 </div>
                 <div class="subjects-content">
                     <div class="search-wrap subjects-search">
@@ -93,6 +104,10 @@
                         <div class="card-item-period">
                             <a class="card-item-name" href="{$base}/{id}" title="Открыть"><xsl:value-of select="name"/></a>
                             <div class="card-item-period-label">ID: <span class="td-mono"><xsl:value-of select="id"/></span></div>
+                            <div class="card-item-period-label"><xsl:choose>
+                                <xsl:when test="origin = 'FEDERAL'">Федеральный предмет</xsl:when>
+                                <xsl:otherwise>Дополнительный предмет</xsl:otherwise>
+                            </xsl:choose></div>
                         </div>
                     </div>
                 </xsl:for-each>
@@ -110,13 +125,13 @@
             <div>
                 <h1 class="title-with-action">
                     <span><xsl:value-of select="$selected/name"/></span>
-                    <a class="btn-icon-edit" href="{$base}/{$selected/id}/edit"
+                    <xsl:if test="$editable and ($catalogue or $selected/origin != 'FEDERAL' or not($selected/origin))"><a class="btn-icon-edit" href="{$base}/{$selected/id}/edit"
                        title="Редактировать" aria-label="Редактировать">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" height="15" width="15"
                              stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                             <path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>
                         </svg>
-                    </a>
+                    </a></xsl:if>
                 </h1>
                 <p class="page-subtitle">Информация о предмете</p>
             </div>
@@ -125,10 +140,20 @@
             <div class="info-row"><span class="info-label">ID:</span><span class="info-value"><xsl:value-of select="$selected/id"/></span></div>
             <div class="info-row"><span class="info-label">Название:</span><span class="info-value"><xsl:value-of select="$selected/name"/></span></div>
         </div>
-        <div class="details-footer-actions">
-            <button class="btn-outline-action btn-delete-row subject-delete" type="button"
-                    data-name="{$selected/name}" data-uri="{$base}/{$selected/id}" data-redirect="{$base}">Удалить</button>
-        </div>
+        <xsl:choose>
+            <xsl:when test="not($catalogue) and $selected/origin = 'FEDERAL'">
+                <p>Федеральный предмет доступен только для просмотра.
+                    <a href="/federal/subjects/{$selected/id}" title="Открыть федеральный предмет">Открыть в федеральном справочнике</a>
+                </p>
+            </xsl:when>
+            <xsl:otherwise><xsl:if test="$editable">
+                <div class="details-footer-actions">
+                    <button class="btn-outline-action btn-delete-row subject-delete" type="button"
+                            data-name="{$selected/name}" data-uri="{$base}/{$selected/id}"
+                            data-redirect="{$base}">Удалить</button>
+                </div>
+            </xsl:if></xsl:otherwise>
+        </xsl:choose>
     </xsl:template>
 
     <xsl:template name="form">
@@ -165,7 +190,10 @@
                     <input id="subject-name" name="name" type="text" autofocus="autofocus"
                            required="required" value="{$selected/name}">
                         <xsl:if test="$view = 'create'">
-                            <xsl:attribute name="placeholder">Например: Математика</xsl:attribute>
+                            <xsl:attribute name="placeholder"><xsl:choose>
+                                <xsl:when test="$catalogue">Например: Математика</xsl:when>
+                                <xsl:otherwise>Например: Робототехника</xsl:otherwise>
+                            </xsl:choose></xsl:attribute>
                         </xsl:if>
                     </input>
                 </label>
@@ -186,7 +214,7 @@
                         <xsl:text>Отмена</xsl:text>
                     </a>
                     <button class="btn-primary" type="submit">
-                        <xsl:choose><xsl:when test="$view = 'edit'">Сохранить</xsl:when><xsl:otherwise>Создать</xsl:otherwise></xsl:choose>
+                        <xsl:choose><xsl:when test="$view = 'edit'">Сохранить</xsl:when><xsl:otherwise>Добавить</xsl:otherwise></xsl:choose>
                     </button>
                 </div>
             </form>

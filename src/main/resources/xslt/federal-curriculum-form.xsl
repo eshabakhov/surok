@@ -50,36 +50,27 @@
                 <label class="curriculum-form-field">
                     <xsl:text>Уровень образования</xsl:text>
                     <select name="level" required="required">
-                        <xsl:call-template name="option">
-                            <xsl:with-param name="value" select="'PRIMARY'"/>
-                            <xsl:with-param name="selected"
-                                            select="$editing and $curriculum/level = 'PRIMARY'"/>
-                        </xsl:call-template>
-                        <xsl:call-template name="option">
-                            <xsl:with-param name="value" select="'BASIC'"/>
-                            <xsl:with-param name="selected"
-                                            select="$editing and $curriculum/level = 'BASIC'"/>
-                        </xsl:call-template>
-                        <xsl:call-template name="option">
-                            <xsl:with-param name="value" select="'SECONDARY'"/>
-                            <xsl:with-param name="selected"
-                                            select="$editing and $curriculum/level = 'SECONDARY'"/>
-                        </xsl:call-template>
+                        <xsl:for-each select="/surok/levels/level">
+                            <option value="{code}">
+                                <xsl:if test="$editing and $curriculum/level = code">
+                                    <xsl:attribute name="selected">selected</xsl:attribute>
+                                </xsl:if>
+                                <xsl:value-of select="title"/>
+                            </option>
+                        </xsl:for-each>
                     </select>
                 </label>
                 <label class="curriculum-form-field">
                     <xsl:text>Учебная неделя</xsl:text>
                     <select name="week" required="required">
-                        <xsl:call-template name="option">
-                            <xsl:with-param name="value" select="'FIVE_DAYS'"/>
-                            <xsl:with-param name="selected"
-                                            select="$editing and $curriculum/week = 'FIVE_DAYS'"/>
-                        </xsl:call-template>
-                        <xsl:call-template name="option">
-                            <xsl:with-param name="value" select="'SIX_DAYS'"/>
-                            <xsl:with-param name="selected"
-                                            select="$editing and $curriculum/week = 'SIX_DAYS'"/>
-                        </xsl:call-template>
+                        <xsl:for-each select="/surok/weeks/week">
+                            <option value="{code}">
+                                <xsl:if test="$editing and $curriculum/week = code">
+                                    <xsl:attribute name="selected">selected</xsl:attribute>
+                                </xsl:if>
+                                <xsl:value-of select="title"/>
+                            </option>
+                        </xsl:for-each>
                     </select>
                 </label>
                 <label class="curriculum-form-field" for="version-name">

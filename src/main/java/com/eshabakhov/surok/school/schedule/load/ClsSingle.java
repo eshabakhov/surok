@@ -32,11 +32,6 @@ public final class ClsSingle implements ClassLoads {
     }
 
     @Override
-    public ClassLoad create(final ClassLoadInput input) throws Exception {
-        return this.origin.create(input);
-    }
-
-    @Override
     public ClassLoad load(final long id) throws Exception {
         return this.origin.load(id);
     }
@@ -49,11 +44,6 @@ public final class ClsSingle implements ClassLoads {
     @Override
     public Iterable<ClassLoad> iterate() {
         return List.of(this.selected);
-    }
-
-    @Override
-    public void remove(final long id) throws Exception {
-        this.origin.remove(id);
     }
 
     @Override

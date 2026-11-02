@@ -52,6 +52,16 @@ public final class RqsSelected implements Requirements {
     }
 
     @Override
+    public Iterable<Requirement> optional(final int grade) throws Exception {
+        return this.origin.optional(grade);
+    }
+
+    @Override
+    public void check(final int grade, final int hours) throws Exception {
+        this.origin.check(grade, hours);
+    }
+
+    @Override
     public Requirement create(final RequirementInput input) throws Exception {
         return this.origin.create(input);
     }

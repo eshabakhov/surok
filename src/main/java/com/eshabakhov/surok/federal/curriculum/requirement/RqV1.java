@@ -32,7 +32,7 @@ public final class RqV1 implements Requirement {
     @Override
     public <T> Media<T> print(final Media<T> media) throws Exception {
         return this.origin.print(media).include(
-            "id", "grade", "subjectName", "weeklyHours", "partType"
+            "id", "grade", "subject", "hours", "partType"
         );
     }
 

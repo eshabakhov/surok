@@ -40,8 +40,15 @@ public final class RqInputSubject implements RequirementInput {
                 "Requirement subject is required"
             );
         }
+        try {
+            if (Long.parseLong(this.subject.trim()) <= 0) {
+                throw new RequirementInputException("Subject identifier must be positive");
+            }
+        } catch (final NumberFormatException exception) {
+            throw new RequirementInputException("Subject identifier must be an integer", exception);
+        }
         return this.origin.print(media).with(
-            "subjectName", this.subject.trim()
+            "subjectId", this.subject.trim()
         );
     }
 }

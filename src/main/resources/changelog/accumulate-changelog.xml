@@ -5,4 +5,5 @@
     http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.4.xsd">
     <include file="create-types-changelog.xml" relativeToChangelogFile="true"/>
     <include file="create-tables-changelog.xml" relativeToChangelogFile="true"/>
+    <include file="load-drafts-changelog.xml" relativeToChangelogFile="true"/>
 </databaseChangeLog>

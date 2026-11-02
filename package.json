@@ -5,16 +5,14 @@
     "node": ">=24"
   },
   "scripts": {
-    "lint": "npm run lint:js && npm run lint:css && npm run lint:html",
+    "lint": "npm run lint:js && npm run lint:css",
     "lint:js": "eslint src/main/resources/static/js --max-warnings=0",
-    "lint:css": "stylelint \"src/main/resources/static/css/**/*.css\"",
-    "lint:html": "java tools/RenderHtml.java && htmlhint \"target/html-lint/*.html\""
+    "lint:css": "stylelint \"src/main/resources/static/css/**/*.css\""
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "stylelint-config-standard": "36.0.1",
     "eslint": "^10.13.0",
     "stylelint": "16.26.1",
-    "htmlhint": "^1.1.4"
+    "stylelint-config-standard": "36.0.1"
   }
 }

@@ -34,6 +34,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.PostgreSQLContainer;
@@ -47,6 +48,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  * @checkstyle ProhibitFieldsInTestClassesCheck (1000 lines)
  */
 @Testcontainers
+@DirtiesContext
 @SpringBootTest
 @SuppressWarnings({
     "PMD.UnusedPrivateMethod", "UnusedMethod", "PMD.UnitTestContainsTooManyAsserts"
@@ -91,7 +93,7 @@ final class BdsPostgresTest {
     void truncateSchools() {
         this.ctx.resultQuery(
             """
-                TRUNCATE TABLE public.school RESTART IDENTITY CASCADE
+                TRUNCATE TABLE public.school, subject RESTART IDENTITY CASCADE
                 """
         ).execute();
     }
@@ -153,7 +155,8 @@ final class BdsPostgresTest {
         );
         MatcherAssert.assertThat(
             "Revision must persist the name without replacing the identity",
-            new BdPostgres(this.ctx, 10L).print(new MdJson()).print().get("name").asText(),
+            new BdsPostgres(this.ctx, 1L).building(10L)
+                .print(new MdJson()).print().get("name").asText(),
             Matchers.is("Renamed")
         );
     }

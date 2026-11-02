@@ -1,3 +1,1 @@
-SELECT *
-FROM public.subject
-WHERE ((subject.school_id = ?) AND (subject.name = ?)) AND (subject.is_deleted = ?)
+SELECT id FROM public.subject WHERE (school_id = ? OR origin = 'FEDERAL') AND lower(btrim(name)) = lower(btrim(?)) AND is_deleted = ?

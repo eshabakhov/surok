@@ -117,9 +117,9 @@ final class MdRqInputTest {
             "Named printable must write into the current level",
             new MdRqInput().with(
                 "ignored",
-                new RqInputSubject(new RqInput(), "Mathematics")
+                new RqInputSubject(new RqInput(), "504")
             ).print(),
-            Matchers.is(Map.of("subjectName", "Mathematics"))
+            Matchers.is(Map.of("subjectId", "504"))
         );
     }
 
@@ -128,9 +128,9 @@ final class MdRqInputTest {
         MatcherAssert.assertThat(
             "Unnamed printable must write into the current level",
             new MdRqInput().with(
-                new RqInputSubject(new RqInput(), "Mathematics")
+                new RqInputSubject(new RqInput(), "504")
             ).print(),
-            Matchers.is(Map.of("subjectName", "Mathematics"))
+            Matchers.is(Map.of("subjectId", "504"))
         );
     }
 
@@ -177,7 +177,7 @@ final class MdRqInputTest {
     @Test
     void exposesUnmodifiableFields() {
         final Map<String, String> fields = new MdRqInput()
-            .with("subjectName", "Mathematics").print();
+            .with("subjectId", "504").print();
         Assertions.assertThrows(
             UnsupportedOperationException.class,
             () -> fields.put("grade", "5")

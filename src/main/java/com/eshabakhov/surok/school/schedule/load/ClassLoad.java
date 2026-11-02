@@ -18,13 +18,4 @@ public interface ClassLoad extends Printable {
      * @return Identifier
      */
     Long uid();
-
-    /**
-     * Revises all load fields atomically.
-     *
-     * @param input Requested load fields
-     * @return Revised load
-     * @throws Exception If revision fails
-     */
-    ClassLoad revise(ClassLoadInput input) throws Exception;
 }

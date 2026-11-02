@@ -18,15 +18,11 @@ import com.eshabakhov.surok.school.SlsBrief;
 import com.eshabakhov.surok.school.SlsPostgres;
 import com.eshabakhov.surok.school.schedule.Schedule;
 import com.eshabakhov.surok.school.schedule.SdBrief;
-import com.eshabakhov.surok.school.schedule.load.input.ClInputHttp;
-import com.eshabakhov.surok.school.schedule.load.input.LoadInputException;
 import com.eshabakhov.surok.security.CsToken;
 import com.eshabakhov.surok.user.UrBrief;
-import com.fasterxml.jackson.databind.JsonNode;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
-import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import org.jooq.DSLContext;
 import org.springframework.http.HttpStatus;
@@ -35,20 +31,14 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.csrf.CsrfToken;
-import org.springframework.util.MultiValueMap;
-import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
 /**
- * Unified teaching load HTTP resource; Accept selects HTML or versioned JSON/XML.
+ * Read-only applied teaching loads; changes are submitted through the load draft.
  * For example, request application/vnd.surok.class-loads.v1+json for the collection.
  *
  * @since 0.0.1
@@ -74,7 +64,7 @@ public class ClsHttp {
     }
 
     /**
-     * Shows a page of loads, its fragment or the creation form.
+     * Shows a page of applied loads or its fragment.
      *
      * @param school School identifier
      * @param schedule Schedule identifier
@@ -84,7 +74,7 @@ public class ClsHttp {
      * @throws Exception If lookup or printing fails
      */
     @GetMapping(
-        value = {"", "/", "/fragment", "/create"},
+        value = {"", "/", "/fragment"},
         produces = {
             MediaType.TEXT_HTML_VALUE,
             "application/vnd.surok.class-loads.v1+json",
@@ -108,8 +98,6 @@ public class ClsHttp {
                     final String view;
                     if (request.getRequestURI().endsWith("/fragment")) {
                         view = "list-fragment";
-                    } else if (request.getRequestURI().endsWith("/create")) {
-                        view = "create";
                     } else {
                         view = "list";
                     }
@@ -127,7 +115,7 @@ public class ClsHttp {
     }
 
     /**
-     * Shows one load or its editing form.
+     * Shows one applied teaching load.
      *
      * @param school School identifier
      * @param schedule Schedule identifier
@@ -137,7 +125,7 @@ public class ClsHttp {
      * @throws Exception If lookup or printing fails
      */
     @GetMapping(
-        value = {"/{load}", "/{load}/edit"},
+        value = "/{load:[0-9]+}",
         produces = {
             MediaType.TEXT_HTML_VALUE,
             "application/vnd.surok.class-load-v1+json",
@@ -158,17 +146,9 @@ public class ClsHttp {
         final ClassLoad selected = origin.load(load);
         return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8)).body(
             switch (type.toString()) {
-                case MediaType.TEXT_HTML_VALUE -> {
-                    final String view;
-                    if (request.getRequestURI().endsWith("/edit")) {
-                        view = "edit";
-                    } else {
-                        view = "details";
-                    }
-                    yield this.web(request, sch, sched, view).with(
-                        "loads", new ClsSingle(origin, selected)
-                    ).print();
-                }
+                case MediaType.TEXT_HTML_VALUE -> this.web(request, sch, sched, "details").with(
+                    "loads", new ClsSingle(origin, selected)
+                ).print();
                 case "application/vnd.surok.class-load-v1+json" ->
                     new ClV1(selected).print(new MdJson()).print();
                 case "application/vnd.surok.class-load-v1+xml" ->
@@ -178,270 +158,6 @@ public class ClsHttp {
                 );
             }
         );
-    }
-
-    /**
-     * Creates a load from form fields.
-     *
-     * @param school School identifier
-     * @param schedule Schedule identifier
-     * @param parameters Form fields
-     * @param request HTTP request
-     * @return Created representation or redirect
-     * @throws Exception If creation fails
-     */
-    @PostMapping(
-        value = "/create",
-        consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE,
-        produces = {
-            MediaType.TEXT_HTML_VALUE,
-            "application/vnd.surok.class-load-v1+json",
-            "application/vnd.surok.class-load-v1+xml"
-        }
-    )
-    @PreAuthorize(
-        """
-        hasAnyRole('ADMIN', 'DIRECTOR', 'DEPUTY_DIRECTOR',
-            'BASIC_MAKER', 'ADVANCED_MAKER', 'PRO_MAKER')
-        and (hasRole('ADMIN') or #school == authentication.principal.info().school())
-        """
-    )
-    @Operation(summary = "Create teaching load from form")
-    public ResponseEntity<?> create(
-        @PathVariable final long school,
-        @PathVariable final long schedule,
-        @RequestParam final MultiValueMap<String, String> parameters,
-        final HttpServletRequest request
-    ) throws Exception {
-        final MediaType type = new AcHttp(request, "class-load-v1").type();
-        ResponseEntity<?> response;
-        try {
-            response = ClsHttp.result(
-                type,
-                new SlsPostgres(this.ctx).school(school).schedules()
-                    .schedule(schedule).loads()
-                    .create(new ClInputHttp(parameters)), HttpStatus.CREATED,
-                String.format("/schools/%d/schedules/%d/loads", school, schedule),
-                String.format("/schools/%d/schedules/%d/loads", school, schedule)
-            );
-        } catch (final LoadInputException | LoadAlreadyExistsException exception) {
-            response = ClsHttp.rejected(type, request, exception);
-        }
-        return response;
-    }
-
-    /**
-     * Creates a load from a JSON document.
-     *
-     * @param school School identifier
-     * @param schedule Schedule identifier
-     * @param json Input document
-     * @param request HTTP request
-     * @return Created representation
-     * @throws Exception If creation fails
-     */
-    @PostMapping(
-        value = {"", "/", "/create"},
-        consumes = "application/vnd.surok.class-load-v1+json",
-        produces = {
-            MediaType.TEXT_HTML_VALUE,
-            "application/vnd.surok.class-load-v1+json",
-            "application/vnd.surok.class-load-v1+xml"
-        }
-    )
-    @PreAuthorize(
-        """
-        hasAnyRole('ADMIN', 'DIRECTOR', 'DEPUTY_DIRECTOR',
-            'BASIC_MAKER', 'ADVANCED_MAKER', 'PRO_MAKER')
-        and (hasRole('ADMIN') or #school == authentication.principal.info().school())
-        """
-    )
-    @Operation(summary = "Create teaching load from JSON")
-    public ResponseEntity<?> create(
-        @PathVariable final long school,
-        @PathVariable final long schedule,
-        @RequestBody final JsonNode json,
-        final HttpServletRequest request
-    ) throws Exception {
-        return ClsHttp.result(
-            new AcHttp(request, "class-load-v1").type(),
-            new SlsPostgres(this.ctx).school(school).schedules()
-                .schedule(schedule).loads()
-                .create(new ClInputHttp(json)), HttpStatus.CREATED,
-            String.format("/schools/%d/schedules/%d/loads", school, schedule),
-            String.format("/schools/%d/schedules/%d/loads", school, schedule)
-        );
-    }
-
-    /**
-     * Revises a load from form fields.
-     *
-     * @param school School identifier
-     * @param schedule Schedule identifier
-     * @param load Entity identifier
-     * @param parameters Form fields
-     * @param request HTTP request
-     * @return Revised representation or redirect
-     * @throws Exception If revision fails
-     */
-    @PostMapping(
-        value = "/{load}/edit",
-        consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE,
-        produces = {
-            MediaType.TEXT_HTML_VALUE,
-            "application/vnd.surok.class-load-v1+json",
-            "application/vnd.surok.class-load-v1+xml"
-        }
-    )
-    @PreAuthorize(
-        """
-        hasAnyRole('ADMIN', 'DIRECTOR', 'DEPUTY_DIRECTOR',
-            'BASIC_MAKER', 'ADVANCED_MAKER', 'PRO_MAKER')
-        and (hasRole('ADMIN') or #school == authentication.principal.info().school())
-        """
-    )
-    @Operation(summary = "Update teaching load from form")
-    public ResponseEntity<?> revise(
-        @PathVariable final long school,
-        @PathVariable final long schedule,
-        @PathVariable final long load,
-        @RequestParam final MultiValueMap<String, String> parameters,
-        final HttpServletRequest request
-    ) throws Exception {
-        final MediaType type = new AcHttp(request, "class-load-v1").type();
-        ResponseEntity<?> response;
-        try {
-            final ClassLoad revised = new SlsPostgres(this.ctx).school(school).schedules()
-                .schedule(schedule).loads()
-                .revise(load, new ClInputHttp(parameters));
-            response = ClsHttp.result(
-                type, revised, HttpStatus.OK,
-                String.format("/schools/%d/schedules/%d/loads", school, schedule),
-                String.format(
-                    "/schools/%d/schedules/%d/loads/%d", school, schedule, revised.uid()
-                )
-            );
-        } catch (final LoadInputException | LoadAlreadyExistsException exception) {
-            response = ClsHttp.rejected(type, request, exception);
-        }
-        return response;
-    }
-
-    /**
-     * Revises a load from a JSON document.
-     *
-     * @param school School identifier
-     * @param schedule Schedule identifier
-     * @param load Entity identifier
-     * @param json Input document
-     * @param request HTTP request
-     * @return Revised representation or redirect
-     * @throws Exception If revision fails
-     */
-    @PutMapping(
-        value = "/{load}",
-        consumes = "application/vnd.surok.class-load-v1+json",
-        produces = {
-            MediaType.TEXT_HTML_VALUE,
-            "application/vnd.surok.class-load-v1+json",
-            "application/vnd.surok.class-load-v1+xml"
-        }
-    )
-    @PreAuthorize(
-        """
-        hasAnyRole('ADMIN', 'DIRECTOR', 'DEPUTY_DIRECTOR',
-            'BASIC_MAKER', 'ADVANCED_MAKER', 'PRO_MAKER')
-        and (hasRole('ADMIN') or #school == authentication.principal.info().school())
-        """
-    )
-    @Operation(summary = "Update teaching load from JSON")
-    public ResponseEntity<?> revise(
-        @PathVariable final long school,
-        @PathVariable final long schedule,
-        @PathVariable final long load,
-        @RequestBody final JsonNode json,
-        final HttpServletRequest request
-    ) throws Exception {
-        final MediaType type = new AcHttp(request, "class-load-v1").type();
-        final ClassLoad revised = new SlsPostgres(this.ctx).school(school).schedules()
-            .schedule(schedule).loads()
-            .revise(load, new ClInputHttp(json));
-        return ClsHttp.result(
-            type, revised, HttpStatus.OK,
-            String.format("/schools/%d/schedules/%d/loads", school, schedule),
-            String.format("/schools/%d/schedules/%d/loads/%d", school, schedule, revised.uid())
-        );
-    }
-
-    /**
-     * Removes a load.
-     *
-     * @param school School identifier
-     * @param schedule Schedule identifier
-     * @param load Entity identifier
-     * @return Empty response
-     * @throws Exception If removal fails
-     */
-    @DeleteMapping("/{load}")
-    @PreAuthorize(
-        """
-        hasAnyRole('ADMIN', 'DIRECTOR', 'DEPUTY_DIRECTOR',
-            'BASIC_MAKER', 'ADVANCED_MAKER', 'PRO_MAKER')
-        and (hasRole('ADMIN') or #school == authentication.principal.info().school())
-        """
-    )
-    @Operation(summary = "Remove teaching load")
-    public ResponseEntity<Void> remove(
-        @PathVariable final long school,
-        @PathVariable final long schedule,
-        @PathVariable final long load
-    ) throws Exception {
-        new SlsPostgres(this.ctx).school(school).schedules()
-            .schedule(schedule).loads().remove(load);
-        return ResponseEntity.noContent().build();
-    }
-
-    private static ResponseEntity<?> result(
-        final MediaType type,
-        final ClassLoad selected,
-        final HttpStatus status,
-        final String base,
-        final String redirect
-    ) throws Exception {
-        return switch (type.toString()) {
-            case MediaType.TEXT_HTML_VALUE -> ResponseEntity.status(HttpStatus.FOUND)
-                .location(URI.create(redirect)).build();
-            case "application/vnd.surok.class-load-v1+json" ->
-                ResponseEntity.status(status)
-                    .location(URI.create(String.format("%s/%d", base, selected.uid())))
-                    .contentType(new MediaType(type, StandardCharsets.UTF_8))
-                    .body(new ClV1(selected).print(new MdJson()).print());
-            case "application/vnd.surok.class-load-v1+xml" ->
-                ResponseEntity.status(status)
-                    .location(URI.create(String.format("%s/%d", base, selected.uid())))
-                    .contentType(new MediaType(type, StandardCharsets.UTF_8))
-                    .body(new ClV1(selected).print(new MdXml("load")).print());
-            case null, default -> throw new ResponseStatusException(
-                HttpStatus.NOT_ACCEPTABLE, "Unsupported Accept header"
-            );
-        };
-    }
-
-    private static ResponseEntity<?> rejected(
-        final MediaType type,
-        final HttpServletRequest request,
-        final Exception exception
-    ) throws Exception {
-        if (!MediaType.TEXT_HTML.equals(type)) {
-            throw exception;
-        }
-        String error = "input";
-        if (exception instanceof LoadAlreadyExistsException) {
-            error = "duplicate";
-        }
-        return ResponseEntity.status(HttpStatus.FOUND).location(
-            URI.create(String.format("%s?error=%s", request.getRequestURI(), error))
-        ).build();
     }
 
     private Media<String> web(
@@ -462,9 +178,6 @@ public class ClsHttp {
                 new XsClasspath("xslt/class-loads.xsl", view)
             )
         ).with("school", new SlBrief(school))
-            .with("schedule", new SdBrief(schedule))
-            .with("classes", school.schoolClasses())
-            .with("subjects", school.subjects())
-            .with("error", request.getParameter("error"));
+            .with("schedule", new SdBrief(schedule));
     }
 }

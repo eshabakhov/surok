@@ -1,0 +1,513 @@
+/*
+ * © 2025-2026 Eset Shabakhov. Surok
+ */
+package com.eshabakhov.surok.federal.subject;
+
+import com.eshabakhov.surok.Filter;
+import com.eshabakhov.surok.Filters;
+import com.eshabakhov.surok.Media;
+import com.eshabakhov.surok.Page;
+import com.eshabakhov.surok.Sorts;
+import com.eshabakhov.surok.User;
+import com.eshabakhov.surok.federal.subject.input.SbInputHttp;
+import com.eshabakhov.surok.federal.subject.input.SubjectInputException;
+import com.eshabakhov.surok.filter.FilterRequest;
+import com.eshabakhov.surok.filter.FiltersRequest;
+import com.eshabakhov.surok.media.AcHttp;
+import com.eshabakhov.surok.media.MdJson;
+import com.eshabakhov.surok.media.MdXml;
+import com.eshabakhov.surok.media.MdXslt;
+import com.eshabakhov.surok.media.SrWeb;
+import com.eshabakhov.surok.media.XsClasspath;
+import com.eshabakhov.surok.school.SlBrief;
+import com.eshabakhov.surok.school.SlsBrief;
+import com.eshabakhov.surok.school.SlsPostgres;
+import com.eshabakhov.surok.security.CsToken;
+import com.eshabakhov.surok.user.UrBrief;
+import com.fasterxml.jackson.databind.JsonNode;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
+import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.util.LinkedHashSet;
+import java.util.Set;
+import java.util.stream.Stream;
+import org.jooq.DSLContext;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.csrf.CsrfToken;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
+
+/**
+ * Unified subject HTTP resource; Accept selects HTML or versioned JSON/XML.
+ * For example, request application/vnd.surok.subjects.v1+json for the collection.
+ *
+ * @since 0.0.1
+ * @checkstyle ClassFanOutComplexityCheck (1000 lines)
+ * @checkstyle ParameterNumberCheck (1000 lines)
+ */
+@RestController
+@RequestMapping({"/federal/subjects", "/schools/{school}/subjects"})
+@PreAuthorize(
+    "#school == null or hasRole('ADMIN') or #school == authentication.principal.info().school()"
+)
+@Tag(name = "Subjects")
+public class SbsHttp {
+
+    /** Database context. */
+    private final DSLContext ctx;
+
+    /**
+     * New resource.
+     *
+     * @param ctx Database context
+     */
+    public SbsHttp(final DSLContext ctx) {
+        this.ctx = ctx;
+    }
+
+    /**
+     * Shows a collection, its fragment or a creation form.
+     *
+     * @param school School identifier, absent for the shared federal catalogue
+     * @param filters Filtering
+     * @param page Pagination
+     * @param sorts Sorting
+     * @param request HTTP request
+     * @return Negotiated representation
+     * @throws Exception If lookup or printing fails
+     */
+    @GetMapping(
+        value = {"", "/", "/fragment", "/create"},
+        produces = {
+            MediaType.TEXT_HTML_VALUE,
+            "application/vnd.surok.subjects.v1+json",
+            "application/vnd.surok.subjects.v1+xml"
+        }
+    )
+    @Operation(summary = "List subjects")
+    public ResponseEntity<?> selection(
+        @PathVariable(required = false) final Long school,
+        final Filters filters,
+        final Page page,
+        final Sorts sorts,
+        final HttpServletRequest request
+    ) throws Exception {
+        final MediaType type = new AcHttp(request, "subjects.v1").type();
+        if (school == null && request.getRequestURI().endsWith("/create")
+            && !request.isUserInRole("ADMIN")) {
+            throw new ResponseStatusException(
+                HttpStatus.FORBIDDEN, "Federal catalogue is read-only"
+            );
+        }
+        final Set<Filter> requested = new LinkedHashSet<>(filters.filters());
+        requested.addAll(
+            Stream.of("name", "name_ct")
+                .filter(name -> request.getParameter(name) != null)
+                .map(name -> new FilterRequest(name, request.getParameter(name))).toList()
+        );
+        final Filters applied = new FiltersRequest(requested);
+        final Subjects selected = this.subjects(school).selection(
+            applied, page, sorts
+        );
+        return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8)).body(
+            switch (type.toString()) {
+                case MediaType.TEXT_HTML_VALUE -> {
+                    final String view;
+                    if (request.getRequestURI().endsWith("/fragment")) {
+                        view = "list-fragment";
+                    } else if (request.getRequestURI().endsWith("/create")) {
+                        view = "create";
+                    } else {
+                        view = "list";
+                    }
+                    yield this.web(request, school, view).with(
+                        "subjects", new SbsWeb(selected, applied, sorts)
+                    ).print();
+                }
+                case "application/vnd.surok.subjects.v1+json" ->
+                    selected.print(new MdJson()).print();
+                case "application/vnd.surok.subjects.v1+xml" ->
+                    selected.print(new MdXml("subjects")).print();
+                case null, default -> throw new ResponseStatusException(
+                    HttpStatus.NOT_ACCEPTABLE, "Unsupported Accept header"
+                );
+            }
+        );
+    }
+
+    /**
+     * Shows one subject or its editing form.
+     *
+     * @param school School identifier, absent for the shared federal catalogue
+     * @param subject Entity identifier
+     * @param request HTTP request
+     * @return Negotiated representation
+     * @throws Exception If lookup or printing fails
+     */
+    @GetMapping(
+        value = {"/{subject}", "/{subject}/edit"},
+        produces = {
+            MediaType.TEXT_HTML_VALUE,
+            "application/vnd.surok.subject-v1+json",
+            "application/vnd.surok.subject-v1+xml"
+        }
+    )
+    @Operation(summary = "Get subject")
+    public ResponseEntity<?> subject(
+        @PathVariable(required = false) final Long school,
+        @PathVariable final long subject,
+        final HttpServletRequest request
+    ) throws Exception {
+        final MediaType type = new AcHttp(request, "subject-v1").type();
+        final Subjects origin = this.subjects(school);
+        final Subject selected = origin.subject(subject);
+        return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8)).body(
+            switch (type.toString()) {
+                case MediaType.TEXT_HTML_VALUE -> {
+                    final String view;
+                    if (request.getRequestURI().endsWith("/edit")) {
+                        if (school == null && !request.isUserInRole("ADMIN")) {
+                            throw new SubjectReadOnlyException(selected.uid());
+                        }
+                        if (school != null && selected.origin() == Subject.Origin.FEDERAL) {
+                            throw new SubjectReadOnlyException(selected.uid());
+                        }
+                        view = "edit";
+                    } else {
+                        view = "details";
+                    }
+                    yield this.web(request, school, view).with(
+                        "subjects", new SbsSingle(origin, selected)
+                    ).print();
+                }
+                case "application/vnd.surok.subject-v1+json" ->
+                    new SbV1(selected).print(new MdJson()).print();
+                case "application/vnd.surok.subject-v1+xml" ->
+                    new SbV1(selected).print(new MdXml("subject")).print();
+                case null, default -> throw new ResponseStatusException(
+                    HttpStatus.NOT_ACCEPTABLE, "Unsupported Accept header"
+                );
+            }
+        );
+    }
+
+    /**
+     * Creates a subject from form fields.
+     *
+     * @param school School identifier, absent for the shared federal catalogue
+     * @param parameters Form fields
+     * @param request HTTP request
+     * @return Created representation or redirect
+     * @throws Exception If creation fails
+     */
+    @PostMapping(
+        value = "/create",
+        consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE,
+        produces = {
+            MediaType.TEXT_HTML_VALUE,
+            "application/vnd.surok.subject-v1+json",
+            "application/vnd.surok.subject-v1+xml"
+        }
+    )
+    @PreAuthorize(
+        """
+        hasRole('ADMIN') or (#school != null
+            and hasAnyRole('DIRECTOR', 'DEPUTY_DIRECTOR',
+                'BASIC_MAKER', 'ADVANCED_MAKER', 'PRO_MAKER')
+            and #school == authentication.principal.info().school())
+        """
+    )
+    @Operation(summary = "Create subject from form")
+    public ResponseEntity<?> create(
+        @PathVariable(required = false) final Long school,
+        @RequestParam final MultiValueMap<String, String> parameters,
+        final HttpServletRequest request
+    ) throws Exception {
+        final MediaType type = new AcHttp(request, "subject-v1").type();
+        ResponseEntity<?> response;
+        try {
+            response = SbsHttp.result(
+                type,
+                this.subjects(school)
+                    .create(new SbInputHttp(parameters)), HttpStatus.CREATED,
+                SbsHttp.base(school),
+                SbsHttp.base(school)
+            );
+        } catch (final SubjectInputException | SubjectAlreadyExistsException exception) {
+            response = SbsHttp.rejected(type, request, exception);
+        }
+        return response;
+    }
+
+    /**
+     * Creates a subject from a JSON document.
+     *
+     * @param school School identifier, absent for the shared federal catalogue
+     * @param json Input document
+     * @param request HTTP request
+     * @return Created representation
+     * @throws Exception If creation fails
+     */
+    @PostMapping(
+        value = {"", "/", "/create"},
+        consumes = "application/vnd.surok.subject-v1+json",
+        produces = {
+            MediaType.TEXT_HTML_VALUE,
+            "application/vnd.surok.subject-v1+json",
+            "application/vnd.surok.subject-v1+xml"
+        }
+    )
+    @PreAuthorize(
+        """
+        hasRole('ADMIN') or (#school != null
+            and hasAnyRole('DIRECTOR', 'DEPUTY_DIRECTOR',
+                'BASIC_MAKER', 'ADVANCED_MAKER', 'PRO_MAKER')
+            and #school == authentication.principal.info().school())
+        """
+    )
+    @Operation(summary = "Create subject from JSON")
+    public ResponseEntity<?> create(
+        @PathVariable(required = false) final Long school,
+        @RequestBody final JsonNode json,
+        final HttpServletRequest request
+    ) throws Exception {
+        return SbsHttp.result(
+            new AcHttp(request, "subject-v1").type(),
+            this.subjects(school)
+                .create(new SbInputHttp(json)), HttpStatus.CREATED,
+            SbsHttp.base(school),
+            SbsHttp.base(school)
+        );
+    }
+
+    /**
+     * Revises a subject from form fields.
+     *
+     * @param school School identifier, absent for the shared federal catalogue
+     * @param subject Entity identifier
+     * @param parameters Form fields
+     * @param request HTTP request
+     * @return Revised representation or redirect
+     * @throws Exception If revision fails
+     */
+    @PostMapping(
+        value = "/{subject}/edit",
+        consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE,
+        produces = {
+            MediaType.TEXT_HTML_VALUE,
+            "application/vnd.surok.subject-v1+json",
+            "application/vnd.surok.subject-v1+xml"
+        }
+    )
+    @PreAuthorize(
+        """
+        hasRole('ADMIN') or (#school != null
+            and hasAnyRole('DIRECTOR', 'DEPUTY_DIRECTOR',
+                'BASIC_MAKER', 'ADVANCED_MAKER', 'PRO_MAKER')
+            and #school == authentication.principal.info().school())
+        """
+    )
+    @Operation(summary = "Update subject from form")
+    public ResponseEntity<?> revise(
+        @PathVariable(required = false) final Long school,
+        @PathVariable final long subject,
+        @RequestParam final MultiValueMap<String, String> parameters,
+        final HttpServletRequest request
+    ) throws Exception {
+        final MediaType type = new AcHttp(request, "subject-v1").type();
+        ResponseEntity<?> response;
+        try {
+            final Subject revised = this.subjects(school)
+                .revise(subject, new SbInputHttp(parameters));
+            response = SbsHttp.result(
+                type, revised, HttpStatus.OK, SbsHttp.base(school),
+                String.format("%s/%d", SbsHttp.base(school), revised.uid())
+            );
+        } catch (final SubjectInputException | SubjectAlreadyExistsException exception) {
+            response = SbsHttp.rejected(type, request, exception);
+        }
+        return response;
+    }
+
+    /**
+     * Revises a subject from a JSON document.
+     *
+     * @param school School identifier, absent for the shared federal catalogue
+     * @param subject Entity identifier
+     * @param json Input document
+     * @param request HTTP request
+     * @return Revised representation or redirect
+     * @throws Exception If revision fails
+     */
+    @PutMapping(
+        value = "/{subject}",
+        consumes = "application/vnd.surok.subject-v1+json",
+        produces = {
+            MediaType.TEXT_HTML_VALUE,
+            "application/vnd.surok.subject-v1+json",
+            "application/vnd.surok.subject-v1+xml"
+        }
+    )
+    @PreAuthorize(
+        """
+        hasRole('ADMIN') or (#school != null
+            and hasAnyRole('DIRECTOR', 'DEPUTY_DIRECTOR',
+                'BASIC_MAKER', 'ADVANCED_MAKER', 'PRO_MAKER')
+            and #school == authentication.principal.info().school())
+        """
+    )
+    @Operation(summary = "Update subject from JSON")
+    public ResponseEntity<?> revise(
+        @PathVariable(required = false) final Long school,
+        @PathVariable final long subject,
+        @RequestBody final JsonNode json,
+        final HttpServletRequest request
+    ) throws Exception {
+        final MediaType type = new AcHttp(request, "subject-v1").type();
+        final Subject revised = this.subjects(school)
+            .revise(subject, new SbInputHttp(json));
+        return SbsHttp.result(
+            type, revised, HttpStatus.OK, SbsHttp.base(school),
+            String.format("%s/%d", SbsHttp.base(school), revised.uid())
+        );
+    }
+
+    /**
+     * Removes a subject.
+     *
+     * @param school School identifier, absent for the shared federal catalogue
+     * @param subject Entity identifier
+     * @param request HTTP request
+     * @return Empty response
+     * @throws Exception If removal fails
+     */
+    @DeleteMapping(
+        value = "/{subject}", produces = {
+            MediaType.TEXT_HTML_VALUE, "application/vnd.surok.subject-v1+json",
+            "application/vnd.surok.subject-v1+xml"
+        }
+    )
+    @PreAuthorize(
+        """
+        hasRole('ADMIN') or (#school != null
+            and hasAnyRole('DIRECTOR', 'DEPUTY_DIRECTOR',
+                'BASIC_MAKER', 'ADVANCED_MAKER', 'PRO_MAKER')
+            and #school == authentication.principal.info().school())
+        """
+    )
+    @Operation(summary = "Remove subject")
+    public ResponseEntity<Void> remove(
+        @PathVariable(required = false) final Long school,
+        @PathVariable final long subject, final HttpServletRequest request
+    ) throws Exception {
+        new AcHttp(request, "subject-v1").type();
+        this.subjects(school).remove(subject);
+        return ResponseEntity.noContent().build();
+    }
+
+    private Subjects subjects(final Long school) throws Exception {
+        final Subjects subjects;
+        if (school == null) {
+            subjects = new SbsFederal(this.ctx);
+        } else {
+            subjects = new SlsPostgres(this.ctx).school(school).subjects();
+        }
+        return subjects;
+    }
+
+    private static String base(final Long school) {
+        final String path;
+        if (school == null) {
+            path = "/federal/subjects";
+        } else {
+            path = String.format("/schools/%d/subjects", school);
+        }
+        return path;
+    }
+
+    private static ResponseEntity<?> result(
+        final MediaType type,
+        final Subject selected,
+        final HttpStatus status,
+        final String base,
+        final String redirect
+    ) throws Exception {
+        return switch (type.toString()) {
+            case MediaType.TEXT_HTML_VALUE -> ResponseEntity.status(HttpStatus.FOUND)
+                .location(URI.create(redirect)).build();
+            case "application/vnd.surok.subject-v1+json" ->
+                ResponseEntity.status(status)
+                    .location(URI.create(String.format("%s/%d", base, selected.uid())))
+                    .contentType(new MediaType(type, StandardCharsets.UTF_8))
+                    .body(new SbV1(selected).print(new MdJson()).print());
+            case "application/vnd.surok.subject-v1+xml" ->
+                ResponseEntity.status(status)
+                    .location(URI.create(String.format("%s/%d", base, selected.uid())))
+                    .contentType(new MediaType(type, StandardCharsets.UTF_8))
+                    .body(new SbV1(selected).print(new MdXml("subject")).print());
+            case null, default -> throw new ResponseStatusException(
+                HttpStatus.NOT_ACCEPTABLE, "Unsupported Accept header"
+            );
+        };
+    }
+
+    private static ResponseEntity<?> rejected(
+        final MediaType type,
+        final HttpServletRequest request,
+        final Exception exception
+    ) throws Exception {
+        if (!MediaType.TEXT_HTML.equals(type)) {
+            throw exception;
+        }
+        String error = "empty";
+        if (exception instanceof SubjectAlreadyExistsException) {
+            error = "duplicate";
+        }
+        return ResponseEntity.status(HttpStatus.FOUND).location(
+            URI.create(String.format("%s?error=%s", request.getRequestURI(), error))
+        ).build();
+    }
+
+    private Media<String> web(
+        final HttpServletRequest request,
+        final Long school,
+        final String view
+    ) throws Exception {
+        Media<String> media = new SrWeb(
+            new UrBrief(
+                (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal()
+            ),
+            new SlsBrief(new SlsPostgres(this.ctx)),
+            new CsToken((CsrfToken) request.getAttribute(CsrfToken.class.getName()))
+        ).print(
+            new MdXslt(
+                new MdXml("surok").with("path", request.getRequestURI()),
+                new XsClasspath("xslt/subjects.xsl", view)
+            )
+        ).with("federal", school == null).with("error", request.getParameter("error")).with(
+            "editable", Stream.of(
+                "ADMIN", "DIRECTOR", "DEPUTY_DIRECTOR", "BASIC_MAKER",
+                "ADVANCED_MAKER", "PRO_MAKER"
+            ).anyMatch(request::isUserInRole)
+        );
+        if (school != null) {
+            media = media.with("school", new SlBrief(new SlsPostgres(this.ctx).school(school)));
+        }
+        return media;
+    }
+}

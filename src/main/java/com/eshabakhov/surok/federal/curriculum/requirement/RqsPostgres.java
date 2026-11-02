@@ -8,8 +8,11 @@ import com.eshabakhov.surok.Media;
 import com.eshabakhov.surok.Page;
 import com.eshabakhov.surok.PrItems;
 import com.eshabakhov.surok.Sorts;
+import com.eshabakhov.surok.federal.curriculum.CrPostgres;
 import com.eshabakhov.surok.federal.curriculum.requirement.filter.FlsCdRequirement;
 import com.eshabakhov.surok.federal.curriculum.requirement.input.MdRqInput;
+import com.eshabakhov.surok.federal.curriculum.requirement.input.RequirementInputException;
+import com.eshabakhov.surok.federal.curriculum.requirement.input.RqInputHttp;
 import com.eshabakhov.surok.federal.curriculum.requirement.sort.StsJqRequirement;
 import com.eshabakhov.surok.page.ResponsePage;
 import com.eshabakhov.surok.sql.ClasspathSql;
@@ -19,6 +22,7 @@ import org.jooq.Condition;
 import org.jooq.DSLContext;
 import org.jooq.Record;
 import org.jooq.impl.DSL;
+import org.springframework.dao.DuplicateKeyException;
 
 /**
  * Postgres implementation of {@link Requirements}.
@@ -52,42 +56,80 @@ public final class RqsPostgres implements Requirements {
     }
 
     @Override
+    public Iterable<Requirement> optional(final int grade) throws Exception {
+        return this.ctx.resultQuery(
+            new ClasspathSql("curriculum/requirement/find-optional.sql").text(), this.fid, grade
+        ).fetch(this::requirement);
+    }
+
+    @Override
+    public void check(final int grade, final int hours) throws Exception {
+        final Record row = this.ctx.resultQuery(
+            new ClasspathSql("curriculum/requirement/find-optional.sql").text(), this.fid, grade
+        ).fetchOne();
+        if (row == null || hours < 0 || hours > row.get("hours", Integer.class)
+            || !new CrPostgres(this.ctx, this.fid).grades().contains(grade)) {
+            throw new RequirementInputException(
+                String.format(
+                    "Additional hours %d have no applicable requirement in curriculum %d grade %d",
+                    hours, this.fid, grade
+                )
+            );
+        }
+    }
+
+    @Override
     public Requirement create(final RequirementInput input) throws Exception {
-        final Map<String, String> fields = input.print(
-            new MdRqInput()
-        ).print();
+        final Map<String, String> fields = new RqInputHttp(
+            input.print(new MdRqInput()).print()
+        ).print(new MdRqInput()).print();
         final Integer grade = Integer.valueOf(fields.get("grade"));
         final String part = Requirement.PartType.valueOf(
             fields.get("partType")
         ).name();
-        return this.ctx.transactionResult(
-            config -> {
-                final DSLContext ttx = DSL.using(config);
-                if (ttx.resultQuery(
-                    new ClasspathSql("curriculum/requirement/find-existing.sql").text(),
-                    this.fid,
-                    grade,
-                    fields.get("subjectName"),
-                    part,
-                    false
-                ).fetchOne() != null) {
-                    throw new RequirementAlreadyExistsException();
+        try {
+            return this.ctx.transactionResult(
+                config -> {
+                    final DSLContext ttx = DSL.using(config);
+                    if (!new CrPostgres(ttx, this.fid).grades().contains(grade)) {
+                        throw new RequirementInputException(
+                            String.format(
+                                "Grade %d is inapplicable to curriculum %d", grade, this.fid
+                            )
+                        );
+                    }
+                    if (ttx.resultQuery(
+                        new ClasspathSql("curriculum/requirement/find-existing.sql").text(),
+                        this.fid,
+                        grade,
+                        fields.get("subjectId"),
+                        part,
+                        false
+                    ).fetchOne() != null) {
+                        throw new RequirementAlreadyExistsException();
+                    }
+                    final Record created = ttx.resultQuery(
+                        new ClasspathSql("curriculum/requirement/create.sql").text(),
+                        this.fid,
+                        grade,
+                        fields.get("subjectId"),
+                        fields.get("hours"),
+                        part,
+                        false
+                    ).fetchOne();
+                    if (created == null) {
+                        throw new RequirementInputException(
+                            String.format(
+                                "Active subject `%s` is required", fields.get("subjectId")
+                            )
+                        );
+                    }
+                    return this.requirement(created);
                 }
-                final Record created = ttx.resultQuery(
-                    new ClasspathSql("curriculum/requirement/create.sql").text(),
-                    this.fid,
-                    grade,
-                    fields.get("subjectName"),
-                    Integer.valueOf(fields.get("weeklyHours")),
-                    part,
-                    false
-                ).fetchOne();
-                if (created == null) {
-                    throw new RequirementFailedCreateException();
-                }
-                return new RqPostgres(this.ctx, created.get("id", Long.class));
-            }
-        );
+            );
+        } catch (final DuplicateKeyException exception) {
+            throw new RequirementAlreadyExistsException(exception);
+        }
     }
 
     @Override
@@ -105,7 +147,7 @@ public final class RqsPostgres implements Requirements {
                 String.format("Requirement with id=%d not found", id)
             );
         }
-        return new RqPostgres(this.ctx, selected.get("id", Long.class));
+        return this.requirement(selected);
     }
 
     @Override
@@ -129,8 +171,7 @@ public final class RqsPostgres implements Requirements {
                 DSL.val(page.limit()),
                 DSL.val((page.offset() - 1) * page.limit())
             ).fetch(
-                selected ->
-                    new RqPostgres(this.ctx, selected.get("id", Long.class))
+                this::requirement
             ),
             new ResponsePage(
                 page,
@@ -148,7 +189,7 @@ public final class RqsPostgres implements Requirements {
             new ClasspathSql("curriculum/requirement/list-active.sql").text(),
             this.fid,
             false
-        ).fetch(selected -> new RqPostgres(this.ctx, selected.get("id", Long.class)));
+        ).fetch(this::requirement);
     }
 
     @Override
@@ -181,5 +222,15 @@ public final class RqsPostgres implements Requirements {
                     id
                 ).execute()
         );
+    }
+
+    private Requirement requirement(final Record row) {
+        final Requirement result;
+        if ("OPTIONAL".equals(row.get("part_type", String.class))) {
+            result = new RqOptional(this.ctx, row.get("id", Long.class));
+        } else {
+            result = new RqMandatory(this.ctx, row.get("id", Long.class));
+        }
+        return result;
     }
 }

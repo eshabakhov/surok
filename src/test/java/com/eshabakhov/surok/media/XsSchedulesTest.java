@@ -71,7 +71,8 @@ final class XsSchedulesTest {
                 Matchers.containsString("Учебный год"),
                 Matchers.containsString("href=\"/schools/3/schedules\""),
                 Matchers.containsString("href=\"/schools/3/buildings\""),
-                Matchers.not(Matchers.containsString("/buildings/7"))
+                Matchers.not(Matchers.containsString("/buildings/7")),
+                Matchers.not(Matchers.containsString("Учебная нагрузка"))
             )
         );
     }
@@ -82,6 +83,9 @@ final class XsSchedulesTest {
             XsSchedulesTest.page("details"),
             Matchers.allOf(
                 Matchers.containsString("Название:"),
+                Matchers.containsString("class=\"schedule-loads-link\""),
+                Matchers.containsString("Перейти к учебной нагрузке"),
+                Matchers.not(Matchers.containsString("class=\"tabs-list schedule-loads\"")),
                 Matchers.containsString("class=\"stat-value\">2</div>"),
                 Matchers.containsString("class=\"stat-value\">3</div>"),
                 Matchers.containsString("href=\"/schools/3/schedules/7/loads\""),

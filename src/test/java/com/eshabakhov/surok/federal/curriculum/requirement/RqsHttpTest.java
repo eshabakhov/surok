@@ -33,8 +33,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.jdbc.Sql;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.server.ResponseStatusException;
@@ -49,7 +51,17 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  * @checkstyle ProhibitFieldsInTestClassesCheck (1000 lines)
  */
 @Testcontainers
+@DirtiesContext
 @SpringBootTest
+@Sql(
+    statements = """
+        INSERT INTO subject (id, origin, name)
+        VALUES (507, 'FEDERAL', 'History'),
+        (502, 'FEDERAL', 'Algebra'),
+        (504, 'FEDERAL', 'Mathematics')
+        ON CONFLICT DO NOTHING;
+        """
+)
 @SuppressWarnings({
     "PMD.UnitTestContainsTooManyAsserts",
     "PMD.UnusedPrivateMethod",
@@ -93,8 +105,9 @@ final class RqsHttpTest {
         this.ctx.resultQuery(
             """
                 INSERT INTO public.federal_curriculum_requirement (id, federal_curriculum_id, grade,
-                subject_name, weekly_hours, part_type, is_deleted)
-                VALUES (?, ?, ?, ?, ?, CAST(? AS curriculum_part_type), ?)
+                subject_id, hours, part_type, is_deleted)
+                VALUES (?, ?, ?, (SELECT id FROM subject WHERE name = ?
+                AND NOT is_deleted), ?, CAST(? AS curriculum_part_type), ?)
                 """,
             7L,
             1L,
@@ -259,7 +272,7 @@ final class RqsHttpTest {
         ).getBody();
         MatcherAssert.assertThat(
             "JSON requirements must contain the selected requirement",
-            response.path("items").get(0).path("subjectName").asText(),
+            response.path("items").get(0).path("subject").path("name").asText(),
             Matchers.is("Mathematics")
         );
         MatcherAssert.assertThat(
@@ -378,9 +391,9 @@ final class RqsHttpTest {
         final MultiValueMap<String, String> parameters =
             new LinkedMultiValueMap<>();
         parameters.add("grade", "6");
-        parameters.add("subjectName", "History");
-        parameters.add("weeklyHours", "2");
-        parameters.add("partType", "OPTIONAL");
+        parameters.add("subjectId", "507");
+        parameters.add("hours", "2");
+        parameters.add("partType", "MANDATORY");
         final ResponseEntity<?> response = new RqsHttp(this.ctx).create(
             1L, parameters, request
         );
@@ -406,9 +419,9 @@ final class RqsHttpTest {
         final MultiValueMap<String, String> parameters =
             new LinkedMultiValueMap<>();
         parameters.add("grade", "6");
-        parameters.add("subjectName", "History");
-        parameters.add("weeklyHours", "2");
-        parameters.add("partType", "OPTIONAL");
+        parameters.add("subjectId", "507");
+        parameters.add("hours", "2");
+        parameters.add("partType", "MANDATORY");
         final ResponseEntity<?> response = new RqsHttp(this.ctx).create(
             1L,
             parameters,
@@ -438,14 +451,16 @@ final class RqsHttpTest {
         final MultiValueMap<String, String> parameters =
             new LinkedMultiValueMap<>();
         parameters.add("grade", "6");
-        parameters.add("subjectName", "History");
-        parameters.add("weeklyHours", "2");
-        parameters.add("partType", "OPTIONAL");
+        parameters.add("subjectId", "507");
+        parameters.add("hours", "2");
+        parameters.add("partType", "MANDATORY");
         final ResponseEntity<?> response = new RqsHttp(this.ctx).create(1L, parameters, request);
         MatcherAssert.assertThat(
             "XML creation must return the created requirement",
             (String) response.getBody(),
-            Matchers.containsString("<subjectName>History</subjectName>")
+            Matchers.containsString(
+                "<subject><id>507</id><name>History</name><origin>FEDERAL</origin></subject>"
+            )
         );
         MatcherAssert.assertThat(
             "XML creation must return status 201",
@@ -461,9 +476,9 @@ final class RqsHttpTest {
         final MultiValueMap<String, String> parameters =
             new LinkedMultiValueMap<>();
         parameters.add("grade", "6");
-        parameters.add("subjectName", "History");
-        parameters.add("weeklyHours", "2");
-        parameters.add("partType", "OPTIONAL");
+        parameters.add("subjectId", "507");
+        parameters.add("hours", "2");
+        parameters.add("partType", "MANDATORY");
         Assertions.assertThrows(
             ResponseStatusException.class,
             () -> new RqsHttp(this.ctx).create(1L, parameters, request)
@@ -481,8 +496,8 @@ final class RqsHttpTest {
         final MultiValueMap<String, String> parameters =
             new LinkedMultiValueMap<>();
         parameters.add("grade", "7");
-        parameters.add("subjectName", "Algebra");
-        parameters.add("weeklyHours", "4");
+        parameters.add("subjectId", "502");
+        parameters.add("hours", "4");
         parameters.add("partType", "MANDATORY");
         final ResponseEntity<?> response = new RqsHttp(this.ctx).revise(
             1L, 7L, parameters, request
@@ -509,13 +524,13 @@ final class RqsHttpTest {
         final MultiValueMap<String, String> parameters =
             new LinkedMultiValueMap<>();
         parameters.add("grade", "7");
-        parameters.add("subjectName", "Algebra");
-        parameters.add("weeklyHours", "4");
+        parameters.add("subjectId", "502");
+        parameters.add("hours", "4");
         parameters.add("partType", "MANDATORY");
         MatcherAssert.assertThat(
             "JSON revision must return revised fields",
             ((ObjectNode) new RqsHttp(this.ctx).revise(1L, 7L, parameters, request).getBody())
-                .path("subjectName").asText(),
+                .path("subject").path("name").asText(),
             Matchers.is("Algebra")
         );
     }
@@ -530,13 +545,15 @@ final class RqsHttpTest {
         final MultiValueMap<String, String> parameters =
             new LinkedMultiValueMap<>();
         parameters.add("grade", "7");
-        parameters.add("subjectName", "Algebra");
-        parameters.add("weeklyHours", "4");
+        parameters.add("subjectId", "502");
+        parameters.add("hours", "4");
         parameters.add("partType", "MANDATORY");
         MatcherAssert.assertThat(
             "XML revision must return revised fields",
             (String) new RqsHttp(this.ctx).revise(1L, 7L, parameters, request).getBody(),
-            Matchers.containsString("<subjectName>Algebra</subjectName>")
+            Matchers.containsString(
+                "<subject><id>502</id><name>Algebra</name><origin>FEDERAL</origin></subject>"
+            )
         );
     }
 
@@ -547,8 +564,8 @@ final class RqsHttpTest {
         final MultiValueMap<String, String> parameters =
             new LinkedMultiValueMap<>();
         parameters.add("grade", "7");
-        parameters.add("subjectName", "Algebra");
-        parameters.add("weeklyHours", "4");
+        parameters.add("subjectId", "502");
+        parameters.add("hours", "4");
         parameters.add("partType", "MANDATORY");
         Assertions.assertThrows(
             ResponseStatusException.class,
@@ -558,7 +575,7 @@ final class RqsHttpTest {
 
     @Test
     void removesRequirement() throws Exception {
-        new RqsHttp(this.ctx).remove(1L, 7L);
+        new RqsHttp(this.ctx).remove(1L, 7L, new MockHttpServletRequest());
         MatcherAssert.assertThat(
             "HTTP removal must mark the requirement as deleted",
             this.ctx.resultQuery(

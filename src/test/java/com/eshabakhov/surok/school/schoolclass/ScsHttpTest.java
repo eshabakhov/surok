@@ -29,6 +29,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.context.SecurityContextImpl;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.csrf.CsrfToken;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
@@ -47,6 +48,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  * @checkstyle ProhibitFieldsInTestClassesCheck (1000 lines)
  */
 @Testcontainers
+@DirtiesContext
 @SpringBootTest
 @AutoConfigureMockMvc
 @SuppressWarnings({
@@ -96,7 +98,7 @@ final class ScsHttpTest {
     void truncateSchools() {
         this.ctx.resultQuery(
             """
-                TRUNCATE TABLE public.school RESTART IDENTITY CASCADE
+                TRUNCATE TABLE public.school, subject RESTART IDENTITY CASCADE
                 """
         ).execute();
     }
@@ -173,7 +175,7 @@ final class ScsHttpTest {
             MockMvcRequestBuilders.get(String.format("/schools/1/classes%s", suffix))
                 .session(this.session(Roles.RoleEnum.VIEWER, 1L))
         ).andExpect(MockMvcResultMatchers.status().isOk()).andExpect(
-            MockMvcResultMatchers.content().string(Matchers.not(Matchers.isEmptyString()))
+            MockMvcResultMatchers.content().string(Matchers.not(Matchers.emptyString()))
         );
     }
 
@@ -387,7 +389,8 @@ final class ScsHttpTest {
         ).andExpect(MockMvcResultMatchers.status().isOk()).andExpect(
             MockMvcResultMatchers.content().string(
                 Matchers.allOf(
-                    Matchers.containsString("2А"), Matchers.containsString("10Б"),
+                    Matchers.containsString("2А"),
+                    Matchers.not(Matchers.containsString("10Б")),
                     Matchers.containsString("Математика"),
                     Matchers.not(Matchers.containsString("Удалён")),
                     Matchers.not(Matchers.containsString("Чужой"))
@@ -404,7 +407,7 @@ final class ScsHttpTest {
         );
         MatcherAssert.assertThat(
             new ClassLoadPostgres(this.ctx, 40L)
-                .print(new MdJson()).print().path("schoolClassName").asText(),
+                .print(new MdJson()).print().path("schoolClass").path("name").asText(),
             Matchers.equalTo("2А")
         );
     }
@@ -439,7 +442,7 @@ final class ScsHttpTest {
         );
         MatcherAssert.assertThat(
             new ClassLoadPostgres(this.ctx, 40L).print(new MdJson()).print()
-                .path("schoolClassName").asText(),
+                .path("schoolClass").path("name").asText(),
             Matchers.equalTo("2А")
         );
     }
@@ -452,13 +455,14 @@ final class ScsHttpTest {
         ).execute();
         this.ctx.resultQuery(
             """
-            INSERT INTO public.subject (id, school_id, name) VALUES (30, 1, 'Математика')
+            INSERT INTO subject (id, school_id, origin, name)
+        VALUES (30, 1, 'SCHOOL', 'Математика')
             """
         ).execute();
         this.ctx.resultQuery(
             """
             INSERT INTO public.class_curriculum
-                (id, schedule_id, school_class_id, subject_id, hours_per_week)
+                (id, schedule_id, school_class_id, subject_id, hours)
             VALUES (40, 100, 10, 30, 5)
             """
         ).execute();

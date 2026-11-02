@@ -24,14 +24,14 @@ final class RequirementInputTest {
         final MultiValueMap<String, String> parameters =
             new LinkedMultiValueMap<>();
         parameters.add("grade", " 5 ");
-        parameters.add("subjectName", " Mathematics ");
-        parameters.add("weeklyHours", " 4 ");
+        parameters.add("subjectId", " 173 ");
+        parameters.add("hours", " 4 ");
         parameters.add("partType", "MANDATORY");
         Assertions.assertEquals(
             JsonNodeFactory.instance.objectNode()
                 .put("grade", 5)
-                .put("subjectName", "Mathematics")
-                .put("weeklyHours", 4)
+                .put("subjectId", "173")
+                .put("hours", 4)
                 .put("partType", "MANDATORY"),
             new RqInputHttp(parameters).print(new MdJson()).print()
         );

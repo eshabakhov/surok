@@ -4,6 +4,7 @@
 package com.eshabakhov.surok.federal.curriculum.requirement;
 
 import com.eshabakhov.surok.Sort;
+import com.eshabakhov.surok.federal.curriculum.requirement.input.RequirementInputException;
 import com.eshabakhov.surok.federal.curriculum.requirement.input.RqInput;
 import com.eshabakhov.surok.federal.curriculum.requirement.input.RqInputGrade;
 import com.eshabakhov.surok.federal.curriculum.requirement.input.RqInputHours;
@@ -16,7 +17,6 @@ import com.eshabakhov.surok.media.MdXml;
 import com.eshabakhov.surok.page.PageRequest;
 import com.eshabakhov.surok.sort.SortRequest;
 import com.eshabakhov.surok.sort.SortsRequest;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -35,8 +35,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.jdbc.Sql;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -48,7 +50,26 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  * @checkstyle ProhibitFieldsInTestClassesCheck (1000 lines)
  */
 @Testcontainers
+@DirtiesContext
 @SpringBootTest
+@Sql(
+    statements = """
+        INSERT INTO subject (id, origin, name)
+        VALUES (501, 'FEDERAL', 'Literature'),
+        (502, 'FEDERAL', 'Algebra'),
+        (503, 'FEDERAL', 'Geometry'),
+        (504, 'FEDERAL', 'Mathematics'),
+        (505, 'FEDERAL', 'Biology'),
+        (506, 'FEDERAL', 'Art'),
+        (507, 'FEDERAL', 'History'),
+        (508, 'FEDERAL', 'Chemistry'),
+        (509, 'FEDERAL', 'Informatics'),
+        (510, 'FEDERAL', 'Music'),
+        (511, 'FEDERAL', 'Physics'),
+        (512, 'FEDERAL', 'Geography')
+        ON CONFLICT DO NOTHING;
+        """
+)
 @SuppressWarnings({"PMD.UnusedPrivateMethod", "UnusedMethod"})
 final class RqsPostgresTest {
 
@@ -105,21 +126,21 @@ final class RqsPostgresTest {
                 new RqInputPart(
                     new RqInputHours(
                         new RqInputSubject(
-                            new RqInputGrade(new RqInput(), "1"),
-                            "Literature"
+                            new RqInputGrade(new RqInput(), "5"),
+                            "501"
                         ),
                         "1"
                     ),
-                    "OPTIONAL"
+                    "MANDATORY"
                 )
             ).print(new MdJson()).print(),
-            Matchers.is(
+            Matchers.equalTo(
                 JsonNodeFactory.instance.objectNode()
                     .put("id", 1L)
-                    .put("grade", 1)
-                    .put("subjectName", "Literature")
-                    .put("weeklyHours", 1)
-                    .put("partType", "OPTIONAL")
+                    .put("grade", 5).put("hours", 1).put("partType", "MANDATORY").set(
+                        "subject", JsonNodeFactory.instance.objectNode().put("id", 501L)
+                            .put("name", "Literature").put("origin", "FEDERAL")
+                    )
             )
         );
     }
@@ -130,7 +151,7 @@ final class RqsPostgresTest {
             new RqInputHours(
                 new RqInputSubject(
                     new RqInputGrade(new RqInput(), "5"),
-                    "Mathematics"
+                    "504"
                 ),
                 "5"
             ),
@@ -153,7 +174,7 @@ final class RqsPostgresTest {
             new RqInputHours(
                 new RqInputSubject(
                     new RqInputGrade(new RqInput(), "5"),
-                    "Mathematics"
+                    "504"
                 ),
                 "5"
             ),
@@ -200,7 +221,7 @@ final class RqsPostgresTest {
                         new RqInputHours(
                             new RqInputSubject(
                                 new RqInputGrade(new RqInput(), "5"),
-                                "Mathematics"
+                                "504"
                             ),
                             "5"
                         ),
@@ -208,7 +229,7 @@ final class RqsPostgresTest {
                     )
                 )
             ).getCause(),
-            Matchers.instanceOf(RequirementFailedCreateException.class)
+            Matchers.instanceOf(RequirementInputException.class)
         );
     }
 
@@ -217,8 +238,9 @@ final class RqsPostgresTest {
         this.ctx.resultQuery(
             """
                 INSERT INTO public.federal_curriculum_requirement (id, federal_curriculum_id, grade,
-                subject_name, weekly_hours, part_type, is_deleted)
-                VALUES (?, ?, ?, ?, ?, CAST(? AS curriculum_part_type), ?)
+                subject_id, hours, part_type, is_deleted)
+                VALUES (?, ?, ?, (SELECT id FROM subject WHERE name = ?
+                AND NOT is_deleted), ?, CAST(? AS curriculum_part_type), ?)
                 """,
             17L,
             1L,
@@ -250,7 +272,7 @@ final class RqsPostgresTest {
                 new RqInputHours(
                     new RqInputSubject(
                         new RqInputGrade(new RqInput(), "7"),
-                        "Biology"
+                        "505"
                     ),
                     "2"
                 ),
@@ -269,9 +291,13 @@ final class RqsPostgresTest {
         this.ctx.resultQuery(
             """
             INSERT INTO public.federal_curriculum_requirement (id, federal_curriculum_id, grade,
-            subject_name, weekly_hours, part_type, is_deleted)
-            VALUES (?, ?, ?, ?, ?, CAST(? AS curriculum_part_type), ?), (?, ?, ?, ?, ?, CAST(? AS
-            curriculum_part_type), ?), (?, ?, ?, ?, ?, CAST(? AS curriculum_part_type), ?)
+            subject_id, hours, part_type, is_deleted)
+            VALUES (?, ?, ?, (SELECT id FROM subject WHERE name = ?
+            AND NOT is_deleted), ?, CAST(? AS curriculum_part_type), ?), (?,
+            ?, ?, (SELECT id FROM subject WHERE name = ?
+            AND NOT is_deleted), ?, CAST(? AS
+            curriculum_part_type), ?), (?, ?, ?, (SELECT id FROM subject WHERE name = ?
+            AND NOT is_deleted), ?, CAST(? AS curriculum_part_type), ?)
             """,
             31L,
             1L,
@@ -324,9 +350,13 @@ final class RqsPostgresTest {
         this.ctx.resultQuery(
             """
             INSERT INTO public.federal_curriculum_requirement (id, federal_curriculum_id, grade,
-            subject_name, weekly_hours, part_type, is_deleted)
-            VALUES (?, ?, ?, ?, ?, CAST(? AS curriculum_part_type), ?), (?, ?, ?, ?, ?, CAST(? AS
-            curriculum_part_type), ?), (?, ?, ?, ?, ?, CAST(? AS curriculum_part_type), ?)
+            subject_id, hours, part_type, is_deleted)
+            VALUES (?, ?, ?, (SELECT id FROM subject WHERE name = ?
+            AND NOT is_deleted), ?, CAST(? AS curriculum_part_type), ?), (?,
+            ?, ?, (SELECT id FROM subject WHERE name = ?
+            AND NOT is_deleted), ?, CAST(? AS
+            curriculum_part_type), ?), (?, ?, ?, (SELECT id FROM subject WHERE name = ?
+            AND NOT is_deleted), ?, CAST(? AS curriculum_part_type), ?)
             """,
             31L,
             1L,
@@ -366,18 +396,13 @@ final class RqsPostgresTest {
                 )
             ).print(new MdJson()).print().path("page"),
             Matchers.is(
-                new ObjectMapper().readTree(
-                    """
-                        {
-                            "limit": 1,
-                            "offset": 1,
-                            "total": 2,
-                            "totalPages": 2,
-                            "hasNext": true,
-                            "hasPrev": false
-                        }
-                    """
-                )
+                JsonNodeFactory.instance.objectNode()
+                    .put("limit", 1)
+                    .put("offset", 1)
+                    .put("total", 2)
+                    .put("totalPages", 2)
+                    .put("hasNext", true)
+                    .put("hasPrev", false)
             )
         );
     }
@@ -390,11 +415,11 @@ final class RqsPostgresTest {
                 new RqInputHours(
                     new RqInputSubject(
                         new RqInputGrade(new RqInput(), "9"),
-                        "Chemistry"
+                        "508"
                     ),
                     "2"
                 ),
-                "OPTIONAL"
+                "MANDATORY"
             )
         );
         new RqsPostgres(this.ctx, 1L).remove(
@@ -403,11 +428,11 @@ final class RqsPostgresTest {
                     new RqInputHours(
                         new RqInputSubject(
                             new RqInputGrade(new RqInput(), "9"),
-                            "Physics"
+                            "511"
                         ),
                         "2"
                     ),
-                    "OPTIONAL"
+                    "MANDATORY"
                 )
             ).uid()
         );
@@ -416,11 +441,11 @@ final class RqsPostgresTest {
                 new RqInputHours(
                     new RqInputSubject(
                         new RqInputGrade(new RqInput(), "9"),
-                        "Geography"
+                        "512"
                     ),
                     "2"
                 ),
-                "OPTIONAL"
+                "MANDATORY"
             )
         );
         MatcherAssert.assertThat(
@@ -439,8 +464,8 @@ final class RqsPostgresTest {
             new RqInputPart(
                 new RqInputHours(
                     new RqInputSubject(
-                        new RqInputGrade(new RqInput(), "10"),
-                        "Informatics"
+                        new RqInputGrade(new RqInput(), "5"),
+                        "509"
                     ),
                     "3"
                 ),
@@ -454,7 +479,7 @@ final class RqsPostgresTest {
             Matchers.allOf(
                 Matchers.startsWith("<requirements><requirement>"),
                 Matchers.containsString(
-                    "<subjectName>Informatics</subjectName>"
+                    "<subject><id>509</id><name>Informatics</name><origin>FEDERAL</origin></subject>"
                 ),
                 Matchers.endsWith("</requirement></requirements>")
             )
@@ -467,12 +492,12 @@ final class RqsPostgresTest {
             new RqInputPart(
                 new RqInputHours(
                     new RqInputSubject(
-                        new RqInputGrade(new RqInput(), "4"),
-                        "Music"
+                        new RqInputGrade(new RqInput(), "5"),
+                        "510"
                     ),
                     "1"
                 ),
-                "OPTIONAL"
+                "MANDATORY"
             )
         );
         new RqsPostgres(this.ctx, 1L).remove(created.uid());
@@ -504,18 +529,54 @@ final class RqsPostgresTest {
             new RqInputPart(
                 new RqInputHours(
                     new RqInputSubject(
-                        new RqInputGrade(new RqInput(), "3"),
-                        "Art"
+                        new RqInputGrade(new RqInput(), "5"),
+                        "506"
                     ),
                     "1"
                 ),
-                "OPTIONAL"
+                "MANDATORY"
             )
         );
         new RqsPostgres(this.ctx, 1L).remove(created.uid());
         Assertions.assertThrows(
             RequirementNotFoundException.class,
             () -> new RqsPostgres(this.ctx, 1L).remove(created.uid())
+        );
+    }
+
+    @Test
+    void checksHoursAgainstTheOptionalRequirement() throws Exception {
+        new RqsPostgres(this.ctx, 1L).create(
+            new RqInputHours(
+                new RqInputGrade(new RqInputPart(new RqInput(), "OPTIONAL"), "5"), "3"
+            )
+        );
+        Assertions.assertDoesNotThrow(
+            () -> new RqsPostgres(this.ctx, 1L).check(5, 3),
+            "The explicit grade maximum rejected its boundary"
+        );
+    }
+
+    @Test
+    void rejectsHoursAboveTheOptionalRequirement() throws Exception {
+        new RqsPostgres(this.ctx, 1L).create(
+            new RqInputHours(
+                new RqInputGrade(new RqInputPart(new RqInput(), "OPTIONAL"), "5"), "3"
+            )
+        );
+        Assertions.assertThrows(
+            RequirementInputException.class,
+            () -> new RqsPostgres(this.ctx, 1L).check(5, 4),
+            "Additional hours exceeded the grade maximum"
+        );
+    }
+
+    @Test
+    void distinguishesAnUnspecifiedMaximumFromZero() {
+        Assertions.assertThrows(
+            RequirementInputException.class,
+            () -> new RqsPostgres(this.ctx, 1L).check(5, 0),
+            "An absent optional requirement was treated as an explicit zero maximum"
         );
     }
 

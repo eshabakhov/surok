@@ -3,14 +3,11 @@
  */
 package com.eshabakhov.surok.federal.curriculum.requirement;
 
-import com.eshabakhov.surok.Media;
 import com.eshabakhov.surok.Printable;
 
 /**
  * Federal curriculum requirement domain entity.
- *
- * <p>Does not expose data via getters. Instead, prints itself
- * into a {@link Media} via {@link Printable#print(Media)}.</p>
+ * For example, {@code requirement.revise(input)} updates the fields of its requirement kind.
  *
  * @since 0.0.1
  */

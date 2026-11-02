@@ -7,6 +7,18 @@ import { requirement } from './requirement.js';
 import { sorts } from '../shared/sorts.js';
 
 $(() => {
+    $('#subject-name').on('change', function () {
+        const optional = $(this).val() === 'OPTIONAL';
+        const label = optional ? 'Максимум часов в неделю' : 'Обязательных часов в неделю';
+        $('#requirement-hours').attr({
+            min: optional ? '0' : '1',
+            placeholder: optional ? 'Максимум ч./нед.' : 'Часов/нед.',
+            'aria-label': label
+        });
+        $('#requirement-hours-hint').text(optional
+            ? 'Общий максимум для дополнительных предметов на каждый класс параллели; ноль запрещает вариативную нагрузку.'
+            : 'Обязательная нагрузка по выбранному федеральному предмету на каждый класс параллели.');
+    }).trigger('change');
     const path = window.location.pathname;
     const filterFields = ['grade', 'subject', 'part'];
     const sortFields = ['grade', 'subject', 'hours', 'part'];
@@ -30,7 +42,6 @@ $(() => {
         );
     };
     const grade = delayed(250, value => filtered('grade', value));
-    const subject = delayed(250, value => filtered('subject', value));
 
     $(document).on(
         'click',
@@ -59,8 +70,8 @@ $(() => {
     $('#filter-grade').on('input', function () {
         grade($(this).val().trim());
     });
-    $('#filter-subject').on('input', function () {
-        subject($(this).val().trim());
+    $('#filter-subject').on('change', function () {
+        filtered('subject', $(this).val());
     });
     $('#filter-part').on('change', function () {
         filtered('part', $(this).val());
