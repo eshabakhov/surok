@@ -5,6 +5,7 @@ package com.eshabakhov.surok.school.schedule;
 
 import com.eshabakhov.surok.Printable;
 import com.eshabakhov.surok.school.schedule.load.ClassLoads;
+import com.eshabakhov.surok.school.schedule.load.autofill.LoadDraft;
 
 /**
  * School schedule printed into a supplied medium.
@@ -35,4 +36,11 @@ public interface Schedule extends Printable {
      * @return Teaching loads
      */
     ClassLoads loads();
+
+    /**
+     * Planning draft belonging to this schedule.
+     *
+     * @return Teaching load draft
+     */
+    LoadDraft draft();
 }

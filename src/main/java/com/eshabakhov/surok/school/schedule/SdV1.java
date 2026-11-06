@@ -5,6 +5,7 @@ package com.eshabakhov.surok.school.schedule;
 
 import com.eshabakhov.surok.Media;
 import com.eshabakhov.surok.school.schedule.load.ClassLoads;
+import com.eshabakhov.surok.school.schedule.load.autofill.LoadDraft;
 
 /**
  * Version 1 implementation of {@link Schedule}.
@@ -47,5 +48,10 @@ public final class SdV1 implements Schedule {
     @Override
     public ClassLoads loads() {
         return this.origin.loads();
+    }
+
+    @Override
+    public LoadDraft draft() {
+        return this.origin.draft();
     }
 }

@@ -7,6 +7,7 @@ import com.eshabakhov.surok.User;
 import com.eshabakhov.surok.user.AuthUser;
 import com.eshabakhov.surok.user.Roles;
 import com.eshabakhov.surok.user.UrPostgres;
+import com.eshabakhov.surok.user.UrsPostgres;
 import java.util.List;
 import java.util.UUID;
 import org.hamcrest.MatcherAssert;
@@ -50,10 +51,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @DirtiesContext
 @SpringBootTest
 @AutoConfigureMockMvc
-@SuppressWarnings({
-    "PMD.UnusedPrivateMethod", "UnusedMethod",
-    "PMD.UnitTestShouldIncludeAssert"
-})
+@SuppressWarnings({"PMD.UnusedPrivateMethod", "UnusedMethod", "PMD.UnitTestShouldIncludeAssert"})
 final class SbsHttpTest {
 
     /** Postgres container. */
@@ -222,11 +220,12 @@ final class SbsHttpTest {
         ).andExpect(MockMvcResultMatchers.status().isForbidden());
     }
 
-    @Test
-    void deniesJsonCreationForViewer() throws Exception {
+    @ParameterizedTest
+    @ValueSource(strings = {"VIEWER", "BASIC_MAKER"})
+    void deniesJsonCreationWithoutASchoolEditorRole(final String role) throws Exception {
         this.mvc.perform(
             this.authorized(
-                MockMvcRequestBuilders.post("/schools/1/subjects"), Roles.RoleEnum.VIEWER
+                MockMvcRequestBuilders.post("/schools/1/subjects"), Roles.RoleEnum.valueOf(role)
             ).accept("application/vnd.surok.subject-v1+json")
                 .contentType("application/vnd.surok.subject-v1+json")
                 .content("{\"name\":\"East\"}")
@@ -961,15 +960,24 @@ final class SbsHttpTest {
             this.ctx,
             this.ctx.resultQuery(
                 """
-                INSERT INTO public."user" (username, password, email, corporate, school_id)
-                VALUES (?, 'secret', ?, true, ?) RETURNING id
+                INSERT INTO public."user" (username, password, email, corporate)
+                VALUES (?, 'secret', ?, true) RETURNING id
                 """,
                 UUID.randomUUID().toString(),
-                String.format("%s@example.org", UUID.randomUUID()),
-                school
+                String.format("%s@example.org", UUID.randomUUID())
             ).fetchSingle("id", Long.class)
         );
-        user.roles().grant(role);
+        if (school != null) {
+            new UrsPostgres(this.ctx, school).add(user);
+        }
+        if (List.of(
+            Roles.RoleEnum.DIRECTOR, Roles.RoleEnum.DEPUTY_DIRECTOR,
+            Roles.RoleEnum.TEACHER, Roles.RoleEnum.STUDENT, Roles.RoleEnum.VIEWER
+        ).contains(role)) {
+            new UrsPostgres(this.ctx, school).roles(user).grant(role);
+        } else {
+            user.roles().grant(role);
+        }
         final AuthUser principal = new AuthUser(user);
         final MockHttpSession session = new MockHttpSession();
         session.setAttribute(

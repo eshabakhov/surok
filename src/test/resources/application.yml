@@ -28,6 +28,8 @@ server:
   servlet:
     context-path: /api
 springdoc:
+  cache:
+    disabled: true
   api-docs:
     path: /api-docs
   swagger-ui:

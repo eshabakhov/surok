@@ -42,6 +42,18 @@ in `BOOTSTRAP_ADMIN_USERNAME`, `BOOTSTRAP_ADMIN_EMAIL`, and
 with those credentials, then set `BOOTSTRAP_ADMIN_ENABLED=false` for subsequent
 starts. Administrators can manage schools and the federal curriculum catalog.
 
+With `APP_SECURITY_DOCS_ENABLED=true`, `/swagger-ui.html` opens without login.
+It initially shows public operations. **Authorize** verifies the account's
+username and password and loads the operations permitted for that user;
+**Logout** restores the public description. Swagger authentication is separate
+from the website session. School-specific access is checked on every API request.
+Credentials remain in memory until logout or page reload; use HTTPS outside
+local development. **Try it out** includes the application's CSRF token.
+
+Administrators can open `/permissions` to inspect resource access by role.
+The page supports searching actions and endpoints; `✓*` means access within the
+user's school. JSON and XML representations are selectable in Swagger UI.
+
 Run `docker compose down` to stop the local stack. Database data is preserved
 in a Docker volume.
 
@@ -71,7 +83,7 @@ keep Docker running for the PostgreSQL tests. From the repository root, run:
 ```
 
 Maven Wrapper downloads Maven; the build installs Node.js and npm, runs tests,
-checks Java with Qulice, and lints JavaScript, CSS, and HTML. On Windows, use
+checks Java with Qulice, and lints JavaScript and CSS. On Windows, use
 `mvnw.cmd` instead of `./mvnw`.
 
 To run a single test class:
@@ -96,8 +108,8 @@ requires real `YA_ID` and `YA_SECRET`; local defaults support password login.
 Before launching `SurokApplication` from an IDE, run `./mvnw process-classes`
 to generate build metadata and prepare XSLT resources in `target/classes`.
 
-JavaScript and CSS checks can also run separately with `npm ci` and
-`npm run lint`.
+JavaScript tests and style checks can also run separately with `npm ci`,
+`npm test`, and `npm run lint`.
 
 After editing the application, run `docker compose up --build` again to see
 the changes. If a command fails, include the command and its log in the issue.

@@ -14,6 +14,7 @@ import com.eshabakhov.surok.media.MdXslt;
 import com.eshabakhov.surok.media.SrWeb;
 import com.eshabakhov.surok.media.XsClasspath;
 import com.eshabakhov.surok.school.SlBrief;
+import com.eshabakhov.surok.school.SlsAuthorized;
 import com.eshabakhov.surok.school.SlsBrief;
 import com.eshabakhov.surok.school.SlsPostgres;
 import com.eshabakhov.surok.school.schedule.Schedule;
@@ -28,7 +29,7 @@ import org.jooq.DSLContext;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -47,7 +48,6 @@ import org.springframework.web.server.ResponseStatusException;
  */
 @RestController
 @RequestMapping("/schools/{school}/schedules/{schedule}/loads")
-@PreAuthorize("hasRole('ADMIN') or #school == authentication.principal.info().school()")
 @Tag(name = "Teaching loads")
 public class ClsHttp {
 
@@ -70,6 +70,7 @@ public class ClsHttp {
      * @param schedule Schedule identifier
      * @param page Pagination
      * @param request HTTP request
+     * @param actor Acting user
      * @return Negotiated representation
      * @throws Exception If lookup or printing fails
      */
@@ -86,10 +87,11 @@ public class ClsHttp {
         @PathVariable final long school,
         @PathVariable final long schedule,
         final Page page,
-        final HttpServletRequest request
+        final HttpServletRequest request,
+        @AuthenticationPrincipal final User actor
     ) throws Exception {
         final MediaType type = new AcHttp(request, "class-loads.v1").type();
-        final School sch = new SlsPostgres(this.ctx).school(school);
+        final School sch = new SlsAuthorized(new SlsPostgres(this.ctx), actor).school(school);
         final Schedule sched = sch.schedules().schedule(schedule);
         final ClassLoads selected = sched.loads().selection(page);
         return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8)).body(
@@ -121,6 +123,7 @@ public class ClsHttp {
      * @param schedule Schedule identifier
      * @param load Entity identifier
      * @param request HTTP request
+     * @param actor Acting user
      * @return Negotiated representation
      * @throws Exception If lookup or printing fails
      */
@@ -137,10 +140,11 @@ public class ClsHttp {
         @PathVariable final long school,
         @PathVariable final long schedule,
         @PathVariable final long load,
-        final HttpServletRequest request
+        final HttpServletRequest request,
+        @AuthenticationPrincipal final User actor
     ) throws Exception {
         final MediaType type = new AcHttp(request, "class-load-v1").type();
-        final School sch = new SlsPostgres(this.ctx).school(school);
+        final School sch = new SlsAuthorized(new SlsPostgres(this.ctx), actor).school(school);
         final Schedule sched = sch.schedules().schedule(schedule);
         final ClassLoads origin = sched.loads();
         final ClassLoad selected = origin.load(load);

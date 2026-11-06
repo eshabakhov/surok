@@ -18,11 +18,13 @@ import com.eshabakhov.surok.media.MdXslt;
 import com.eshabakhov.surok.media.SrWeb;
 import com.eshabakhov.surok.media.XsClasspath;
 import com.eshabakhov.surok.school.SlBrief;
+import com.eshabakhov.surok.school.SlsAuthorized;
 import com.eshabakhov.surok.school.SlsBrief;
 import com.eshabakhov.surok.school.SlsPostgres;
 import com.eshabakhov.surok.school.schedule.Schedule;
 import com.eshabakhov.surok.school.schedule.SdBrief;
 import com.eshabakhov.surok.security.CsToken;
+import com.eshabakhov.surok.user.Roles;
 import com.eshabakhov.surok.user.UrBrief;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.swagger.v3.oas.annotations.Operation;
@@ -36,14 +38,12 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Stream;
 import org.jooq.DSLContext;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -64,11 +64,6 @@ import org.springframework.web.server.ResponseStatusException;
  */
 @RestController
 @RequestMapping("/schools/{school}/schedules/{schedule}/loads/draft")
-@PreAuthorize(
-    """
-    hasRole('ADMIN') or #school == authentication.principal.info().school()
-    """
-)
 @Tag(name = "Teaching load planning")
 public class LdHttp {
 
@@ -266,8 +261,10 @@ public class LdHttp {
      * @param school School identifier
      * @param schedule Schedule identifier
      * @param request Incoming request
+     * @param actor Acting user
      * @return Saved draft representation
      * @throws Exception If the resource cannot be read
+     * @checkstyle ParameterNumberCheck (93 lines)
      */
     @GetMapping(
         value = {"", "/fragment"},
@@ -304,15 +301,18 @@ public class LdHttp {
     public ResponseEntity<String> read(
         @Parameter(example = "1") @PathVariable("school") final long school,
         @Parameter(example = "101") @PathVariable("schedule") final long schedule,
-        final HttpServletRequest request
+        final HttpServletRequest request,
+        @AuthenticationPrincipal final User actor
     ) throws Exception {
         final MediaType type = new AcHttp(
             request,
             List.of(this.types[0], this.types[1], MediaType.TEXT_HTML)
         ).type();
-        final School source = new SlsPostgres(this.ctx).school(school);
+        final School source = new SlsAuthorized(
+            new SlsPostgres(this.ctx), actor
+        ).school(school);
         final Schedule selected = source.schedules().schedule(schedule);
-        final LoadDraft draft = new LdPostgres(this.ctx, selected);
+        final LoadDraft draft = selected.draft();
         return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8))
             .varyBy(HttpHeaders.ACCEPT).body(
                 switch (type.toString()) {
@@ -329,10 +329,7 @@ public class LdHttp {
                         }
                         yield new LdWeb(draft).print(
                             new SrWeb(
-                                new UrBrief(
-                                    (User) SecurityContextHolder.getContext()
-                                        .getAuthentication().getPrincipal()
-                                ),
+                                new UrBrief(actor),
                                 new SlsBrief(new SlsPostgres(this.ctx)),
                                 new CsToken(
                                     (CsrfToken) request.getAttribute(CsrfToken.class.getName())
@@ -360,10 +357,12 @@ public class LdHttp {
                                 .with("subjects", source.subjects())
                                 .with("offers", new PrItems("curriculum", offers)).with(
                                     "editable",
-                                    Stream.of(
-                                        "ADMIN", "DIRECTOR", "DEPUTY_DIRECTOR",
-                                        "BASIC_MAKER", "ADVANCED_MAKER", "PRO_MAKER"
-                                    ).anyMatch(request::isUserInRole)
+                                    actor.isAdmin()
+                                        || source.users().roles(actor).contains(
+                                            Roles.RoleEnum.DIRECTOR
+                                        ) || source.users().roles(actor).contains(
+                                            Roles.RoleEnum.DEPUTY_DIRECTOR
+                                        )
                                 )
                         ).print();
                     }
@@ -385,6 +384,7 @@ public class LdHttp {
      * @param schedule Schedule identifier
      * @param request Incoming request
      * @param document Complete draft input
+     * @param actor Acting user
      * @return Saved draft representation
      * @throws Exception If validation or persistence fails
      * @checkstyle ParameterNumberCheck (105 lines)
@@ -478,24 +478,17 @@ public class LdHttp {
             )
         }
     )
-    @PreAuthorize(
-        """
-        hasAnyRole('ADMIN', 'DIRECTOR', 'DEPUTY_DIRECTOR',
-            'BASIC_MAKER', 'ADVANCED_MAKER', 'PRO_MAKER')
-        and (hasRole('ADMIN')
-            or #school == authentication.principal.info().school())
-        """
-    )
     public ResponseEntity<String> save(
         @Parameter(example = "1") @PathVariable("school") final long school,
         @Parameter(example = "101") @PathVariable("schedule") final long schedule,
         final HttpServletRequest request,
-        @RequestBody final JsonNode document
+        @RequestBody final JsonNode document,
+        @AuthenticationPrincipal final User actor
     ) throws Exception {
         final MediaType type = new AcHttp(request, List.of(this.types)).type();
-        final LoadDraft draft = new LdPostgres(
-            this.ctx, new SlsPostgres(this.ctx).school(school).schedules().schedule(schedule)
-        );
+        final LoadDraft draft = new SlsAuthorized(
+            new SlsPostgres(this.ctx), actor
+        ).school(school).schedules().schedule(schedule).draft();
         HttpStatus status;
         try {
             draft.curriculum();
@@ -503,8 +496,7 @@ public class LdHttp {
         } catch (final LoadDraftNotFoundException exception) {
             status = HttpStatus.CREATED;
         }
-        final LdiJson input = new LdiJson(this.ctx, document);
-        draft.save(input.curriculum(), input.additions());
+        draft.save(new LdiJson(this.ctx, document));
         final ResponseEntity.BodyBuilder response = ResponseEntity.status(status)
             .contentType(new MediaType(type, StandardCharsets.UTF_8)).varyBy(HttpHeaders.ACCEPT);
         if (status == HttpStatus.CREATED) {
@@ -533,6 +525,7 @@ public class LdHttp {
      * @param schedule Schedule identifier
      * @param request Incoming request
      * @param document Replacement curriculum reference containing its id
+     * @param actor Acting user
      * @return Recalculated draft representation
      * @throws Exception If switching fails
      * @checkstyle ParameterNumberCheck (214 lines)
@@ -735,25 +728,18 @@ public class LdHttp {
             )
         }
     )
-    @PreAuthorize(
-        """
-        hasAnyRole('ADMIN', 'DIRECTOR', 'DEPUTY_DIRECTOR',
-            'BASIC_MAKER', 'ADVANCED_MAKER', 'PRO_MAKER')
-        and (hasRole('ADMIN')
-            or #school == authentication.principal.info().school())
-        """
-    )
     public ResponseEntity<String> revise(
         @Parameter(example = "1") @PathVariable("school") final long school,
         @Parameter(example = "101") @PathVariable("schedule") final long schedule,
         final HttpServletRequest request,
-        @RequestBody final JsonNode document
+        @RequestBody final JsonNode document,
+        @AuthenticationPrincipal final User actor
     ) throws Exception {
         final MediaType type = new AcHttp(request, List.of(this.types)).type();
-        final LoadDraft draft = new LdPostgres(
-            this.ctx, new SlsPostgres(this.ctx).school(school).schedules().schedule(schedule)
-        );
-        draft.revise(new LdiJson(this.ctx, document).curriculum());
+        final LoadDraft draft = new SlsAuthorized(
+            new SlsPostgres(this.ctx), actor
+        ).school(school).schedules().schedule(schedule).draft();
+        draft.revise(new LdiJson(this.ctx, document));
         return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8))
             .varyBy(HttpHeaders.ACCEPT).body(
                 switch (type.toString()) {
@@ -774,8 +760,10 @@ public class LdHttp {
      * @param school School identifier
      * @param schedule Schedule identifier
      * @param request Incoming request
+     * @param actor Acting user
      * @return Draft with the updated actual loads
      * @throws Exception If applying the draft fails
+     * @checkstyle ParameterNumberCheck (200 lines)
      */
     @PostMapping(
         value = "/application",
@@ -966,23 +954,16 @@ public class LdHttp {
             )
         }
     )
-    @PreAuthorize(
-        """
-        hasAnyRole('ADMIN', 'DIRECTOR', 'DEPUTY_DIRECTOR',
-            'BASIC_MAKER', 'ADVANCED_MAKER', 'PRO_MAKER')
-        and (hasRole('ADMIN')
-            or #school == authentication.principal.info().school())
-        """
-    )
     public ResponseEntity<String> apply(
         @Parameter(example = "1") @PathVariable("school") final long school,
         @Parameter(example = "101") @PathVariable("schedule") final long schedule,
-        final HttpServletRequest request
+        final HttpServletRequest request,
+        @AuthenticationPrincipal final User actor
     ) throws Exception {
         final MediaType type = new AcHttp(request, List.of(this.types)).type();
-        final LoadDraft draft = new LdPostgres(
-            this.ctx, new SlsPostgres(this.ctx).school(school).schedules().schedule(schedule)
-        );
+        final LoadDraft draft = new SlsAuthorized(
+            new SlsPostgres(this.ctx), actor
+        ).school(school).schedules().schedule(schedule).draft();
         draft.apply();
         return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8))
             .varyBy(HttpHeaders.ACCEPT).body(

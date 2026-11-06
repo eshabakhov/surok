@@ -174,9 +174,15 @@ final class RestResponseEntityExceptionHandlerTest {
 
     @Test
     void rendersAuthorizationErrors() throws Exception {
+        final User actor = new UrsPostgres(this.ctx).register(
+            UUID.randomUUID().toString(), "ValidPassword1!",
+            String.format("%s@example.com", UUID.randomUUID()), false
+        );
         this.mvc.perform(
-            MockMvcRequestBuilders.get("/schools").accept(MediaType.TEXT_HTML)
-                .with(SecurityMockMvcRequestPostProcessors.user("reader").roles("VIEWER"))
+            MockMvcRequestBuilders.get("/api/users/{user}/roles", actor.uid())
+                .accept(MediaType.TEXT_HTML).with(
+                    SecurityMockMvcRequestPostProcessors.user(new AuthUser(actor))
+                )
         ).andExpect(MockMvcResultMatchers.status().isForbidden())
             .andExpect(RestResponseEntityExceptionHandlerTest.page(403));
     }

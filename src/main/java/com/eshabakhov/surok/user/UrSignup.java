@@ -3,9 +3,6 @@
  */
 package com.eshabakhov.surok.user;
 
-import com.eshabakhov.surok.school.SlsPostgres;
-import com.eshabakhov.surok.school.input.SlInput;
-import com.eshabakhov.surok.school.input.SlInputName;
 import java.util.Objects;
 import org.jooq.DSLContext;
 import org.jooq.exception.DataAccessException;
@@ -14,7 +11,7 @@ import org.springframework.dao.DuplicateKeyException;
 import org.springframework.util.MultiValueMap;
 
 /**
- * Personal registration that creates a school and account in one transaction.
+ * Personal registration that creates an account without a school.
  * Checked validation failures are unwrapped from transaction exceptions.
  *
  * @since 0.0.1
@@ -39,7 +36,7 @@ public final class UrSignup {
     }
 
     /**
-     * Create a personal user and the user's school.
+     * Create a personal user.
      *
      * @throws Exception If validation or creation fails
      */
@@ -55,18 +52,11 @@ public final class UrSignup {
         }
         try {
             this.ctx.transaction(
-                config -> {
-                    final DSLContext transaction = DSL.using(config);
-                    new UrsPostgres(
-                        transaction,
-                        new SlsPostgres(transaction).create(
-                            new SlInputName(new SlInput(), "My school")
-                        ).uid()
-                    ).register(
+                config ->
+                    new UrsPostgres(DSL.using(config)).register(
                         username, password,
                         Objects.toString(this.fields.getFirst("email"), "").trim(), false
-                    );
-                }
+                    )
             );
         } catch (final DuplicateKeyException exception) {
             throw new RegistrationException(

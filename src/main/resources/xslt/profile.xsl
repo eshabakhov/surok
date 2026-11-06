@@ -51,12 +51,28 @@
                         <xsl:value-of select="/surok/account/id" />
                     </span>
                 </div>
-                <xsl:if test="/surok/school/id">
+                <xsl:if test="/surok/memberships/membership">
                     <div class="info-row profile-row">
-                        <span class="info-label">Школа</span>
-                        <a class="info-value profile-school" href="{$school-path}" title="Перейти к школе">
-                            <xsl:value-of select="/surok/school/name" />
-                        </a>
+                        <span class="info-label">Школы</span>
+                        <div>
+                            <xsl:for-each select="/surok/memberships/membership">
+                                <div class="profile-membership">
+                                    <a class="info-value profile-school" href="/schools/{school/id}" title="Перейти к школе">
+                                        <xsl:value-of select="school/name" />
+                                    </a>
+                                    <xsl:for-each select="roles/role">
+                                        <span class="badge badge-secondary">
+                                            <xsl:value-of select="name" />
+                                        </span>
+                                    </xsl:for-each>
+                                    <xsl:for-each select="schedules/schedule">
+                                        <a class="info-value profile-school" href="/schools/{../../school/id}/schedules/{id}">
+                                            <xsl:value-of select="name" />
+                                        </a>
+                                    </xsl:for-each>
+                                </div>
+                            </xsl:for-each>
+                        </div>
                     </div>
                 </xsl:if>
                 <div class="info-row">

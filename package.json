@@ -5,6 +5,7 @@
     "node": ">=24"
   },
   "scripts": {
+    "test": "node --test src/test/js/*.test.cjs",
     "lint": "npm run lint:js && npm run lint:css",
     "lint:js": "eslint src/main/resources/static/js --max-warnings=0",
     "lint:css": "stylelint \"src/main/resources/static/css/**/*.css\""

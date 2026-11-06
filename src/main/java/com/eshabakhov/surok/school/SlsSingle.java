@@ -36,6 +36,11 @@ public final class SlsSingle implements Schools {
     }
 
     @Override
+    public boolean contains(final long id) {
+        return this.origin.contains(id);
+    }
+
+    @Override
     public School create(final SchoolInput input) throws Exception {
         return this.origin.create(input);
     }

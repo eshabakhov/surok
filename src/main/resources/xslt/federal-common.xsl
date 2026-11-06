@@ -51,6 +51,24 @@
                 </xsl:if>
 
                 <xsl:call-template name="school-navigation"/>
+                <xsl:if test="/surok/user/admin = 'true'">
+                    <div class="sidebar-section">Справка</div>
+                    <a href="/permissions" title="Права доступа">
+                        <xsl:attribute name="class">
+                            <xsl:text>sidebar-link</xsl:text>
+                            <xsl:if test="/surok/path = '/permissions'"> active</xsl:if>
+                        </xsl:attribute>
+                        <xsl:if test="/surok/path = '/permissions'">
+                            <xsl:attribute name="aria-current">page</xsl:attribute>
+                        </xsl:if>
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor"
+                             stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M12 3 3 7v5c0 5 9 9 9 9s9-4 9-9V7z"/>
+                            <path d="m8 12 3 3 5-6"/>
+                        </svg>
+                        <span class="sidebar-link-label">Права доступа</span>
+                    </a>
+                </xsl:if>
 
             </nav>
         </aside>

@@ -13,28 +13,33 @@ import io.swagger.v3.oas.models.security.SecurityScheme;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.info.BuildProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
-import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
+import org.springframework.security.web.context.RequestAttributeSecurityContextRepository;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
+import org.springframework.security.web.util.matcher.RequestHeaderRequestMatcher;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -44,12 +49,10 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
  * Includes OpenAPI security schemes and XML response metadata.
  *
  * @since 0.0.1
- * @checkstyle LambdaBodyLengthCheck (1000 lines)
  * @checkstyle ClassFanOutComplexityCheck (6 lines)
  */
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity
 public class SecurityConfig {
 
     /** Permissions policy. */
@@ -116,6 +119,86 @@ public class SecurityConfig {
     }
 
     /**
+     * Public application routes shared with documentation filtering.
+     *
+     * @return Anonymous routes
+     * @checkstyle NonStaticMethodCheck (2 lines)
+     */
+    @Bean
+    List<String> publicPaths() {
+        return List.of(
+            "/users/login", "/users/register", "/favicon.svg", "/css/**", "/js/**",
+            "/", "/actuator/health", "/actuator/health/**"
+        );
+    }
+
+    /**
+     * Isolates Swagger credentials from website login sessions.
+     *
+     * @param http Security builder
+     * @param encoder Password encoder
+     * @param anonymous Public application paths
+     * @return Documentation and Try it out security
+     * @throws Exception If configuration fails
+     */
+    @Bean
+    @Order(0)
+    SecurityFilterChain documentationSecurity(
+        final HttpSecurity http, final PasswordEncoder encoder,
+        @Qualifier("publicPaths") final List<String> anonymous
+    ) throws Exception {
+        this.authentication(http, encoder);
+        final String[] paths = {
+            "/api-docs", "/api-docs/**", "/api-docs.yaml", "/swagger-ui.html", "/swagger-ui/**",
+        };
+        return http.securityMatchers(
+            matchers -> matchers.requestMatchers(paths)
+                .requestMatchers(new RequestHeaderRequestMatcher("X-Surok-Swagger", "true"))
+        ).sessionManagement(
+            session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+        ).securityContext(
+            context -> context.securityContextRepository(
+                new RequestAttributeSecurityContextRepository()
+            )
+        ).requestCache(AbstractHttpConfigurer::disable).csrf(
+            csrf -> csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+        ).authorizeHttpRequests(
+            auth -> {
+                if (this.docs) {
+                    auth.requestMatchers(paths).permitAll();
+                } else {
+                    auth.requestMatchers(paths).denyAll();
+                }
+                auth.requestMatchers(anonymous.toArray(String[]::new)).permitAll();
+                if (this.prom) {
+                    auth.requestMatchers("/actuator/prometheus").permitAll();
+                } else {
+                    auth.requestMatchers("/actuator/prometheus").denyAll();
+                }
+                auth.anyRequest().authenticated();
+            }
+        ).httpBasic(basic -> basic.authenticationEntryPoint(new ScError())).exceptionHandling(
+            errors -> errors.authenticationEntryPoint(new ScError())
+                .accessDeniedHandler(new ScError())
+        ).headers(
+            headers -> headers.addHeaderWriter(
+                (request, response) -> {
+                    response.setHeader(HttpHeaders.CACHE_CONTROL, "no-store");
+                    response.addHeader(
+                        HttpHeaders.VARY, "Authorization, Cookie, X-Surok-Swagger"
+                    );
+                    final CsrfToken token = (CsrfToken) request.getAttribute(
+                        CsrfToken.class.getName()
+                    );
+                    if (token != null) {
+                        response.setHeader(token.getHeaderName(), token.getToken());
+                    }
+                }
+            )
+        ).build();
+    }
+
+    /**
      * Security filter chain configuration.
      *
      * @param http HttpSecurity to configure
@@ -147,6 +230,7 @@ public class SecurityConfig {
      *
      * @param http HttpSecurity to configure
      * @param encoder Password encoder
+     * @param anonymous Public paths
      * @return Configured SecurityFilterChain
      * @throws Exception if configuration fails
      */
@@ -154,7 +238,8 @@ public class SecurityConfig {
     @Order(2)
     SecurityFilterChain webSecurity(
         final HttpSecurity http,
-        final PasswordEncoder encoder
+        final PasswordEncoder encoder,
+        @Qualifier("publicPaths") final List<String> anonymous
     ) throws Exception {
         this.authentication(http, encoder);
         final MediaTypeRequestMatcher wildcard = new MediaTypeRequestMatcher(MediaType.ALL);
@@ -172,28 +257,7 @@ public class SecurityConfig {
                     .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
             ).authorizeHttpRequests(
                 auth -> {
-                    auth.requestMatchers(
-                        "/users/login",
-                        "/users/register",
-                        "/favicon.svg",
-                        "/css/**",
-                        "/js/**",
-                        "/"
-                    ).permitAll()
-                        .requestMatchers("/actuator/health", "/actuator/health/**").permitAll();
-                    if (this.docs) {
-                        auth.requestMatchers(
-                            "/api-docs/**",
-                            "/swagger-ui.html",
-                            "/swagger-ui/**"
-                        ).hasRole("ADMIN");
-                    } else {
-                        auth.requestMatchers(
-                            "/api-docs/**",
-                            "/swagger-ui.html",
-                            "/swagger-ui/**"
-                        ).denyAll();
-                    }
+                    auth.requestMatchers(anonymous.toArray(String[]::new)).permitAll();
                     if (this.prom) {
                         auth.requestMatchers("/actuator/prometheus").permitAll();
                     } else {
@@ -294,6 +358,8 @@ public class SecurityConfig {
             ).components(
                 new Components().addSchemas(
                     "LoadDraftXml", new ObjectSchema().xml(new XML().name("draft"))
+                ).addSchemas(
+                    "PermissionsXml", new ObjectSchema().xml(new XML().name("permissions"))
                 ).addSecuritySchemes(
                     "Basic auth",
                     new SecurityScheme()

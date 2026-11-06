@@ -33,7 +33,7 @@ import org.jooq.DSLContext;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.util.MultiValueMap;
@@ -56,7 +56,6 @@ import org.springframework.web.server.ResponseStatusException;
 @RestController
 @RequestMapping("/federal/curriculums")
 @Tag(name = "Federal Curriculums")
-@PreAuthorize("isAuthenticated()")
 public class CrsHttp {
 
     /** JOOQ context. */
@@ -81,6 +80,7 @@ public class CrsHttp {
      *
      * @param parameters Curriculum input parameters
      * @param request HTTP request
+     * @param actor Authenticated user
      * @return Response with the negotiated representation or redirect
      * @throws Exception If creation fails
      */
@@ -103,16 +103,17 @@ public class CrsHttp {
         responseCode = "302",
         description = "HTML client redirected to the created curriculum"
     )
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> create(
         @RequestParam final MultiValueMap<String, String> parameters,
-        final HttpServletRequest request
+        final HttpServletRequest request,
+        @AuthenticationPrincipal final User actor
     ) throws Exception {
         return CrsHttp.result(
             new AcHttp(
                 request, "federal-curriculum-v1", "federal-curriculum-v2"
             ).type(),
-            this.origin.create(new CrInputHttp(parameters)), HttpStatus.CREATED
+            new CrsAuthorized(this.origin, actor).create(new CrInputHttp(parameters)),
+            HttpStatus.CREATED
         );
     }
 
@@ -121,6 +122,7 @@ public class CrsHttp {
      *
      * @param curriculum Curriculum ID
      * @param request HTTP request
+     * @param actor Authenticated user
      * @return Response with the negotiated representation or redirect
      * @throws Exception If lookup fails
      */
@@ -143,19 +145,21 @@ public class CrsHttp {
     @ApiResponse(responseCode = "404", description = "Curriculum not found")
     public ResponseEntity<?> curriculum(
         @PathVariable final long curriculum,
-        final HttpServletRequest request
+        final HttpServletRequest request,
+        @AuthenticationPrincipal final User actor
     ) throws Exception {
         final MediaType type = new AcHttp(
             request, "federal-curriculum-v1", "federal-curriculum-v2"
         ).type();
-        final Curriculum selected = this.origin.curriculum(curriculum);
+        final Curriculums curriculums = new CrsAuthorized(this.origin, actor);
+        final Curriculum selected = curriculums.curriculum(curriculum);
         return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8)).body(
             switch (type.toString()) {
                 case MediaType.TEXT_HTML_VALUE -> {
                     final String view;
                     final String uri = request.getRequestURI();
                     if (uri != null && uri.endsWith("/edit")) {
-                        if (!request.isUserInRole("ADMIN")) {
+                        if (!actor.isAdmin()) {
                             throw new ResponseStatusException(
                                 HttpStatus.FORBIDDEN, "Only administrators can change curricula"
                             );
@@ -165,7 +169,7 @@ public class CrsHttp {
                         view = "details";
                     }
                     yield this.web(request, "xslt/federal-curriculum.xsl", view).with(
-                        "curriculums", new CrsSingle(this.origin, selected)
+                        "curriculums", new CrsSingle(curriculums, selected)
                     ).print();
                 }
                 case "application/vnd.surok.federal-curriculum-v1+json" ->
@@ -189,6 +193,7 @@ public class CrsHttp {
      * @param curriculum Curriculum ID
      * @param parameters Curriculum input parameters
      * @param request HTTP request
+     * @param actor Authenticated user
      * @return Response with the negotiated representation or redirect
      * @throws Exception If update fails
      */
@@ -212,17 +217,19 @@ public class CrsHttp {
         description = "HTML client redirected to the updated curriculum"
     )
     @ApiResponse(responseCode = "404", description = "Curriculum not found")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> revise(
         @PathVariable final long curriculum,
         @RequestParam final MultiValueMap<String, String> parameters,
-        final HttpServletRequest request
+        final HttpServletRequest request,
+        @AuthenticationPrincipal final User actor
     ) throws Exception {
         return CrsHttp.result(
             new AcHttp(
                 request, "federal-curriculum-v1", "federal-curriculum-v2"
             ).type(),
-            this.origin.revise(curriculum, new CrInputHttp(parameters)), HttpStatus.OK
+            new CrsAuthorized(this.origin, actor).revise(
+                curriculum, new CrInputHttp(parameters)
+            ), HttpStatus.OK
         );
     }
 
@@ -233,6 +240,7 @@ public class CrsHttp {
      * @param page Pagination
      * @param sorts Sorting
      * @param request HTTP request
+     * @param actor Authenticated user
      * @return Response with the negotiated representation or redirect
      * @throws Exception If selection fails
      */
@@ -254,10 +262,13 @@ public class CrsHttp {
         final Filters filters,
         final Page page,
         final Sorts sorts,
-        final HttpServletRequest request
+        final HttpServletRequest request,
+        @AuthenticationPrincipal final User actor
     ) throws Exception {
         final MediaType type = new AcHttp(request, "federal-curriculums.v1").type();
-        final Curriculums selected = this.origin.selection(filters, page, sorts);
+        final Curriculums selected = new CrsAuthorized(this.origin, actor).selection(
+            filters, page, sorts
+        );
         return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8)).body(
             switch (type.toString()) {
                 case MediaType.TEXT_HTML_VALUE -> {
@@ -266,7 +277,7 @@ public class CrsHttp {
                     if (uri != null && uri.endsWith("/fragment")) {
                         view = "list-fragment";
                     } else if (uri != null && uri.endsWith("/create")) {
-                        if (!request.isUserInRole("ADMIN")) {
+                        if (!actor.isAdmin()) {
                             throw new ResponseStatusException(
                                 HttpStatus.FORBIDDEN, "Only administrators can change curricula"
                             );
@@ -294,6 +305,7 @@ public class CrsHttp {
      * Removes a federal curriculum.
      *
      * @param id Curriculum ID
+     * @param actor Authenticated user
      * @return Empty response
      * @throws Exception If removal fails
      */
@@ -304,11 +316,11 @@ public class CrsHttp {
         description = "Federal curriculum removed"
     )
     @ApiResponse(responseCode = "404", description = "Curriculum not found")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> remove(
-        @PathVariable(name = "curriculum") final long id
+        @PathVariable(name = "curriculum") final long id,
+        @AuthenticationPrincipal final User actor
     ) throws Exception {
-        this.origin.remove(id);
+        new CrsAuthorized(this.origin, actor).remove(id);
         return ResponseEntity.noContent().build();
     }
 

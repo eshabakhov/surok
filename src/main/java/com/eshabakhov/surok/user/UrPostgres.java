@@ -4,7 +4,9 @@
 package com.eshabakhov.surok.user;
 
 import com.eshabakhov.surok.Media;
+import com.eshabakhov.surok.Schools;
 import com.eshabakhov.surok.User;
+import com.eshabakhov.surok.school.SlsPostgres;
 import org.jooq.DSLContext;
 
 /**
@@ -44,6 +46,11 @@ public final class UrPostgres implements User {
     @Override
     public Roles roles() {
         return new Roles.RlsPostgres(this.ctx, this.id);
+    }
+
+    @Override
+    public Schools schools() {
+        return new SlsPostgres(this.ctx, this);
     }
 
     @Override

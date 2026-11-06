@@ -7,6 +7,7 @@ import com.eshabakhov.surok.User;
 import com.eshabakhov.surok.user.AuthUser;
 import com.eshabakhov.surok.user.Roles;
 import com.eshabakhov.surok.user.UrPostgres;
+import com.eshabakhov.surok.user.UrsPostgres;
 import java.util.List;
 import java.util.UUID;
 import org.hamcrest.Matchers;
@@ -151,6 +152,28 @@ final class ThsHttpTest {
                 .contentType("application/vnd.surok.teacher-v1+json")
                 .content("{\"name\":\"East\"}")
         ).andExpect(MockMvcResultMatchers.status().isForbidden());
+    }
+
+    @Test
+    void deniesTeacherCreationToSubscribedMemberWithoutSchoolRole() throws Exception {
+        this.mvc.perform(
+            this.authorized(
+                MockMvcRequestBuilders.post("/schools/1/teachers/create"),
+                Roles.RoleEnum.BASIC_MAKER
+            ).contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                .param("name", "Учитель подписчика")
+        ).andExpect(MockMvcResultMatchers.status().isForbidden());
+    }
+
+    @Test
+    void allowsDeputyDirectorToCreateATeacher() throws Exception {
+        this.mvc.perform(
+            this.authorized(
+                MockMvcRequestBuilders.post("/schools/1/teachers/create"),
+                Roles.RoleEnum.DEPUTY_DIRECTOR
+            ).contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                .param("name", "Учитель заместителя")
+        ).andExpect(MockMvcResultMatchers.status().isFound());
     }
 
     @ParameterizedTest
@@ -739,15 +762,24 @@ final class ThsHttpTest {
             this.ctx,
             this.ctx.resultQuery(
                 """
-                INSERT INTO public."user" (username, password, email, corporate, school_id)
-                VALUES (?, 'secret', ?, true, ?) RETURNING id
+                INSERT INTO public."user" (username, password, email, corporate)
+                VALUES (?, 'secret', ?, true) RETURNING id
                 """,
                 UUID.randomUUID().toString(),
-                String.format("%s@example.org", UUID.randomUUID()),
-                school
+                String.format("%s@example.org", UUID.randomUUID())
             ).fetchSingle("id", Long.class)
         );
-        user.roles().grant(role);
+        if (school != null) {
+            new UrsPostgres(this.ctx, school).add(user);
+        }
+        if (List.of(
+            Roles.RoleEnum.DIRECTOR, Roles.RoleEnum.DEPUTY_DIRECTOR,
+            Roles.RoleEnum.TEACHER, Roles.RoleEnum.STUDENT, Roles.RoleEnum.VIEWER
+        ).contains(role)) {
+            new UrsPostgres(this.ctx, school).roles(user).grant(role);
+        } else {
+            user.roles().grant(role);
+        }
         final AuthUser principal = new AuthUser(user);
         final MockHttpSession session = new MockHttpSession();
         session.setAttribute(

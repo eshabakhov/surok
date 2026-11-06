@@ -26,7 +26,7 @@ public final class UrsPostgres implements Users {
     private final DSLContext ctx;
 
     /** School ID. */
-    private Long sid;
+    private final Long sid;
 
     /**
      * New users collection.
@@ -49,6 +49,62 @@ public final class UrsPostgres implements Users {
     }
 
     @Override
+    public boolean contains(final User user) {
+        final boolean found;
+        if (this.sid == null) {
+            found = this.ctx.resultQuery(
+                new ClasspathSql("user/find-by-id.sql").text(), user.uid()
+            ).fetchOne() != null;
+        } else {
+            found = this.ctx.resultQuery(
+                new ClasspathSql("school-user/contains.sql").text(), this.sid, user.uid()
+            ).fetchOneInto(Boolean.class);
+        }
+        return found;
+    }
+
+    @Override
+    public User add(final User user) throws Exception {
+        if (this.sid == null) {
+            throw new IllegalStateException("A school is required to add a user");
+        }
+        final Record added = this.ctx.resultQuery(
+            new ClasspathSql("school-user/add.sql").text(), this.sid, user.uid()
+        ).fetchOne();
+        if (added == null) {
+            throw new UserNotFoundException("User or school not found");
+        }
+        return user;
+    }
+
+    @Override
+    public Roles roles(final User user) {
+        final Roles selected;
+        if (this.sid == null) {
+            selected = user.roles();
+        } else {
+            selected = new RlsSchool(this.ctx, this.sid, user.uid());
+        }
+        return selected;
+    }
+
+    @Override
+    public Iterable<User> iterate() {
+        final String sql;
+        final Object[] args;
+        if (this.sid == null) {
+            sql = "user/list.sql";
+            args = new Object[0];
+        } else {
+            sql = "school-user/list.sql";
+            args = new Object[]{this.sid};
+        }
+        return this.ctx.resultQuery(new ClasspathSql(sql).text(), args).fetch(
+            row -> new UrPostgres(this.ctx, row.get("id", Long.class))
+        );
+    }
+
+    @Override
     public User register(
         final String username,
         final String password,
@@ -62,18 +118,19 @@ public final class UrsPostgres implements Users {
                 final DSLContext ttx = conf.dsl();
                 final Record inserted = ttx.resultQuery(
                     new ClasspathSql("user/create.sql").text(),
-                    username,
-                    new BCryptPasswordEncoder().encode(password),
-                    email,
-                    corporate,
-                    this.sid
+                    username, new BCryptPasswordEncoder().encode(password),
+                    email, corporate
                 ).fetchOne();
                 if (inserted == null) {
                     throw new UserCreationException("Failed to create user");
                 }
                 final User user = new UrPostgres(ttx, inserted.get("id", Long.class));
-                user.roles().grant(Roles.RoleEnum.STUDENT);
                 user.roles().grant(Roles.RoleEnum.BASIC_MAKER);
+                if (this.sid != null) {
+                    final Users members = new UrsPostgres(ttx, this.sid);
+                    members.add(user);
+                    members.roles(user).grant(Roles.RoleEnum.STUDENT);
+                }
                 return user;
             }
         );
@@ -89,7 +146,11 @@ public final class UrsPostgres implements Users {
         if (selected == null) {
             throw new UserNotFoundException(String.format("User with login '%s' not found", login));
         }
-        return new UrPostgres(this.ctx, selected.get("id", Long.class));
+        final User found = new UrPostgres(this.ctx, selected.get("id", Long.class));
+        if (this.sid != null && !this.contains(found)) {
+            throw new UserNotFoundException(String.format("User with login '%s' not found", login));
+        }
+        return found;
     }
 
     @Override
@@ -101,7 +162,11 @@ public final class UrsPostgres implements Users {
         if (selected == null) {
             throw new UserNotFoundException(String.format("User with id '%s' not found", uid));
         }
-        return new UrPostgres(this.ctx, selected.get("id", Long.class));
+        final User found = new UrPostgres(this.ctx, selected.get("id", Long.class));
+        if (this.sid != null && !this.contains(found)) {
+            throw new UserNotFoundException(String.format("User with id '%s' not found", uid));
+        }
+        return found;
     }
 
     @Override
@@ -123,11 +188,16 @@ public final class UrsPostgres implements Users {
 
     @Override
     public void remove(final Long uid) throws Exception {
-        this.ctx.resultQuery(
-            new ClasspathSql("user/soft-delete.sql").text(),
-            Instant.now().atOffset(ZoneOffset.UTC),
-            uid
-        ).execute();
+        if (this.sid == null) {
+            this.ctx.resultQuery(
+                new ClasspathSql("user/soft-delete.sql").text(),
+                Instant.now().atOffset(ZoneOffset.UTC), uid
+            ).execute();
+        } else {
+            this.ctx.resultQuery(
+                new ClasspathSql("school-user/remove.sql").text(), this.sid, uid
+            ).execute();
+        }
     }
 
     private static void validEmail(final String email) throws UserCreationException {

@@ -10,7 +10,10 @@ import com.eshabakhov.surok.school.input.SlInputName;
 import com.eshabakhov.surok.user.AuthUser;
 import com.eshabakhov.surok.user.Roles;
 import com.eshabakhov.surok.user.UrsPostgres;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.models.OpenAPI;
+import java.util.List;
 import java.util.UUID;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
@@ -18,6 +21,7 @@ import org.jooq.DSLContext;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.info.BuildProperties;
@@ -26,8 +30,13 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.mock.web.MockHttpSession;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextImpl;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestBuilders;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -45,7 +54,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  */
 @Testcontainers
 @DirtiesContext
-@SpringBootTest
+@SpringBootTest(properties = "app.security.docs.enabled=true")
 @AutoConfigureMockMvc
 final class SecurityConfigTest {
 
@@ -57,6 +66,261 @@ final class SecurityConfigTest {
     /** Maven build information. */
     @Autowired
     private BuildProperties build;
+
+    @ParameterizedTest
+    @ValueSource(
+        strings = {
+            "/swagger-ui/index.html", "/api-docs/swagger-config", "/api-docs", "/api-docs.yaml"
+        }
+    )
+    void opensDocumentationWithoutAuthentication(final String path, @Autowired final MockMvc mvc)
+        throws Exception {
+        MatcherAssert.assertThat(
+            "Documentation still required a login",
+            mvc.perform(MockMvcRequestBuilders.get(path)).andReturn().getResponse().getStatus(),
+            Matchers.is(HttpStatus.OK.value())
+        );
+    }
+
+    @Test
+    void exposesOnlyPublicOperationsBeforeAuthorization(@Autowired final MockMvc mvc)
+        throws Exception {
+        final JsonNode spec = new ObjectMapper().readTree(
+            mvc.perform(MockMvcRequestBuilders.get("/api-docs"))
+                .andReturn().getResponse().getContentAsString()
+        );
+        MatcherAssert.assertThat(
+            "Anonymous documentation exposed protected operations or required Basic for registration",
+            List.of(
+                spec.path("paths").has("/users/register"),
+                spec.path("paths").has("/federal/curriculums"),
+                spec.path("paths").path("/users/register").path("post").path("security").isEmpty()
+            ),
+            Matchers.contains(true, false, true)
+        );
+    }
+
+    @Test
+    void keepsAdministratorDocumentationOutOfAnonymousResponses(
+        @Autowired final MockMvc mvc, @Autowired final DSLContext ctx
+    ) throws Exception {
+        final ObjectMapper mapper = new ObjectMapper();
+        MatcherAssert.assertThat(
+            "Documentation reused another user's operations",
+            List.of(
+                mapper.readTree(
+                    mvc.perform(
+                        MockMvcRequestBuilders.get("/api-docs").with(
+                            SecurityMockMvcRequestPostProcessors.httpBasic(
+                                SecurityConfigTest.administrator(ctx).credentials().username(),
+                                "ValidPassword1!"
+                            )
+                        )
+                    ).andReturn().getResponse().getContentAsString()
+                ).path("paths").path("/federal/curriculums/create").has("post"),
+                mapper.readTree(
+                    mvc.perform(MockMvcRequestBuilders.get("/api-docs"))
+                        .andReturn().getResponse().getContentAsString()
+                ).path("paths").has("/federal/curriculums")
+            ),
+            Matchers.contains(true, false)
+        );
+    }
+
+    @Test
+    void filtersDocumentationForAnOrdinaryReader(
+        @Autowired final MockMvc mvc, @Autowired final DSLContext ctx
+    ) throws Exception {
+        final String name = UUID.randomUUID().toString();
+        new UrsPostgres(ctx).register(
+            name, "ReaderPassword1!", String.format("%s@example.org", name), false
+        );
+        final JsonNode paths = new ObjectMapper().readTree(
+            mvc.perform(
+                MockMvcRequestBuilders.get("/api-docs").with(
+                    SecurityMockMvcRequestPostProcessors.httpBasic(name, "ReaderPassword1!")
+                )
+            ).andReturn().getResponse().getContentAsString()
+        ).path("paths");
+        MatcherAssert.assertThat(
+            "Reader documentation omitted the catalogue or exposed administrative operations",
+            List.of(
+                paths.path("/federal/curriculums").has("get"),
+                paths.path("/federal/curriculums/create").has("post"),
+                paths.path("/federal/subjects").has("post"), paths.has("/schools")
+            ),
+            Matchers.contains(true, false, false, true)
+        );
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = Roles.RoleEnum.class, names = {"DIRECTOR", "VIEWER"})
+    void distinguishesSchoolAndFederalPermissions(
+        final Roles.RoleEnum role, @Autowired final MockMvc mvc, @Autowired final DSLContext ctx
+    ) throws Exception {
+        final User user = new UrsPostgres(ctx).register(
+            UUID.randomUUID().toString(), "SchoolPassword1!",
+            String.format("%s@example.org", UUID.randomUUID()), true
+        );
+        ctx.execute("DELETE FROM user_role WHERE user_id = ?", user.uid());
+        final long school = new SlsPostgres(ctx).create(
+            new SlInputName(new SlInput(), "Школа документации")
+        ).uid();
+        new UrsPostgres(ctx, school).add(user);
+        new UrsPostgres(ctx, school).roles(user).grant(role);
+        final JsonNode paths = new ObjectMapper().readTree(
+            mvc.perform(
+                MockMvcRequestBuilders.get("/api-docs").with(
+                    SecurityMockMvcRequestPostProcessors.httpBasic(
+                        user.credentials().username(), "SchoolPassword1!"
+                    )
+                )
+            ).andReturn().getResponse().getContentAsString()
+        ).path("paths");
+        MatcherAssert.assertThat(
+            "Swagger confused permissions for federal and school routes of the same controller",
+            List.of(
+                paths.path("/schools/{school}/subjects").has("get"),
+                paths.path("/schools/{school}/subjects").has("post"),
+                paths.path("/federal/subjects").has("post"),
+                paths.path("/schools/{school}/schedules/{schedule}/loads/draft").has("put")
+            ),
+            Matchers.contains(
+                true, role == Roles.RoleEnum.DIRECTOR, false, role == Roles.RoleEnum.DIRECTOR
+            )
+        );
+    }
+
+    @Test
+    void ignoresWebsiteSessionsInDocumentation(
+        @Autowired final MockMvc mvc, @Autowired final DSLContext ctx
+    ) throws Exception {
+        final AuthUser user = new AuthUser(SecurityConfigTest.administrator(ctx));
+        final MockHttpSession session = new MockHttpSession();
+        session.setAttribute(
+            HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY,
+            new SecurityContextImpl(
+                UsernamePasswordAuthenticationToken.authenticated(user, "", user.getAuthorities())
+            )
+        );
+        MatcherAssert.assertThat(
+            "Swagger inherited the website administrator session",
+            new ObjectMapper().readTree(
+                mvc.perform(MockMvcRequestBuilders.get("/api-docs").session(session))
+                    .andReturn().getResponse().getContentAsString()
+            ).path("paths").has("/federal/curriculums"),
+            Matchers.is(false)
+        );
+    }
+
+    @Test
+    void rejectsIncorrectDocumentationCredentials(
+        @Autowired final MockMvc mvc, @Autowired final DSLContext ctx
+    ) throws Exception {
+        MatcherAssert.assertThat(
+            "Authorize accepted an invalid password",
+            mvc.perform(
+                MockMvcRequestBuilders.get("/api-docs").with(
+                    SecurityMockMvcRequestPostProcessors.httpBasic(
+                        SecurityConfigTest.administrator(ctx).credentials().username(),
+                        "Incorrect1!"
+                    )
+                ).header("X-Requested-With", "XMLHttpRequest")
+            ).andReturn().getResponse().getStatus(),
+            Matchers.is(HttpStatus.UNAUTHORIZED.value())
+        );
+    }
+
+    @Test
+    void avoidsBrowserPasswordDialogsOnSwaggerFailures(
+        @Autowired final MockMvc mvc, @Autowired final DSLContext ctx
+    ) throws Exception {
+        MatcherAssert.assertThat(
+            "Swagger triggered the browser's native password dialog",
+            mvc.perform(
+                MockMvcRequestBuilders.get("/api-docs")
+                    .header("X-Requested-With", "XMLHttpRequest").with(
+                        SecurityMockMvcRequestPostProcessors.httpBasic(
+                            SecurityConfigTest.administrator(ctx).credentials().username(),
+                            "Incorrect1!"
+                        )
+                    )
+            ).andReturn().getResponse().containsHeader(HttpHeaders.WWW_AUTHENTICATE),
+            Matchers.is(false)
+        );
+    }
+
+    @Test
+    void preventsCachingPersonalizedDocumentation(@Autowired final MockMvc mvc) throws Exception {
+        MatcherAssert.assertThat(
+            "Personalized documentation allowed browser or proxy caching",
+            mvc.perform(MockMvcRequestBuilders.get("/api-docs"))
+                .andReturn().getResponse().getHeader(HttpHeaders.CACHE_CONTROL),
+            Matchers.containsString("no-store")
+        );
+    }
+
+    @Test
+    void installsSwaggerAuthorizationPlugin(@Autowired final MockMvc mvc) throws Exception {
+        MatcherAssert.assertThat(
+            "Swagger initializer omitted credential validation",
+            mvc.perform(MockMvcRequestBuilders.get("/swagger-ui/swagger-initializer.js"))
+                .andReturn().getResponse().getContentAsString(),
+            Matchers.containsString("window.surokSwagger.plugin")
+        );
+    }
+
+    @Test
+    void acceptsTheDocumentationCsrfTokenForMutations(
+        @Autowired final MockMvc mvc, @Autowired final DSLContext ctx
+    ) throws Exception {
+        final MockHttpServletResponse document = mvc.perform(
+            MockMvcRequestBuilders.get("/api-docs")
+        ).andReturn().getResponse();
+        final String name = String.format("Астробиология-%s", UUID.randomUUID());
+        MatcherAssert.assertThat(
+            "Try it out could not create a subject with the supplied CSRF token",
+            new ObjectMapper().readTree(
+                mvc.perform(
+                    MockMvcRequestBuilders.post("/federal/subjects")
+                        .header("X-Surok-Swagger", "true")
+                        .header("X-XSRF-TOKEN", document.getHeader("X-XSRF-TOKEN"))
+                        .cookie(document.getCookie("XSRF-TOKEN"))
+                        .contentType("application/vnd.surok.subject-v1+json")
+                        .accept("application/vnd.surok.subject-v1+json")
+                        .content(String.format("{\"name\":\"%s\"}", name)).with(
+                            SecurityMockMvcRequestPostProcessors.httpBasic(
+                                SecurityConfigTest.administrator(ctx).credentials().username(),
+                                "ValidPassword1!"
+                            )
+                        )
+                ).andReturn().getResponse().getContentAsString()
+            ).path("name").asText(),
+            Matchers.is(name)
+        );
+    }
+
+    @Test
+    void keepsCsrfProtectionForSwaggerMutations(
+        @Autowired final MockMvc mvc, @Autowired final DSLContext ctx
+    ) throws Exception {
+        MatcherAssert.assertThat(
+            "Swagger bypassed CSRF protection",
+            mvc.perform(
+                MockMvcRequestBuilders.post("/federal/subjects")
+                    .header("X-Surok-Swagger", "true")
+                    .contentType("application/vnd.surok.subject-v1+json")
+                    .accept("application/vnd.surok.subject-v1+json")
+                    .content("{\"name\":\"Астрономия\"}").with(
+                        SecurityMockMvcRequestPostProcessors.httpBasic(
+                            SecurityConfigTest.administrator(ctx).credentials().username(),
+                            "ValidPassword1!"
+                        )
+                    )
+            ).andReturn().getResponse().getStatus(),
+            Matchers.is(HttpStatus.FORBIDDEN.value())
+        );
+    }
 
     /**
      * A valid password must reach the existing success handler.

@@ -30,7 +30,7 @@ import org.jooq.DSLContext;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.util.MultiValueMap;
@@ -52,14 +52,15 @@ import org.springframework.web.server.ResponseStatusException;
  * @checkstyle NoJavadocForPrivateMethodsCheck (1000 lines)
  * @checkstyle ClassFanOutComplexityCheck (1000 lines)
  * @checkstyle ParameterNumberCheck (1000 lines)
+ * @checkstyle NonStaticMethodCheck (1000 lines)
  */
 @RestController
 @RequestMapping("/schools")
 @Tag(name = "Schools")
 public class SlsHttp {
 
-    /** School collection. */
-    private final Schools origin;
+    /** Database context. */
+    private final DSLContext ctx;
 
     /**
      * New school resource.
@@ -67,7 +68,7 @@ public class SlsHttp {
      * @param ctx Database context
      */
     public SlsHttp(final DSLContext ctx) {
-        this.origin = new SlsPostgres(ctx);
+        this.ctx = ctx;
     }
 
     /**
@@ -77,6 +78,7 @@ public class SlsHttp {
      * @param page Requested page
      * @param sorts Applied sorts
      * @param request HTTP request
+     * @param user Acting user
      * @return Negotiated representation
      * @throws Exception If selection or printing fails
      */
@@ -85,14 +87,16 @@ public class SlsHttp {
         produces = {MediaType.TEXT_HTML_VALUE,
             "application/vnd.surok.schools.v1+json", "application/vnd.surok.schools.v1+xml"}
     )
-    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "List schools")
     public ResponseEntity<?> selection(
         final Filters filters, final Page page, final Sorts sorts,
-        final HttpServletRequest request
+        final HttpServletRequest request,
+        @AuthenticationPrincipal final User user
     ) throws Exception {
         final MediaType type = new AcHttp(request, "schools.v1").type();
-        final Schools selected = this.origin.selection(filters, page, sorts);
+        final Schools selected = new SlsAuthorized(
+            new SlsPostgres(this.ctx), user
+        ).selection(filters, page, sorts);
         return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8)).body(
             switch (type.toString()) {
                 case MediaType.TEXT_HTML_VALUE -> {
@@ -125,6 +129,7 @@ public class SlsHttp {
      *
      * @param school School identifier
      * @param request HTTP request
+     * @param user Acting user
      * @return Negotiated representation
      * @throws Exception If lookup or printing fails
      */
@@ -133,13 +138,14 @@ public class SlsHttp {
         produces = {MediaType.TEXT_HTML_VALUE,
             "application/vnd.surok.school-v1+json", "application/vnd.surok.school-v1+xml"}
     )
-    @PreAuthorize("hasRole('ADMIN') or #school == authentication.principal.info().school()")
     @Operation(summary = "Get school")
     public ResponseEntity<?> school(
-        @PathVariable final long school, final HttpServletRequest request
+        @PathVariable final long school, final HttpServletRequest request,
+        @AuthenticationPrincipal final User user
     ) throws Exception {
         final MediaType type = new AcHttp(request, "school-v1").type();
-        final School selected = this.origin.school(school);
+        final Schools origin = new SlsAuthorized(new SlsPostgres(this.ctx), user);
+        final School selected = origin.school(school);
         return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8)).body(
             switch (type.toString()) {
                 case MediaType.TEXT_HTML_VALUE -> {
@@ -150,7 +156,7 @@ public class SlsHttp {
                         view = "details";
                     }
                     yield this.web(
-                        request, "xslt/school.xsl", view, new SlsSingle(this.origin, selected)
+                        request, "xslt/school.xsl", view, new SlsSingle(origin, selected)
                     ).with("school", new SlBrief(selected)).print();
                 }
                 case "application/vnd.surok.school-v1+json" ->
@@ -169,17 +175,18 @@ public class SlsHttp {
      *
      * @param parameters Form fields
      * @param request HTTP request
+     * @param user Acting user
      * @return Created representation or redirect
      * @throws Exception If creation fails
      */
     @PostMapping(value = "/create", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
-    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Create school from form")
     public ResponseEntity<?> create(
         @RequestParam final MultiValueMap<String, String> parameters,
-        final HttpServletRequest request
+        final HttpServletRequest request,
+        @AuthenticationPrincipal final User user
     ) throws Exception {
-        return this.save(request, new SlInputHttp(parameters), 0L, true);
+        return this.save(request, new SlInputHttp(parameters), 0L, true, user);
     }
 
     /**
@@ -187,6 +194,7 @@ public class SlsHttp {
      *
      * @param json School fields
      * @param request HTTP request
+     * @param user Acting user
      * @return Created representation
      * @throws Exception If creation fails
      */
@@ -194,12 +202,12 @@ public class SlsHttp {
         value = {"", "/", "/create"},
         consumes = {MediaType.APPLICATION_JSON_VALUE, "application/vnd.surok.school-v1+json"}
     )
-    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Create school from JSON")
     public ResponseEntity<?> create(
-        @RequestBody final JsonNode json, final HttpServletRequest request
+        @RequestBody final JsonNode json, final HttpServletRequest request,
+        @AuthenticationPrincipal final User user
     ) throws Exception {
-        return this.save(request, new SlInputHttp(json), 0L, true);
+        return this.save(request, new SlInputHttp(json), 0L, true, user);
     }
 
     /**
@@ -208,23 +216,19 @@ public class SlsHttp {
      * @param school School identifier
      * @param parameters Form fields
      * @param request HTTP request
+     * @param user Acting user
      * @return Revised representation or redirect
      * @throws Exception If revision fails
      */
     @PostMapping(value = "/{school}/edit", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
-    @PreAuthorize(
-        """
-        hasAnyRole('ADMIN', 'DIRECTOR', 'BASIC_MAKER', 'ADVANCED_MAKER', 'PRO_MAKER')
-        and (hasRole('ADMIN') or #school == authentication.principal.info().school())
-        """
-    )
     @Operation(summary = "Update school from form")
     public ResponseEntity<?> revise(
         @PathVariable final long school,
         @RequestParam final MultiValueMap<String, String> parameters,
-        final HttpServletRequest request
+        final HttpServletRequest request,
+        @AuthenticationPrincipal final User user
     ) throws Exception {
-        return this.save(request, new SlInputHttp(parameters), school, false);
+        return this.save(request, new SlInputHttp(parameters), school, false, user);
     }
 
     /**
@@ -233,6 +237,7 @@ public class SlsHttp {
      * @param school School identifier
      * @param json School fields
      * @param request HTTP request
+     * @param user Acting user
      * @return Revised representation
      * @throws Exception If revision fails
      */
@@ -240,37 +245,30 @@ public class SlsHttp {
         value = "/{school}",
         consumes = {MediaType.APPLICATION_JSON_VALUE, "application/vnd.surok.school-v1+json"}
     )
-    @PreAuthorize(
-        """
-        hasAnyRole('ADMIN', 'DIRECTOR', 'BASIC_MAKER', 'ADVANCED_MAKER', 'PRO_MAKER')
-        and (hasRole('ADMIN') or #school == authentication.principal.info().school())
-        """
-    )
     @Operation(summary = "Update school from JSON")
     public ResponseEntity<?> revise(
         @PathVariable final long school, @RequestBody final JsonNode json,
-        final HttpServletRequest request
+        final HttpServletRequest request,
+        @AuthenticationPrincipal final User user
     ) throws Exception {
-        return this.save(request, new SlInputHttp(json), school, false);
+        return this.save(request, new SlInputHttp(json), school, false, user);
     }
 
     /**
      * Soft deletes a school.
      *
      * @param school School identifier
+     * @param user Acting user
      * @return Empty response
      * @throws Exception If removal fails
      */
     @DeleteMapping("/{school}")
-    @PreAuthorize(
-        """
-        hasAnyRole('ADMIN', 'DIRECTOR', 'BASIC_MAKER', 'ADVANCED_MAKER', 'PRO_MAKER')
-        and (hasRole('ADMIN') or #school == authentication.principal.info().school())
-        """
-    )
     @Operation(summary = "Remove school")
-    public ResponseEntity<Void> remove(@PathVariable final long school) throws Exception {
-        this.origin.remove(school);
+    public ResponseEntity<Void> remove(
+        @PathVariable final long school,
+        @AuthenticationPrincipal final User user
+    ) throws Exception {
+        new SlsAuthorized(new SlsPostgres(this.ctx), user).remove(school);
         return ResponseEntity.noContent().build();
     }
 
@@ -281,12 +279,13 @@ public class SlsHttp {
      * @param input School input
      * @param id School identifier
      * @param creation Whether to create a school
+     * @param user Acting user
      * @return Mutation response
      * @throws Exception If validation, lookup or printing fails
      */
     private ResponseEntity<?> save(
         final HttpServletRequest request, final SchoolInput input,
-        final long id, final boolean creation
+        final long id, final boolean creation, final User user
     ) throws Exception {
         final MediaType type = new AcHttp(request, "school-v1").type();
         ResponseEntity<?> response;
@@ -294,10 +293,12 @@ public class SlsHttp {
             final School selected;
             final HttpStatus status;
             if (creation) {
-                selected = this.origin.create(input);
+                selected = new SlsAuthorized(new SlsPostgres(this.ctx), user).create(input);
                 status = HttpStatus.CREATED;
             } else {
-                selected = this.origin.revise(id, input);
+                selected = new SlsAuthorized(
+                    new SlsPostgres(this.ctx), user
+                ).revise(id, input);
                 status = HttpStatus.OK;
             }
             final URI location = URI.create(String.format("/schools/%d", selected.uid()));
@@ -321,14 +322,14 @@ public class SlsHttp {
             if (!MediaType.TEXT_HTML.equals(type)) {
                 throw exception;
             }
-            final String location;
             if (creation) {
-                location = "/schools/create?error=empty";
+                response = ResponseEntity.status(HttpStatus.FOUND)
+                    .location(URI.create("/schools/create?error=empty")).build();
             } else {
-                location = String.format("/schools/%d/edit?error=empty", id);
+                response = ResponseEntity.status(HttpStatus.FOUND)
+                    .location(URI.create(String.format("/schools/%d/edit?error=empty", id)))
+                    .build();
             }
-            response = ResponseEntity.status(HttpStatus.FOUND)
-                .location(URI.create(location)).build();
         }
         return response;
     }
@@ -343,7 +344,6 @@ public class SlsHttp {
      * @return Browser medium
      * @throws Exception If printing fails
      */
-    // @checkstyle NonStaticMethodCheck (2 lines)
     private Media<String> web(
         final HttpServletRequest request, final String stylesheet,
         final String view, final Schools schools

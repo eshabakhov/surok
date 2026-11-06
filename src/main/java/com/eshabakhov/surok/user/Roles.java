@@ -18,6 +18,14 @@ import org.jooq.Record;
 public interface Roles {
 
     /**
+     * Whether this collection contains the named role.
+     *
+     * @param role Role to check
+     * @return True when assigned
+     */
+    boolean contains(RoleEnum role);
+
+    /**
      * Assign role to user.
      *
      * @param role User role
@@ -104,7 +112,18 @@ public interface Roles {
         }
 
         @Override
+        public boolean contains(final RoleEnum role) {
+            return this.list().stream().anyMatch(assigned -> role.name().equals(assigned.name()));
+        }
+
+        @Override
         public Role grant(final RoleEnum role) throws Exception {
+            if (List.of(
+                RoleEnum.DIRECTOR, RoleEnum.DEPUTY_DIRECTOR,
+                RoleEnum.TEACHER, RoleEnum.STUDENT, RoleEnum.VIEWER
+            ).contains(role)) {
+                throw new RoleGrantException("School role must be assigned within a school");
+            }
             final Record selected = this.ctx.resultQuery(
                 new ClasspathSql("role/find-by-name-grant.sql").text(),
                 role.name()

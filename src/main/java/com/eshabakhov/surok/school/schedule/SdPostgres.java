@@ -7,6 +7,8 @@ import com.eshabakhov.surok.Media;
 import com.eshabakhov.surok.school.schedule.input.MdSdInput;
 import com.eshabakhov.surok.school.schedule.load.ClassLoads;
 import com.eshabakhov.surok.school.schedule.load.ClassLoadsPostgres;
+import com.eshabakhov.surok.school.schedule.load.autofill.LdPostgres;
+import com.eshabakhov.surok.school.schedule.load.autofill.LoadDraft;
 import com.eshabakhov.surok.sql.ClasspathSql;
 import org.jooq.DSLContext;
 import org.jooq.Record;
@@ -107,5 +109,10 @@ public final class SdPostgres implements Schedule {
     @Override
     public ClassLoads loads() {
         return new ClassLoadsPostgres(this.ctx, this.id);
+    }
+
+    @Override
+    public LoadDraft draft() {
+        return new LdPostgres(this.ctx, this);
     }
 }

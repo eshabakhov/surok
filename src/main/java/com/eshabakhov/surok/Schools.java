@@ -13,6 +13,14 @@ import com.eshabakhov.surok.school.SchoolInput;
 public interface Schools extends Printable {
 
     /**
+     * Whether a school belongs to this collection.
+     *
+     * @param id School identifier
+     * @return True if the school belongs to this collection
+     */
+    boolean contains(long id);
+
+    /**
      * Creates a new school.
      *
      * @param input School input

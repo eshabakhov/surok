@@ -5,7 +5,6 @@ package com.eshabakhov.surok.security;
 
 import com.eshabakhov.surok.User;
 import com.eshabakhov.surok.sql.ClasspathSql;
-import com.eshabakhov.surok.user.Roles;
 import com.eshabakhov.surok.user.UrsPostgres;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -52,13 +51,6 @@ public final class LoginSuccessHandler implements AuthenticationSuccessHandler {
             Instant.now().atOffset(ZoneOffset.UTC),
             true
         ).execute();
-        if (user.roles()
-            .list()
-            .stream()
-            .anyMatch(role -> Roles.RoleEnum.ADMIN.name().equalsIgnoreCase(role.name()))) {
-            response.sendRedirect("/schools");
-        } else {
-            response.sendRedirect(String.format("/schools/%s", user.info().school()));
-        }
+        response.sendRedirect("/schools");
     }
 }

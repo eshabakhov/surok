@@ -40,6 +40,13 @@ public interface User extends Printable {
     Roles roles();
 
     /**
+     * Schools available to this user.
+     *
+     * @return User's schools
+     */
+    Schools schools();
+
+    /**
      * Reference information.
      *
      * @return Reference information

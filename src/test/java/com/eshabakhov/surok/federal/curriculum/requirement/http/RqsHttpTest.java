@@ -320,15 +320,16 @@ final class RqsHttpTest {
             this.ctx,
             this.ctx.resultQuery(
                 """
-                INSERT INTO public."user" (username, password, email, corporate, school_id)
-                VALUES (?, 'secret', ?, true, ?) RETURNING id
+                INSERT INTO public."user" (username, password, email, corporate)
+                VALUES (?, 'secret', ?, true) RETURNING id
                 """,
                 UUID.randomUUID().toString(),
-                String.format("%s@example.org", UUID.randomUUID()),
-                null
+                String.format("%s@example.org", UUID.randomUUID())
             ).fetchSingle("id", Long.class)
         );
-        user.roles().grant(role);
+        if (role != Roles.RoleEnum.VIEWER) {
+            user.roles().grant(role);
+        }
         final AuthUser principal = new AuthUser(user);
         final MockHttpSession session = new MockHttpSession();
         session.setAttribute(

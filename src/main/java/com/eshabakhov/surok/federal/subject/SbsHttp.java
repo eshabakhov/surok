@@ -20,9 +20,11 @@ import com.eshabakhov.surok.media.MdXslt;
 import com.eshabakhov.surok.media.SrWeb;
 import com.eshabakhov.surok.media.XsClasspath;
 import com.eshabakhov.surok.school.SlBrief;
+import com.eshabakhov.surok.school.SlsAuthorized;
 import com.eshabakhov.surok.school.SlsBrief;
 import com.eshabakhov.surok.school.SlsPostgres;
 import com.eshabakhov.surok.security.CsToken;
+import com.eshabakhov.surok.user.Roles;
 import com.eshabakhov.surok.user.UrBrief;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.swagger.v3.oas.annotations.Operation;
@@ -37,8 +39,7 @@ import org.jooq.DSLContext;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -62,10 +63,8 @@ import org.springframework.web.server.ResponseStatusException;
  */
 @RestController
 @RequestMapping({"/federal/subjects", "/schools/{school}/subjects"})
-@PreAuthorize(
-    "#school == null or hasRole('ADMIN') or #school == authentication.principal.info().school()"
-)
 @Tag(name = "Subjects")
+@SuppressWarnings("PMD.GodClass")
 public class SbsHttp {
 
     /** Database context. */
@@ -88,6 +87,7 @@ public class SbsHttp {
      * @param page Pagination
      * @param sorts Sorting
      * @param request HTTP request
+     * @param actor Acting user
      * @return Negotiated representation
      * @throws Exception If lookup or printing fails
      */
@@ -105,11 +105,12 @@ public class SbsHttp {
         final Filters filters,
         final Page page,
         final Sorts sorts,
-        final HttpServletRequest request
+        final HttpServletRequest request,
+        @AuthenticationPrincipal final User actor
     ) throws Exception {
         final MediaType type = new AcHttp(request, "subjects.v1").type();
         if (school == null && request.getRequestURI().endsWith("/create")
-            && !request.isUserInRole("ADMIN")) {
+            && !actor.isAdmin()) {
             throw new ResponseStatusException(
                 HttpStatus.FORBIDDEN, "Federal catalogue is read-only"
             );
@@ -121,7 +122,7 @@ public class SbsHttp {
                 .map(name -> new FilterRequest(name, request.getParameter(name))).toList()
         );
         final Filters applied = new FiltersRequest(requested);
-        final Subjects selected = this.subjects(school).selection(
+        final Subjects selected = this.subjects(school, actor).selection(
             applied, page, sorts
         );
         return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8)).body(
@@ -135,7 +136,7 @@ public class SbsHttp {
                     } else {
                         view = "list";
                     }
-                    yield this.web(request, school, view).with(
+                    yield this.web(request, school, view, actor).with(
                         "subjects", new SbsWeb(selected, applied, sorts)
                     ).print();
                 }
@@ -156,6 +157,7 @@ public class SbsHttp {
      * @param school School identifier, absent for the shared federal catalogue
      * @param subject Entity identifier
      * @param request HTTP request
+     * @param actor Acting user
      * @return Negotiated representation
      * @throws Exception If lookup or printing fails
      */
@@ -171,17 +173,18 @@ public class SbsHttp {
     public ResponseEntity<?> subject(
         @PathVariable(required = false) final Long school,
         @PathVariable final long subject,
-        final HttpServletRequest request
+        final HttpServletRequest request,
+        @AuthenticationPrincipal final User actor
     ) throws Exception {
         final MediaType type = new AcHttp(request, "subject-v1").type();
-        final Subjects origin = this.subjects(school);
+        final Subjects origin = this.subjects(school, actor);
         final Subject selected = origin.subject(subject);
         return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8)).body(
             switch (type.toString()) {
                 case MediaType.TEXT_HTML_VALUE -> {
                     final String view;
                     if (request.getRequestURI().endsWith("/edit")) {
-                        if (school == null && !request.isUserInRole("ADMIN")) {
+                        if (school == null && !actor.isAdmin()) {
                             throw new SubjectReadOnlyException(selected.uid());
                         }
                         if (school != null && selected.origin() == Subject.Origin.FEDERAL) {
@@ -191,7 +194,7 @@ public class SbsHttp {
                     } else {
                         view = "details";
                     }
-                    yield this.web(request, school, view).with(
+                    yield this.web(request, school, view, actor).with(
                         "subjects", new SbsSingle(origin, selected)
                     ).print();
                 }
@@ -212,6 +215,7 @@ public class SbsHttp {
      * @param school School identifier, absent for the shared federal catalogue
      * @param parameters Form fields
      * @param request HTTP request
+     * @param actor Acting user
      * @return Created representation or redirect
      * @throws Exception If creation fails
      */
@@ -224,26 +228,19 @@ public class SbsHttp {
             "application/vnd.surok.subject-v1+xml"
         }
     )
-    @PreAuthorize(
-        """
-        hasRole('ADMIN') or (#school != null
-            and hasAnyRole('DIRECTOR', 'DEPUTY_DIRECTOR',
-                'BASIC_MAKER', 'ADVANCED_MAKER', 'PRO_MAKER')
-            and #school == authentication.principal.info().school())
-        """
-    )
     @Operation(summary = "Create subject from form")
     public ResponseEntity<?> create(
         @PathVariable(required = false) final Long school,
         @RequestParam final MultiValueMap<String, String> parameters,
-        final HttpServletRequest request
+        final HttpServletRequest request,
+        @AuthenticationPrincipal final User actor
     ) throws Exception {
         final MediaType type = new AcHttp(request, "subject-v1").type();
         ResponseEntity<?> response;
         try {
             response = SbsHttp.result(
                 type,
-                this.subjects(school)
+                this.subjects(school, actor)
                     .create(new SbInputHttp(parameters)), HttpStatus.CREATED,
                 SbsHttp.base(school),
                 SbsHttp.base(school)
@@ -260,6 +257,7 @@ public class SbsHttp {
      * @param school School identifier, absent for the shared federal catalogue
      * @param json Input document
      * @param request HTTP request
+     * @param actor Acting user
      * @return Created representation
      * @throws Exception If creation fails
      */
@@ -272,23 +270,16 @@ public class SbsHttp {
             "application/vnd.surok.subject-v1+xml"
         }
     )
-    @PreAuthorize(
-        """
-        hasRole('ADMIN') or (#school != null
-            and hasAnyRole('DIRECTOR', 'DEPUTY_DIRECTOR',
-                'BASIC_MAKER', 'ADVANCED_MAKER', 'PRO_MAKER')
-            and #school == authentication.principal.info().school())
-        """
-    )
     @Operation(summary = "Create subject from JSON")
     public ResponseEntity<?> create(
         @PathVariable(required = false) final Long school,
         @RequestBody final JsonNode json,
-        final HttpServletRequest request
+        final HttpServletRequest request,
+        @AuthenticationPrincipal final User actor
     ) throws Exception {
         return SbsHttp.result(
             new AcHttp(request, "subject-v1").type(),
-            this.subjects(school)
+            this.subjects(school, actor)
                 .create(new SbInputHttp(json)), HttpStatus.CREATED,
             SbsHttp.base(school),
             SbsHttp.base(school)
@@ -302,6 +293,7 @@ public class SbsHttp {
      * @param subject Entity identifier
      * @param parameters Form fields
      * @param request HTTP request
+     * @param actor Acting user
      * @return Revised representation or redirect
      * @throws Exception If revision fails
      */
@@ -314,25 +306,18 @@ public class SbsHttp {
             "application/vnd.surok.subject-v1+xml"
         }
     )
-    @PreAuthorize(
-        """
-        hasRole('ADMIN') or (#school != null
-            and hasAnyRole('DIRECTOR', 'DEPUTY_DIRECTOR',
-                'BASIC_MAKER', 'ADVANCED_MAKER', 'PRO_MAKER')
-            and #school == authentication.principal.info().school())
-        """
-    )
     @Operation(summary = "Update subject from form")
     public ResponseEntity<?> revise(
         @PathVariable(required = false) final Long school,
         @PathVariable final long subject,
         @RequestParam final MultiValueMap<String, String> parameters,
-        final HttpServletRequest request
+        final HttpServletRequest request,
+        @AuthenticationPrincipal final User actor
     ) throws Exception {
         final MediaType type = new AcHttp(request, "subject-v1").type();
         ResponseEntity<?> response;
         try {
-            final Subject revised = this.subjects(school)
+            final Subject revised = this.subjects(school, actor)
                 .revise(subject, new SbInputHttp(parameters));
             response = SbsHttp.result(
                 type, revised, HttpStatus.OK, SbsHttp.base(school),
@@ -351,6 +336,7 @@ public class SbsHttp {
      * @param subject Entity identifier
      * @param json Input document
      * @param request HTTP request
+     * @param actor Acting user
      * @return Revised representation or redirect
      * @throws Exception If revision fails
      */
@@ -363,23 +349,16 @@ public class SbsHttp {
             "application/vnd.surok.subject-v1+xml"
         }
     )
-    @PreAuthorize(
-        """
-        hasRole('ADMIN') or (#school != null
-            and hasAnyRole('DIRECTOR', 'DEPUTY_DIRECTOR',
-                'BASIC_MAKER', 'ADVANCED_MAKER', 'PRO_MAKER')
-            and #school == authentication.principal.info().school())
-        """
-    )
     @Operation(summary = "Update subject from JSON")
     public ResponseEntity<?> revise(
         @PathVariable(required = false) final Long school,
         @PathVariable final long subject,
         @RequestBody final JsonNode json,
-        final HttpServletRequest request
+        final HttpServletRequest request,
+        @AuthenticationPrincipal final User actor
     ) throws Exception {
         final MediaType type = new AcHttp(request, "subject-v1").type();
-        final Subject revised = this.subjects(school)
+        final Subject revised = this.subjects(school, actor)
             .revise(subject, new SbInputHttp(json));
         return SbsHttp.result(
             type, revised, HttpStatus.OK, SbsHttp.base(school),
@@ -393,6 +372,7 @@ public class SbsHttp {
      * @param school School identifier, absent for the shared federal catalogue
      * @param subject Entity identifier
      * @param request HTTP request
+     * @param actor Acting user
      * @return Empty response
      * @throws Exception If removal fails
      */
@@ -402,30 +382,24 @@ public class SbsHttp {
             "application/vnd.surok.subject-v1+xml"
         }
     )
-    @PreAuthorize(
-        """
-        hasRole('ADMIN') or (#school != null
-            and hasAnyRole('DIRECTOR', 'DEPUTY_DIRECTOR',
-                'BASIC_MAKER', 'ADVANCED_MAKER', 'PRO_MAKER')
-            and #school == authentication.principal.info().school())
-        """
-    )
     @Operation(summary = "Remove subject")
     public ResponseEntity<Void> remove(
         @PathVariable(required = false) final Long school,
-        @PathVariable final long subject, final HttpServletRequest request
+        @PathVariable final long subject, final HttpServletRequest request,
+        @AuthenticationPrincipal final User actor
     ) throws Exception {
         new AcHttp(request, "subject-v1").type();
-        this.subjects(school).remove(subject);
+        this.subjects(school, actor).remove(subject);
         return ResponseEntity.noContent().build();
     }
 
-    private Subjects subjects(final Long school) throws Exception {
+    private Subjects subjects(final Long school, final User actor) throws Exception {
         final Subjects subjects;
         if (school == null) {
-            subjects = new SbsFederal(this.ctx);
+            subjects = new SbsFederalAuthorized(new SbsFederal(this.ctx), actor);
         } else {
-            subjects = new SlsPostgres(this.ctx).school(school).subjects();
+            subjects = new SlsAuthorized(new SlsPostgres(this.ctx), actor)
+                .school(school).subjects();
         }
         return subjects;
     }
@@ -486,12 +460,19 @@ public class SbsHttp {
     private Media<String> web(
         final HttpServletRequest request,
         final Long school,
-        final String view
+        final String view,
+        final User actor
     ) throws Exception {
+        boolean editable = actor.isAdmin();
+        if (school != null && !editable) {
+            final Roles roles = new SlsAuthorized(
+                new SlsPostgres(this.ctx), actor
+            ).school(school).users().roles(actor);
+            editable = roles.contains(Roles.RoleEnum.DIRECTOR)
+                || roles.contains(Roles.RoleEnum.DEPUTY_DIRECTOR);
+        }
         Media<String> media = new SrWeb(
-            new UrBrief(
-                (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal()
-            ),
+            new UrBrief(actor),
             new SlsBrief(new SlsPostgres(this.ctx)),
             new CsToken((CsrfToken) request.getAttribute(CsrfToken.class.getName()))
         ).print(
@@ -499,14 +480,14 @@ public class SbsHttp {
                 new MdXml("surok").with("path", request.getRequestURI()),
                 new XsClasspath("xslt/subjects.xsl", view)
             )
-        ).with("federal", school == null).with("error", request.getParameter("error")).with(
-            "editable", Stream.of(
-                "ADMIN", "DIRECTOR", "DEPUTY_DIRECTOR", "BASIC_MAKER",
-                "ADVANCED_MAKER", "PRO_MAKER"
-            ).anyMatch(request::isUserInRole)
-        );
+        ).with("federal", school == null).with("error", request.getParameter("error"))
+            .with("editable", editable);
         if (school != null) {
-            media = media.with("school", new SlBrief(new SlsPostgres(this.ctx).school(school)));
+            media = media.with(
+                "school", new SlBrief(
+                    new SlsAuthorized(new SlsPostgres(this.ctx), actor).school(school)
+                )
+            );
         }
         return media;
     }

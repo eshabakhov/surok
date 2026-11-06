@@ -19,6 +19,7 @@ import com.eshabakhov.surok.media.MdXslt;
 import com.eshabakhov.surok.media.SrWeb;
 import com.eshabakhov.surok.media.XsClasspath;
 import com.eshabakhov.surok.school.SlBrief;
+import com.eshabakhov.surok.school.SlsAuthorized;
 import com.eshabakhov.surok.school.SlsBrief;
 import com.eshabakhov.surok.school.SlsPostgres;
 import com.eshabakhov.surok.school.teacher.input.TeacherInputException;
@@ -38,7 +39,7 @@ import org.jooq.DSLContext;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.util.MultiValueMap;
@@ -63,7 +64,6 @@ import org.springframework.web.server.ResponseStatusException;
  */
 @RestController
 @RequestMapping("/schools/{school}/teachers")
-@PreAuthorize("hasRole('ADMIN') or #school == authentication.principal.info().school()")
 @Tag(name = "Teachers")
 public class ThsHttp {
 
@@ -87,6 +87,7 @@ public class ThsHttp {
      * @param page Pagination
      * @param sorts Sorting
      * @param request HTTP request
+     * @param actor Acting user
      * @return Negotiated representation
      * @throws Exception If lookup or printing fails
      */
@@ -104,10 +105,11 @@ public class ThsHttp {
         final Filters filters,
         final Page page,
         final Sorts sorts,
-        final HttpServletRequest request
+        final HttpServletRequest request,
+        @AuthenticationPrincipal final User actor
     ) throws Exception {
         final MediaType type = new AcHttp(request, "teachers.v1").type();
-        final School sch = new SlsPostgres(this.ctx).school(school);
+        final School sch = new SlsAuthorized(new SlsPostgres(this.ctx), actor).school(school);
         final Set<Filter> requested = new LinkedHashSet<>(filters.filters());
         requested.addAll(
             Stream.of("name", "name_ct")
@@ -150,6 +152,7 @@ public class ThsHttp {
      * @param school School identifier
      * @param teacher Entity identifier
      * @param request HTTP request
+     * @param actor Acting user
      * @return Negotiated representation
      * @throws Exception If lookup or printing fails
      */
@@ -165,10 +168,11 @@ public class ThsHttp {
     public ResponseEntity<?> teacher(
         @PathVariable final long school,
         @PathVariable final long teacher,
-        final HttpServletRequest request
+        final HttpServletRequest request,
+        @AuthenticationPrincipal final User actor
     ) throws Exception {
         final MediaType type = new AcHttp(request, "teacher-v1").type();
-        final School sch = new SlsPostgres(this.ctx).school(school);
+        final School sch = new SlsAuthorized(new SlsPostgres(this.ctx), actor).school(school);
         final Teachers origin = sch.teachers();
         final Teacher selected = origin.teacher(teacher);
         return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8)).body(
@@ -201,6 +205,7 @@ public class ThsHttp {
      * @param school School identifier
      * @param parameters Form fields
      * @param request HTTP request
+     * @param actor Acting user
      * @return Created representation or redirect
      * @throws Exception If creation fails
      */
@@ -213,25 +218,19 @@ public class ThsHttp {
             "application/vnd.surok.teacher-v1+xml"
         }
     )
-    @PreAuthorize(
-        """
-        hasAnyRole('ADMIN', 'DIRECTOR', 'DEPUTY_DIRECTOR',
-            'BASIC_MAKER', 'ADVANCED_MAKER', 'PRO_MAKER')
-        and (hasRole('ADMIN') or #school == authentication.principal.info().school())
-        """
-    )
     @Operation(summary = "Create teacher from form")
     public ResponseEntity<?> create(
         @PathVariable final long school,
         @RequestParam final MultiValueMap<String, String> parameters,
-        final HttpServletRequest request
+        final HttpServletRequest request,
+        @AuthenticationPrincipal final User actor
     ) throws Exception {
         final MediaType type = new AcHttp(request, "teacher-v1").type();
         ResponseEntity<?> response;
         try {
             response = ThsHttp.result(
                 type,
-                new SlsPostgres(this.ctx).school(school).teachers()
+                new SlsAuthorized(new SlsPostgres(this.ctx), actor).school(school).teachers()
                     .create(new ThInputHttp(parameters)), HttpStatus.CREATED,
                 String.format("/schools/%d/teachers", school),
                 String.format("/schools/%d/teachers", school)
@@ -248,6 +247,7 @@ public class ThsHttp {
      * @param school School identifier
      * @param json Input document
      * @param request HTTP request
+     * @param actor Acting user
      * @return Created representation
      * @throws Exception If creation fails
      */
@@ -260,22 +260,16 @@ public class ThsHttp {
             "application/vnd.surok.teacher-v1+xml"
         }
     )
-    @PreAuthorize(
-        """
-        hasAnyRole('ADMIN', 'DIRECTOR', 'DEPUTY_DIRECTOR',
-            'BASIC_MAKER', 'ADVANCED_MAKER', 'PRO_MAKER')
-        and (hasRole('ADMIN') or #school == authentication.principal.info().school())
-        """
-    )
     @Operation(summary = "Create teacher from JSON")
     public ResponseEntity<?> create(
         @PathVariable final long school,
         @RequestBody final JsonNode json,
-        final HttpServletRequest request
+        final HttpServletRequest request,
+        @AuthenticationPrincipal final User actor
     ) throws Exception {
         return ThsHttp.result(
             new AcHttp(request, "teacher-v1").type(),
-            new SlsPostgres(this.ctx).school(school).teachers()
+            new SlsAuthorized(new SlsPostgres(this.ctx), actor).school(school).teachers()
                 .create(new ThInputHttp(json)), HttpStatus.CREATED,
             String.format("/schools/%d/teachers", school),
             String.format("/schools/%d/teachers", school)
@@ -289,6 +283,7 @@ public class ThsHttp {
      * @param teacher Entity identifier
      * @param parameters Form fields
      * @param request HTTP request
+     * @param actor Acting user
      * @return Revised representation or redirect
      * @throws Exception If revision fails
      */
@@ -301,25 +296,20 @@ public class ThsHttp {
             "application/vnd.surok.teacher-v1+xml"
         }
     )
-    @PreAuthorize(
-        """
-        hasAnyRole('ADMIN', 'DIRECTOR', 'DEPUTY_DIRECTOR',
-            'BASIC_MAKER', 'ADVANCED_MAKER', 'PRO_MAKER')
-        and (hasRole('ADMIN') or #school == authentication.principal.info().school())
-        """
-    )
     @Operation(summary = "Update teacher from form")
     public ResponseEntity<?> revise(
         @PathVariable final long school,
         @PathVariable final long teacher,
         @RequestParam final MultiValueMap<String, String> parameters,
-        final HttpServletRequest request
+        final HttpServletRequest request,
+        @AuthenticationPrincipal final User actor
     ) throws Exception {
         final MediaType type = new AcHttp(request, "teacher-v1").type();
         ResponseEntity<?> response;
         try {
-            final Teacher revised = new SlsPostgres(this.ctx).school(school).teachers()
-                .revise(teacher, new ThInputHttp(parameters));
+            final Teacher revised = new SlsAuthorized(
+                new SlsPostgres(this.ctx), actor
+            ).school(school).teachers().revise(teacher, new ThInputHttp(parameters));
             response = ThsHttp.result(
                 type, revised, HttpStatus.OK, String.format("/schools/%d/teachers", school),
                 String.format("/schools/%d/teachers/%d", school, revised.uid())
@@ -337,6 +327,7 @@ public class ThsHttp {
      * @param teacher Entity identifier
      * @param json Input document
      * @param request HTTP request
+     * @param actor Acting user
      * @return Revised representation or redirect
      * @throws Exception If revision fails
      */
@@ -349,23 +340,18 @@ public class ThsHttp {
             "application/vnd.surok.teacher-v1+xml"
         }
     )
-    @PreAuthorize(
-        """
-        hasAnyRole('ADMIN', 'DIRECTOR', 'DEPUTY_DIRECTOR',
-            'BASIC_MAKER', 'ADVANCED_MAKER', 'PRO_MAKER')
-        and (hasRole('ADMIN') or #school == authentication.principal.info().school())
-        """
-    )
     @Operation(summary = "Update teacher from JSON")
     public ResponseEntity<?> revise(
         @PathVariable final long school,
         @PathVariable final long teacher,
         @RequestBody final JsonNode json,
-        final HttpServletRequest request
+        final HttpServletRequest request,
+        @AuthenticationPrincipal final User actor
     ) throws Exception {
         final MediaType type = new AcHttp(request, "teacher-v1").type();
-        final Teacher revised = new SlsPostgres(this.ctx).school(school).teachers()
-            .revise(teacher, new ThInputHttp(json));
+        final Teacher revised = new SlsAuthorized(
+            new SlsPostgres(this.ctx), actor
+        ).school(school).teachers().revise(teacher, new ThInputHttp(json));
         return ThsHttp.result(
             type, revised, HttpStatus.OK, String.format("/schools/%d/teachers", school),
             String.format("/schools/%d/teachers/%d", school, revised.uid())
@@ -377,23 +363,19 @@ public class ThsHttp {
      *
      * @param school School identifier
      * @param teacher Entity identifier
+     * @param actor Acting user
      * @return Empty response
      * @throws Exception If removal fails
      */
     @DeleteMapping("/{teacher}")
-    @PreAuthorize(
-        """
-        hasAnyRole('ADMIN', 'DIRECTOR', 'DEPUTY_DIRECTOR',
-            'BASIC_MAKER', 'ADVANCED_MAKER', 'PRO_MAKER')
-        and (hasRole('ADMIN') or #school == authentication.principal.info().school())
-        """
-    )
     @Operation(summary = "Remove teacher")
     public ResponseEntity<Void> remove(
         @PathVariable final long school,
-        @PathVariable final long teacher
+        @PathVariable final long teacher,
+        @AuthenticationPrincipal final User actor
     ) throws Exception {
-        new SlsPostgres(this.ctx).school(school).teachers().remove(teacher);
+        new SlsAuthorized(new SlsPostgres(this.ctx), actor)
+            .school(school).teachers().remove(teacher);
         return ResponseEntity.noContent().build();
     }
 

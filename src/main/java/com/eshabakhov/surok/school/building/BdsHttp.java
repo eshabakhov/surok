@@ -19,6 +19,7 @@ import com.eshabakhov.surok.media.MdXslt;
 import com.eshabakhov.surok.media.SrWeb;
 import com.eshabakhov.surok.media.XsClasspath;
 import com.eshabakhov.surok.school.SlBrief;
+import com.eshabakhov.surok.school.SlsAuthorized;
 import com.eshabakhov.surok.school.SlsBrief;
 import com.eshabakhov.surok.school.SlsPostgres;
 import com.eshabakhov.surok.school.building.input.BdInputHttp;
@@ -38,7 +39,7 @@ import org.jooq.DSLContext;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.util.MultiValueMap;
@@ -63,7 +64,6 @@ import org.springframework.web.server.ResponseStatusException;
  */
 @RestController
 @RequestMapping("/schools/{school}/buildings")
-@PreAuthorize("hasRole('ADMIN') or #school == authentication.principal.info().school()")
 @Tag(name = "Buildings")
 public class BdsHttp {
 
@@ -87,6 +87,7 @@ public class BdsHttp {
      * @param page Pagination
      * @param sorts Sorting
      * @param request HTTP request
+     * @param user Acting user
      * @return Negotiated representation
      * @throws Exception If lookup or printing fails
      */
@@ -104,10 +105,13 @@ public class BdsHttp {
         final Filters filters,
         final Page page,
         final Sorts sorts,
-        final HttpServletRequest request
+        final HttpServletRequest request,
+        @AuthenticationPrincipal final User user
     ) throws Exception {
         final MediaType type = new AcHttp(request, "buildings.v1").type();
-        final School sch = new SlsPostgres(this.ctx).school(school);
+        final School sch = new SlsAuthorized(
+            new SlsPostgres(this.ctx), user
+        ).school(school);
         final Set<Filter> requested = new LinkedHashSet<>(filters.filters());
         requested.addAll(
             Stream.of("name", "name_ct")
@@ -150,6 +154,7 @@ public class BdsHttp {
      * @param school School identifier
      * @param building Entity identifier
      * @param request HTTP request
+     * @param user Acting user
      * @return Negotiated representation
      * @throws Exception If lookup or printing fails
      */
@@ -165,10 +170,13 @@ public class BdsHttp {
     public ResponseEntity<?> building(
         @PathVariable final long school,
         @PathVariable final long building,
-        final HttpServletRequest request
+        final HttpServletRequest request,
+        @AuthenticationPrincipal final User user
     ) throws Exception {
         final MediaType type = new AcHttp(request, "building-v1").type();
-        final School sch = new SlsPostgres(this.ctx).school(school);
+        final School sch = new SlsAuthorized(
+            new SlsPostgres(this.ctx), user
+        ).school(school);
         final Buildings origin = sch.buildings();
         final Building selected = origin.building(building);
         return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8)).body(
@@ -201,6 +209,7 @@ public class BdsHttp {
      * @param school School identifier
      * @param parameters Form fields
      * @param request HTTP request
+     * @param user Acting user
      * @return Created representation or redirect
      * @throws Exception If creation fails
      */
@@ -213,25 +222,19 @@ public class BdsHttp {
             "application/vnd.surok.building-v1+xml"
         }
     )
-    @PreAuthorize(
-        """
-        hasAnyRole('ADMIN', 'DIRECTOR', 'DEPUTY_DIRECTOR',
-            'BASIC_MAKER', 'ADVANCED_MAKER', 'PRO_MAKER')
-        and (hasRole('ADMIN') or #school == authentication.principal.info().school())
-        """
-    )
     @Operation(summary = "Create building from form")
     public ResponseEntity<?> create(
         @PathVariable final long school,
         @RequestParam final MultiValueMap<String, String> parameters,
-        final HttpServletRequest request
+        final HttpServletRequest request,
+        @AuthenticationPrincipal final User user
     ) throws Exception {
         final MediaType type = new AcHttp(request, "building-v1").type();
         ResponseEntity<?> response;
         try {
             response = BdsHttp.result(
                 type,
-                new SlsPostgres(this.ctx).school(school).buildings()
+                new SlsAuthorized(new SlsPostgres(this.ctx), user).school(school).buildings()
                     .create(new BdInputHttp(parameters)), HttpStatus.CREATED,
                 String.format("/schools/%d/buildings", school),
                 String.format("/schools/%d/buildings", school)
@@ -253,6 +256,7 @@ public class BdsHttp {
      * @param school School identifier
      * @param json Input document
      * @param request HTTP request
+     * @param user Acting user
      * @return Created representation
      * @throws Exception If creation fails
      */
@@ -265,22 +269,16 @@ public class BdsHttp {
             "application/vnd.surok.building-v1+xml"
         }
     )
-    @PreAuthorize(
-        """
-        hasAnyRole('ADMIN', 'DIRECTOR', 'DEPUTY_DIRECTOR',
-            'BASIC_MAKER', 'ADVANCED_MAKER', 'PRO_MAKER')
-        and (hasRole('ADMIN') or #school == authentication.principal.info().school())
-        """
-    )
     @Operation(summary = "Create building from JSON")
     public ResponseEntity<?> create(
         @PathVariable final long school,
         @RequestBody final JsonNode json,
-        final HttpServletRequest request
+        final HttpServletRequest request,
+        @AuthenticationPrincipal final User user
     ) throws Exception {
         return BdsHttp.result(
             new AcHttp(request, "building-v1").type(),
-            new SlsPostgres(this.ctx).school(school).buildings()
+            new SlsAuthorized(new SlsPostgres(this.ctx), user).school(school).buildings()
                 .create(new BdInputHttp(json)), HttpStatus.CREATED,
             String.format("/schools/%d/buildings", school),
             String.format("/schools/%d/buildings", school)
@@ -294,6 +292,7 @@ public class BdsHttp {
      * @param building Entity identifier
      * @param parameters Form fields
      * @param request HTTP request
+     * @param user Acting user
      * @return Revised representation or redirect
      * @throws Exception If revision fails
      */
@@ -306,24 +305,20 @@ public class BdsHttp {
             "application/vnd.surok.building-v1+xml"
         }
     )
-    @PreAuthorize(
-        """
-        hasAnyRole('ADMIN', 'DIRECTOR', 'DEPUTY_DIRECTOR',
-            'BASIC_MAKER', 'ADVANCED_MAKER', 'PRO_MAKER')
-        and (hasRole('ADMIN') or #school == authentication.principal.info().school())
-        """
-    )
     @Operation(summary = "Update building from form")
     public ResponseEntity<?> revise(
         @PathVariable final long school,
         @PathVariable final long building,
         @RequestParam final MultiValueMap<String, String> parameters,
-        final HttpServletRequest request
+        final HttpServletRequest request,
+        @AuthenticationPrincipal final User user
     ) throws Exception {
         final MediaType type = new AcHttp(request, "building-v1").type();
         ResponseEntity<?> response;
         try {
-            final Building revised = new SlsPostgres(this.ctx).school(school).buildings()
+            final Building revised = new SlsAuthorized(
+                new SlsPostgres(this.ctx), user
+            ).school(school).buildings()
                 .revise(building, new BdInputHttp(parameters));
             response = BdsHttp.result(
                 type, revised, HttpStatus.OK, String.format("/schools/%d/buildings", school),
@@ -347,6 +342,7 @@ public class BdsHttp {
      * @param building Entity identifier
      * @param json Input document
      * @param request HTTP request
+     * @param user Acting user
      * @return Revised representation or redirect
      * @throws Exception If revision fails
      */
@@ -359,22 +355,18 @@ public class BdsHttp {
             "application/vnd.surok.building-v1+xml"
         }
     )
-    @PreAuthorize(
-        """
-        hasAnyRole('ADMIN', 'DIRECTOR', 'DEPUTY_DIRECTOR',
-            'BASIC_MAKER', 'ADVANCED_MAKER', 'PRO_MAKER')
-        and (hasRole('ADMIN') or #school == authentication.principal.info().school())
-        """
-    )
     @Operation(summary = "Update building from JSON")
     public ResponseEntity<?> revise(
         @PathVariable final long school,
         @PathVariable final long building,
         @RequestBody final JsonNode json,
-        final HttpServletRequest request
+        final HttpServletRequest request,
+        @AuthenticationPrincipal final User user
     ) throws Exception {
         final MediaType type = new AcHttp(request, "building-v1").type();
-        final Building revised = new SlsPostgres(this.ctx).school(school).buildings()
+        final Building revised = new SlsAuthorized(
+            new SlsPostgres(this.ctx), user
+        ).school(school).buildings()
             .revise(building, new BdInputHttp(json));
         return BdsHttp.result(
             type, revised, HttpStatus.OK, String.format("/schools/%d/buildings", school),
@@ -387,23 +379,19 @@ public class BdsHttp {
      *
      * @param school School identifier
      * @param building Entity identifier
+     * @param user Acting user
      * @return Empty response
      * @throws Exception If removal fails
      */
     @DeleteMapping("/{building}")
-    @PreAuthorize(
-        """
-        hasAnyRole('ADMIN', 'DIRECTOR', 'DEPUTY_DIRECTOR',
-            'BASIC_MAKER', 'ADVANCED_MAKER', 'PRO_MAKER')
-        and (hasRole('ADMIN') or #school == authentication.principal.info().school())
-        """
-    )
     @Operation(summary = "Remove building")
     public ResponseEntity<Void> remove(
         @PathVariable final long school,
-        @PathVariable final long building
+        @PathVariable final long building,
+        @AuthenticationPrincipal final User user
     ) throws Exception {
-        new SlsPostgres(this.ctx).school(school).buildings().remove(building);
+        new SlsAuthorized(new SlsPostgres(this.ctx), user)
+            .school(school).buildings().remove(building);
         return ResponseEntity.noContent().build();
     }
 

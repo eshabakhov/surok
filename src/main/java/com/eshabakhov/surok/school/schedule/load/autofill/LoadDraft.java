@@ -19,6 +19,16 @@ import java.util.Map;
 public interface LoadDraft extends Printable {
 
     /**
+     * Replaces the plan using a submitted draft input.
+     *
+     * @param input Submitted draft
+     * @throws Exception If selection or persistence fails
+     */
+    default void save(final LoadDraftInput input) throws Exception {
+        this.save(input.curriculum(), input.additions());
+    }
+
+    /**
      * Replaces the plan and additional hours without changing actual loads.
      *
      * @param curriculum Federal plan
@@ -27,6 +37,16 @@ public interface LoadDraft extends Printable {
      */
     void save(Curriculum curriculum, Map<Integer, Map<Subject, WeeklyHours>> additions)
         throws Exception;
+
+    /**
+     * Switches the plan using a submitted draft input.
+     *
+     * @param input Submitted draft
+     * @throws Exception If switching fails
+     */
+    default void revise(final LoadDraftInput input) throws Exception {
+        this.revise(input.curriculum());
+    }
 
     /**
      * Switches the plan and clears grade additions when the plan changes.
