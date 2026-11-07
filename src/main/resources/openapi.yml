@@ -5741,7 +5741,7 @@ paths:
     get:
       tags:
         - Schools
-      summary: List schools
+      summary: Open school creation form
       operationId: selection_15
       parameters:
         - name: filter
@@ -5809,65 +5809,6 @@ paths:
                 example:
                   $ref: "#/components/examples/HtmlPageSchoolCreateHtml"
       description: For HTML, render the creation form; data formats return the collection.
-    post:
-      tags:
-        - Schools
-      summary: Create school
-      operationId: create_15
-      responses:
-        "201":
-          description: The resource was created.
-          headers:
-            Location:
-              description: Relative URL of the resource or page to open.
-              schema:
-                type: string
-              example: /schools/12
-          content:
-            application/vnd.surok.school-v1+json:
-              schema:
-                $ref: "#/components/schemas/School"
-              examples:
-                example:
-                  $ref: "#/components/examples/SchoolJson"
-            application/vnd.surok.school-v1+xml:
-              schema:
-                $ref: "#/components/schemas/School"
-              examples:
-                example:
-                  $ref: "#/components/examples/SchoolXml"
-        "302":
-          description: Browser requests are redirected to the resource page. No body.
-          headers:
-            Location:
-              description: Relative URL of the resource or page to open.
-              schema:
-                type: string
-              example: /schools/12
-        "400":
-          $ref: "#/components/responses/InvalidRequest"
-      requestBody:
-        description: Fields for the new resource.
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/SchoolInput"
-            examples:
-              example:
-                $ref: "#/components/examples/SchoolInputJson"
-          application/vnd.surok.school-v1+json:
-            schema:
-              $ref: "#/components/schemas/SchoolInput"
-            examples:
-              example:
-                $ref: "#/components/examples/SchoolInputJson"
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: "#/components/schemas/SchoolForm"
-            examples:
-              example:
-                $ref: "#/components/examples/SchoolForm"
   /schools:
     get:
       tags:
@@ -5977,7 +5918,7 @@ paths:
         "400":
           $ref: "#/components/responses/InvalidRequest"
       requestBody:
-        description: Fields for the new resource.
+        description: Fields for the new school. Send JSON or a URL-encoded form.
         required: true
         content:
           application/json:
@@ -5992,6 +5933,12 @@ paths:
             examples:
               example:
                 $ref: "#/components/examples/SchoolInputJson"
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/SchoolForm"
+            examples:
+              example:
+                $ref: "#/components/examples/SchoolForm"
   /schools/:
     get:
       tags:
@@ -6063,59 +6010,6 @@ paths:
               examples:
                 example:
                   $ref: "#/components/examples/HtmlPageSchoolListHtml"
-    post:
-      tags:
-        - Schools
-      summary: Create school
-      operationId: create_17
-      responses:
-        "201":
-          description: The resource was created.
-          headers:
-            Location:
-              description: Relative URL of the resource or page to open.
-              schema:
-                type: string
-              example: /schools/12
-          content:
-            application/vnd.surok.school-v1+json:
-              schema:
-                $ref: "#/components/schemas/School"
-              examples:
-                example:
-                  $ref: "#/components/examples/SchoolJson"
-            application/vnd.surok.school-v1+xml:
-              schema:
-                $ref: "#/components/schemas/School"
-              examples:
-                example:
-                  $ref: "#/components/examples/SchoolXml"
-        "302":
-          description: Browser requests are redirected to the resource page. No body.
-          headers:
-            Location:
-              description: Relative URL of the resource or page to open.
-              schema:
-                type: string
-              example: /schools/12
-        "400":
-          $ref: "#/components/responses/InvalidRequest"
-      requestBody:
-        description: Fields for the new resource.
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/SchoolInput"
-            examples:
-              example:
-                $ref: "#/components/examples/SchoolInputJson"
-          application/vnd.surok.school-v1+json:
-            schema:
-              $ref: "#/components/schemas/SchoolInput"
-            examples:
-              example:
-                $ref: "#/components/examples/SchoolInputJson"
   /federal/subjects/{subject}/edit:
     get:
       tags:
@@ -11861,7 +11755,7 @@ components:
         </schools>
     HtmlPageSchoolCreateHtml:
       summary: Rendered HTML document or fragment. The example shows the relevant part of the response.
-      value: <form method="post"><input name="name" value=""></form>
+      value: <form method="post" action="/schools"><input name="name" value=""></form>
     HtmlPageSchoolListHtml:
       summary: Rendered HTML document or fragment. The example shows the relevant part of the response.
       value: <main><h1>Школы</h1></main>

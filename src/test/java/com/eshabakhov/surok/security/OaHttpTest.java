@@ -178,6 +178,37 @@ final class OaHttpTest {
     }
 
     /**
+     * Describes one creation operation with all accepted input formats.
+     *
+     * @param mvc HTTP client
+     * @throws Exception If the description cannot be read
+     */
+    @Test
+    void publishesOneSchoolCreationOperation(@Autowired final MockMvc mvc) throws Exception {
+        final JsonNode paths = Json.mapper().readTree(
+            mvc.perform(
+                MockMvcRequestBuilders.get("/api-docs").with(
+                    SecurityMockMvcRequestPostProcessors.user("администратор").roles("ADMIN")
+                )
+            ).andReturn().getResponse().getContentAsByteArray()
+        ).path("paths");
+        final JsonNode content = paths.path("/schools").path("post")
+            .path("requestBody").path("content");
+        MatcherAssert.assertThat(
+            "Swagger exposed school creation aliases or lost a request format",
+            List.of(
+                content.has("application/json"),
+                content.has("application/vnd.surok.school-v1+json"),
+                content.has("application/x-www-form-urlencoded"),
+                paths.path("/schools/create").has("get"),
+                paths.path("/schools/create").has("post"),
+                paths.path("/schools/").has("post")
+            ),
+            Matchers.contains(true, true, true, true, false, false)
+        );
+    }
+
+    /**
      * Keeps Swagger pointed at the filtered description after generation is disabled.
      *
      * @param mvc HTTP client

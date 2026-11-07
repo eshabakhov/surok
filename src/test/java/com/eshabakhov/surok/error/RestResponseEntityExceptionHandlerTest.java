@@ -85,7 +85,7 @@ final class RestResponseEntityExceptionHandlerTest {
     @Test
     void preservesFormValidationRedirects() throws Exception {
         this.mvc.perform(
-            MockMvcRequestBuilders.post("/schools/create").accept(MediaType.TEXT_HTML)
+            MockMvcRequestBuilders.post("/schools").accept(MediaType.TEXT_HTML)
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED).param("name", "")
                 .with(SecurityMockMvcRequestPostProcessors.csrf()).with(
                     SecurityMockMvcRequestPostProcessors.user(this.administrator())
