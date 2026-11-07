@@ -8,7 +8,7 @@ $(() => {
     const path = window.location.pathname.replace(/\/$/, '');
     const fields = ['name'];
     const sortFields = ['name'];
-    const results = fragment('#schools-results', `${path}/fragment`);
+    const results = fragment('#schools-results', path, { Accept: 'text/vnd.surok.schools-fragment+html' });
     const shown = remembered(results, path);
     const search = $('#school-search');
     search.val(filters(query(window.location.search), fields).value('name'));

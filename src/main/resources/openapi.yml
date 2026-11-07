@@ -5741,79 +5741,24 @@ paths:
     get:
       tags:
         - Schools
-      summary: Open school creation form
+      summary: Open the school creation form
       operationId: selection_15
-      parameters:
-        - name: filter
-          in: query
-          description: "Repeat to combine filters. Each value uses field:value. Supported fields: name and name_ct."
-          style: form
-          explode: true
-          schema:
-            type: array
-            items:
-              type: string
-          example:
-            - name_ct:А
-        - name: limit
-          in: query
-          description: Maximum number of entries per page. Defaults to 15.
-          schema:
-            type: integer
-            format: int32
-            description: Page size.
-            minimum: 1
-            default: 15
-          example: 15
-        - name: offset
-          in: query
-          description: One-based page number. Defaults to 1.
-          schema:
-            type: integer
-            format: int32
-            description: Page number.
-            minimum: 1
-            default: 1
-          example: 1
-        - name: sort
-          in: query
-          description: Repeat for multiple sort keys. Use field:ASC or field:DESC.
-          style: form
-          explode: true
-          schema:
-            type: array
-            items:
-              type: string
-          example:
-            - name:ASC
       responses:
         "200":
-          description: Page of matching records.
+          description: HTML page with the school creation form.
           content:
-            application/vnd.surok.schools.v1+json:
-              schema:
-                $ref: "#/components/schemas/SchoolList"
-              examples:
-                example:
-                  $ref: "#/components/examples/SchoolListJson"
-            application/vnd.surok.schools.v1+xml:
-              schema:
-                $ref: "#/components/schemas/SchoolListXml"
-              examples:
-                example:
-                  $ref: "#/components/examples/SchoolListXml"
             text/html:
               schema:
                 $ref: "#/components/schemas/HtmlPage"
               examples:
                 example:
                   $ref: "#/components/examples/HtmlPageSchoolCreateHtml"
-      description: For HTML, render the creation form; data formats return the collection.
   /schools:
     get:
       tags:
         - Schools
       summary: List schools
+      description: Select a full HTML page, an HTML results fragment, JSON, or XML with the Accept header.
       operationId: selection_16
       parameters:
         - name: filter
@@ -5861,6 +5806,12 @@ paths:
       responses:
         "200":
           description: Page of matching records.
+          headers:
+            Vary:
+              description: The response representation depends on the Accept request header.
+              schema:
+                type: string
+              example: Accept
           content:
             application/vnd.surok.schools.v1+json:
               schema:
@@ -5880,6 +5831,12 @@ paths:
               examples:
                 example:
                   $ref: "#/components/examples/HtmlPageSchoolListHtml"
+            text/vnd.surok.schools-fragment+html:
+              schema:
+                $ref: "#/components/schemas/HtmlPage"
+              examples:
+                example:
+                  $ref: "#/components/examples/HtmlPageSchoolFragmentHtml"
     post:
       tags:
         - Schools
@@ -5939,77 +5896,6 @@ paths:
             examples:
               example:
                 $ref: "#/components/examples/SchoolForm"
-  /schools/:
-    get:
-      tags:
-        - Schools
-      summary: List schools
-      operationId: selection_17
-      parameters:
-        - name: filter
-          in: query
-          description: "Repeat to combine filters. Each value uses field:value. Supported fields: name and name_ct."
-          style: form
-          explode: true
-          schema:
-            type: array
-            items:
-              type: string
-          example:
-            - name_ct:А
-        - name: limit
-          in: query
-          description: Maximum number of entries per page. Defaults to 15.
-          schema:
-            type: integer
-            format: int32
-            description: Page size.
-            minimum: 1
-            default: 15
-          example: 15
-        - name: offset
-          in: query
-          description: One-based page number. Defaults to 1.
-          schema:
-            type: integer
-            format: int32
-            description: Page number.
-            minimum: 1
-            default: 1
-          example: 1
-        - name: sort
-          in: query
-          description: Repeat for multiple sort keys. Use field:ASC or field:DESC.
-          style: form
-          explode: true
-          schema:
-            type: array
-            items:
-              type: string
-          example:
-            - name:ASC
-      responses:
-        "200":
-          description: Page of matching records.
-          content:
-            application/vnd.surok.schools.v1+json:
-              schema:
-                $ref: "#/components/schemas/SchoolList"
-              examples:
-                example:
-                  $ref: "#/components/examples/SchoolListJson"
-            application/vnd.surok.schools.v1+xml:
-              schema:
-                $ref: "#/components/schemas/SchoolListXml"
-              examples:
-                example:
-                  $ref: "#/components/examples/SchoolListXml"
-            text/html:
-              schema:
-                $ref: "#/components/schemas/HtmlPage"
-              examples:
-                example:
-                  $ref: "#/components/examples/HtmlPageSchoolListHtml"
   /federal/subjects/{subject}/edit:
     get:
       tags:
@@ -8533,78 +8419,6 @@ paths:
               examples:
                 example:
                   $ref: "#/components/examples/HtmlPageBuildingFragmentHtml"
-      description: Return a partial HTML view or the negotiated data representation.
-  /schools/fragment:
-    get:
-      tags:
-        - Schools
-      summary: List schools
-      operationId: selection_34
-      parameters:
-        - name: filter
-          in: query
-          description: "Repeat to combine filters. Each value uses field:value. Supported fields: name and name_ct."
-          style: form
-          explode: true
-          schema:
-            type: array
-            items:
-              type: string
-          example:
-            - name_ct:А
-        - name: limit
-          in: query
-          description: Maximum number of entries per page. Defaults to 15.
-          schema:
-            type: integer
-            format: int32
-            description: Page size.
-            minimum: 1
-            default: 15
-          example: 15
-        - name: offset
-          in: query
-          description: One-based page number. Defaults to 1.
-          schema:
-            type: integer
-            format: int32
-            description: Page number.
-            minimum: 1
-            default: 1
-          example: 1
-        - name: sort
-          in: query
-          description: Repeat for multiple sort keys. Use field:ASC or field:DESC.
-          style: form
-          explode: true
-          schema:
-            type: array
-            items:
-              type: string
-          example:
-            - name:ASC
-      responses:
-        "200":
-          description: Page of matching records.
-          content:
-            application/vnd.surok.schools.v1+json:
-              schema:
-                $ref: "#/components/schemas/SchoolList"
-              examples:
-                example:
-                  $ref: "#/components/examples/SchoolListJson"
-            application/vnd.surok.schools.v1+xml:
-              schema:
-                $ref: "#/components/schemas/SchoolListXml"
-              examples:
-                example:
-                  $ref: "#/components/examples/SchoolListXml"
-            text/html:
-              schema:
-                $ref: "#/components/schemas/HtmlPage"
-              examples:
-                example:
-                  $ref: "#/components/examples/HtmlPageSchoolFragmentHtml"
       description: Return a partial HTML view or the negotiated data representation.
   /permissions:
     get:
@@ -12144,8 +11958,11 @@ components:
       summary: Rendered HTML document or fragment. The example shows the relevant part of the response.
       value: <table><tbody><tr><td>Учебный корпус</td></tr></tbody></table>
     HtmlPageSchoolFragmentHtml:
-      summary: Rendered HTML document or fragment. The example shows the relevant part of the response.
-      value: <table><tbody><tr><td>Лицей № 42</td></tr></tbody></table>
+      summary: HTML fragment containing only the results of the school list.
+      value: |-
+        <div class="schools-results" id="schools-results">
+          <div class="card-grid" id="schools-container"></div>
+        </div>
     HtmlPagePermissionsHtml:
       summary: Rendered HTML document or fragment. The example shows the relevant part of the response.
       value: <main><h1>Права доступа</h1></main>

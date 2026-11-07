@@ -21,6 +21,8 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
@@ -81,7 +83,7 @@ final class SlsHttpTest {
      */
     @ParameterizedTest
     @CsvSource({
-        "'', schools.v1, json", "/fragment, schools.v1, xml", "/3, school-v1, json",
+        "'', schools.v1, json", "'', schools.v1, xml", "/3, school-v1, json",
         "/3/edit, school-v1, xml"
     })
     void negotiatesVersionedSchoolReads(
@@ -145,6 +147,76 @@ final class SlsHttpTest {
         ).andExpect(
             MockMvcResultMatchers.content().string(Matchers.containsString("action=\"/schools\""))
         );
+    }
+
+    /** Verifies the filtered list can be refreshed without the surrounding page. */
+    @Test
+    void rendersOnlyTheFilteredResultsWhenAFragmentIsRequested() throws Exception {
+        this.prepare();
+        final String type = "text/vnd.surok.schools-fragment+html";
+        this.mvc.perform(
+            MockMvcRequestBuilders.get("/schools").param("filter", "name:Школа №3")
+                .accept(type).with(
+                    SecurityMockMvcRequestPostProcessors.user(this.principal(Roles.RoleEnum.ADMIN))
+                )
+        ).andExpectAll(
+            MockMvcResultMatchers.status().isOk(),
+            MockMvcResultMatchers.content().contentTypeCompatibleWith(type),
+            MockMvcResultMatchers.header().stringValues(
+                HttpHeaders.VARY, Matchers.hasItem(HttpHeaders.ACCEPT)
+            ),
+            MockMvcResultMatchers.content().string(
+                Matchers.allOf(
+                    Matchers.containsString("id=\"schools-results\""),
+                    Matchers.containsString("Школа №3"),
+                    Matchers.not(Matchers.containsString("Школа №4")),
+                    Matchers.not(Matchers.containsString("id=\"school-search\""))
+                )
+            )
+        );
+    }
+
+    /** Verifies that the former query parameter no longer selects the fragment. */
+    @Test
+    void rendersTheFullPageWhenHtmlIsAcceptedWithTheOldFlag() throws Exception {
+        this.prepare();
+        this.mvc.perform(
+            MockMvcRequestBuilders.get("/schools").param("fragment", "true")
+                .accept(MediaType.TEXT_HTML).with(
+                    SecurityMockMvcRequestPostProcessors.user(this.principal(Roles.RoleEnum.ADMIN))
+                )
+        ).andExpect(
+            MockMvcResultMatchers.content().string(Matchers.containsString("id=\"school-search\""))
+        );
+    }
+
+    /**
+     * Verifies old list aliases no longer return the school collection.
+     *
+     * @param path Legacy list route
+     */
+    @ParameterizedTest
+    @ValueSource(strings = {"/schools/", "/schools/fragment"})
+    void rejectsLegacySchoolListRoutes(final String path) throws Exception {
+        this.prepare();
+        this.mvc.perform(
+            MockMvcRequestBuilders.get(path).accept("application/vnd.surok.schools.v1+json").with(
+                SecurityMockMvcRequestPostProcessors.user(this.principal(Roles.RoleEnum.ADMIN))
+            )
+        ).andExpect(MockMvcResultMatchers.status().is4xxClientError());
+    }
+
+    /** Verifies that the creation form does not serve a second copy of the collection API. */
+    @Test
+    void rejectsJsonRequestsForTheSchoolCreationForm() throws Exception {
+        this.prepare();
+        this.mvc.perform(
+            MockMvcRequestBuilders.get("/schools/create").accept(
+                "application/vnd.surok.schools.v1+json"
+            ).with(
+                SecurityMockMvcRequestPostProcessors.user(this.principal(Roles.RoleEnum.ADMIN))
+            )
+        ).andExpect(MockMvcResultMatchers.status().isNotAcceptable());
     }
 
     /** Verifies unsupported representations are rejected before database writes. */
@@ -237,13 +309,18 @@ final class SlsHttpTest {
      *
      * @param path Legacy creation route
      * @param type Request media type
+     * @param status Expected response status
      */
     @ParameterizedTest
     @CsvSource({
-        "/schools/create, application/json", "/schools/create, application/x-www-form-urlencoded",
-        "/schools/, application/json", "/schools/, application/x-www-form-urlencoded"
+        "/schools/create, application/json, METHOD_NOT_ALLOWED",
+        "/schools/create, application/x-www-form-urlencoded, METHOD_NOT_ALLOWED",
+        "/schools/, application/json, NOT_FOUND",
+        "/schools/, application/x-www-form-urlencoded, NOT_FOUND"
     })
-    void rejectsLegacySchoolCreationRoutes(final String path, final String type) throws Exception {
+    void rejectsLegacySchoolCreationRoutes(
+        final String path, final String type, final HttpStatus status
+    ) throws Exception {
         this.prepare();
         final MockHttpServletRequestBuilder request =
             MockMvcRequestBuilders.post(path).contentType(type);
@@ -256,7 +333,7 @@ final class SlsHttpTest {
             request.with(SecurityMockMvcRequestPostProcessors.csrf()).with(
                 SecurityMockMvcRequestPostProcessors.user(this.principal(Roles.RoleEnum.ADMIN))
             )
-        ).andExpect(MockMvcResultMatchers.status().isMethodNotAllowed());
+        ).andExpect(MockMvcResultMatchers.status().is(status.value()));
     }
 
     /** Verifies staff cannot access another school. */

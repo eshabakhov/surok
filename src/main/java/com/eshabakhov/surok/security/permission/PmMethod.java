@@ -224,7 +224,7 @@ public final class PmMethod implements Permission {
 
     private String schools() {
         return switch (this.handler.getMethod().getName()) {
-            case "selection", "create" -> "true";
+            case "selection", "create", "form" -> "true";
             case "school" ->
                 "hasRole('ADMIN') or authentication.principal.schools().contains(#school)";
             case "revise" -> """
