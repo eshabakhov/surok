@@ -16,14 +16,6 @@ import org.jooq.DSLContext;
 public interface ReferenceInformation {
 
     /**
-     * School identifier.
-     *
-     * @return School identifier
-     */
-    @JsonProperty
-    Long school();
-
-    /**
      * Corporate account marker.
      *
      * @return Corporate account marker
@@ -61,14 +53,6 @@ public interface ReferenceInformation {
         public RefInfoPostgres(final DSLContext ctx, final Long user) {
             this.ctx = ctx;
             this.user = user;
-        }
-
-        @Override
-        public Long school() {
-            return this.ctx.resultQuery(
-                new ClasspathSql("user/find-school.sql").text(),
-                this.user
-            ).fetchOneInto(Long.class);
         }
 
         @Override

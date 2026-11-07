@@ -3,12 +3,46 @@
  */
 package com.eshabakhov.surok;
 
+import com.eshabakhov.surok.user.Roles;
+
 /**
  * Users collection abstraction.
  *
  * @since 0.0.1
  */
 public interface Users {
+
+    /**
+     * Whether a user belongs to this collection.
+     *
+     * @param user User to check
+     * @return True if the user belongs to the collection
+     */
+    boolean contains(User user);
+
+    /**
+     * Adds an existing user to a school collection.
+     *
+     * @param user User to add
+     * @return Added user
+     * @throws Exception If adding fails
+     */
+    User add(User user) throws Exception;
+
+    /**
+     * Roles of a user in this collection.
+     *
+     * @param user User whose roles are requested
+     * @return Scoped roles
+     */
+    Roles roles(User user);
+
+    /**
+     * Users in this collection.
+     *
+     * @return Users
+     */
+    Iterable<User> iterate();
 
     /**
      * Register new user.

@@ -46,12 +46,8 @@ public final class HomeHttp {
         final String target;
         if (user == null) {
             target = "/users/login";
-        } else if (user.isAdmin()) {
-            target = "/schools";
-        } else if (user.info().school() == null) {
-            target = "/users/profile";
         } else {
-            target = String.format("/schools/%d", user.info().school());
+            target = "/schools";
         }
         return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8)).body(
             new MdXslt(

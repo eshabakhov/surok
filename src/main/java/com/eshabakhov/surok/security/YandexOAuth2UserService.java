@@ -3,9 +3,6 @@
  */
 package com.eshabakhov.surok.security;
 
-import com.eshabakhov.surok.school.SlsPostgres;
-import com.eshabakhov.surok.school.input.SlInput;
-import com.eshabakhov.surok.school.input.SlInputName;
 import com.eshabakhov.surok.user.AuthUser;
 import com.eshabakhov.surok.user.UrsPostgres;
 import com.eshabakhov.surok.user.UserNotFoundException;
@@ -88,10 +85,7 @@ public final class YandexOAuth2UserService extends DefaultOAuth2UserService {
         try {
             username = urs.identification(email).credentials().username();
         } catch (final UserNotFoundException ignored) {
-            username = new UrsPostgres(
-                this.ctx,
-                new SlsPostgres(this.ctx).create(new SlInputName(new SlInput(), "My school")).uid()
-            ).register(
+            username = urs.register(
                 String.format(
                     "%s_%s",
                     email.substring(0, email.indexOf('@')),

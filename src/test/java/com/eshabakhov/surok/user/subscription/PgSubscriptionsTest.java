@@ -4,6 +4,8 @@
 package com.eshabakhov.surok.user.subscription;
 
 import com.eshabakhov.surok.User;
+import com.eshabakhov.surok.school.input.SlInput;
+import com.eshabakhov.surok.school.input.SlInputName;
 import com.eshabakhov.surok.user.AuthUser;
 import com.eshabakhov.surok.user.ExpiryReset;
 import com.eshabakhov.surok.user.Role;
@@ -56,14 +58,22 @@ final class PgSubscriptionsTest {
             String.format("upgrade-%s@example.com", UUID.randomUUID()),
             false
         );
-        user.roles().grant(Roles.RoleEnum.TEACHER);
+        final long school = user.schools().create(
+            new SlInputName(new SlInput(), "Школа подписчика")
+        ).uid();
+        user.schools().school(school).users().roles(user).grant(Roles.RoleEnum.TEACHER);
         new PgSubscriptions(ctx, new AuthUser(user))
             .subscription(Subscription.Plan.PRO);
         MatcherAssert.assertThat(
             "Upgraded subscription lost a role or retained an incorrect role",
-            user.roles().list().stream().map(Role::name).toList(),
+            List.of(
+                user.roles().list().stream().map(Role::name).toList(),
+                user.schools().school(school).users().roles(user).list().stream()
+                    .map(Role::name).toList()
+            ),
             Matchers.containsInAnyOrder(
-                "STUDENT", "TEACHER", "BASIC_MAKER", "ADVANCED_MAKER", "PRO_MAKER"
+                List.of("BASIC_MAKER", "ADVANCED_MAKER", "PRO_MAKER"),
+                List.of("DIRECTOR", "TEACHER")
             )
         );
     }
@@ -138,6 +148,7 @@ final class PgSubscriptionsTest {
         );
         new PgSubscriptions(ctx, new AuthUser(user))
             .subscription(Subscription.Plan.VIEWER);
+        final List<String> before = user.roles().list().stream().map(Role::name).toList();
         ctx.execute(
             "UPDATE public.subscription SET expires_at = CAST(? AS timestamptz) WHERE user_id = ?",
             OffsetDateTime.now(ZoneOffset.UTC).minusDays(2),
@@ -146,8 +157,8 @@ final class PgSubscriptionsTest {
         new ExpiryReset(ctx).reset();
         MatcherAssert.assertThat(
             "Expired subscription retained its paid roles",
-            user.roles().list().stream().map(Role::name).toList(),
-            Matchers.containsInAnyOrder("STUDENT", "BASIC_MAKER")
+            List.of(before, user.roles().list().stream().map(Role::name).toList()),
+            Matchers.is(List.of(List.of(), List.of("BASIC_MAKER")))
         );
     }
 

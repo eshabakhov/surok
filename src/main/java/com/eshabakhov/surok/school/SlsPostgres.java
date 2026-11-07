@@ -10,15 +10,20 @@ import com.eshabakhov.surok.PrItems;
 import com.eshabakhov.surok.School;
 import com.eshabakhov.surok.Schools;
 import com.eshabakhov.surok.Sorts;
+import com.eshabakhov.surok.User;
+import com.eshabakhov.surok.Users;
 import com.eshabakhov.surok.page.ResponsePage;
 import com.eshabakhov.surok.school.filter.FlsCdSchool;
 import com.eshabakhov.surok.school.input.MdSlInput;
 import com.eshabakhov.surok.school.sort.StsJqSchool;
 import com.eshabakhov.surok.sql.ClasspathSql;
+import com.eshabakhov.surok.user.Roles;
+import com.eshabakhov.surok.user.UrsPostgres;
 import org.jooq.Condition;
 import org.jooq.DSLContext;
 import org.jooq.Record;
 import org.jooq.impl.DSL;
+import org.springframework.security.access.AccessDeniedException;
 
 /**
  * Postgres implementation of {@link Schools}.
@@ -30,6 +35,9 @@ public final class SlsPostgres implements Schools {
     /** JOOQ DSL context for executing database queries. */
     private final DSLContext ctx;
 
+    /** Acting user, absent for the unrestricted repository. */
+    private final User actor;
+
     /**
      * New schools collection.
      *
@@ -37,7 +45,33 @@ public final class SlsPostgres implements Schools {
      * @since 0.0.1
      */
     public SlsPostgres(final DSLContext ctx) {
+        this(ctx, null);
+    }
+
+    /**
+     * Schools available to one user.
+     *
+     * @param ctx Database context
+     * @param actor Acting user
+     */
+    public SlsPostgres(final DSLContext ctx, final User actor) {
         this.ctx = ctx;
+        this.actor = actor;
+    }
+
+    @Override
+    public boolean contains(final long id) {
+        final boolean found;
+        if (this.actor == null) {
+            found = this.ctx.resultQuery(
+                new ClasspathSql("school/find-by-id.sql").text(), id, false
+            ).fetchOne() != null;
+        } else {
+            found = this.ctx.resultQuery(
+                new ClasspathSql("school-user/contains.sql").text(), id, this.actor.uid()
+            ).fetchOneInto(Boolean.class);
+        }
+        return found;
     }
 
     @Override
@@ -53,13 +87,22 @@ public final class SlsPostgres implements Schools {
                 if (created == null) {
                     throw new SchoolFailedCreateException();
                 }
-                return new SlPostgres(this.ctx, created.get("id", Long.class));
+                final School school = new SlPostgres(this.ctx, created.get("id", Long.class));
+                if (this.actor != null) {
+                    final Users members = new UrsPostgres(DSL.using(config), school.uid());
+                    members.add(this.actor);
+                    members.roles(this.actor).grant(Roles.RoleEnum.DIRECTOR);
+                }
+                return school;
             }
         );
     }
 
     @Override
     public School school(final long sid) throws Exception {
+        if (!this.contains(sid)) {
+            throw new SchoolNotFoundException(String.format("School with id=%d not found", sid));
+        }
         final Record selected = this.ctx.resultQuery(
             new ClasspathSql("school/find-by-id.sql").text(),
             sid,
@@ -83,11 +126,22 @@ public final class SlsPostgres implements Schools {
                 false
             )
         );
+        final Condition visible;
+        if (this.actor == null) {
+            visible = scoped;
+        } else {
+            visible = scoped.and(
+                DSL.condition(
+                    new ClasspathSql("school/conditions/by-user-id.sql").text(),
+                    this.actor.uid()
+                )
+            );
+        }
         return new SlsSelected(
             this,
             this.ctx.resultQuery(
                 new ClasspathSql("school/list.sql").text(),
-                scoped,
+                visible,
                 DSL.list(new StsJqSchool(sorts).fields()),
                 DSL.val(page.limit()),
                 DSL.val((page.offset() - 1) * page.limit())
@@ -101,7 +155,7 @@ public final class SlsPostgres implements Schools {
                 page,
                 this.ctx.resultQuery(
                     new ClasspathSql("school/count.sql").text(),
-                    scoped
+                    visible
                 ).fetchSingle(0, Integer.class)
             )
         );
@@ -109,10 +163,17 @@ public final class SlsPostgres implements Schools {
 
     @Override
     public Iterable<School> iterate() {
-        return this.ctx.resultQuery(
-            new ClasspathSql("school/list-active.sql").text(),
-            false
-        ).fetch(selected -> new SlPostgres(this.ctx, selected.get("id", Long.class)));
+        final Iterable<School> schools;
+        if (this.actor == null) {
+            schools = this.ctx.resultQuery(
+                new ClasspathSql("school/list-active.sql").text(), false
+            ).fetch(selected -> new SlPostgres(this.ctx, selected.get("id", Long.class)));
+        } else {
+            schools = this.ctx.resultQuery(
+                new ClasspathSql("school/list-by-user.sql").text(), this.actor.uid()
+            ).fetch(selected -> new SlPostgres(this.ctx, selected.get("id", Long.class)));
+        }
+        return schools;
     }
 
     @Override
@@ -122,6 +183,9 @@ public final class SlsPostgres implements Schools {
 
     @Override
     public void remove(final long sid) throws Exception {
+        if (this.actor != null && !this.actor.isAdmin()) {
+            throw new AccessDeniedException("Only an administrator can delete a school");
+        }
         final Record selected = this.ctx.resultQuery(
             new ClasspathSql("school/find-by-id.sql").text(),
             sid,

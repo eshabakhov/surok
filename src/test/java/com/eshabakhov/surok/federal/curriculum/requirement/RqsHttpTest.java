@@ -80,13 +80,16 @@ final class RqsHttpTest {
     /** JOOQ context. */
     private final DSLContext ctx;
 
+    /** Authenticated administrator. */
+    private User actor;
+
     @Autowired
     RqsHttpTest(final DSLContext ctx) {
         this.ctx = ctx;
     }
 
     @BeforeEach
-    void insertCurriculumAndRequirement() {
+    void insertCurriculumAndRequirement() throws Exception {
         this.ctx.resultQuery(
             """
             INSERT INTO public.federal_curriculum (id, title, education_level, study_week_type,
@@ -117,6 +120,21 @@ final class RqsHttpTest {
             "MANDATORY",
             false
         ).execute();
+        this.actor = new UrPostgres(
+            this.ctx,
+            this.ctx.resultQuery(
+                """
+                INSERT INTO public."user" (username, password, email, corporate)
+                VALUES (?, 'secret', ?, true) RETURNING id
+                """,
+                UUID.randomUUID().toString(),
+                String.format("%s@example.org", UUID.randomUUID())
+            ).fetchSingle("id", Long.class)
+        );
+        this.actor.roles().grant(Roles.RoleEnum.ADMIN);
+        SecurityContextHolder.getContext().setAuthentication(
+            new UsernamePasswordAuthenticationToken(this.actor, null, List.of())
+        );
     }
 
     @AfterEach
@@ -142,12 +160,11 @@ final class RqsHttpTest {
             this.ctx,
             this.ctx.resultQuery(
                 """
-                INSERT INTO public."user" (username, password, email, corporate, school_id)
-                VALUES (?, 'secret', ?, true, ?) RETURNING id
+                INSERT INTO public."user" (username, password, email, corporate)
+                VALUES (?, 'secret', ?, true) RETURNING id
                 """,
                 UUID.randomUUID().toString(),
-                String.format("%s@example.org", UUID.randomUUID()),
-                null
+                String.format("%s@example.org", UUID.randomUUID())
             ).fetchSingle("id", Long.class)
         );
         user.roles().grant(Roles.RoleEnum.ADMIN);
@@ -165,7 +182,8 @@ final class RqsHttpTest {
                 new FiltersRequest(Set.<Filter>of()),
                 new PageRequest(15, 1),
                 new SortsRequest(List.<Sort>of()),
-                request
+                request,
+                this.actor
             ).getBody(),
             Matchers.allOf(
                 Matchers.containsString("<html lang=\"ru\">"),
@@ -186,12 +204,11 @@ final class RqsHttpTest {
             this.ctx,
             this.ctx.resultQuery(
                 """
-                INSERT INTO public."user" (username, password, email, corporate, school_id)
-                VALUES (?, 'secret', ?, true, ?) RETURNING id
+                INSERT INTO public."user" (username, password, email, corporate)
+                VALUES (?, 'secret', ?, true) RETURNING id
                 """,
                 UUID.randomUUID().toString(),
-                String.format("%s@example.org", UUID.randomUUID()),
-                null
+                String.format("%s@example.org", UUID.randomUUID())
             ).fetchSingle("id", Long.class)
         );
         user.roles().grant(Roles.RoleEnum.ADMIN);
@@ -209,7 +226,8 @@ final class RqsHttpTest {
                 new FiltersRequest(Set.<Filter>of()),
                 new PageRequest(15, 1),
                 new SortsRequest(List.<Sort>of()),
-                request
+                request,
+                this.actor
             ).getBody(),
             Matchers.allOf(
                 Matchers.not(Matchers.containsString("<html")),
@@ -227,12 +245,11 @@ final class RqsHttpTest {
             this.ctx,
             this.ctx.resultQuery(
                 """
-                INSERT INTO public."user" (username, password, email, corporate, school_id)
-                VALUES (?, 'secret', ?, true, ?) RETURNING id
+                INSERT INTO public."user" (username, password, email, corporate)
+                VALUES (?, 'secret', ?, true) RETURNING id
                 """,
                 UUID.randomUUID().toString(),
-                String.format("%s@example.org", UUID.randomUUID()),
-                null
+                String.format("%s@example.org", UUID.randomUUID())
             ).fetchSingle("id", Long.class)
         );
         user.roles().grant(Roles.RoleEnum.ADMIN);
@@ -250,7 +267,8 @@ final class RqsHttpTest {
                 new FiltersRequest(Set.<Filter>of()),
                 new PageRequest(15, 1),
                 new SortsRequest(List.<Sort>of()),
-                request
+                request,
+                this.actor
             ).getBody(),
             Matchers.containsString("<html lang=\"ru\">")
         );
@@ -268,7 +286,8 @@ final class RqsHttpTest {
             new FiltersRequest(Set.<Filter>of()),
             new PageRequest(15, 1),
             new SortsRequest(List.<Sort>of()),
-            request
+            request,
+            this.actor
         ).getBody();
         MatcherAssert.assertThat(
             "JSON requirements must contain the selected requirement",
@@ -296,7 +315,8 @@ final class RqsHttpTest {
                 new FiltersRequest(Set.<Filter>of()),
                 new PageRequest(15, 1),
                 new SortsRequest(List.<Sort>of()),
-                request
+                request,
+                this.actor
             ).getBody(),
             Matchers.allOf(
                 Matchers.startsWith("<requirements>"),
@@ -319,7 +339,8 @@ final class RqsHttpTest {
                     new FiltersRequest(Set.<Filter>of()),
                     new PageRequest(15, 1),
                     new SortsRequest(List.<Sort>of()),
-                    request
+                    request,
+                    this.actor
                 )
             ).getStatusCode(),
             Matchers.is(HttpStatus.NOT_ACCEPTABLE)
@@ -335,7 +356,7 @@ final class RqsHttpTest {
         );
         MatcherAssert.assertThat(
             "JSON requirement must contain its identity",
-            ((ObjectNode) new RqsHttp(this.ctx).requirement(1L, 7L, request).getBody())
+            ((ObjectNode) new RqsHttp(this.ctx).requirement(1L, 7L, request, this.actor).getBody())
                 .path("id").longValue(),
             Matchers.is(7L)
         );
@@ -350,7 +371,7 @@ final class RqsHttpTest {
         );
         MatcherAssert.assertThat(
             "XML requirement must use the entity root",
-            (String) new RqsHttp(this.ctx).requirement(1L, 7L, request).getBody(),
+            (String) new RqsHttp(this.ctx).requirement(1L, 7L, request, this.actor).getBody(),
             Matchers.allOf(
                 Matchers.startsWith("<requirement>"),
                 Matchers.containsString("<id>7</id>"),
@@ -363,7 +384,7 @@ final class RqsHttpTest {
     void defaultsToRequirementJsonWithoutAccept() throws Exception {
         MatcherAssert.assertThat(
             ((ObjectNode) new RqsHttp(this.ctx).requirement(
-                1L, 7L, new MockHttpServletRequest()
+                1L, 7L, new MockHttpServletRequest(), this.actor
             ).getBody())
                 .path("id").longValue(),
             Matchers.is(7L)
@@ -376,7 +397,7 @@ final class RqsHttpTest {
         request.addHeader(HttpHeaders.ACCEPT, "application/xml");
         Assertions.assertThrows(
             ResponseStatusException.class,
-            () -> new RqsHttp(this.ctx).requirement(1L, 7L, request)
+            () -> new RqsHttp(this.ctx).requirement(1L, 7L, request, this.actor)
         );
     }
 
@@ -395,7 +416,7 @@ final class RqsHttpTest {
         parameters.add("hours", "2");
         parameters.add("partType", "MANDATORY");
         final ResponseEntity<?> response = new RqsHttp(this.ctx).create(
-            1L, parameters, request
+            1L, parameters, request, this.actor
         );
         MatcherAssert.assertThat(
             "HTML creation must not return a response body",
@@ -425,7 +446,8 @@ final class RqsHttpTest {
         final ResponseEntity<?> response = new RqsHttp(this.ctx).create(
             1L,
             parameters,
-            request
+            request,
+            this.actor
         );
         MatcherAssert.assertThat(
             "JSON creation must return status 201",
@@ -454,7 +476,9 @@ final class RqsHttpTest {
         parameters.add("subjectId", "507");
         parameters.add("hours", "2");
         parameters.add("partType", "MANDATORY");
-        final ResponseEntity<?> response = new RqsHttp(this.ctx).create(1L, parameters, request);
+        final ResponseEntity<?> response = new RqsHttp(this.ctx).create(
+            1L, parameters, request, this.actor
+        );
         MatcherAssert.assertThat(
             "XML creation must return the created requirement",
             (String) response.getBody(),
@@ -481,7 +505,7 @@ final class RqsHttpTest {
         parameters.add("partType", "MANDATORY");
         Assertions.assertThrows(
             ResponseStatusException.class,
-            () -> new RqsHttp(this.ctx).create(1L, parameters, request)
+            () -> new RqsHttp(this.ctx).create(1L, parameters, request, this.actor)
         );
     }
 
@@ -500,7 +524,7 @@ final class RqsHttpTest {
         parameters.add("hours", "4");
         parameters.add("partType", "MANDATORY");
         final ResponseEntity<?> response = new RqsHttp(this.ctx).revise(
-            1L, 7L, parameters, request
+            1L, 7L, parameters, request, this.actor
         );
         MatcherAssert.assertThat(
             "HTML revision must not return a response body",
@@ -529,7 +553,9 @@ final class RqsHttpTest {
         parameters.add("partType", "MANDATORY");
         MatcherAssert.assertThat(
             "JSON revision must return revised fields",
-            ((ObjectNode) new RqsHttp(this.ctx).revise(1L, 7L, parameters, request).getBody())
+            ((ObjectNode) new RqsHttp(this.ctx).revise(
+                1L, 7L, parameters, request, this.actor
+            ).getBody())
                 .path("subject").path("name").asText(),
             Matchers.is("Algebra")
         );
@@ -550,7 +576,9 @@ final class RqsHttpTest {
         parameters.add("partType", "MANDATORY");
         MatcherAssert.assertThat(
             "XML revision must return revised fields",
-            (String) new RqsHttp(this.ctx).revise(1L, 7L, parameters, request).getBody(),
+            (String) new RqsHttp(this.ctx).revise(
+                1L, 7L, parameters, request, this.actor
+            ).getBody(),
             Matchers.containsString(
                 "<subject><id>502</id><name>Algebra</name><origin>FEDERAL</origin></subject>"
             )
@@ -569,13 +597,13 @@ final class RqsHttpTest {
         parameters.add("partType", "MANDATORY");
         Assertions.assertThrows(
             ResponseStatusException.class,
-            () -> new RqsHttp(this.ctx).revise(1L, 7L, parameters, request)
+            () -> new RqsHttp(this.ctx).revise(1L, 7L, parameters, request, this.actor)
         );
     }
 
     @Test
     void removesRequirement() throws Exception {
-        new RqsHttp(this.ctx).remove(1L, 7L, new MockHttpServletRequest());
+        new RqsHttp(this.ctx).remove(1L, 7L, new MockHttpServletRequest(), this.actor);
         MatcherAssert.assertThat(
             "HTTP removal must mark the requirement as deleted",
             this.ctx.resultQuery(

@@ -94,6 +94,14 @@
     text-underline-offset: 2px;
 }
 
+.profile-membership {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .375rem;
+    margin-bottom: .375rem;
+}
+
 .profile-roles {
     display: flex;
     flex-wrap: wrap;

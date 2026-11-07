@@ -32,7 +32,9 @@ public final class ScError implements AuthenticationEntryPoint, AccessDeniedHand
         final HttpServletRequest request, final HttpServletResponse response,
         final AuthenticationException exception
     ) throws IOException {
-        response.setHeader(HttpHeaders.WWW_AUTHENTICATE, "Basic realm=\"Surok\"");
+        if (!"XMLHttpRequest".equals(request.getHeader("X-Requested-With"))) {
+            response.setHeader(HttpHeaders.WWW_AUTHENTICATE, "Basic realm=\"Surok\"");
+        }
         ScError.write(request, response, HttpStatus.UNAUTHORIZED);
     }
 

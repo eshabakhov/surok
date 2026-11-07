@@ -19,6 +19,7 @@ import com.eshabakhov.surok.media.MdXslt;
 import com.eshabakhov.surok.media.SrWeb;
 import com.eshabakhov.surok.media.XsClasspath;
 import com.eshabakhov.surok.school.SlBrief;
+import com.eshabakhov.surok.school.SlsAuthorized;
 import com.eshabakhov.surok.school.SlsBrief;
 import com.eshabakhov.surok.school.SlsPostgres;
 import com.eshabakhov.surok.school.schedule.input.ScheduleInputException;
@@ -38,7 +39,7 @@ import org.jooq.DSLContext;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.util.MultiValueMap;
@@ -63,7 +64,6 @@ import org.springframework.web.server.ResponseStatusException;
  */
 @RestController
 @RequestMapping("/schools/{school}/schedules")
-@PreAuthorize("hasRole('ADMIN') or #school == authentication.principal.info().school()")
 @Tag(name = "Schedules")
 public class SdsHttp {
 
@@ -87,6 +87,7 @@ public class SdsHttp {
      * @param page Pagination
      * @param sorts Sorting
      * @param request HTTP request
+     * @param actor Acting user
      * @return Negotiated representation
      * @throws Exception If lookup or printing fails
      */
@@ -104,10 +105,11 @@ public class SdsHttp {
         final Filters filters,
         final Page page,
         final Sorts sorts,
-        final HttpServletRequest request
+        final HttpServletRequest request,
+        @AuthenticationPrincipal final User actor
     ) throws Exception {
         final MediaType type = new AcHttp(request, "schedules.v1").type();
-        final School sch = new SlsPostgres(this.ctx).school(school);
+        final School sch = new SlsAuthorized(new SlsPostgres(this.ctx), actor).school(school);
         final Set<Filter> requested = new LinkedHashSet<>(filters.filters());
         requested.addAll(
             Stream.of("name", "name_ct")
@@ -150,6 +152,7 @@ public class SdsHttp {
      * @param school School identifier
      * @param schedule Entity identifier
      * @param request HTTP request
+     * @param actor Acting user
      * @return Negotiated representation
      * @throws Exception If lookup or printing fails
      */
@@ -165,10 +168,11 @@ public class SdsHttp {
     public ResponseEntity<?> schedule(
         @PathVariable final long school,
         @PathVariable final long schedule,
-        final HttpServletRequest request
+        final HttpServletRequest request,
+        @AuthenticationPrincipal final User actor
     ) throws Exception {
         final MediaType type = new AcHttp(request, "schedule-v1").type();
-        final School sch = new SlsPostgres(this.ctx).school(school);
+        final School sch = new SlsAuthorized(new SlsPostgres(this.ctx), actor).school(school);
         final Schedules origin = sch.schedules();
         final Schedule selected = origin.schedule(schedule);
         return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8)).body(
@@ -203,6 +207,7 @@ public class SdsHttp {
      * @param school School identifier
      * @param parameters Form fields
      * @param request HTTP request
+     * @param actor Acting user
      * @return Created representation or redirect
      * @throws Exception If creation fails
      */
@@ -215,25 +220,19 @@ public class SdsHttp {
             "application/vnd.surok.schedule-v1+xml"
         }
     )
-    @PreAuthorize(
-        """
-        hasAnyRole('ADMIN', 'DIRECTOR', 'DEPUTY_DIRECTOR',
-            'BASIC_MAKER', 'ADVANCED_MAKER', 'PRO_MAKER')
-        and (hasRole('ADMIN') or #school == authentication.principal.info().school())
-        """
-    )
     @Operation(summary = "Create schedule from form")
     public ResponseEntity<?> create(
         @PathVariable final long school,
         @RequestParam final MultiValueMap<String, String> parameters,
-        final HttpServletRequest request
+        final HttpServletRequest request,
+        @AuthenticationPrincipal final User actor
     ) throws Exception {
         final MediaType type = new AcHttp(request, "schedule-v1").type();
         ResponseEntity<?> response;
         try {
             response = SdsHttp.result(
                 type,
-                new SlsPostgres(this.ctx).school(school).schedules()
+                new SlsAuthorized(new SlsPostgres(this.ctx), actor).school(school).schedules()
                     .create(new SdInputHttp(parameters)), HttpStatus.CREATED,
                 String.format("/schools/%d/schedules", school),
                 String.format("/schools/%d/schedules", school)
@@ -250,6 +249,7 @@ public class SdsHttp {
      * @param school School identifier
      * @param json Input document
      * @param request HTTP request
+     * @param actor Acting user
      * @return Created representation
      * @throws Exception If creation fails
      */
@@ -262,22 +262,16 @@ public class SdsHttp {
             "application/vnd.surok.schedule-v1+xml"
         }
     )
-    @PreAuthorize(
-        """
-        hasAnyRole('ADMIN', 'DIRECTOR', 'DEPUTY_DIRECTOR',
-            'BASIC_MAKER', 'ADVANCED_MAKER', 'PRO_MAKER')
-        and (hasRole('ADMIN') or #school == authentication.principal.info().school())
-        """
-    )
     @Operation(summary = "Create schedule from JSON")
     public ResponseEntity<?> create(
         @PathVariable final long school,
         @RequestBody final JsonNode json,
-        final HttpServletRequest request
+        final HttpServletRequest request,
+        @AuthenticationPrincipal final User actor
     ) throws Exception {
         return SdsHttp.result(
             new AcHttp(request, "schedule-v1").type(),
-            new SlsPostgres(this.ctx).school(school).schedules()
+            new SlsAuthorized(new SlsPostgres(this.ctx), actor).school(school).schedules()
                 .create(new SdInputHttp(json)), HttpStatus.CREATED,
             String.format("/schools/%d/schedules", school),
             String.format("/schools/%d/schedules", school)
@@ -291,6 +285,7 @@ public class SdsHttp {
      * @param schedule Entity identifier
      * @param parameters Form fields
      * @param request HTTP request
+     * @param actor Acting user
      * @return Revised representation or redirect
      * @throws Exception If revision fails
      */
@@ -303,24 +298,20 @@ public class SdsHttp {
             "application/vnd.surok.schedule-v1+xml"
         }
     )
-    @PreAuthorize(
-        """
-        hasAnyRole('ADMIN', 'DIRECTOR', 'DEPUTY_DIRECTOR',
-            'BASIC_MAKER', 'ADVANCED_MAKER', 'PRO_MAKER')
-        and (hasRole('ADMIN') or #school == authentication.principal.info().school())
-        """
-    )
     @Operation(summary = "Update schedule from form")
     public ResponseEntity<?> revise(
         @PathVariable final long school,
         @PathVariable final long schedule,
         @RequestParam final MultiValueMap<String, String> parameters,
-        final HttpServletRequest request
+        final HttpServletRequest request,
+        @AuthenticationPrincipal final User actor
     ) throws Exception {
         final MediaType type = new AcHttp(request, "schedule-v1").type();
         ResponseEntity<?> response;
         try {
-            final Schedule revised = new SlsPostgres(this.ctx).school(school).schedules()
+            final Schedule revised = new SlsAuthorized(
+                new SlsPostgres(this.ctx), actor
+            ).school(school).schedules()
                 .revise(schedule, new SdInputHttp(parameters));
             response = SdsHttp.result(
                 type, revised, HttpStatus.OK, String.format("/schools/%d/schedules", school),
@@ -339,6 +330,7 @@ public class SdsHttp {
      * @param schedule Entity identifier
      * @param json Input document
      * @param request HTTP request
+     * @param actor Acting user
      * @return Revised representation or redirect
      * @throws Exception If revision fails
      */
@@ -351,22 +343,18 @@ public class SdsHttp {
             "application/vnd.surok.schedule-v1+xml"
         }
     )
-    @PreAuthorize(
-        """
-        hasAnyRole('ADMIN', 'DIRECTOR', 'DEPUTY_DIRECTOR',
-            'BASIC_MAKER', 'ADVANCED_MAKER', 'PRO_MAKER')
-        and (hasRole('ADMIN') or #school == authentication.principal.info().school())
-        """
-    )
     @Operation(summary = "Update schedule from JSON")
     public ResponseEntity<?> revise(
         @PathVariable final long school,
         @PathVariable final long schedule,
         @RequestBody final JsonNode json,
-        final HttpServletRequest request
+        final HttpServletRequest request,
+        @AuthenticationPrincipal final User actor
     ) throws Exception {
         final MediaType type = new AcHttp(request, "schedule-v1").type();
-        final Schedule revised = new SlsPostgres(this.ctx).school(school).schedules()
+        final Schedule revised = new SlsAuthorized(
+            new SlsPostgres(this.ctx), actor
+        ).school(school).schedules()
             .revise(schedule, new SdInputHttp(json));
         return SdsHttp.result(
             type, revised, HttpStatus.OK, String.format("/schools/%d/schedules", school),
@@ -379,23 +367,19 @@ public class SdsHttp {
      *
      * @param school School identifier
      * @param schedule Entity identifier
+     * @param actor Acting user
      * @return Empty response
      * @throws Exception If removal fails
      */
     @DeleteMapping("/{schedule}")
-    @PreAuthorize(
-        """
-        hasAnyRole('ADMIN', 'DIRECTOR', 'DEPUTY_DIRECTOR',
-            'BASIC_MAKER', 'ADVANCED_MAKER', 'PRO_MAKER')
-        and (hasRole('ADMIN') or #school == authentication.principal.info().school())
-        """
-    )
     @Operation(summary = "Remove schedule")
     public ResponseEntity<Void> remove(
         @PathVariable final long school,
-        @PathVariable final long schedule
+        @PathVariable final long schedule,
+        @AuthenticationPrincipal final User actor
     ) throws Exception {
-        new SlsPostgres(this.ctx).school(school).schedules().remove(schedule);
+        new SlsAuthorized(new SlsPostgres(this.ctx), actor).school(school)
+            .schedules().remove(schedule);
         return ResponseEntity.noContent().build();
     }
 

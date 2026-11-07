@@ -358,7 +358,7 @@ final class AccountHttpTest {
     @ValueSource(strings = {"ADVANCED", "PRO", "VIEWER"})
     void activatesPaidPlanAndUpdatesRoles(final Subscription.Plan plan) throws Exception {
         final AuthUser user = this.user(false, 1L);
-        user.roles().grant(Roles.RoleEnum.TEACHER);
+        user.schools().school(1L).users().roles(user).grant(Roles.RoleEnum.TEACHER);
         this.mvc.perform(
             this.form("/users/subscription/checkout", user).param("plan", plan.name())
         ).andExpect(MockMvcResultMatchers.status().isFound()).andExpect(
@@ -370,7 +370,7 @@ final class AccountHttpTest {
         MatcherAssert.assertThat(
             Map.of(
                 "plan", current.plan(),
-                "school", user.roles().list().stream().anyMatch(
+                "school", user.schools().school(1L).users().roles(user).list().stream().anyMatch(
                     role -> "TEACHER".equals(role.name())
                 ),
                 "valid", current.expiry().isAfter(OffsetDateTime.now(ZoneOffset.UTC).plusDays(29))
@@ -382,7 +382,7 @@ final class AccountHttpTest {
     @Test
     void cancelsPlanAndPreservesSchoolRoles() throws Exception {
         final AuthUser user = this.user(false, 1L);
-        user.roles().grant(Roles.RoleEnum.TEACHER);
+        user.schools().school(1L).users().roles(user).grant(Roles.RoleEnum.TEACHER);
         final PgSubscriptions plans = new PgSubscriptions(this.ctx, user);
         plans.subscription(Subscription.Plan.PRO);
         this.mvc.perform(this.form("/users/subscription/cancel", user))
@@ -391,12 +391,15 @@ final class AccountHttpTest {
         MatcherAssert.assertThat(
             Map.of(
                 "plan", plans.subscription().plan(), "expiry", plans.subscription().expiry(),
-                "roles", user.roles().list().stream().map(Role::name).sorted().toList()
+                "roles", user.roles().list().stream().map(Role::name).sorted().toList(),
+                "school", user.schools().school(1L).users().roles(user).list().stream()
+                    .map(Role::name).sorted().toList()
             ),
             Matchers.equalTo(
                 Map.of(
                     "plan", Subscription.Plan.BASIC, "expiry", OffsetDateTime.MAX,
-                    "roles", List.of("BASIC_MAKER", "STUDENT", "TEACHER")
+                    "roles", List.of("BASIC_MAKER"),
+                    "school", List.of("STUDENT", "TEACHER")
                 )
             )
         );

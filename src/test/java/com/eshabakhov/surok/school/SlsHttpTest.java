@@ -4,9 +4,12 @@
 package com.eshabakhov.surok.school;
 
 import com.eshabakhov.surok.User;
+import com.eshabakhov.surok.school.input.SlInput;
+import com.eshabakhov.surok.school.input.SlInputName;
 import com.eshabakhov.surok.user.AuthUser;
 import com.eshabakhov.surok.user.Roles;
 import com.eshabakhov.surok.user.UrPostgres;
+import com.eshabakhov.surok.user.UrsPostgres;
 import java.util.UUID;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
@@ -19,6 +22,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.DynamicPropertyRegistry;
@@ -43,7 +47,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @AutoConfigureMockMvc
 @SuppressWarnings({
     "PMD.UnusedPrivateMethod", "UnusedMethod",
-    "PMD.UnitTestShouldIncludeAssert"
+    "PMD.UnitTestShouldIncludeAssert", "PMD.UnitTestContainsTooManyAsserts"
 })
 final class SlsHttpTest {
 
@@ -220,15 +224,21 @@ final class SlsHttpTest {
         ).andExpect(MockMvcResultMatchers.status().isForbidden());
     }
 
-    /** Verifies staff cannot list all schools. */
+    /** Verifies staff can list schools to which they belong. */
     @Test
-    void restrictsSchoolCollectionsToAdministrators() throws Exception {
+    void restrictsSchoolCollectionsToMemberships() throws Exception {
         this.prepare();
         this.mvc.perform(
             MockMvcRequestBuilders.get("/schools").with(
                 SecurityMockMvcRequestPostProcessors.user(this.principal(Roles.RoleEnum.DIRECTOR))
             )
-        ).andExpect(MockMvcResultMatchers.status().isForbidden());
+        ).andExpect(MockMvcResultMatchers.status().isOk()).andExpect(
+            MockMvcResultMatchers.content().string(Matchers.containsString("Школа №3"))
+        ).andExpect(
+            MockMvcResultMatchers.content().string(
+                Matchers.not(Matchers.containsString("Школа №4"))
+            )
+        );
     }
 
     /** Verifies staff can see their school and nested navigation. */
@@ -243,6 +253,218 @@ final class SlsHttpTest {
             MockMvcResultMatchers.content()
             .string(Matchers.containsString("href=\"/schools/3/schedules\""))
         );
+    }
+
+    /** A global subscription does not permit a viewer to revise a school. */
+    @Test
+    void deniesSchoolRevisionToSubscribedViewer() throws Exception {
+        this.prepare();
+        final AuthUser viewer = this.principal(Roles.RoleEnum.VIEWER);
+        viewer.roles().grant(Roles.RoleEnum.BASIC_MAKER);
+        this.mvc.perform(
+            MockMvcRequestBuilders.put("/schools/3")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"name\":\"Чужое название\"}")
+                .accept("application/vnd.surok.school-v1+json")
+                .with(SecurityMockMvcRequestPostProcessors.csrf())
+                .with(SecurityMockMvcRequestPostProcessors.user(viewer))
+        ).andExpect(MockMvcResultMatchers.status().isForbidden());
+    }
+
+    /** A director may revise the school to which they belong. */
+    @Test
+    void revisesSchoolForItsDirector() throws Exception {
+        this.prepare();
+        this.mvc.perform(
+            MockMvcRequestBuilders.put("/schools/3")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"name\":\"Новая школа №3\"}")
+                .accept("application/vnd.surok.school-v1+json")
+                .with(SecurityMockMvcRequestPostProcessors.csrf()).with(
+                    SecurityMockMvcRequestPostProcessors.user(
+                        this.principal(Roles.RoleEnum.DIRECTOR)
+                    )
+                )
+        ).andExpect(MockMvcResultMatchers.jsonPath("$.name").value("Новая школа №3"));
+    }
+
+    /** An administrator may remove a school through its protected collection. */
+    @Test
+    void removesSchoolForAnAdministrator() throws Exception {
+        this.prepare();
+        this.mvc.perform(
+            MockMvcRequestBuilders.delete("/schools/4")
+                .with(SecurityMockMvcRequestPostProcessors.csrf()).with(
+                    SecurityMockMvcRequestPostProcessors.user(
+                        this.principal(Roles.RoleEnum.ADMIN)
+                    )
+                )
+        ).andExpect(MockMvcResultMatchers.status().isNoContent());
+    }
+
+    /** A director can add an existing account, assign a role, and remove membership. */
+    @Test
+    void managesExistingSchoolMembers() throws Exception {
+        this.prepare();
+        final AuthUser director = this.principal(Roles.RoleEnum.DIRECTOR);
+        final User member = new UrsPostgres(this.ctx).register(
+            UUID.randomUUID().toString(), "ValidPassword1!",
+            String.format("%s@example.org", UUID.randomUUID()), false
+        );
+        final String path = String.format("/schools/3/users/%d", member.uid());
+        this.mvc.perform(
+            MockMvcRequestBuilders.put(path).with(
+                SecurityMockMvcRequestPostProcessors.user(director)
+            ).with(SecurityMockMvcRequestPostProcessors.csrf())
+                .accept("application/vnd.surok.school-user.v1+json")
+        ).andExpect(MockMvcResultMatchers.status().isCreated());
+        this.mvc.perform(
+            MockMvcRequestBuilders.post(String.format("%s/roles", path))
+                .with(SecurityMockMvcRequestPostProcessors.user(director))
+                .with(SecurityMockMvcRequestPostProcessors.csrf())
+                .contentType("application/vnd.surok.school-role.v1+json")
+                .accept("application/vnd.surok.school-role.v1+json")
+                .content("{\"role\":\"TEACHER\"}")
+        ).andExpect(MockMvcResultMatchers.status().isCreated());
+        MatcherAssert.assertThat(
+            new UrsPostgres(this.ctx, 3L).roles(member).list().getFirst().name(),
+            Matchers.is("TEACHER")
+        );
+        this.mvc.perform(
+            MockMvcRequestBuilders.delete(path).with(
+                SecurityMockMvcRequestPostProcessors.user(director)
+            ).with(SecurityMockMvcRequestPostProcessors.csrf())
+        ).andExpect(MockMvcResultMatchers.status().isNoContent());
+        MatcherAssert.assertThat(
+            new UrsPostgres(this.ctx, 3L).contains(member), Matchers.is(false)
+        );
+        MatcherAssert.assertThat(
+            new UrsPostgres(this.ctx).contains(member), Matchers.is(true)
+        );
+    }
+
+    /** A director can find and attach an existing account by login. */
+    @Test
+    void attachesExistingAccountByLogin() throws Exception {
+        this.prepare();
+        final String login = UUID.randomUUID().toString();
+        final User member = new UrsPostgres(this.ctx).register(
+            login, "ValidPassword1!",
+            String.format("%s@example.org", UUID.randomUUID()), false
+        );
+        this.mvc.perform(
+            MockMvcRequestBuilders.post("/schools/3/users").with(
+                SecurityMockMvcRequestPostProcessors.user(
+                    this.principal(Roles.RoleEnum.DIRECTOR)
+                )
+            ).with(SecurityMockMvcRequestPostProcessors.csrf())
+                .contentType("application/vnd.surok.school-user.v1+json")
+                .accept("application/vnd.surok.school-user.v1+json")
+                .content(String.format("{\"login\":\"%s\"}", login))
+        ).andExpect(MockMvcResultMatchers.status().isCreated());
+        MatcherAssert.assertThat(
+            new UrsPostgres(this.ctx, 3L).contains(member), Matchers.is(true)
+        );
+    }
+
+    /** A member without the director role cannot add another account. */
+    @Test
+    void deniesMemberManagementToNonDirectors() throws Exception {
+        this.prepare();
+        final AuthUser viewer = this.principal(Roles.RoleEnum.VIEWER);
+        final User target = new UrsPostgres(this.ctx).register(
+            UUID.randomUUID().toString(), "ValidPassword1!",
+            String.format("%s@example.org", UUID.randomUUID()), false
+        );
+        this.mvc.perform(
+            MockMvcRequestBuilders.put(
+                String.format("/schools/3/users/%d", target.uid())
+            ).with(SecurityMockMvcRequestPostProcessors.user(viewer))
+                .with(SecurityMockMvcRequestPostProcessors.csrf())
+                .accept("application/vnd.surok.school-user.v1+json")
+        ).andExpect(MockMvcResultMatchers.status().isForbidden());
+        MatcherAssert.assertThat(
+            new UrsPostgres(this.ctx, 3L).contains(target), Matchers.is(false)
+        );
+    }
+
+    /** A school viewer may inspect its members through the protected collection. */
+    @Test
+    void allowsSchoolViewerToReadMembers() throws Exception {
+        this.prepare();
+        this.mvc.perform(
+            MockMvcRequestBuilders.get("/schools/3/users")
+                .accept("application/vnd.surok.school-users.v1+json").with(
+                    SecurityMockMvcRequestPostProcessors.user(
+                        this.principal(Roles.RoleEnum.VIEWER)
+                    )
+                )
+        ).andExpect(MockMvcResultMatchers.status().isOk()).andExpect(
+            MockMvcResultMatchers.content().string(Matchers.containsString("user"))
+        );
+    }
+
+    /** A global subscription does not permit granting a school role. */
+    @Test
+    void deniesRoleGrantToSubscribedViewer() throws Exception {
+        this.prepare();
+        final AuthUser viewer = this.principal(Roles.RoleEnum.VIEWER);
+        viewer.roles().grant(Roles.RoleEnum.BASIC_MAKER);
+        this.mvc.perform(
+            MockMvcRequestBuilders.post(
+                String.format("/schools/3/users/%d/roles", viewer.uid())
+            ).contentType("application/vnd.surok.school-role.v1+json")
+                .accept("application/vnd.surok.school-role.v1+json")
+                .content("{\"role\":\"TEACHER\"}")
+                .with(SecurityMockMvcRequestPostProcessors.csrf())
+                .with(SecurityMockMvcRequestPostProcessors.user(viewer))
+        ).andExpect(MockMvcResultMatchers.status().isForbidden());
+    }
+
+    /** A member of one school cannot inspect another school's users. */
+    @Test
+    void deniesReadingAnotherSchoolsMembers() throws Exception {
+        this.prepare();
+        this.mvc.perform(
+            MockMvcRequestBuilders.get("/schools/4/users")
+                .accept("application/vnd.surok.school-users.v1+json").with(
+                    SecurityMockMvcRequestPostProcessors.user(
+                        this.principal(Roles.RoleEnum.VIEWER)
+                    )
+                )
+        ).andExpect(MockMvcResultMatchers.status().isForbidden());
+    }
+
+    /** A new director can manage the school without refreshing their login session. */
+    @Test
+    void recognizesNewDirectorWithinAnExistingSession() throws Exception {
+        this.prepare();
+        final User creator = new UrsPostgres(this.ctx).register(
+            UUID.randomUUID().toString(), "ValidPassword1!",
+            String.format("%s@example.org", UUID.randomUUID()), false
+        );
+        final AuthUser principal = new AuthUser(creator);
+        final UsernamePasswordAuthenticationToken session =
+            new UsernamePasswordAuthenticationToken(
+                principal, null, principal.getAuthorities()
+            );
+        final long school = creator.schools().create(
+            new SlInputName(new SlInput(), "Новая школа")
+        ).uid();
+        MatcherAssert.assertThat(creator.schools().contains(school), Matchers.is(true));
+        this.mvc.perform(
+            MockMvcRequestBuilders.put(
+                String.format(
+                    "/schools/%d/users/%d", school,
+                    new UrsPostgres(this.ctx).register(
+                        UUID.randomUUID().toString(), "ValidPassword1!",
+                        String.format("%s@example.org", UUID.randomUUID()), false
+                    ).uid()
+                )
+            ).with(SecurityMockMvcRequestPostProcessors.authentication(session))
+                .with(SecurityMockMvcRequestPostProcessors.csrf())
+                .accept("application/vnd.surok.school-user.v1+json")
+        ).andExpect(MockMvcResultMatchers.status().isCreated());
     }
 
     /** Verifies mutations require CSRF protection. */
@@ -304,15 +526,19 @@ final class SlsHttpTest {
             this.ctx,
             this.ctx.resultQuery(
                 """
-                INSERT INTO public."user" (username, password, email, corporate, school_id)
-                VALUES (?, 'secret', ?, true, ?) RETURNING id
+                INSERT INTO public."user" (username, password, email, corporate)
+                VALUES (?, 'secret', ?, true) RETURNING id
                 """,
                 UUID.randomUUID().toString(),
-                String.format("%s@example.org", UUID.randomUUID()),
-                3L
+                String.format("%s@example.org", UUID.randomUUID())
             ).fetchSingle("id", Long.class)
         );
-        user.roles().grant(role);
+        new UrsPostgres(this.ctx, 3L).add(user);
+        if (role == Roles.RoleEnum.ADMIN) {
+            user.roles().grant(role);
+        } else {
+            new UrsPostgres(this.ctx, 3L).roles(user).grant(role);
+        }
         return new AuthUser(user);
     }
 

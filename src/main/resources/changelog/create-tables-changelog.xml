@@ -132,13 +132,7 @@
                 email varchar(255) NOT NULL UNIQUE,
                 created_at timestamptz NOT NULL DEFAULT NOW(),
                 corporate boolean NOT NULL DEFAULT FALSE,
-                school_id bigint,
-                deleted timestamptz,
-                CONSTRAINT fk_user_school_id
-                    FOREIGN KEY (school_id)
-                        REFERENCES public.school(id)
-                        ON DELETE CASCADE
-                        ON UPDATE CASCADE
+                deleted timestamptz
             );
             ]]>
         </sql>
@@ -189,6 +183,21 @@
                          ON DELETE CASCADE
                          ON UPDATE CASCADE,
                  UNIQUE (user_id, role_id)
+            );
+            CREATE TABLE public.school_user (
+                id bigserial PRIMARY KEY,
+                school_id bigint NOT NULL REFERENCES public.school(id) ON DELETE CASCADE,
+                user_id bigint NOT NULL REFERENCES public."user"(id) ON DELETE CASCADE,
+                UNIQUE (school_id, user_id)
+            );
+            CREATE INDEX ix_school_user_user_id ON public.school_user (user_id);
+
+            CREATE TABLE public.school_user_role (
+                id bigserial PRIMARY KEY,
+                school_user_id bigint NOT NULL
+                    REFERENCES public.school_user(id) ON DELETE CASCADE,
+                role_id bigint NOT NULL REFERENCES public.role(id) ON DELETE CASCADE,
+                UNIQUE (school_user_id, role_id)
             );
             ]]>
         </sql>
@@ -268,8 +277,7 @@
                 ('ADVANCED', 'BASIC_MAKER'),
                 ('PRO',      'PRO_MAKER'),
                 ('PRO',      'ADVANCED_MAKER'),
-                ('PRO',      'BASIC_MAKER'),
-                ('VIEWER',   'VIEWER');
+                ('PRO',      'BASIC_MAKER');
             /* ── Migrate existing PERSONAL users only (corporate = false) ──
                Corporate users (teachers, directors, etc.) are managed
                by their school administrator and never use subscriptions.

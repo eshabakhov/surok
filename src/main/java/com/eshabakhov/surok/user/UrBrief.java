@@ -4,8 +4,8 @@
 package com.eshabakhov.surok.user;
 
 import com.eshabakhov.surok.Media;
+import com.eshabakhov.surok.Schools;
 import com.eshabakhov.surok.User;
-import java.util.Set;
 
 /**
  * Brief user representation for shared browser controls.
@@ -42,6 +42,11 @@ public final class UrBrief implements User {
     }
 
     @Override
+    public Schools schools() {
+        return this.origin.schools();
+    }
+
+    @Override
     public ReferenceInformation info() {
         return this.origin.info();
     }
@@ -53,18 +58,8 @@ public final class UrBrief implements User {
 
     @Override
     public <T> Media<T> print(final Media<T> media) {
-        return media
-            .with("username", this.credentials().username())
-            .with("admin", this.isAdmin()).with(
-            "subscription",
-            !this.info().corporate() && !this.isAdmin() && this.roles().list().stream().anyMatch(
-                role -> Set.of(
-                    "BASIC_MAKER",
-                    "ADVANCED_MAKER",
-                    "PRO_MAKER",
-                    "VIEWER"
-                ).contains(role.name())
-            )
-        );
+        return media.with("username", this.credentials().username())
+            .with("admin", this.isAdmin())
+            .with("subscription", !this.info().corporate() && !this.isAdmin());
     }
 }

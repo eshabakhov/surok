@@ -19,6 +19,7 @@ import com.eshabakhov.surok.media.MdXslt;
 import com.eshabakhov.surok.media.SrWeb;
 import com.eshabakhov.surok.media.XsClasspath;
 import com.eshabakhov.surok.school.SlBrief;
+import com.eshabakhov.surok.school.SlsAuthorized;
 import com.eshabakhov.surok.school.SlsBrief;
 import com.eshabakhov.surok.school.SlsPostgres;
 import com.eshabakhov.surok.school.building.Building;
@@ -39,7 +40,7 @@ import org.jooq.DSLContext;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.util.MultiValueMap;
@@ -64,7 +65,6 @@ import org.springframework.web.server.ResponseStatusException;
  */
 @RestController
 @RequestMapping("/schools/{school}/buildings/{building}/cabinets")
-@PreAuthorize("hasRole('ADMIN') or #school == authentication.principal.info().school()")
 @Tag(name = "Cabinets")
 public class CbsHttp {
 
@@ -89,6 +89,7 @@ public class CbsHttp {
      * @param page Pagination
      * @param sorts Sorting
      * @param request HTTP request
+     * @param user Acting user
      * @return Negotiated representation
      * @throws Exception If lookup or printing fails
      */
@@ -107,10 +108,13 @@ public class CbsHttp {
         final Filters filters,
         final Page page,
         final Sorts sorts,
-        final HttpServletRequest request
+        final HttpServletRequest request,
+        @AuthenticationPrincipal final User user
     ) throws Exception {
         final MediaType type = new AcHttp(request, "cabinets.v1").type();
-        final School sch = new SlsPostgres(this.ctx).school(school);
+        final School sch = new SlsAuthorized(
+            new SlsPostgres(this.ctx), user
+        ).school(school);
         final Building build = sch.buildings().building(building);
         final Set<Filter> requested = new LinkedHashSet<>(filters.filters());
         requested.addAll(
@@ -155,6 +159,7 @@ public class CbsHttp {
      * @param building Building identifier
      * @param cabinet Entity identifier
      * @param request HTTP request
+     * @param user Acting user
      * @return Negotiated representation
      * @throws Exception If lookup or printing fails
      */
@@ -171,10 +176,13 @@ public class CbsHttp {
         @PathVariable final long school,
         @PathVariable final long building,
         @PathVariable final long cabinet,
-        final HttpServletRequest request
+        final HttpServletRequest request,
+        @AuthenticationPrincipal final User user
     ) throws Exception {
         final MediaType type = new AcHttp(request, "cabinet-v1").type();
-        final School sch = new SlsPostgres(this.ctx).school(school);
+        final School sch = new SlsAuthorized(
+            new SlsPostgres(this.ctx), user
+        ).school(school);
         final Building build = sch.buildings().building(building);
         final Cabinets origin = build.cabinets();
         final Cabinet selected = origin.cabinet(cabinet);
@@ -209,6 +217,7 @@ public class CbsHttp {
      * @param building Building identifier
      * @param parameters Form fields
      * @param request HTTP request
+     * @param user Acting user
      * @return Created representation or redirect
      * @throws Exception If creation fails
      */
@@ -221,26 +230,20 @@ public class CbsHttp {
             "application/vnd.surok.cabinet-v1+xml"
         }
     )
-    @PreAuthorize(
-        """
-        hasAnyRole('ADMIN', 'DIRECTOR', 'DEPUTY_DIRECTOR',
-            'BASIC_MAKER', 'ADVANCED_MAKER', 'PRO_MAKER')
-        and (hasRole('ADMIN') or #school == authentication.principal.info().school())
-        """
-    )
     @Operation(summary = "Create cabinet from form")
     public ResponseEntity<?> create(
         @PathVariable final long school,
         @PathVariable final long building,
         @RequestParam final MultiValueMap<String, String> parameters,
-        final HttpServletRequest request
+        final HttpServletRequest request,
+        @AuthenticationPrincipal final User user
     ) throws Exception {
         final MediaType type = new AcHttp(request, "cabinet-v1").type();
         ResponseEntity<?> response;
         try {
             response = CbsHttp.result(
                 type,
-                new SlsPostgres(this.ctx)
+                new SlsAuthorized(new SlsPostgres(this.ctx), user)
                 .school(school).buildings().building(building).cabinets()
                     .create(new CbInputHttp(parameters)), HttpStatus.CREATED,
                 String.format("/schools/%d/buildings/%d/cabinets", school, building),
@@ -264,6 +267,7 @@ public class CbsHttp {
      * @param building Building identifier
      * @param json Input document
      * @param request HTTP request
+     * @param user Acting user
      * @return Created representation
      * @throws Exception If creation fails
      */
@@ -276,22 +280,17 @@ public class CbsHttp {
             "application/vnd.surok.cabinet-v1+xml"
         }
     )
-    @PreAuthorize(
-        """
-        hasAnyRole('ADMIN', 'DIRECTOR', 'DEPUTY_DIRECTOR',
-            'BASIC_MAKER', 'ADVANCED_MAKER', 'PRO_MAKER')
-        and (hasRole('ADMIN') or #school == authentication.principal.info().school())
-        """
-    )
     @Operation(summary = "Create cabinet from JSON")
     public ResponseEntity<?> create(
         @PathVariable final long school,
         @PathVariable final long building,
         @RequestBody final JsonNode json,
-        final HttpServletRequest request
+        final HttpServletRequest request,
+        @AuthenticationPrincipal final User user
     ) throws Exception {
         return CbsHttp.result(
-            new AcHttp(request, "cabinet-v1").type(), new SlsPostgres(this.ctx)
+            new AcHttp(request, "cabinet-v1").type(),
+            new SlsAuthorized(new SlsPostgres(this.ctx), user)
                 .school(school).buildings().building(building).cabinets()
                 .create(new CbInputHttp(json)), HttpStatus.CREATED,
             String.format("/schools/%d/buildings/%d/cabinets", school, building),
@@ -307,6 +306,7 @@ public class CbsHttp {
      * @param cabinet Entity identifier
      * @param parameters Form fields
      * @param request HTTP request
+     * @param user Acting user
      * @return Revised representation or redirect
      * @throws Exception If revision fails
      */
@@ -319,25 +319,19 @@ public class CbsHttp {
             "application/vnd.surok.cabinet-v1+xml"
         }
     )
-    @PreAuthorize(
-        """
-        hasAnyRole('ADMIN', 'DIRECTOR', 'DEPUTY_DIRECTOR',
-            'BASIC_MAKER', 'ADVANCED_MAKER', 'PRO_MAKER')
-        and (hasRole('ADMIN') or #school == authentication.principal.info().school())
-        """
-    )
     @Operation(summary = "Update cabinet from form")
     public ResponseEntity<?> revise(
         @PathVariable final long school,
         @PathVariable final long building,
         @PathVariable final long cabinet,
         @RequestParam final MultiValueMap<String, String> parameters,
-        final HttpServletRequest request
+        final HttpServletRequest request,
+        @AuthenticationPrincipal final User user
     ) throws Exception {
         final MediaType type = new AcHttp(request, "cabinet-v1").type();
         ResponseEntity<?> response;
         try {
-            final Cabinet revised = new SlsPostgres(this.ctx)
+            final Cabinet revised = new SlsAuthorized(new SlsPostgres(this.ctx), user)
                 .school(school).buildings().building(building).cabinets()
                 .revise(cabinet, new CbInputHttp(parameters));
             response = CbsHttp.result(
@@ -366,6 +360,7 @@ public class CbsHttp {
      * @param cabinet Entity identifier
      * @param json Input document
      * @param request HTTP request
+     * @param user Acting user
      * @return Revised representation or redirect
      * @throws Exception If revision fails
      */
@@ -378,23 +373,17 @@ public class CbsHttp {
             "application/vnd.surok.cabinet-v1+xml"
         }
     )
-    @PreAuthorize(
-        """
-        hasAnyRole('ADMIN', 'DIRECTOR', 'DEPUTY_DIRECTOR',
-            'BASIC_MAKER', 'ADVANCED_MAKER', 'PRO_MAKER')
-        and (hasRole('ADMIN') or #school == authentication.principal.info().school())
-        """
-    )
     @Operation(summary = "Update cabinet from JSON")
     public ResponseEntity<?> revise(
         @PathVariable final long school,
         @PathVariable final long building,
         @PathVariable final long cabinet,
         @RequestBody final JsonNode json,
-        final HttpServletRequest request
+        final HttpServletRequest request,
+        @AuthenticationPrincipal final User user
     ) throws Exception {
         final MediaType type = new AcHttp(request, "cabinet-v1").type();
-        final Cabinet revised = new SlsPostgres(this.ctx)
+        final Cabinet revised = new SlsAuthorized(new SlsPostgres(this.ctx), user)
             .school(school).buildings().building(building).cabinets()
             .revise(cabinet, new CbInputHttp(json));
         return CbsHttp.result(
@@ -410,24 +399,19 @@ public class CbsHttp {
      * @param school School identifier
      * @param building Building identifier
      * @param cabinet Entity identifier
+     * @param user Acting user
      * @return Empty response
      * @throws Exception If removal fails
      */
     @DeleteMapping("/{cabinet}")
-    @PreAuthorize(
-        """
-        hasAnyRole('ADMIN', 'DIRECTOR', 'DEPUTY_DIRECTOR',
-            'BASIC_MAKER', 'ADVANCED_MAKER', 'PRO_MAKER')
-        and (hasRole('ADMIN') or #school == authentication.principal.info().school())
-        """
-    )
     @Operation(summary = "Remove cabinet")
     public ResponseEntity<Void> remove(
         @PathVariable final long school,
         @PathVariable final long building,
-        @PathVariable final long cabinet
+        @PathVariable final long cabinet,
+        @AuthenticationPrincipal final User user
     ) throws Exception {
-        new SlsPostgres(this.ctx)
+        new SlsAuthorized(new SlsPostgres(this.ctx), user)
             .school(school).buildings().building(building).cabinets().remove(cabinet);
         return ResponseEntity.noContent().build();
     }

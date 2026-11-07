@@ -247,6 +247,16 @@
 							<arguments>run lint</arguments>
 						</configuration>
 					</execution>
+					<execution>
+						<id>frontend-test</id>
+						<phase>test</phase>
+						<goals>
+							<goal>npm</goal>
+						</goals>
+						<configuration>
+							<arguments>test</arguments>
+						</configuration>
+					</execution>
 				</executions>
 			</plugin>
 		</plugins>

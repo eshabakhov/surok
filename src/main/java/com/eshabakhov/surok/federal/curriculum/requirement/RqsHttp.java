@@ -9,6 +9,7 @@ import com.eshabakhov.surok.Page;
 import com.eshabakhov.surok.Sorts;
 import com.eshabakhov.surok.User;
 import com.eshabakhov.surok.federal.curriculum.CrWithRequirements;
+import com.eshabakhov.surok.federal.curriculum.CrsAuthorized;
 import com.eshabakhov.surok.federal.curriculum.CrsPostgres;
 import com.eshabakhov.surok.federal.curriculum.CrsSingle;
 import com.eshabakhov.surok.federal.curriculum.Curriculum;
@@ -39,7 +40,7 @@ import org.jooq.DSLContext;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.util.MultiValueMap;
@@ -64,7 +65,6 @@ import org.springframework.web.server.ResponseStatusException;
 @RestController
 @RequestMapping("/federal/curriculums/{curriculum}/requirements")
 @Tag(name = "Federal Curriculum Requirements")
-@PreAuthorize("isAuthenticated()")
 public class RqsHttp {
 
     /** JOOQ context. */
@@ -88,6 +88,7 @@ public class RqsHttp {
      * @param page Pagination
      * @param sorts Sorting
      * @param request HTTP request
+     * @param actor Authenticated user
      * @return Response with the negotiated representation or redirect
      * @throws Exception If selection fails
      */
@@ -110,11 +111,14 @@ public class RqsHttp {
         final Filters filters,
         final Page page,
         final Sorts sorts,
-        final HttpServletRequest request
+        final HttpServletRequest request,
+        @AuthenticationPrincipal final User actor
     ) throws Exception {
         final MediaType type = new AcHttp(request, "federal-curriculum-requirements.v1").type();
-        final Requirements selected = new RqsPostgres(this.ctx, current)
-            .selection(filters, page, sorts);
+        final Curriculum curriculum = new CrsAuthorized(
+            new CrsPostgres(this.ctx), actor
+        ).curriculum(current);
+        final Requirements selected = curriculum.requirements().selection(filters, page, sorts);
         return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8)).body(
             switch (type.toString()) {
                 case MediaType.TEXT_HTML_VALUE -> {
@@ -125,7 +129,6 @@ public class RqsHttp {
                     } else {
                         view = "list";
                     }
-                    final Curriculum curriculum = new CrsPostgres(this.ctx).curriculum(current);
                     yield this.web(request, view).with(
                         "subjects", new SbsFederal(this.ctx)
                     ).with("firstGrade", curriculum.grades().getFirst()).with(
@@ -158,6 +161,7 @@ public class RqsHttp {
      * @param current Curriculum ID
      * @param requirement Requirement ID
      * @param request HTTP request
+     * @param actor Authenticated user
      * @return Response with the negotiated representation or redirect
      * @throws Exception If lookup fails
      */
@@ -178,7 +182,8 @@ public class RqsHttp {
     public ResponseEntity<?> requirement(
         @PathVariable("curriculum") final long current,
         @PathVariable final long requirement,
-        final HttpServletRequest request
+        final HttpServletRequest request,
+        @AuthenticationPrincipal final User actor
     ) throws Exception {
         final MediaType type = new AcHttp(
             request,
@@ -191,7 +196,9 @@ public class RqsHttp {
                 )
             )
         ).type();
-        final Requirement selected = new RqsPostgres(this.ctx, current).requirement(requirement);
+        final Requirement selected = new RqsAuthorized(
+            new RqsPostgres(this.ctx, current), actor
+        ).requirement(requirement);
         return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8)).body(
             switch (type.toString()) {
                 case "application/vnd.surok.federal-curriculum-requirement-v1+json" ->
@@ -211,6 +218,7 @@ public class RqsHttp {
      * @param current Curriculum ID
      * @param parameters Requirement input parameters
      * @param request HTTP request
+     * @param actor Authenticated user
      * @return Response with the negotiated representation or redirect
      * @throws Exception If creation fails
      */
@@ -231,15 +239,15 @@ public class RqsHttp {
         responseCode = "302",
         description = "HTML client redirected to the requirements"
     )
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> create(
         @PathVariable("curriculum") final long current,
         @RequestParam final MultiValueMap<String, String> parameters,
-        final HttpServletRequest request
+        final HttpServletRequest request,
+        @AuthenticationPrincipal final User actor
     ) throws Exception {
         return RqsHttp.result(
             new AcHttp(request, "federal-curriculum-requirement-v1").type(),
-            new RqsPostgres(this.ctx, current).create(
+            new RqsAuthorized(new RqsPostgres(this.ctx, current), actor).create(
                 new RqInputForm(parameters.toSingleValueMap())
             ),
             HttpStatus.CREATED, current
@@ -253,6 +261,7 @@ public class RqsHttp {
      * @param requirement Requirement ID
      * @param parameters Requirement input parameters
      * @param request HTTP request
+     * @param actor Authenticated user
      * @return Response with the negotiated representation or redirect
      * @throws Exception If update fails
      */
@@ -275,16 +284,18 @@ public class RqsHttp {
         description = "HTML client redirected to the requirements"
     )
     @ApiResponse(responseCode = "404", description = "Requirement not found")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> revise(
         @PathVariable("curriculum") final long current,
         @PathVariable final long requirement,
         @RequestParam final MultiValueMap<String, String> parameters,
-        final HttpServletRequest request
+        final HttpServletRequest request,
+        @AuthenticationPrincipal final User actor
     ) throws Exception {
         return RqsHttp.result(
             new AcHttp(request, "federal-curriculum-requirement-v1").type(),
-            new RqsPostgres(this.ctx, current).revise(requirement, new RqInputHttp(parameters)),
+            new RqsAuthorized(new RqsPostgres(this.ctx, current), actor).revise(
+                requirement, new RqInputHttp(parameters)
+            ),
             HttpStatus.OK, current
         );
     }
@@ -295,6 +306,7 @@ public class RqsHttp {
      * @param current Curriculum identity
      * @param fields Requirement fields
      * @param request HTTP request
+     * @param actor Authenticated user
      * @return Created requirement
      * @throws Exception If creation fails
      */
@@ -306,15 +318,17 @@ public class RqsHttp {
             "application/vnd.surok.federal-curriculum-requirement-v1+xml"
         }
     )
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> add(
         @PathVariable("curriculum") final long current,
         @RequestBody final Map<String, String> fields,
-        final HttpServletRequest request
+        final HttpServletRequest request,
+        @AuthenticationPrincipal final User actor
     ) throws Exception {
         return RqsHttp.result(
             new AcHttp(request, "federal-curriculum-requirement-v1").type(),
-            new RqsPostgres(this.ctx, current).create(new RqInputHttp(fields)),
+            new RqsAuthorized(new RqsPostgres(this.ctx, current), actor).create(
+                new RqInputHttp(fields)
+            ),
             HttpStatus.CREATED, current
         );
     }
@@ -326,6 +340,7 @@ public class RqsHttp {
      * @param requirement Requirement identity
      * @param fields Requirement fields
      * @param request HTTP request
+     * @param actor Authenticated user
      * @return Updated requirement
      * @throws Exception If revision fails
      */
@@ -338,16 +353,18 @@ public class RqsHttp {
             "application/vnd.surok.federal-curriculum-requirement-v1+xml"
         }
     )
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> update(
         @PathVariable("curriculum") final long current,
         @PathVariable final long requirement,
         @RequestBody final Map<String, String> fields,
-        final HttpServletRequest request
+        final HttpServletRequest request,
+        @AuthenticationPrincipal final User actor
     ) throws Exception {
         return RqsHttp.result(
             new AcHttp(request, "federal-curriculum-requirement-v1").type(),
-            new RqsPostgres(this.ctx, current).revise(requirement, new RqInputHttp(fields)),
+            new RqsAuthorized(new RqsPostgres(this.ctx, current), actor).revise(
+                requirement, new RqInputHttp(fields)
+            ),
             HttpStatus.OK, current
         );
     }
@@ -358,6 +375,7 @@ public class RqsHttp {
      * @param current Curriculum ID
      * @param requirement Requirement ID
      * @param request HTTP request
+     * @param actor Authenticated user
      * @return Empty response
      * @throws Exception If removal fails
      */
@@ -368,14 +386,14 @@ public class RqsHttp {
         description = "Federal curriculum requirement removed"
     )
     @ApiResponse(responseCode = "404", description = "Requirement not found")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> remove(
         @PathVariable("curriculum") final long current,
         @PathVariable final long requirement,
-        final HttpServletRequest request
+        final HttpServletRequest request,
+        @AuthenticationPrincipal final User actor
     ) throws Exception {
         new AcHttp(request, "federal-curriculum-requirement-v1").type();
-        new RqsPostgres(this.ctx, current).remove(requirement);
+        new RqsAuthorized(new RqsPostgres(this.ctx, current), actor).remove(requirement);
         return ResponseEntity.noContent().build();
     }
 

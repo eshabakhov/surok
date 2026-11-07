@@ -3,18 +3,18 @@
  */
 package com.eshabakhov.surok.user;
 
-import com.eshabakhov.surok.Media;
+import com.eshabakhov.surok.PrItems;
 import com.eshabakhov.surok.media.AcHttp;
 import com.eshabakhov.surok.media.MdXml;
 import com.eshabakhov.surok.media.MdXslt;
 import com.eshabakhov.surok.media.SrWeb;
 import com.eshabakhov.surok.media.XsClasspath;
-import com.eshabakhov.surok.school.SlBrief;
 import com.eshabakhov.surok.school.SlsBrief;
 import com.eshabakhov.surok.school.SlsPostgres;
 import com.eshabakhov.surok.security.CsToken;
 import jakarta.servlet.http.HttpServletRequest;
 import java.nio.charset.StandardCharsets;
+import java.util.stream.StreamSupport;
 import org.jooq.DSLContext;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -56,22 +56,24 @@ public final class ProfileHttp {
         @AuthenticationPrincipal final AuthUser user,
         final HttpServletRequest request
     ) throws Exception {
-        final MediaType type = new AcHttp(request).type();
-        Media<String> page = new SrWeb(
-            new UrBrief(user), new SlsBrief(new SlsPostgres(this.ctx)),
-            new CsToken((CsrfToken) request.getAttribute(CsrfToken.class.getName()))
-        ).print(
-            new MdXslt(
-                new MdXml("surok").with("path", request.getRequestURI()),
-                new XsClasspath("xslt/profile.xsl", "profile")
-            )
-        ).with("account", new UrProfile(user));
-        if (user.info().school() != null) {
-            page = page.with(
-                "school", new SlBrief(new SlsPostgres(this.ctx).school(user.info().school()))
-            );
-        }
-        return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8))
-            .body(page.print());
+        return ResponseEntity.ok().contentType(
+            new MediaType(new AcHttp(request).type(), StandardCharsets.UTF_8)
+        ).body(
+            new SrWeb(
+                new UrBrief(user), new SlsBrief(new SlsPostgres(this.ctx)),
+                new CsToken((CsrfToken) request.getAttribute(CsrfToken.class.getName()))
+            ).print(
+                new MdXslt(
+                    new MdXml("surok").with("path", request.getRequestURI()),
+                    new XsClasspath("xslt/profile.xsl", "profile")
+                )
+            ).with("account", new UrProfile(user)).with(
+                "memberships", new PrItems(
+                    "membership", StreamSupport.stream(
+                        user.schools().iterate().spliterator(), false
+                    ).map(school -> new UrMembership(school, user)).toList()
+                )
+            ).print()
+        );
     }
 }

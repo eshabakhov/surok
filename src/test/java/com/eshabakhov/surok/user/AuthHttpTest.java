@@ -120,7 +120,7 @@ final class AuthHttpTest {
     @ParameterizedTest
     @CsvSource(
         {
-            "ADMIN, false, /schools", "VIEWER, false, /users/profile", "DIRECTOR, true, /schools/1"
+            "ADMIN, false, /schools", "VIEWER, false, /schools", "DIRECTOR, true, /schools"
         }
     )
     void selectsAuthenticatedDestination(
@@ -134,7 +134,11 @@ final class AuthHttpTest {
         }
         final User user = new UrsPostgres(this.ctx, identifier)
             .register("visitor", "ValidPassword1!", "visitor@example.com", false);
-        user.roles().grant(role);
+        if (school) {
+            new UrsPostgres(this.ctx, identifier).roles(user).grant(role);
+        } else if (role != Roles.RoleEnum.VIEWER) {
+            user.roles().grant(role);
+        }
         this.mvc.perform(
             MockMvcRequestBuilders.get("/").accept(MediaType.TEXT_HTML).with(
                 SecurityMockMvcRequestPostProcessors.user(new AuthUser(user))
@@ -165,13 +169,11 @@ final class AuthHttpTest {
         this.mvc.perform(
             SecurityMockMvcRequestBuilders.formLogin().user("visitor").password("ValidPassword1!")
         ).andExpect(MockMvcResultMatchers.status().isFound()).andExpect(
-            MockMvcResultMatchers.redirectedUrl(
-                String.format("/schools/%d", created.info().school())
-            )
+            MockMvcResultMatchers.redirectedUrl("/schools")
         );
         MatcherAssert.assertThat(
             Map.of("corporate", created.info().corporate(), "schools", this.schools()),
-            Matchers.equalTo(Map.of("corporate", false, "schools", 1))
+            Matchers.equalTo(Map.of("corporate", false, "schools", 0))
         );
     }
 
@@ -234,7 +236,7 @@ final class AuthHttpTest {
                 Matchers.containsString("Пользователь с таким логином или email уже существует")
             )
         );
-        MatcherAssert.assertThat(this.schools(), Matchers.equalTo(1));
+        MatcherAssert.assertThat(this.schools(), Matchers.equalTo(0));
     }
 
     @Test

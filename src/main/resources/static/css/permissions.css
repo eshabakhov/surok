@@ -1,0 +1,252 @@
+body:has(.permissions-page) {
+    --layout-w: 1800px;
+    --content-w: 1560px;
+}
+
+.permissions-page [hidden] {
+    display: none;
+}
+
+.permissions-badge {
+    padding: .375rem .625rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--card);
+    color: var(--muted-fg);
+    font-size: .75rem;
+    white-space: nowrap;
+}
+
+.permissions-intro,
+.permissions-hint,
+.permissions-count {
+    color: var(--muted-fg);
+    font-size: .8125rem;
+    line-height: 1.6;
+}
+
+.permissions-intro {
+    margin: -.5rem 0 1.25rem;
+}
+
+.permissions-filters {
+    display: flex;
+    align-items: flex-end;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+}
+
+.permissions-filters label {
+    display: flex;
+    flex-direction: column;
+    gap: .375rem;
+    font-size: .8125rem;
+    font-weight: 500;
+    min-width: 0;
+}
+
+.permissions-filters label:first-child {
+    flex: 1;
+    max-width: 430px;
+}
+
+.permissions-filters select {
+    width: 100%;
+    min-width: 230px;
+}
+
+.permissions-count {
+    margin: 0 0 .5rem auto;
+    white-space: nowrap;
+}
+
+.permissions-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .75rem 1.5rem;
+    padding: 0;
+    margin: 0 0 .5rem;
+    list-style: none;
+    font-size: .8125rem;
+    color: var(--muted-fg);
+}
+
+.permissions-legend li {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+}
+
+.permissions-resource {
+    margin-top: 1.75rem;
+}
+
+.permissions-resource h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0 0 .75rem;
+}
+
+.permissions-scroll {
+    overflow: auto;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--card);
+}
+
+.permissions-scroll:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 3px;
+}
+
+.permissions-table caption {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+}
+
+.permissions-table {
+    table-layout: fixed;
+    min-width: 1760px;
+    font-size: .8125rem;
+}
+
+.permissions-table .permission-action {
+    width: 210px;
+    font-weight: 500;
+}
+
+.permissions-table .permission-role {
+    width: 120px;
+    text-align: center;
+}
+
+.permissions-table thead th {
+    padding: .875rem .625rem;
+    vertical-align: middle;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+    white-space: normal;
+    font-size: .75rem;
+}
+
+.permissions-table tbody th,
+.permissions-table tbody td {
+    padding: .875rem .75rem;
+    vertical-align: middle;
+    border-bottom: 1px solid var(--border);
+}
+
+.permissions-table tbody tr:last-child th,
+.permissions-table tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+.permissions-table .permission-action,
+.permissions-table .permission-endpoint {
+    position: sticky;
+    z-index: 1;
+    left: 0;
+    background: var(--card);
+    text-align: left;
+}
+
+.permissions-table .permission-endpoint {
+    width: 350px;
+    left: 210px;
+    border-right: 1px solid var(--border);
+}
+
+.permissions-table thead .permission-action,
+.permissions-table thead .permission-endpoint {
+    background: var(--muted);
+}
+
+.permissions-table tbody tr:hover th,
+.permissions-table tbody tr:hover td {
+    background: var(--muted);
+}
+
+.permission-endpoint code {
+    display: block;
+    overflow-wrap: anywhere;
+    font-family: 'DM Mono', monospace;
+    font-size: .75rem;
+    line-height: 1.6;
+}
+
+.permission-method {
+    display: inline-block;
+    margin-bottom: .375rem;
+    padding: .125rem .375rem;
+    background: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: .625rem;
+    font-weight: 600;
+    letter-spacing: .03em;
+}
+
+.permission-condition,
+.permission-input {
+    display: block;
+    margin-top: .375rem;
+    color: var(--muted-fg);
+    font-size: .6875rem;
+    font-weight: 400;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+}
+
+.permission-allowed {
+    color: #15803d;
+    font-size: 1.125rem;
+    font-weight: 600;
+}
+
+.permission-denied {
+    color: var(--muted-fg);
+    font-size: 1rem;
+}
+
+.permissions-empty {
+    padding: 2.5rem 1.5rem;
+    margin-top: 1.5rem;
+    border: 1px dashed var(--border);
+    border-radius: var(--radius-lg);
+    text-align: center;
+    color: var(--muted-fg);
+    font-size: .875rem;
+}
+
+@media (width <= 1100px) {
+    .permissions-table .permission-action,
+    .permissions-table .permission-endpoint {
+        position: static;
+    }
+}
+
+@media (width <= 768px) {
+    .permissions-page .page-title-row,
+    .permissions-filters {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .permissions-badge {
+        align-self: flex-start;
+    }
+
+    .permissions-filters label:first-child {
+        max-width: none;
+    }
+
+    .permissions-count {
+        margin: 0;
+    }
+}

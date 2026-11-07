@@ -1,3 +1,3 @@
-INSERT INTO public."user" (username, password, email, corporate, school_id)
-VALUES (?, ?, ?, ?, ?)
+INSERT INTO public."user" (username, password, email, corporate)
+VALUES (?, ?, ?, ?)
 RETURNING *

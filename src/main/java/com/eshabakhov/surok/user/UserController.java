@@ -4,9 +4,6 @@
 package com.eshabakhov.surok.user;
 
 import com.eshabakhov.surok.User;
-import com.eshabakhov.surok.school.SlsPostgres;
-import com.eshabakhov.surok.school.input.SlInput;
-import com.eshabakhov.surok.school.input.SlInputName;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -17,7 +14,7 @@ import java.net.URI;
 import java.util.List;
 import org.jooq.DSLContext;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -109,17 +106,6 @@ public class UserController {
                                 "email": "john@example.com"
                             }
                             """
-                    ),
-                    @ExampleObject(
-                        name = "Corporate registration",
-                        value = """
-                            {
-                                "username": "john_doe",
-                                "password": "securePassword123",
-                                "email": "john@school-1.com",
-                                "school": "1"
-                            }
-                            """
                     )
                 }
             )
@@ -138,29 +124,12 @@ public class UserController {
         if (email == null || email.asText().isBlank()) {
             throw new RegistrationException("Email is required");
         }
-        final User created;
-        final JsonNode school = request.get("school");
-        if (school == null) {
-            created = new UrsPostgres(
-                this.ctx,
-                new SlsPostgres(this.ctx).create(new SlInputName(new SlInput(), "My school")).uid()
-            ).register(
-                username.asText(),
-                password.asText(),
-                email.asText(),
-                false
-            );
-        } else {
-            created = new UrsPostgres(
-                this.ctx,
-                new SlsPostgres(this.ctx).school(school.asLong()).uid()
-            ).register(
-                username.asText(),
-                password.asText(),
-                email.asText(),
-                true
-            );
+        if (request.has("school")) {
+            throw new RegistrationException("School membership is managed separately");
         }
+        final User created = new UrsPostgres(this.ctx).register(
+            username.asText(), password.asText(), email.asText(), false
+        );
         return ResponseEntity
             .created(URI.create(String.format("/api/users/%s", created.uid())))
             .body(created);
@@ -170,14 +139,16 @@ public class UserController {
      * Remove user.
      *
      * @param user User's Id
+     * @param actor Acting user
      * @return Nothing
      * @throws Exception If remove fails
      */
     @DeleteMapping("/{user}")
-    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Remove role from user")
-    public ResponseEntity<Void> remove(@PathVariable final long user) throws Exception {
-        new UrsPostgres(this.ctx).remove(user);
+    public ResponseEntity<Void> remove(
+        @PathVariable final long user, @AuthenticationPrincipal final User actor
+    ) throws Exception {
+        new UrsGlobalAuthorized(new UrsPostgres(this.ctx), actor).remove(user);
         return ResponseEntity.noContent().build();
     }
 
@@ -186,11 +157,11 @@ public class UserController {
      *
      * @param user User's ID
      * @param request Role payload
+     * @param actor Acting user
      * @return ResponseEntity with {@link Role}
      * @throws Exception if assign fails
      */
     @PostMapping("/{user}/roles")
-    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Assign role to user")
     @ApiResponse(
         responseCode = "201",
@@ -205,7 +176,7 @@ public class UserController {
                             "id": 1,
                             "userId": 5,
                             "role": "TEACHER",
-                            "schoolId": 3
+                            "scope": "account"
                         }"""
                 )
             }
@@ -236,24 +207,27 @@ public class UserController {
                 }
             )
         )
-        @RequestBody final JsonNode request
+        @RequestBody final JsonNode request,
+        @AuthenticationPrincipal final User actor
     ) throws Exception {
+        final User target = new UrsGlobalAuthorized(
+            new UrsPostgres(this.ctx), actor
+        ).identification(user);
         final JsonNode rolenode = request.get("role");
         if (rolenode == null || rolenode.asText().isBlank()) {
             throw new RoleAssignmentException("Role is required");
         }
-        final Role assigned = new UrsPostgres(this.ctx)
-            .identification(user)
-            .roles().grant(
-                switch (rolenode.asText()) {
-                    case "ADMIN" -> Roles.RoleEnum.ADMIN;
-                    case "DIRECTOR" -> Roles.RoleEnum.DIRECTOR;
-                    case "DEPUTY_DIRECTOR" -> Roles.RoleEnum.DEPUTY_DIRECTOR;
-                    case "TEACHER" -> Roles.RoleEnum.TEACHER;
-                    case null -> Roles.RoleEnum.STUDENT;
-                    default -> Roles.RoleEnum.STUDENT;
-                }
-            );
+        final Role assigned = target.roles().grant(
+            switch (rolenode.asText()) {
+                case "ADMIN" -> Roles.RoleEnum.ADMIN;
+                case "BASIC_MAKER" -> Roles.RoleEnum.BASIC_MAKER;
+                case "ADVANCED_MAKER" -> Roles.RoleEnum.ADVANCED_MAKER;
+                case "PRO_MAKER" -> Roles.RoleEnum.PRO_MAKER;
+                case null, default -> throw new RoleAssignmentException(
+                    "School roles must be assigned within a school"
+                );
+            }
+        );
         return ResponseEntity.created(
             URI.create(
                 String.format(
@@ -269,14 +243,16 @@ public class UserController {
      * Retrieve list of user's role.
      *
      * @param user User's Id
+     * @param actor Acting user
      * @return ResponseEntity with list of {@link Role}
      */
     @GetMapping("/{user}/roles")
-    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Get all roles for user")
-    public ResponseEntity<List<Role>> listRoles(@PathVariable final long user) throws Exception {
+    public ResponseEntity<List<Role>> listRoles(
+        @PathVariable final long user, @AuthenticationPrincipal final User actor
+    ) throws Exception {
         return ResponseEntity.ok(
-            new UrsPostgres(this.ctx)
+            new UrsGlobalAuthorized(new UrsPostgres(this.ctx), actor)
                 .identification(user)
                 .roles()
                 .list()
@@ -288,17 +264,18 @@ public class UserController {
      *
      * @param user User's Id
      * @param role Role
+     * @param actor Acting user
      * @return Nothing
      * @throws Exception If delete fails
      */
     @DeleteMapping("/{user}/roles/{role}")
-    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Remove role from user")
     public ResponseEntity<Void> removeRole(
         @PathVariable final long user,
-        @PathVariable final long role
+        @PathVariable final long role,
+        @AuthenticationPrincipal final User actor
     ) throws Exception {
-        new UrsPostgres(this.ctx)
+        new UrsGlobalAuthorized(new UrsPostgres(this.ctx), actor)
             .identification(user)
             .roles()
             .revoke(role);

@@ -4,7 +4,6 @@
 package com.eshabakhov.surok.security;
 
 import com.eshabakhov.surok.user.AuthUser;
-import com.eshabakhov.surok.user.Roles;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -17,8 +16,7 @@ import org.springframework.stereotype.Component;
  *
  * <p>At this point {@link YandexOAuth2UserService} has already resolved the
  * principal to an {@link AuthUser}, so this handler applies the same redirect
- * rule as {@link LoginSuccessHandler}: ADMIN goes to /schools,
- * everyone else goes to /schools/{schoolId}.</p>
+ * rule as {@link LoginSuccessHandler}: everyone goes to /schools.</p>
  * Usage example:
  * <pre>
  * // Wired automatically by Spring Security via SecurityConfig.
@@ -44,14 +42,6 @@ public final class OAuthSuccessHandler implements AuthenticationSuccessHandler {
         final HttpServletResponse response,
         final Authentication authentication
     ) throws IOException {
-        final AuthUser user = (AuthUser) authentication.getPrincipal();
-        if (user.roles()
-            .list()
-            .stream()
-            .anyMatch(role -> Roles.RoleEnum.ADMIN.name().equalsIgnoreCase(role.name()))) {
-            response.sendRedirect("/schools");
-        } else {
-            response.sendRedirect(String.format("/schools/%s", user.info().school()));
-        }
+        response.sendRedirect("/schools");
     }
 }

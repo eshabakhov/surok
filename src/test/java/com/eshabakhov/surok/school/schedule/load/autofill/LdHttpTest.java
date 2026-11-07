@@ -94,16 +94,25 @@ import org.testcontainers.junit.jupiter.Testcontainers;
         'OPTIONAL');
         """,
         """
-        INSERT INTO public.user (id, username, password, email, corporate, school_id)
-        VALUES (41, 'директор', 'secret', 'director@example.org', true, 1),
-            (43, 'читатель', 'secret', 'viewer@example.org', true, 1),
-            (47, 'администратор', 'secret', 'admin@example.org', true, 2);
+        INSERT INTO public.user (id, username, password, email, corporate)
+        VALUES (41, 'директор', 'secret', 'director@example.org', true),
+            (43, 'читатель', 'secret', 'viewer@example.org', true),
+            (47, 'администратор', 'secret', 'admin@example.org', true),
+            (49, 'создатель', 'secret', 'maker@example.org', true);
+        """,
+        """
+        INSERT INTO school_user (school_id, user_id) VALUES (1, 41), (1, 43), (1, 49);
+        """,
+        """
+        INSERT INTO school_user_role (school_user_id, role_id)
+        SELECT school_user.id, role.id FROM school_user, role
+        WHERE (school_user.user_id = 41 AND role.name = 'DIRECTOR')
+            OR (school_user.user_id = 43 AND role.name = 'VIEWER');
         """,
         """
         INSERT INTO user_role (user_id, role_id)
-        SELECT 41, id FROM role WHERE name = 'DIRECTOR'
-        UNION ALL SELECT 43, id FROM role WHERE name = 'VIEWER'
-        UNION ALL SELECT 47, id FROM role WHERE name = 'ADMIN';
+        SELECT 47, id FROM role WHERE name = 'ADMIN'
+        UNION ALL SELECT 49, id FROM role WHERE name = 'BASIC_MAKER';
         """
     }
 )
@@ -701,7 +710,7 @@ final class LdHttpTest {
     void deniesUsersWithoutAnAssignedSchool(
         @Autowired final MockMvc mvc, @Autowired final DSLContext ctx
     ) throws Exception {
-        ctx.execute("UPDATE public.user SET school_id = NULL WHERE id = 41");
+        ctx.execute("DELETE FROM school_user WHERE user_id = 41");
         MatcherAssert.assertThat(
             "A user without a school did not receive an access denial",
             mvc.perform(
@@ -829,6 +838,52 @@ final class LdHttpTest {
                 Matchers.not(Matchers.containsString("id=\"draft-save\"")),
                 Matchers.not(Matchers.containsString("id=\"draft-apply\""))
             )
+        );
+    }
+
+    @Test
+    void rendersReadOnlyPlanningForMakersWithoutSchoolRole(
+        @Autowired final MockMvc mvc, @Autowired final DSLContext ctx
+    ) throws Exception {
+        MatcherAssert.assertThat(
+            "A maker without a school role received draft editing controls",
+            mvc.perform(
+                MockMvcRequestBuilders.get("/schools/1/schedules/101/loads/draft").with(
+                    SecurityMockMvcRequestPostProcessors.user(
+                        new AuthUser(new UrPostgres(ctx, 49L))
+                    )
+                ).accept("text/html")
+            ).andReturn().getResponse().getContentAsString(),
+            Matchers.allOf(
+                Matchers.containsString("data-editable=\"false\""),
+                Matchers.not(Matchers.containsString("id=\"draft-save\"")),
+                Matchers.not(Matchers.containsString("id=\"draft-apply\""))
+            )
+        );
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"PUT,", "PUT,/curriculum", "POST,/application"})
+    void deniesDraftChangesForMakersWithoutSchoolRole(
+        final String route, @Autowired final MockMvc mvc, @Autowired final DSLContext ctx
+    ) throws Exception {
+        final String[] parts = route.split(",", 2);
+        MatcherAssert.assertThat(
+            "A maker without a school role changed the draft",
+            mvc.perform(
+                MockMvcRequestBuilders.request(
+                    HttpMethod.valueOf(parts[0]),
+                    String.format("/schools/1/schedules/101/loads/draft%s", parts[1])
+                ).with(
+                    SecurityMockMvcRequestPostProcessors.user(
+                        new AuthUser(new UrPostgres(ctx, 49L))
+                    )
+                ).with(SecurityMockMvcRequestPostProcessors.csrf())
+                    .accept("application/vnd.surok.load-draft.v1+json")
+                    .contentType("application/vnd.surok.load-draft.v1+json")
+                    .content("{\"curriculum\":{\"id\":61},\"additions\":[]}")
+            ).andReturn().getResponse().getStatus(),
+            Matchers.is(403)
         );
     }
 
