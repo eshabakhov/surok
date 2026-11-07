@@ -149,6 +149,39 @@ final class SlsHttpTest {
         );
     }
 
+    /** Verifies the edit page connects the form to the school resource and its script. */
+    @Test
+    void rendersTheEditFormWithTheCanonicalAction() throws Exception {
+        this.prepare();
+        this.mvc.perform(
+            MockMvcRequestBuilders.get("/schools/3/edit").accept(MediaType.TEXT_HTML).with(
+                SecurityMockMvcRequestPostProcessors.user(this.principal(Roles.RoleEnum.ADMIN))
+            )
+        ).andExpect(
+            MockMvcResultMatchers.content().string(
+                Matchers.allOf(
+                    Matchers.containsString("action=\"/schools/3\""),
+                    Matchers.containsString("id=\"school-edit-form\""),
+                    Matchers.containsString("src=\"/js/school/school-edit.js\"")
+                )
+            )
+        );
+    }
+
+    /** Verifies the old form action cannot update an existing school. */
+    @Test
+    void rejectsTheLegacySchoolUpdateRoute() throws Exception {
+        this.prepare();
+        this.mvc.perform(
+            MockMvcRequestBuilders.post("/schools/3/edit")
+                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                .param("name", "Чужое название").accept(MediaType.TEXT_HTML)
+                .with(SecurityMockMvcRequestPostProcessors.csrf()).with(
+                    SecurityMockMvcRequestPostProcessors.user(this.principal(Roles.RoleEnum.ADMIN))
+                )
+        ).andExpect(MockMvcResultMatchers.status().isMethodNotAllowed());
+    }
+
     /** Verifies the filtered list can be refreshed without the surrounding page. */
     @Test
     void rendersOnlyTheFilteredResultsWhenAFragmentIsRequested() throws Exception {

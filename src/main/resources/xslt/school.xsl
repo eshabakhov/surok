@@ -10,9 +10,16 @@
         <xsl:otherwise><xsl:value-of select="/surok/schools/school/name"/></xsl:otherwise>
     </xsl:choose></xsl:template>
     <xsl:template name="styles"><link rel="stylesheet" href="/css/school/school.css"/></xsl:template>
-    <xsl:template name="scripts"><xsl:if test="$view = 'details' and /surok/user/admin = 'true'">
-        <script type="module" src="/js/school/school.js"></script>
-    </xsl:if></xsl:template>
+    <xsl:template name="scripts">
+        <xsl:choose>
+            <xsl:when test="$view = 'edit'">
+                <script type="module" src="/js/school/school-edit.js"></script>
+            </xsl:when>
+            <xsl:when test="$view = 'details' and /surok/user/admin = 'true'">
+                <script type="module" src="/js/school/school.js"></script>
+            </xsl:when>
+        </xsl:choose>
+    </xsl:template>
     <xsl:template name="content"><xsl:choose>
         <xsl:when test="$view = 'edit'"><xsl:call-template name="school-form">
             <xsl:with-param name="editing" select="true()"/>

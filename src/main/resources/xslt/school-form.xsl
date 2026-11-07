@@ -7,16 +7,25 @@
             <xsl:choose><xsl:when test="$editing">Редактировать школу</xsl:when>
                 <xsl:otherwise>Новая школа</xsl:otherwise></xsl:choose>
         </h1></div></div>
-        <xsl:if test="/surok/error = 'true'">
-            <div class="error-message">Название не может быть пустым</div>
+        <xsl:if test="$editing or /surok/error = 'true'">
+            <div id="school-form-error" class="error-message" role="alert">
+                <xsl:choose>
+                    <xsl:when test="/surok/error = 'true'">Название не может быть пустым</xsl:when>
+                    <xsl:otherwise><xsl:attribute name="hidden">hidden</xsl:attribute></xsl:otherwise>
+                </xsl:choose>
+            </div>
+        </xsl:if>
+        <xsl:if test="$editing">
+            <noscript><p class="error-message">Включите JavaScript, чтобы сохранить изменения.</p></noscript>
         </xsl:if>
         <div class="school-form-wrap">
             <form class="school-form" method="post">
+                <xsl:if test="$editing"><xsl:attribute name="id">school-edit-form</xsl:attribute></xsl:if>
                 <xsl:attribute name="action"><xsl:choose>
-                    <xsl:when test="$editing"><xsl:value-of select="concat('/schools/', $selected/id, '/edit')"/></xsl:when>
+                    <xsl:when test="$editing"><xsl:value-of select="concat('/schools/', $selected/id)"/></xsl:when>
                     <xsl:otherwise>/schools</xsl:otherwise>
                 </xsl:choose></xsl:attribute>
-                <xsl:call-template name="csrf-input"/>
+                <xsl:if test="not($editing)"><xsl:call-template name="csrf-input"/></xsl:if>
                 <label class="school-form-field" for="school-name">Название школы
                     <input id="school-name" name="name" type="text" autofocus="autofocus"
                            required="required" placeholder="Например: Школа №42" value="{$selected/name}"/>
@@ -28,9 +37,14 @@
                             <xsl:otherwise>/schools</xsl:otherwise>
                         </xsl:choose></xsl:attribute>Отмена
                     </a>
-                    <button class="btn-primary" type="submit"><xsl:choose>
-                        <xsl:when test="$editing">Сохранить</xsl:when><xsl:otherwise>Создать</xsl:otherwise>
-                    </xsl:choose></button>
+                    <button class="btn-primary" type="submit">
+                        <xsl:choose>
+                            <xsl:when test="$editing">
+                                <xsl:attribute name="disabled">disabled</xsl:attribute>Сохранить
+                            </xsl:when>
+                            <xsl:otherwise>Создать</xsl:otherwise>
+                        </xsl:choose>
+                    </button>
                 </div>
             </form>
         </div>
