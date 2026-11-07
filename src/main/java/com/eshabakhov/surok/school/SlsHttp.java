@@ -24,7 +24,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.servlet.http.HttpServletRequest;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import org.jooq.DSLContext;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -56,6 +58,15 @@ import org.springframework.web.server.ResponseStatusException;
 @RequestMapping("/schools")
 public class SlsHttp {
 
+    /** JSON representation of the school collection. */
+    private static final String JSON = "application/vnd.surok.schools.v1+json";
+
+    /** XML representation of the school collection. */
+    private static final String XML = "application/vnd.surok.schools.v1+xml";
+
+    /** HTML representation containing only the results. */
+    private static final String FRAGMENT = "text/vnd.surok.schools-fragment+html";
+
     /** Database context. */
     private final DSLContext ctx;
 
@@ -69,7 +80,7 @@ public class SlsHttp {
     }
 
     /**
-     * Prints a collection, a fragment or a creation form.
+     * Prints the collection or its results fragment.
      *
      * @param filters Applied filters
      * @param page Requested page
@@ -79,44 +90,63 @@ public class SlsHttp {
      * @return Negotiated representation
      * @throws Exception If selection or printing fails
      */
-    @GetMapping(
-        value = {"", "/", "/fragment", "/create"},
-        produces = {MediaType.TEXT_HTML_VALUE,
-            "application/vnd.surok.schools.v1+json", "application/vnd.surok.schools.v1+xml"}
-    )
+    @GetMapping(produces = {MediaType.TEXT_HTML_VALUE, SlsHttp.JSON, SlsHttp.XML, SlsHttp.FRAGMENT})
     public ResponseEntity<?> selection(
         final Filters filters, final Page page, final Sorts sorts,
         final HttpServletRequest request,
         @AuthenticationPrincipal final User user
     ) throws Exception {
-        final MediaType type = new AcHttp(request, "schools.v1").type();
+        final MediaType type = new AcHttp(
+            request,
+            List.of(
+                MediaType.TEXT_HTML,
+                MediaType.valueOf(SlsHttp.JSON),
+                MediaType.valueOf(SlsHttp.XML),
+                MediaType.valueOf(SlsHttp.FRAGMENT)
+            )
+        ).type();
         final Schools selected = new SlsAuthorized(
             new SlsPostgres(this.ctx), user
         ).selection(filters, page, sorts);
-        return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8)).body(
-            switch (type.toString()) {
-                case MediaType.TEXT_HTML_VALUE -> {
-                    final String view;
-                    if (request.getRequestURI().endsWith("/fragment")) {
-                        view = "list-fragment";
-                    } else if (request.getRequestURI().endsWith("/create")) {
-                        view = "create";
-                    } else {
-                        view = "list";
+        return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8))
+            .varyBy(HttpHeaders.ACCEPT).body(
+                switch (type.toString()) {
+                    case MediaType.TEXT_HTML_VALUE, SlsHttp.FRAGMENT -> {
+                        final String view;
+                        if (MediaType.TEXT_HTML.equals(type)) {
+                            view = "list";
+                        } else {
+                            view = "list-fragment";
+                        }
+                        yield this.web(
+                            request, "xslt/schools.xsl", view,
+                            new SlsWeb(selected, filters, sorts)
+                        ).print();
                     }
-                    yield this.web(
-                        request, "xslt/schools.xsl", view,
-                        new SlsWeb(selected, filters, sorts)
-                    ).print();
+                    case SlsHttp.JSON -> selected.print(new MdJson()).print();
+                    case SlsHttp.XML -> selected.print(new MdXml("schools")).print();
+                    case null, default -> throw new ResponseStatusException(
+                        HttpStatus.NOT_ACCEPTABLE, "Unsupported Accept header"
+                    );
                 }
-                case "application/vnd.surok.schools.v1+json" ->
-                    selected.print(new MdJson()).print();
-                case "application/vnd.surok.schools.v1+xml" ->
-                    selected.print(new MdXml("schools")).print();
-                case null, default -> throw new ResponseStatusException(
-                    HttpStatus.NOT_ACCEPTABLE, "Unsupported Accept header"
-                );
-            }
+            );
+    }
+
+    /**
+     * Prints the browser form for creating a school.
+     *
+     * @param request HTTP request
+     * @return HTML creation form
+     * @throws Exception If rendering fails
+     */
+    @GetMapping(value = "/create", produces = MediaType.TEXT_HTML_VALUE)
+    public ResponseEntity<String> form(final HttpServletRequest request) throws Exception {
+        return ResponseEntity.ok().contentType(
+            new MediaType(MediaType.TEXT_HTML, StandardCharsets.UTF_8)
+        ).body(
+            this.web(
+                request, "xslt/schools.xsl", "create", new SlsBrief(new SlsPostgres(this.ctx))
+            ).print()
         );
     }
 

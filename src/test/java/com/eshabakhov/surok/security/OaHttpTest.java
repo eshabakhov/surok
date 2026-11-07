@@ -209,6 +209,39 @@ final class OaHttpTest {
     }
 
     /**
+     * Documents the page and fragment as distinct media types of a single list operation.
+     *
+     * @param mvc HTTP client
+     * @throws Exception If the description cannot be read
+     */
+    @Test
+    void publishesOneSchoolListOperation(@Autowired final MockMvc mvc) throws Exception {
+        final JsonNode paths = Json.mapper().readTree(
+            mvc.perform(
+                MockMvcRequestBuilders.get("/api-docs").with(
+                    SecurityMockMvcRequestPostProcessors.user("администратор").roles("ADMIN")
+                )
+            ).andReturn().getResponse().getContentAsByteArray()
+        ).path("paths");
+        final JsonNode list = paths.path("/schools").path("get");
+        final JsonNode content = list.path("responses").path("200").path("content");
+        final JsonNode form = paths.path("/schools/create").path("get")
+            .path("responses").path("200").path("content");
+        MatcherAssert.assertThat(
+            "Swagger listed a legacy fragment selector or omitted a school HTML representation",
+            List.of(
+                list.path("parameters").findValuesAsText("name").contains("fragment"),
+                paths.path("/schools/").has("get"),
+                paths.has("/schools/fragment"),
+                form.has("text/html") && form.size() == 1,
+                content.has("text/html"),
+                content.path("text/vnd.surok.schools-fragment+html").path("examples").has("example")
+            ),
+            Matchers.contains(false, false, false, true, true, true)
+        );
+    }
+
+    /**
      * Keeps Swagger pointed at the filtered description after generation is disabled.
      *
      * @param mvc HTTP client
