@@ -278,6 +278,7 @@ paths:
       tags:
         - Teachers
       summary: Update teacher
+      description: Update the teacher with versioned JSON. The browser edit form uses this operation.
       operationId: revise_1
       parameters:
         - name: school
@@ -332,6 +333,31 @@ paths:
               example: /schools/12/teachers/31
         "400":
           $ref: "#/components/responses/InvalidRequest"
+        "409":
+          description: An active teacher in this school already has the requested name.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                status: 409
+                title: Конфликт данных
+                message: Teacher `Анна Петрова` already exists
+                timestamp: "2026-11-07T10:00:00Z"
+            application/xml:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example: |-
+                <error>
+                  <status>409</status>
+                  <title>Конфликт данных</title>
+                  <message>Teacher `Анна Петрова` already exists</message>
+                  <timestamp>2026-11-07T10:00:00Z</timestamp>
+                </error>
+            text/html:
+              schema:
+                $ref: "#/components/schemas/HtmlPage"
+              example: <main><h1>Конфликт данных</h1></main>
       requestBody:
         description: Replacement fields for the existing resource.
         required: true
@@ -2687,74 +2713,6 @@ paths:
               examples:
                 example:
                   $ref: "#/components/examples/HtmlPageTeacherEditHtml"
-    post:
-      tags:
-        - Teachers
-      summary: Update teacher
-      operationId: revise_10
-      parameters:
-        - name: school
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
-            description: School identifier.
-            minimum: 1
-          description: School identifier.
-          example: 12
-        - name: teacher
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
-            description: Teacher identifier.
-            minimum: 1
-          description: Teacher identifier.
-          example: 31
-      responses:
-        "200":
-          description: The resource was updated.
-          headers:
-            Location:
-              description: Relative URL of the resource or page to open.
-              schema:
-                type: string
-              example: /schools/12/teachers/31
-          content:
-            application/vnd.surok.teacher-v1+json:
-              schema:
-                $ref: "#/components/schemas/Teacher"
-              examples:
-                example:
-                  $ref: "#/components/examples/TeacherJson"
-            application/vnd.surok.teacher-v1+xml:
-              schema:
-                $ref: "#/components/schemas/Teacher"
-              examples:
-                example:
-                  $ref: "#/components/examples/TeacherXml"
-        "302":
-          description: Browser requests are redirected to the resource page. No body.
-          headers:
-            Location:
-              description: Relative URL of the resource or page to open.
-              schema:
-                type: string
-              example: /schools/12/teachers/31
-        "400":
-          $ref: "#/components/responses/InvalidRequest"
-      requestBody:
-        description: Replacement fields for the existing resource.
-        required: true
-        content:
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: "#/components/schemas/TeacherForm"
-            examples:
-              example:
-                $ref: "#/components/examples/TeacherForm"
   /schools/{school}/teachers/create:
     get:
       tags:
@@ -10728,7 +10686,7 @@ components:
       description: Rendered HTML document or fragment. The example shows the relevant part of the response.
     TeacherForm:
       type: object
-      description: Browser form. Fields used to create or update a teacher.
+      description: Browser form used to create a teacher.
       required:
         - name
       properties:
@@ -11260,10 +11218,14 @@ components:
         uid: 84
         name: VIEWER
     HtmlPageTeacherEditHtml:
-      summary: Rendered HTML document or fragment. The example shows the relevant part of the response.
-      value: <form method="post"><input name="name" value="Анна Петрова"></form>
+      summary: Edit form that submits versioned JSON with PUT through JavaScript.
+      value: |-
+        <form id="teacher-edit-form" action="/schools/12/teachers/31" method="post">
+          <input id="teacher-name" name="name" value="Анна Петрова">
+          <button type="submit" disabled>Сохранить</button>
+        </form>
     TeacherForm:
-      summary: Browser form. Fields used to create or update a teacher.
+      summary: Browser form used to create a teacher.
       value:
         name: Анна Петрова
     TeacherListJson:
