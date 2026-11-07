@@ -31,9 +31,11 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 import org.jooq.DSLContext;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -64,6 +66,15 @@ import org.springframework.web.server.ResponseStatusException;
 @RequestMapping("/schools/{school}/teachers")
 public class ThsHttp {
 
+    /** JSON representation of the teacher collection. */
+    private static final String JSON = "application/vnd.surok.teachers.v1+json";
+
+    /** XML representation of the teacher collection. */
+    private static final String XML = "application/vnd.surok.teachers.v1+xml";
+
+    /** HTML representation containing only the teacher results. */
+    private static final String FRAGMENT = "text/vnd.surok.teachers-fragment+html";
+
     /** Database context. */
     private final DSLContext ctx;
 
@@ -77,7 +88,7 @@ public class ThsHttp {
     }
 
     /**
-     * Shows a collection, its fragment or a creation form.
+     * Shows a collection or its results fragment.
      *
      * @param school School identifier
      * @param filters Filtering
@@ -88,14 +99,7 @@ public class ThsHttp {
      * @return Negotiated representation
      * @throws Exception If lookup or printing fails
      */
-    @GetMapping(
-        value = {"", "/", "/fragment", "/create"},
-        produces = {
-            MediaType.TEXT_HTML_VALUE,
-            "application/vnd.surok.teachers.v1+json",
-            "application/vnd.surok.teachers.v1+xml"
-        }
-    )
+    @GetMapping(produces = {MediaType.TEXT_HTML_VALUE, ThsHttp.JSON, ThsHttp.XML, ThsHttp.FRAGMENT})
     public ResponseEntity<?> selection(
         @PathVariable final long school,
         final Filters filters,
@@ -104,7 +108,15 @@ public class ThsHttp {
         final HttpServletRequest request,
         @AuthenticationPrincipal final User actor
     ) throws Exception {
-        final MediaType type = new AcHttp(request, "teachers.v1").type();
+        final MediaType type = new AcHttp(
+            request,
+            List.of(
+                MediaType.TEXT_HTML,
+                MediaType.valueOf(ThsHttp.JSON),
+                MediaType.valueOf(ThsHttp.XML),
+                MediaType.valueOf(ThsHttp.FRAGMENT)
+            )
+        ).type();
         final School sch = new SlsAuthorized(new SlsPostgres(this.ctx), actor).school(school);
         final Set<Filter> requested = new LinkedHashSet<>(filters.filters());
         requested.addAll(
@@ -116,29 +128,50 @@ public class ThsHttp {
         final Teachers selected = sch.teachers().selection(
             applied, page, sorts
         );
-        return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8)).body(
-            switch (type.toString()) {
-                case MediaType.TEXT_HTML_VALUE -> {
-                    final String view;
-                    if (request.getRequestURI().endsWith("/fragment")) {
-                        view = "list-fragment";
-                    } else if (request.getRequestURI().endsWith("/create")) {
-                        view = "create";
-                    } else {
-                        view = "list";
+        return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8))
+            .varyBy(HttpHeaders.ACCEPT).body(
+                switch (type.toString()) {
+                    case MediaType.TEXT_HTML_VALUE, ThsHttp.FRAGMENT -> {
+                        final String view;
+                        if (MediaType.TEXT_HTML.equals(type)) {
+                            view = "list";
+                        } else {
+                            view = "list-fragment";
+                        }
+                        yield this.web(request, sch, view).with(
+                            "teachers", new ThsWeb(selected, applied, sorts)
+                        ).print();
                     }
-                    yield this.web(request, sch, view).with(
-                        "teachers", new ThsWeb(selected, applied, sorts)
-                    ).print();
+                    case ThsHttp.JSON -> selected.print(new MdJson()).print();
+                    case ThsHttp.XML -> selected.print(new MdXml("teachers")).print();
+                    case null, default -> throw new ResponseStatusException(
+                        HttpStatus.NOT_ACCEPTABLE, "Unsupported Accept header"
+                    );
                 }
-                case "application/vnd.surok.teachers.v1+json" ->
-                    selected.print(new MdJson()).print();
-                case "application/vnd.surok.teachers.v1+xml" ->
-                    selected.print(new MdXml("teachers")).print();
-                case null, default -> throw new ResponseStatusException(
-                    HttpStatus.NOT_ACCEPTABLE, "Unsupported Accept header"
-                );
-            }
+            );
+    }
+
+    /**
+     * Shows the browser form for creating a teacher.
+     *
+     * @param school School identifier
+     * @param request HTTP request
+     * @param actor Acting user
+     * @return HTML creation form
+     * @throws Exception If lookup or printing fails
+     */
+    @GetMapping(value = "/create", produces = MediaType.TEXT_HTML_VALUE)
+    public ResponseEntity<String> form(
+        @PathVariable final long school, final HttpServletRequest request,
+        @AuthenticationPrincipal final User actor
+    ) throws Exception {
+        return ResponseEntity.ok().contentType(
+            new MediaType(MediaType.TEXT_HTML, StandardCharsets.UTF_8)
+        ).body(
+            this.web(
+                request, new SlsAuthorized(new SlsPostgres(this.ctx), actor).school(school),
+                "create"
+            ).print()
         );
     }
 
@@ -205,7 +238,6 @@ public class ThsHttp {
      * @throws Exception If creation fails
      */
     @PostMapping(
-        value = "/create",
         consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE,
         produces = {
             MediaType.TEXT_HTML_VALUE,
@@ -222,13 +254,7 @@ public class ThsHttp {
         final MediaType type = new AcHttp(request, "teacher-v1").type();
         ResponseEntity<?> response;
         try {
-            response = ThsHttp.result(
-                type,
-                new SlsAuthorized(new SlsPostgres(this.ctx), actor).school(school).teachers()
-                    .create(new ThInputHttp(parameters)), HttpStatus.CREATED,
-                String.format("/schools/%d/teachers", school),
-                String.format("/schools/%d/teachers", school)
-            );
+            response = this.create(type, school, new ThInputHttp(parameters), actor);
         } catch (final TeacherInputException | TeacherAlreadyExistsException exception) {
             response = ThsHttp.rejected(type, request, exception);
         }
@@ -246,7 +272,6 @@ public class ThsHttp {
      * @throws Exception If creation fails
      */
     @PostMapping(
-        value = {"", "/", "/create"},
         consumes = "application/vnd.surok.teacher-v1+json",
         produces = {
             MediaType.TEXT_HTML_VALUE,
@@ -260,12 +285,8 @@ public class ThsHttp {
         final HttpServletRequest request,
         @AuthenticationPrincipal final User actor
     ) throws Exception {
-        return ThsHttp.result(
-            new AcHttp(request, "teacher-v1").type(),
-            new SlsAuthorized(new SlsPostgres(this.ctx), actor).school(school).teachers()
-                .create(new ThInputHttp(json)), HttpStatus.CREATED,
-            String.format("/schools/%d/teachers", school),
-            String.format("/schools/%d/teachers", school)
+        return this.create(
+            new AcHttp(request, "teacher-v1").type(), school, new ThInputHttp(json), actor
         );
     }
 
@@ -326,6 +347,18 @@ public class ThsHttp {
         return ResponseEntity.noContent().build();
     }
 
+    private ResponseEntity<?> create(
+        final MediaType type, final long school, final TeacherInput input, final User actor
+    ) throws Exception {
+        final String base = String.format("/schools/%d/teachers", school);
+        return ThsHttp.result(
+            type,
+            new SlsAuthorized(new SlsPostgres(this.ctx), actor).school(school).teachers()
+                .create(input),
+            HttpStatus.CREATED, base, base
+        );
+    }
+
     private static ResponseEntity<?> result(
         final MediaType type,
         final Teacher selected,
@@ -365,7 +398,7 @@ public class ThsHttp {
             error = "duplicate";
         }
         return ResponseEntity.status(HttpStatus.FOUND).location(
-            URI.create(String.format("%s?error=%s", request.getRequestURI(), error))
+            URI.create(String.format("%s/create?error=%s", request.getRequestURI(), error))
         ).build();
     }
 
