@@ -239,6 +239,45 @@ final class OaHttpTest {
     }
 
     /**
+     * Documents canonical collection operations and a separate HTML creation form.
+     *
+     * @param mvc HTTP client
+     * @throws Exception If the description cannot be read
+     */
+    @Test
+    void publishesCanonicalTeacherCollectionOperations(@Autowired final MockMvc mvc)
+        throws Exception {
+        final JsonNode paths = Json.mapper().readTree(
+            mvc.perform(
+                MockMvcRequestBuilders.get("/api-docs").with(
+                    SecurityMockMvcRequestPostProcessors.user("администратор").roles("ADMIN")
+                )
+            ).andReturn().getResponse().getContentAsByteArray()
+        ).path("paths");
+        final String path = "/schools/{school}/teachers";
+        final JsonNode collection = paths.path(path);
+        final JsonNode listing = collection.path("get").path("responses").path("200")
+            .path("content");
+        final JsonNode creation = collection.path("post").path("requestBody").path("content");
+        final JsonNode form = paths.path(String.format("%s/create", path));
+        final JsonNode content = form.path("get").path("responses").path("200").path("content");
+        MatcherAssert.assertThat(
+            "Swagger lost a teacher representation or exposed a collection alias",
+            List.of(
+                listing.has("text/html"),
+                listing.has("text/vnd.surok.teachers-fragment+html"),
+                creation.has("application/vnd.surok.teacher-v1+json"),
+                creation.has("application/x-www-form-urlencoded"),
+                content.has("text/html") && content.size() == 1,
+                form.has("post"),
+                paths.has(String.format("%s/", path)),
+                paths.has(String.format("%s/fragment", path))
+            ),
+            Matchers.contains(true, true, true, true, true, false, false, false)
+        );
+    }
+
+    /**
      * Documents one teacher update and keeps the separate edit page.
      *
      * @param mvc HTTP client

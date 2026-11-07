@@ -19,7 +19,9 @@ export const collection = options => {
     const search = $(options.search);
     if (search.length) {
         const path = window.location.pathname.replace(/\/+$/, '');
-        const results = fragment(options.results, `${path}/fragment`);
+        const results = options.accept
+            ? fragment(options.results, path, { Accept: options.accept })
+            : fragment(options.results, `${path}/fragment`);
         const shown = remembered(results, path);
         search.val(name(query(window.location.search)));
 
