@@ -2717,7 +2717,7 @@ paths:
     get:
       tags:
         - Teachers
-      summary: List teachers
+      summary: Open the teacher creation form
       operationId: selection
       parameters:
         - name: school
@@ -2730,279 +2730,22 @@ paths:
             minimum: 1
           description: School identifier.
           example: 12
-        - name: filter
-          in: query
-          description: "Repeat to combine filters. Each value uses field:value. Supported fields: name and name_ct."
-          style: form
-          explode: true
-          schema:
-            type: array
-            items:
-              type: string
-          example:
-            - name_ct:А
-        - name: limit
-          in: query
-          description: Maximum number of entries per page. Defaults to 15.
-          schema:
-            type: integer
-            format: int32
-            description: Page size.
-            minimum: 1
-            default: 15
-          example: 15
-        - name: offset
-          in: query
-          description: One-based page number. Defaults to 1.
-          schema:
-            type: integer
-            format: int32
-            description: Page number.
-            minimum: 1
-            default: 1
-          example: 1
-        - name: sort
-          in: query
-          description: Repeat for multiple sort keys. Use field:ASC or field:DESC.
-          style: form
-          explode: true
-          schema:
-            type: array
-            items:
-              type: string
-          example:
-            - name:ASC
       responses:
         "200":
-          description: Page of matching records.
+          description: HTML page with the teacher creation form.
           content:
-            application/vnd.surok.teachers.v1+json:
-              schema:
-                $ref: "#/components/schemas/TeacherList"
-              examples:
-                example:
-                  $ref: "#/components/examples/TeacherListJson"
-            application/vnd.surok.teachers.v1+xml:
-              schema:
-                $ref: "#/components/schemas/TeacherListXml"
-              examples:
-                example:
-                  $ref: "#/components/examples/TeacherListXml"
             text/html:
               schema:
                 $ref: "#/components/schemas/HtmlPage"
               examples:
                 example:
                   $ref: "#/components/examples/HtmlPageTeacherCreateHtml"
-      description: For HTML, render the creation form; data formats return the collection.
-    post:
-      tags:
-        - Teachers
-      summary: Create teacher
-      operationId: create
-      parameters:
-        - name: school
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
-            description: School identifier.
-            minimum: 1
-          description: School identifier.
-          example: 12
-      responses:
-        "201":
-          description: The resource was created.
-          headers:
-            Location:
-              description: Relative URL of the resource or page to open.
-              schema:
-                type: string
-              example: /schools/12/teachers/31
-          content:
-            application/vnd.surok.teacher-v1+json:
-              schema:
-                $ref: "#/components/schemas/Teacher"
-              examples:
-                example:
-                  $ref: "#/components/examples/TeacherJson"
-            application/vnd.surok.teacher-v1+xml:
-              schema:
-                $ref: "#/components/schemas/Teacher"
-              examples:
-                example:
-                  $ref: "#/components/examples/TeacherXml"
-        "302":
-          description: Browser requests are redirected to the resource page. No body.
-          headers:
-            Location:
-              description: Relative URL of the resource or page to open.
-              schema:
-                type: string
-              example: /schools/12/teachers
-        "400":
-          $ref: "#/components/responses/InvalidRequest"
-      requestBody:
-        description: Fields for the new resource.
-        required: true
-        content:
-          application/vnd.surok.teacher-v1+json:
-            schema:
-              $ref: "#/components/schemas/TeacherInput"
-            examples:
-              example:
-                $ref: "#/components/examples/TeacherInputJson"
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: "#/components/schemas/TeacherForm"
-            examples:
-              example:
-                $ref: "#/components/examples/TeacherForm"
-  /schools/{school}/teachers/:
-    get:
-      tags:
-        - Teachers
-      summary: List teachers
-      operationId: selection_1
-      parameters:
-        - name: school
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
-            description: School identifier.
-            minimum: 1
-          description: School identifier.
-          example: 12
-        - name: filter
-          in: query
-          description: "Repeat to combine filters. Each value uses field:value. Supported fields: name and name_ct."
-          style: form
-          explode: true
-          schema:
-            type: array
-            items:
-              type: string
-          example:
-            - name_ct:А
-        - name: limit
-          in: query
-          description: Maximum number of entries per page. Defaults to 15.
-          schema:
-            type: integer
-            format: int32
-            description: Page size.
-            minimum: 1
-            default: 15
-          example: 15
-        - name: offset
-          in: query
-          description: One-based page number. Defaults to 1.
-          schema:
-            type: integer
-            format: int32
-            description: Page number.
-            minimum: 1
-            default: 1
-          example: 1
-        - name: sort
-          in: query
-          description: Repeat for multiple sort keys. Use field:ASC or field:DESC.
-          style: form
-          explode: true
-          schema:
-            type: array
-            items:
-              type: string
-          example:
-            - name:ASC
-      responses:
-        "200":
-          description: Page of matching records.
-          content:
-            application/vnd.surok.teachers.v1+json:
-              schema:
-                $ref: "#/components/schemas/TeacherList"
-              examples:
-                example:
-                  $ref: "#/components/examples/TeacherListJson"
-            application/vnd.surok.teachers.v1+xml:
-              schema:
-                $ref: "#/components/schemas/TeacherListXml"
-              examples:
-                example:
-                  $ref: "#/components/examples/TeacherListXml"
-            text/html:
-              schema:
-                $ref: "#/components/schemas/HtmlPage"
-              examples:
-                example:
-                  $ref: "#/components/examples/HtmlPageTeacherListHtml"
-    post:
-      tags:
-        - Teachers
-      summary: Create teacher
-      operationId: create_1
-      parameters:
-        - name: school
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
-            description: School identifier.
-            minimum: 1
-          description: School identifier.
-          example: 12
-      responses:
-        "201":
-          description: The resource was created.
-          headers:
-            Location:
-              description: Relative URL of the resource or page to open.
-              schema:
-                type: string
-              example: /schools/12/teachers/31
-          content:
-            application/vnd.surok.teacher-v1+json:
-              schema:
-                $ref: "#/components/schemas/Teacher"
-              examples:
-                example:
-                  $ref: "#/components/examples/TeacherJson"
-            application/vnd.surok.teacher-v1+xml:
-              schema:
-                $ref: "#/components/schemas/Teacher"
-              examples:
-                example:
-                  $ref: "#/components/examples/TeacherXml"
-        "302":
-          description: Browser requests are redirected to the resource page. No body.
-          headers:
-            Location:
-              description: Relative URL of the resource or page to open.
-              schema:
-                type: string
-              example: /schools/12/teachers
-        "400":
-          $ref: "#/components/responses/InvalidRequest"
-      requestBody:
-        description: Fields for the new resource.
-        required: true
-        content:
-          application/vnd.surok.teacher-v1+json:
-            schema:
-              $ref: "#/components/schemas/TeacherInput"
-            examples:
-              example:
-                $ref: "#/components/examples/TeacherInputJson"
   /schools/{school}/teachers:
     get:
       tags:
         - Teachers
       summary: List teachers
+      description: Select a full HTML page, an HTML results fragment, JSON, or XML with the Accept header.
       operationId: selection_2
       parameters:
         - name: school
@@ -3060,6 +2803,12 @@ paths:
       responses:
         "200":
           description: Page of matching records.
+          headers:
+            Vary:
+              description: The response representation depends on the Accept request header.
+              schema:
+                type: string
+              example: Accept
           content:
             application/vnd.surok.teachers.v1+json:
               schema:
@@ -3079,6 +2828,12 @@ paths:
               examples:
                 example:
                   $ref: "#/components/examples/HtmlPageTeacherListHtml"
+            text/vnd.surok.teachers-fragment+html:
+              schema:
+                $ref: "#/components/schemas/HtmlPage"
+              examples:
+                example:
+                  $ref: "#/components/examples/HtmlPageTeacherFragmentHtml"
     post:
       tags:
         - Teachers
@@ -3128,7 +2883,7 @@ paths:
         "400":
           $ref: "#/components/responses/InvalidRequest"
       requestBody:
-        description: Fields for the new resource.
+        description: Fields for the new teacher. Send versioned JSON or a URL-encoded form.
         required: true
         content:
           application/vnd.surok.teacher-v1+json:
@@ -3137,6 +2892,12 @@ paths:
             examples:
               example:
                 $ref: "#/components/examples/TeacherInputJson"
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/TeacherForm"
+            examples:
+              example:
+                $ref: "#/components/examples/TeacherForm"
   /schools/{school}/schedules/{schedule}/loads/draft/application:
     post:
       tags:
@@ -7410,88 +7171,6 @@ paths:
                   $ref: "#/components/examples/HtmlPageProfileHtml"
       summary: Open account profile
       description: Shows the current account, its memberships and links to timetables.
-  /schools/{school}/teachers/fragment:
-    get:
-      tags:
-        - Teachers
-      summary: List teachers
-      operationId: selection_26
-      parameters:
-        - name: school
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
-            description: School identifier.
-            minimum: 1
-          description: School identifier.
-          example: 12
-        - name: filter
-          in: query
-          description: "Repeat to combine filters. Each value uses field:value. Supported fields: name and name_ct."
-          style: form
-          explode: true
-          schema:
-            type: array
-            items:
-              type: string
-          example:
-            - name_ct:А
-        - name: limit
-          in: query
-          description: Maximum number of entries per page. Defaults to 15.
-          schema:
-            type: integer
-            format: int32
-            description: Page size.
-            minimum: 1
-            default: 15
-          example: 15
-        - name: offset
-          in: query
-          description: One-based page number. Defaults to 1.
-          schema:
-            type: integer
-            format: int32
-            description: Page number.
-            minimum: 1
-            default: 1
-          example: 1
-        - name: sort
-          in: query
-          description: Repeat for multiple sort keys. Use field:ASC or field:DESC.
-          style: form
-          explode: true
-          schema:
-            type: array
-            items:
-              type: string
-          example:
-            - name:ASC
-      responses:
-        "200":
-          description: Page of matching records.
-          content:
-            application/vnd.surok.teachers.v1+json:
-              schema:
-                $ref: "#/components/schemas/TeacherList"
-              examples:
-                example:
-                  $ref: "#/components/examples/TeacherListJson"
-            application/vnd.surok.teachers.v1+xml:
-              schema:
-                $ref: "#/components/schemas/TeacherListXml"
-              examples:
-                example:
-                  $ref: "#/components/examples/TeacherListXml"
-            text/html:
-              schema:
-                $ref: "#/components/schemas/HtmlPage"
-              examples:
-                example:
-                  $ref: "#/components/examples/HtmlPageTeacherFragmentHtml"
-      description: Return a partial HTML view or the negotiated data representation.
   /schools/{school}/schedules/{schedule}/loads/{load}:
     get:
       tags:
@@ -11260,7 +10939,7 @@ components:
         </teachers>
     HtmlPageTeacherCreateHtml:
       summary: Rendered HTML document or fragment. The example shows the relevant part of the response.
-      value: <form method="post"><input name="name" value=""></form>
+      value: <form action="/schools/12/teachers" method="post"><input name="name" value=""></form>
     HtmlPageTeacherListHtml:
       summary: Rendered HTML document or fragment. The example shows the relevant part of the response.
       value: <main><h1>Учителя</h1></main>
@@ -11765,7 +11444,7 @@ components:
       value: <main><h1>Профиль</h1></main>
     HtmlPageTeacherFragmentHtml:
       summary: Rendered HTML document or fragment. The example shows the relevant part of the response.
-      value: <table><tbody><tr><td>Анна Петрова</td></tr></tbody></table>
+      value: <div id="teachers-results"><div class="card-grid" id="teachers-container"></div></div>
     ClassLoadJson:
       summary: Current weekly teaching load of a class in a timetable.
       value:

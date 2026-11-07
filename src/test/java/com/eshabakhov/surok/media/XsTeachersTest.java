@@ -40,7 +40,7 @@ final class XsTeachersTest {
         MatcherAssert.assertThat(
             page.substring(page.indexOf("<main")),
             Matchers.allOf(
-                Matchers.containsString("action=\"/schools/3/teachers/create\""),
+                Matchers.containsString("action=\"/schools/3/teachers\""),
                 Matchers.containsString("value=\"\""),
                 Matchers.containsString("placeholder=\"Например: Иванов Иван Иванович\""),
                 Matchers.not(Matchers.containsString("value=\"Иванов Иван Иванович\""))

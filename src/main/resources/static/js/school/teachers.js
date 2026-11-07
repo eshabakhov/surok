@@ -7,7 +7,8 @@ $(() => {
         results: '#teachers-results',
         pagination: '#teachers-pagination',
         rows: '#teachers-container .teacher-row',
-        sort: '.teachers-sort'
+        sort: '.teachers-sort',
+        accept: 'text/vnd.surok.teachers-fragment+html'
     });
     $(document).on('click', '.btn-delete-row', function () {
         const button = $(this);

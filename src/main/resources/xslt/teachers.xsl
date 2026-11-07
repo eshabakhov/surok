@@ -168,7 +168,7 @@
                 <xsl:attribute name="action">
                     <xsl:choose>
                         <xsl:when test="$view = 'edit'"><xsl:value-of select="concat($base, '/', $selected/id)"/></xsl:when>
-                        <xsl:otherwise><xsl:value-of select="concat($base, '/create')"/></xsl:otherwise>
+                        <xsl:otherwise><xsl:value-of select="$base"/></xsl:otherwise>
                     </xsl:choose>
                 </xsl:attribute>
                 <xsl:if test="$view = 'create'"><xsl:call-template name="csrf-input"/></xsl:if>
