@@ -174,7 +174,7 @@ public class SlsHttp {
      * @return Created representation or redirect
      * @throws Exception If creation fails
      */
-    @PostMapping(value = "/create", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+    @PostMapping(consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     public ResponseEntity<?> create(
         @RequestParam final MultiValueMap<String, String> parameters,
         final HttpServletRequest request,
@@ -193,7 +193,6 @@ public class SlsHttp {
      * @throws Exception If creation fails
      */
     @PostMapping(
-        value = {"", "/", "/create"},
         consumes = {MediaType.APPLICATION_JSON_VALUE, "application/vnd.surok.school-v1+json"}
     )
     public ResponseEntity<?> create(

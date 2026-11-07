@@ -28,6 +28,7 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import org.testcontainers.containers.PostgreSQLContainer;
@@ -133,12 +134,25 @@ final class SlsHttpTest {
         );
     }
 
+    /** Verifies the creation page submits to the school collection. */
+    @Test
+    void rendersTheCreationFormWithTheCanonicalAction() throws Exception {
+        this.prepare();
+        this.mvc.perform(
+            MockMvcRequestBuilders.get("/schools/create").accept(MediaType.TEXT_HTML).with(
+                SecurityMockMvcRequestPostProcessors.user(this.principal(Roles.RoleEnum.ADMIN))
+            )
+        ).andExpect(
+            MockMvcResultMatchers.content().string(Matchers.containsString("action=\"/schools\""))
+        );
+    }
+
     /** Verifies unsupported representations are rejected before database writes. */
     @Test
     void rejectsUnsupportedAcceptBeforeCreatingSchools() throws Exception {
         this.prepare();
         this.mvc.perform(
-            MockMvcRequestBuilders.post("/schools/create")
+            MockMvcRequestBuilders.post("/schools")
             .contentType(MediaType.APPLICATION_FORM_URLENCODED)
             .param("name", "Лишняя").accept("application/pdf")
             .with(SecurityMockMvcRequestPostProcessors.csrf()).with(
@@ -174,13 +188,18 @@ final class SlsHttpTest {
         );
     }
 
-    /** Verifies JSON creation uses validated input and a canonical Location. */
-    @Test
-    void createsVersionedSchoolsFromJson() throws Exception {
+    /**
+     * Verifies JSON creation uses validated input and a canonical Location.
+     *
+     * @param type Supported JSON media type
+     */
+    @ParameterizedTest
+    @ValueSource(strings = {"application/json", "application/vnd.surok.school-v1+json"})
+    void createsVersionedSchoolsFromJson(final String type) throws Exception {
         this.prepare();
         this.mvc.perform(
             MockMvcRequestBuilders.post("/schools")
-            .contentType(MediaType.APPLICATION_JSON)
+            .contentType(type)
             .content("{\"name\":\"  Лицей №42  \"}")
             .accept("application/vnd.surok.school-v1+json")
             .with(SecurityMockMvcRequestPostProcessors.csrf()).with(
@@ -199,7 +218,7 @@ final class SlsHttpTest {
     void redirectsAfterCreatingSchoolsFromForms() throws Exception {
         this.prepare();
         this.mvc.perform(
-            MockMvcRequestBuilders.post("/schools/create")
+            MockMvcRequestBuilders.post("/schools")
             .contentType(MediaType.APPLICATION_FORM_URLENCODED)
             .param("name", "Лицей").accept(MediaType.TEXT_HTML)
             .with(SecurityMockMvcRequestPostProcessors.csrf()).with(
@@ -211,6 +230,33 @@ final class SlsHttpTest {
                 Matchers.matchesPattern("/schools/[0-9]+")
             )
         );
+    }
+
+    /**
+     * Verifies that neither media type can create a school through an old address.
+     *
+     * @param path Legacy creation route
+     * @param type Request media type
+     */
+    @ParameterizedTest
+    @CsvSource({
+        "/schools/create, application/json", "/schools/create, application/x-www-form-urlencoded",
+        "/schools/, application/json", "/schools/, application/x-www-form-urlencoded"
+    })
+    void rejectsLegacySchoolCreationRoutes(final String path, final String type) throws Exception {
+        this.prepare();
+        final MockHttpServletRequestBuilder request =
+            MockMvcRequestBuilders.post(path).contentType(type);
+        if (MediaType.APPLICATION_JSON_VALUE.equals(type)) {
+            request.content("{\"name\":\"Лицей № 56\"}");
+        } else {
+            request.param("name", "Лицей № 56");
+        }
+        this.mvc.perform(
+            request.with(SecurityMockMvcRequestPostProcessors.csrf()).with(
+                SecurityMockMvcRequestPostProcessors.user(this.principal(Roles.RoleEnum.ADMIN))
+            )
+        ).andExpect(MockMvcResultMatchers.status().isMethodNotAllowed());
     }
 
     /** Verifies staff cannot access another school. */

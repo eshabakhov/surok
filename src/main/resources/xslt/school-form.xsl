@@ -14,7 +14,7 @@
             <form class="school-form" method="post">
                 <xsl:attribute name="action"><xsl:choose>
                     <xsl:when test="$editing"><xsl:value-of select="concat('/schools/', $selected/id, '/edit')"/></xsl:when>
-                    <xsl:otherwise>/schools/create</xsl:otherwise>
+                    <xsl:otherwise>/schools</xsl:otherwise>
                 </xsl:choose></xsl:attribute>
                 <xsl:call-template name="csrf-input"/>
                 <label class="school-form-field" for="school-name">Название школы
