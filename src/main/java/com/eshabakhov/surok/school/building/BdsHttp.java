@@ -27,8 +27,6 @@ import com.eshabakhov.surok.school.building.input.BuildingInputException;
 import com.eshabakhov.surok.security.CsToken;
 import com.eshabakhov.surok.user.UrBrief;
 import com.fasterxml.jackson.databind.JsonNode;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -64,7 +62,6 @@ import org.springframework.web.server.ResponseStatusException;
  */
 @RestController
 @RequestMapping("/schools/{school}/buildings")
-@Tag(name = "Buildings")
 public class BdsHttp {
 
     /** Database context. */
@@ -99,7 +96,6 @@ public class BdsHttp {
             "application/vnd.surok.buildings.v1+xml"
         }
     )
-    @Operation(summary = "List buildings")
     public ResponseEntity<?> selection(
         @PathVariable final long school,
         final Filters filters,
@@ -166,7 +162,6 @@ public class BdsHttp {
             "application/vnd.surok.building-v1+xml"
         }
     )
-    @Operation(summary = "Get building")
     public ResponseEntity<?> building(
         @PathVariable final long school,
         @PathVariable final long building,
@@ -222,7 +217,6 @@ public class BdsHttp {
             "application/vnd.surok.building-v1+xml"
         }
     )
-    @Operation(summary = "Create building from form")
     public ResponseEntity<?> create(
         @PathVariable final long school,
         @RequestParam final MultiValueMap<String, String> parameters,
@@ -269,7 +263,6 @@ public class BdsHttp {
             "application/vnd.surok.building-v1+xml"
         }
     )
-    @Operation(summary = "Create building from JSON")
     public ResponseEntity<?> create(
         @PathVariable final long school,
         @RequestBody final JsonNode json,
@@ -305,7 +298,6 @@ public class BdsHttp {
             "application/vnd.surok.building-v1+xml"
         }
     )
-    @Operation(summary = "Update building from form")
     public ResponseEntity<?> revise(
         @PathVariable final long school,
         @PathVariable final long building,
@@ -355,7 +347,6 @@ public class BdsHttp {
             "application/vnd.surok.building-v1+xml"
         }
     )
-    @Operation(summary = "Update building from JSON")
     public ResponseEntity<?> revise(
         @PathVariable final long school,
         @PathVariable final long building,
@@ -384,7 +375,6 @@ public class BdsHttp {
      * @throws Exception If removal fails
      */
     @DeleteMapping("/{building}")
-    @Operation(summary = "Remove building")
     public ResponseEntity<Void> remove(
         @PathVariable final long school,
         @PathVariable final long building,

@@ -14,8 +14,6 @@ import com.eshabakhov.surok.user.RoleAssignmentException;
 import com.eshabakhov.surok.user.Roles;
 import com.eshabakhov.surok.user.UrsPostgres;
 import com.fasterxml.jackson.databind.JsonNode;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -44,7 +42,6 @@ import org.springframework.web.server.ResponseStatusException;
  */
 @RestController
 @RequestMapping("/schools/{school}/users")
-@Tag(name = "School users")
 public class SlUsersHttp {
 
     /** Database context. */
@@ -74,7 +71,6 @@ public class SlUsersHttp {
             "application/vnd.surok.school-users.v1+xml"
         }
     )
-    @Operation(summary = "List school users")
     public ResponseEntity<?> list(
         @PathVariable final long school, final HttpServletRequest request,
         @AuthenticationPrincipal final User actor
@@ -113,7 +109,6 @@ public class SlUsersHttp {
             "application/vnd.surok.school-user.v1+xml"
         }
     )
-    @Operation(summary = "Add existing user to school")
     public ResponseEntity<?> add(
         @PathVariable final long school, @PathVariable final long user,
         final HttpServletRequest request, @AuthenticationPrincipal final User actor
@@ -166,7 +161,6 @@ public class SlUsersHttp {
             "application/vnd.surok.school-user.v1+xml"
         }
     )
-    @Operation(summary = "Add an existing account by username or email")
     public ResponseEntity<?> attach(
         @PathVariable final long school, @RequestBody final JsonNode document,
         final HttpServletRequest request, @AuthenticationPrincipal final User actor
@@ -191,7 +185,6 @@ public class SlUsersHttp {
      * @throws Exception If removal fails
      */
     @DeleteMapping("/{user}")
-    @Operation(summary = "Remove user from school")
     public ResponseEntity<Void> remove(
         @PathVariable final long school, @PathVariable final long user,
         @AuthenticationPrincipal final User actor
@@ -213,7 +206,6 @@ public class SlUsersHttp {
         value = "/{user}/roles",
         produces = "application/vnd.surok.school-roles.v1+json"
     )
-    @Operation(summary = "List school roles of user")
     public ResponseEntity<List<Role>> roles(
         @PathVariable final long school, @PathVariable final long user,
         @AuthenticationPrincipal final User actor
@@ -237,7 +229,6 @@ public class SlUsersHttp {
         consumes = "application/vnd.surok.school-role.v1+json",
         produces = "application/vnd.surok.school-role.v1+json"
     )
-    @Operation(summary = "Grant school role")
     public ResponseEntity<Role> grant(
         @PathVariable final long school, @PathVariable final long user,
         @RequestBody final JsonNode document, @AuthenticationPrincipal final User actor
@@ -273,7 +264,6 @@ public class SlUsersHttp {
      * @throws Exception If revocation fails
      */
     @DeleteMapping("/{user}/roles/{role}")
-    @Operation(summary = "Revoke school role")
     public ResponseEntity<Void> revoke(
         @PathVariable final long school, @PathVariable final long user,
         @PathVariable final long role, @AuthenticationPrincipal final User actor

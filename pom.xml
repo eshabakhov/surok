@@ -128,6 +128,7 @@
 					<include>**/application*.yml</include>
 					<include>**/application*.yaml</include>
 					<include>**/application*.properties</include>
+					<include>openapi.yml</include>
 				</includes>
 			</resource>
 			<resource>
@@ -137,6 +138,7 @@
 					<exclude>**/application*.yml</exclude>
 					<exclude>**/application*.yaml</exclude>
 					<exclude>**/application*.properties</exclude>
+					<exclude>openapi.yml</exclude>
 				</excludes>
 			</resource>
 		</resources>

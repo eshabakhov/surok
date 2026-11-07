@@ -28,8 +28,6 @@ import com.eshabakhov.surok.school.building.cabinet.input.CbInputHttp;
 import com.eshabakhov.surok.security.CsToken;
 import com.eshabakhov.surok.user.UrBrief;
 import com.fasterxml.jackson.databind.JsonNode;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -65,7 +63,6 @@ import org.springframework.web.server.ResponseStatusException;
  */
 @RestController
 @RequestMapping("/schools/{school}/buildings/{building}/cabinets")
-@Tag(name = "Cabinets")
 public class CbsHttp {
 
     /** Database context. */
@@ -101,7 +98,6 @@ public class CbsHttp {
             "application/vnd.surok.cabinets.v1+xml"
         }
     )
-    @Operation(summary = "List cabinets")
     public ResponseEntity<?> selection(
         @PathVariable final long school,
         @PathVariable final long building,
@@ -171,7 +167,6 @@ public class CbsHttp {
             "application/vnd.surok.cabinet-v1+xml"
         }
     )
-    @Operation(summary = "Get cabinet")
     public ResponseEntity<?> cabinet(
         @PathVariable final long school,
         @PathVariable final long building,
@@ -230,7 +225,6 @@ public class CbsHttp {
             "application/vnd.surok.cabinet-v1+xml"
         }
     )
-    @Operation(summary = "Create cabinet from form")
     public ResponseEntity<?> create(
         @PathVariable final long school,
         @PathVariable final long building,
@@ -280,7 +274,6 @@ public class CbsHttp {
             "application/vnd.surok.cabinet-v1+xml"
         }
     )
-    @Operation(summary = "Create cabinet from JSON")
     public ResponseEntity<?> create(
         @PathVariable final long school,
         @PathVariable final long building,
@@ -319,7 +312,6 @@ public class CbsHttp {
             "application/vnd.surok.cabinet-v1+xml"
         }
     )
-    @Operation(summary = "Update cabinet from form")
     public ResponseEntity<?> revise(
         @PathVariable final long school,
         @PathVariable final long building,
@@ -373,7 +365,6 @@ public class CbsHttp {
             "application/vnd.surok.cabinet-v1+xml"
         }
     )
-    @Operation(summary = "Update cabinet from JSON")
     public ResponseEntity<?> revise(
         @PathVariable final long school,
         @PathVariable final long building,
@@ -404,7 +395,6 @@ public class CbsHttp {
      * @throws Exception If removal fails
      */
     @DeleteMapping("/{cabinet}")
-    @Operation(summary = "Remove cabinet")
     public ResponseEntity<Void> remove(
         @PathVariable final long school,
         @PathVariable final long building,

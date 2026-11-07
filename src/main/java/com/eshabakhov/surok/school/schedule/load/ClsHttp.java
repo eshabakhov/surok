@@ -21,8 +21,6 @@ import com.eshabakhov.surok.school.schedule.Schedule;
 import com.eshabakhov.surok.school.schedule.SdBrief;
 import com.eshabakhov.surok.security.CsToken;
 import com.eshabakhov.surok.user.UrBrief;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import java.nio.charset.StandardCharsets;
 import org.jooq.DSLContext;
@@ -48,7 +46,6 @@ import org.springframework.web.server.ResponseStatusException;
  */
 @RestController
 @RequestMapping("/schools/{school}/schedules/{schedule}/loads")
-@Tag(name = "Teaching loads")
 public class ClsHttp {
 
     /** Database context. */
@@ -82,7 +79,6 @@ public class ClsHttp {
             "application/vnd.surok.class-loads.v1+xml"
         }
     )
-    @Operation(summary = "List teaching loads")
     public ResponseEntity<?> selection(
         @PathVariable final long school,
         @PathVariable final long schedule,
@@ -135,7 +131,6 @@ public class ClsHttp {
             "application/vnd.surok.class-load-v1+xml"
         }
     )
-    @Operation(summary = "Get teaching load")
     public ResponseEntity<?> load(
         @PathVariable final long school,
         @PathVariable final long schedule,

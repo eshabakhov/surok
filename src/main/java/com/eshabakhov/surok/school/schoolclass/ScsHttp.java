@@ -27,8 +27,6 @@ import com.eshabakhov.surok.school.schoolclass.input.SchoolClassInputException;
 import com.eshabakhov.surok.security.CsToken;
 import com.eshabakhov.surok.user.UrBrief;
 import com.fasterxml.jackson.databind.JsonNode;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -64,7 +62,6 @@ import org.springframework.web.server.ResponseStatusException;
  */
 @RestController
 @RequestMapping("/schools/{school}/classes")
-@Tag(name = "SchoolClasses")
 public class ScsHttp {
 
     /** Database context. */
@@ -99,7 +96,6 @@ public class ScsHttp {
             "application/vnd.surok.school-classes.v1+xml"
         }
     )
-    @Operation(summary = "List classes")
     public ResponseEntity<?> selection(
         @PathVariable final long school,
         final Filters filters,
@@ -164,7 +160,6 @@ public class ScsHttp {
             "application/vnd.surok.school-class-v1+xml"
         }
     )
-    @Operation(summary = "Get school class")
     public ResponseEntity<?> clazz(
         @PathVariable final long school,
         @PathVariable final long clazz,
@@ -218,7 +213,6 @@ public class ScsHttp {
             "application/vnd.surok.school-class-v1+xml"
         }
     )
-    @Operation(summary = "Create school class from form")
     public ResponseEntity<?> create(
         @PathVariable final long school,
         @RequestParam final MultiValueMap<String, String> parameters,
@@ -265,7 +259,6 @@ public class ScsHttp {
             "application/vnd.surok.school-class-v1+xml"
         }
     )
-    @Operation(summary = "Create school class from JSON")
     public ResponseEntity<?> create(
         @PathVariable final long school,
         @RequestBody final JsonNode json,
@@ -301,7 +294,6 @@ public class ScsHttp {
             "application/vnd.surok.school-class-v1+xml"
         }
     )
-    @Operation(summary = "Update school class from form")
     public ResponseEntity<?> revise(
         @PathVariable final long school,
         @PathVariable final long clazz,
@@ -350,7 +342,6 @@ public class ScsHttp {
             "application/vnd.surok.school-class-v1+xml"
         }
     )
-    @Operation(summary = "Update school class from JSON")
     public ResponseEntity<?> revise(
         @PathVariable final long school,
         @PathVariable final long clazz,
@@ -378,7 +369,6 @@ public class ScsHttp {
      * @throws Exception If removal fails
      */
     @DeleteMapping("/{clazz}")
-    @Operation(summary = "Remove school class")
     public ResponseEntity<Void> remove(
         @PathVariable final long school,
         @PathVariable final long clazz,

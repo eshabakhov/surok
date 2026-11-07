@@ -21,8 +21,6 @@ import com.eshabakhov.surok.school.input.SlInputHttp;
 import com.eshabakhov.surok.security.CsToken;
 import com.eshabakhov.surok.user.UrBrief;
 import com.fasterxml.jackson.databind.JsonNode;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -56,7 +54,6 @@ import org.springframework.web.server.ResponseStatusException;
  */
 @RestController
 @RequestMapping("/schools")
-@Tag(name = "Schools")
 public class SlsHttp {
 
     /** Database context. */
@@ -87,7 +84,6 @@ public class SlsHttp {
         produces = {MediaType.TEXT_HTML_VALUE,
             "application/vnd.surok.schools.v1+json", "application/vnd.surok.schools.v1+xml"}
     )
-    @Operation(summary = "List schools")
     public ResponseEntity<?> selection(
         final Filters filters, final Page page, final Sorts sorts,
         final HttpServletRequest request,
@@ -138,7 +134,6 @@ public class SlsHttp {
         produces = {MediaType.TEXT_HTML_VALUE,
             "application/vnd.surok.school-v1+json", "application/vnd.surok.school-v1+xml"}
     )
-    @Operation(summary = "Get school")
     public ResponseEntity<?> school(
         @PathVariable final long school, final HttpServletRequest request,
         @AuthenticationPrincipal final User user
@@ -180,7 +175,6 @@ public class SlsHttp {
      * @throws Exception If creation fails
      */
     @PostMapping(value = "/create", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
-    @Operation(summary = "Create school from form")
     public ResponseEntity<?> create(
         @RequestParam final MultiValueMap<String, String> parameters,
         final HttpServletRequest request,
@@ -202,7 +196,6 @@ public class SlsHttp {
         value = {"", "/", "/create"},
         consumes = {MediaType.APPLICATION_JSON_VALUE, "application/vnd.surok.school-v1+json"}
     )
-    @Operation(summary = "Create school from JSON")
     public ResponseEntity<?> create(
         @RequestBody final JsonNode json, final HttpServletRequest request,
         @AuthenticationPrincipal final User user
@@ -221,7 +214,6 @@ public class SlsHttp {
      * @throws Exception If revision fails
      */
     @PostMapping(value = "/{school}/edit", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
-    @Operation(summary = "Update school from form")
     public ResponseEntity<?> revise(
         @PathVariable final long school,
         @RequestParam final MultiValueMap<String, String> parameters,
@@ -245,7 +237,6 @@ public class SlsHttp {
         value = "/{school}",
         consumes = {MediaType.APPLICATION_JSON_VALUE, "application/vnd.surok.school-v1+json"}
     )
-    @Operation(summary = "Update school from JSON")
     public ResponseEntity<?> revise(
         @PathVariable final long school, @RequestBody final JsonNode json,
         final HttpServletRequest request,
@@ -263,7 +254,6 @@ public class SlsHttp {
      * @throws Exception If removal fails
      */
     @DeleteMapping("/{school}")
-    @Operation(summary = "Remove school")
     public ResponseEntity<Void> remove(
         @PathVariable final long school,
         @AuthenticationPrincipal final User user
