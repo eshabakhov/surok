@@ -239,6 +239,36 @@ final class OaHttpTest {
     }
 
     /**
+     * Documents one teacher update and keeps the separate edit page.
+     *
+     * @param mvc HTTP client
+     * @throws Exception If the description cannot be read
+     */
+    @Test
+    void publishesOneTeacherUpdateOperation(@Autowired final MockMvc mvc) throws Exception {
+        final JsonNode paths = Json.mapper().readTree(
+            mvc.perform(
+                MockMvcRequestBuilders.get("/api-docs").with(
+                    SecurityMockMvcRequestPostProcessors.user("администратор").roles("ADMIN")
+                )
+            ).andReturn().getResponse().getContentAsByteArray()
+        ).path("paths");
+        final JsonNode update = paths.path("/schools/{school}/teachers/{teacher}").path("put");
+        final JsonNode content = update.path("requestBody").path("content");
+        final JsonNode edit = paths.path("/schools/{school}/teachers/{teacher}/edit");
+        MatcherAssert.assertThat(
+            "Swagger exposed the legacy update or omitted the JSON body or conflict response",
+            List.of(
+                content.has("application/vnd.surok.teacher-v1+json"),
+                update.path("responses").has("409"),
+                edit.has("get"),
+                edit.has("post")
+            ),
+            Matchers.contains(true, true, true, false)
+        );
+    }
+
+    /**
      * Documents the page and fragment as distinct media types of a single list operation.
      *
      * @param mvc HTTP client

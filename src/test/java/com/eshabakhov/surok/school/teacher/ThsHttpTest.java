@@ -199,7 +199,7 @@ final class ThsHttpTest {
         }
     )
     void rejectsUnsupportedInputBeforeMutation(final String type) throws Exception {
-        for (final String suffix : List.of("", "/", "/create", "/10/edit")) {
+        for (final String suffix : List.of("", "/", "/create")) {
             this.mvc.perform(
                 this.authorized(
                     MockMvcRequestBuilders.post(
@@ -290,10 +290,10 @@ final class ThsHttpTest {
         }
     }
 
-    @ParameterizedTest
-    @ValueSource(strings = {"/create", "/10/edit"})
-    void redirectsInvalidBrowserForms(final String suffix) throws Exception {
-        final String form = String.format("/schools/1/teachers%s", suffix);
+    /** Verifies a blank name is still reported on the native creation form. */
+    @Test
+    void redirectsInvalidTeacherCreation() throws Exception {
+        final String form = "/schools/1/teachers/create";
         this.mvc.perform(
             this.authorized(MockMvcRequestBuilders.post(form), Roles.RoleEnum.DIRECTOR)
                 .accept(MediaType.TEXT_HTML)
@@ -318,18 +318,19 @@ final class ThsHttpTest {
         ).andExpect(MockMvcResultMatchers.jsonPath("$.page.total").value(2));
     }
 
+    /**
+     * Verifies data clients still receive validation errors when creating from form fields.
+     *
+     * @param accept Response representation
+     */
     @ParameterizedTest
-    @CsvSource({
-        "/create, application/vnd.surok.teacher-v1+json",
-        "/create, application/vnd.surok.teacher-v1+xml",
-        "/10/edit, application/vnd.surok.teacher-v1+json",
-        "/10/edit, application/vnd.surok.teacher-v1+xml"
-    })
-    void keepsApiValidationForFormFields(final String suffix, final String accept)
-        throws Exception {
+    @ValueSource(
+        strings = {"application/vnd.surok.teacher-v1+json", "application/vnd.surok.teacher-v1+xml"}
+    )
+    void keepsApiValidationForCreationFormFields(final String accept) throws Exception {
         this.mvc.perform(
             this.authorized(
-                MockMvcRequestBuilders.post(String.format("/schools/1/teachers%s", suffix)),
+                MockMvcRequestBuilders.post("/schools/1/teachers/create"),
                 Roles.RoleEnum.DIRECTOR
             ).header("Accept", accept)
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
@@ -338,22 +339,36 @@ final class ThsHttpTest {
             .andExpect(MockMvcResultMatchers.header().doesNotExist("Location"));
     }
 
+    /** Verifies the edit page supplies a CSRF token accepted by the JSON update. */
     @Test
-    void revisesThroughProtectedForm() throws Exception {
+    void revisesThroughTheEditPagesCsrfHeader() throws Exception {
+        final MockHttpSession session = this.session(Roles.RoleEnum.DIRECTOR, 1L);
+        final MvcResult form = this.mvc.perform(
+            MockMvcRequestBuilders.get("/schools/1/teachers/10/edit").session(session)
+        ).andExpect(MockMvcResultMatchers.status().isOk()).andReturn();
+        final CsrfToken token = (CsrfToken) form.getRequest().getAttribute(
+            CsrfToken.class.getName()
+        );
+        this.mvc.perform(
+            MockMvcRequestBuilders.put("/schools/1/teachers/10")
+                .session(session).cookie(form.getResponse().getCookies())
+                .header(token.getHeaderName(), token.getToken())
+                .contentType("application/vnd.surok.teacher-v1+json")
+                .accept("application/vnd.surok.teacher-v1+json")
+                .content("{\"name\":\" Иван Петрович \"}")
+        ).andExpect(MockMvcResultMatchers.jsonPath("$.name").value("Иван Петрович"));
+    }
+
+    /** Verifies a blank edit is reported to the browser as a validation error. */
+    @Test
+    void rejectsBlankTeacherNamesOnUpdate() throws Exception {
         this.mvc.perform(
             this.authorized(
-                MockMvcRequestBuilders.post("/schools/1/teachers/10/edit"),
-                Roles.RoleEnum.DIRECTOR
-            ).accept(MediaType.TEXT_HTML)
-                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                .param("name", " Revised through form ")
-        ).andExpect(MockMvcResultMatchers.status().isFound())
-            .andExpect(MockMvcResultMatchers.redirectedUrl("/schools/1/teachers/10"));
-        this.mvc.perform(
-            MockMvcRequestBuilders.get("/schools/1/teachers/10")
-                .session(this.session(Roles.RoleEnum.DIRECTOR, 1L))
-                .accept("application/vnd.surok.teacher-v1+json")
-        ).andExpect(MockMvcResultMatchers.jsonPath("$.name").value("Revised through form"));
+                MockMvcRequestBuilders.put("/schools/1/teachers/10"), Roles.RoleEnum.DIRECTOR
+            ).accept("application/vnd.surok.teacher-v1+json")
+                .contentType("application/vnd.surok.teacher-v1+json")
+                .content("{\"name\":\" \"}")
+        ).andExpect(MockMvcResultMatchers.status().isBadRequest());
     }
 
     @Test
@@ -590,28 +605,17 @@ final class ThsHttpTest {
             .andExpect(MockMvcResultMatchers.jsonPath("$.name").value("North"));
     }
 
-    @ParameterizedTest
-    @ValueSource(
-        strings = {
-            "application/pdf", "*/*;q=0", "invalid", "application/json;q=2",
-            "application/json", "application/xml"
-        }
-    )
-    void rejectsUnsupportedRepresentationBeforeFormRevision(final String accept) throws Exception {
+    /** Verifies the edit page URL cannot process a legacy form update. */
+    @Test
+    void rejectsTheLegacyTeacherUpdateRoute() throws Exception {
         this.mvc.perform(
             this.authorized(
                 MockMvcRequestBuilders.post("/schools/1/teachers/10/edit"),
                 Roles.RoleEnum.DIRECTOR
-            ).header("Accept", accept)
+            ).accept(MediaType.TEXT_HTML)
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                .param("name", "Rejected")
-        ).andExpect(MockMvcResultMatchers.status().isNotAcceptable());
-        this.mvc.perform(
-            MockMvcRequestBuilders.get("/schools/1/teachers/10")
-                .session(this.session(Roles.RoleEnum.DIRECTOR, 1L))
-                .accept("application/vnd.surok.teacher-v1+json")
-        ).andExpect(MockMvcResultMatchers.status().isOk())
-            .andExpect(MockMvcResultMatchers.jsonPath("$.name").value("North"));
+                .param("name", "Отклонённое имя")
+        ).andExpect(MockMvcResultMatchers.status().isMethodNotAllowed());
     }
 
     @Test
@@ -722,10 +726,10 @@ final class ThsHttpTest {
         ).andExpect(MockMvcResultMatchers.jsonPath("$.name").value("North"));
     }
 
-    @ParameterizedTest
-    @ValueSource(strings = {"/create", "/11/edit"})
-    void redirectsDuplicateForms(final String suffix) throws Exception {
-        final String path = String.format("/schools/1/teachers%s", suffix);
+    /** Verifies that duplicate teacher creation still redirects to the native form. */
+    @Test
+    void redirectsDuplicateTeacherCreation() throws Exception {
+        final String path = "/schools/1/teachers/create";
         this.mvc.perform(
             this.authorized(MockMvcRequestBuilders.post(path), Roles.RoleEnum.DIRECTOR)
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED).param("name", " North ")

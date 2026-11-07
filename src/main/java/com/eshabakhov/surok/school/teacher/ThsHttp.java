@@ -270,49 +270,6 @@ public class ThsHttp {
     }
 
     /**
-     * Revises a teacher from form fields.
-     *
-     * @param school School identifier
-     * @param teacher Entity identifier
-     * @param parameters Form fields
-     * @param request HTTP request
-     * @param actor Acting user
-     * @return Revised representation or redirect
-     * @throws Exception If revision fails
-     */
-    @PostMapping(
-        value = "/{teacher}/edit",
-        consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE,
-        produces = {
-            MediaType.TEXT_HTML_VALUE,
-            "application/vnd.surok.teacher-v1+json",
-            "application/vnd.surok.teacher-v1+xml"
-        }
-    )
-    public ResponseEntity<?> revise(
-        @PathVariable final long school,
-        @PathVariable final long teacher,
-        @RequestParam final MultiValueMap<String, String> parameters,
-        final HttpServletRequest request,
-        @AuthenticationPrincipal final User actor
-    ) throws Exception {
-        final MediaType type = new AcHttp(request, "teacher-v1").type();
-        ResponseEntity<?> response;
-        try {
-            final Teacher revised = new SlsAuthorized(
-                new SlsPostgres(this.ctx), actor
-            ).school(school).teachers().revise(teacher, new ThInputHttp(parameters));
-            response = ThsHttp.result(
-                type, revised, HttpStatus.OK, String.format("/schools/%d/teachers", school),
-                String.format("/schools/%d/teachers/%d", school, revised.uid())
-            );
-        } catch (final TeacherInputException | TeacherAlreadyExistsException exception) {
-            response = ThsHttp.rejected(type, request, exception);
-        }
-        return response;
-    }
-
-    /**
      * Revises a teacher from a JSON document.
      *
      * @param school School identifier

@@ -17,11 +17,12 @@ import org.junit.jupiter.params.provider.ValueSource;
  */
 final class XsTeachersTest {
 
-    @ParameterizedTest
-    @ValueSource(strings = {"create", "edit"})
-    void printsProtectedForms(final String view) {
+    /** Verifies the native creation form submits a hidden CSRF token. */
+    @Test
+    void printsTheProtectedCreationForm() {
         MatcherAssert.assertThat(
-            XsTeachersTest.page(view),
+            "The teacher creation page lost the hidden CSRF field or form assets",
+            XsTeachersTest.page("create"),
             Matchers.allOf(
                 Matchers.containsString("name=\"_csrf\" type=\"hidden\" value=\"token\""),
                 Matchers.containsString("id=\"teacher-name\" name=\"name\""),
@@ -50,9 +51,14 @@ final class XsTeachersTest {
     @Test
     void printsEditingValue() {
         MatcherAssert.assertThat(
+            "The teacher edit page lost its canonical action, CSRF metadata or value",
             XsTeachersTest.page("edit"),
             Matchers.allOf(
-                Matchers.containsString("action=\"/schools/3/teachers/7/edit\""),
+                Matchers.containsString("action=\"/schools/3/teachers/7\""),
+                Matchers.containsString("id=\"teacher-edit-form\""),
+                Matchers.containsString("src=\"/js/school/teacher-edit.js\""),
+                Matchers.containsString("<meta name=\"_csrf\" content=\"token\""),
+                Matchers.containsString("<meta name=\"_csrf_header\" content=\"X-XSRF-TOKEN\""),
                 Matchers.containsString("value=\"Иванов Иван Иванович\""),
                 Matchers.containsString("Сохранить"),
                 Matchers.not(Matchers.containsString("placeholder=\"Например:"))
@@ -162,7 +168,8 @@ final class XsTeachersTest {
                 <school><id>3</id><name>Школа</name><schedules><schedule>
                     <id>9</id><name>Учебный год</name>
                 </schedule></schedules></school>
-                <error>empty</error><csrf><parameter>_csrf</parameter><token>token</token></csrf>
+                <error>empty</error><csrf><parameter>_csrf</parameter><token>token</token>
+                    <header>X-XSRF-TOKEN</header></csrf>
                 <teachers><teacher>
                     <id>7</id><name>Иванов Иван Иванович</name>
                 </teacher><sorts><item><name>name</name><direction>NONE</direction>

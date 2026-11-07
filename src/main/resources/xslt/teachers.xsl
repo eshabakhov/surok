@@ -150,19 +150,28 @@
                 </div>
             </div>
         </div>
-        <xsl:choose>
-            <xsl:when test="/surok/error = 'empty'"><div class="error-message" role="alert">Имя не может быть пустым</div></xsl:when>
-            <xsl:when test="/surok/error = 'duplicate'"><div class="error-message" role="alert">Учитель с таким именем уже существует</div></xsl:when>
-        </xsl:choose>
+        <xsl:if test="$view = 'edit' or /surok/error = 'empty' or /surok/error = 'duplicate'">
+            <div id="teacher-form-error" class="error-message" role="alert">
+                <xsl:choose>
+                    <xsl:when test="/surok/error = 'empty'">Имя не может быть пустым</xsl:when>
+                    <xsl:when test="/surok/error = 'duplicate'">Учитель с таким именем уже существует</xsl:when>
+                    <xsl:otherwise><xsl:attribute name="hidden">hidden</xsl:attribute></xsl:otherwise>
+                </xsl:choose>
+            </div>
+        </xsl:if>
+        <xsl:if test="$view = 'edit'">
+            <noscript><p class="error-message">Включите JavaScript, чтобы сохранить изменения.</p></noscript>
+        </xsl:if>
         <div class="teacher-form-wrap">
             <form method="post" class="teacher-form">
+                <xsl:if test="$view = 'edit'"><xsl:attribute name="id">teacher-edit-form</xsl:attribute></xsl:if>
                 <xsl:attribute name="action">
                     <xsl:choose>
-                        <xsl:when test="$view = 'edit'"><xsl:value-of select="concat($base, '/', $selected/id, '/edit')"/></xsl:when>
+                        <xsl:when test="$view = 'edit'"><xsl:value-of select="concat($base, '/', $selected/id)"/></xsl:when>
                         <xsl:otherwise><xsl:value-of select="concat($base, '/create')"/></xsl:otherwise>
                     </xsl:choose>
                 </xsl:attribute>
-                <xsl:call-template name="csrf-input"/>
+                <xsl:if test="$view = 'create'"><xsl:call-template name="csrf-input"/></xsl:if>
                 <label for="teacher-name" class="teacher-form-field">
                     ФИО учителя
                     <input id="teacher-name" name="name" type="text" autofocus="autofocus"
@@ -189,12 +198,22 @@
                         <xsl:text>Отмена</xsl:text>
                     </a>
                     <button class="btn-primary" type="submit">
-                        <xsl:choose><xsl:when test="$view = 'edit'">Сохранить</xsl:when><xsl:otherwise>Создать</xsl:otherwise></xsl:choose>
+                        <xsl:choose>
+                            <xsl:when test="$view = 'edit'">
+                                <xsl:attribute name="disabled">disabled</xsl:attribute>Сохранить
+                            </xsl:when>
+                            <xsl:otherwise>Создать</xsl:otherwise>
+                        </xsl:choose>
                     </button>
                 </div>
             </form>
         </div>
     </xsl:template>
 
-    <xsl:template name="scripts"><script type="module" src="/js/school/teachers.js"></script></xsl:template>
+    <xsl:template name="scripts">
+        <xsl:choose>
+            <xsl:when test="$view = 'edit'"><script type="module" src="/js/school/teacher-edit.js"></script></xsl:when>
+            <xsl:otherwise><script type="module" src="/js/school/teachers.js"></script></xsl:otherwise>
+        </xsl:choose>
+    </xsl:template>
 </xsl:stylesheet>
