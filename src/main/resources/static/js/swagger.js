@@ -4,10 +4,13 @@ window.surokSwagger = (() => {
     let token = '';
     let revision = 0;
 
-    /** Removes protected operations while an identity change is pending. */
+    /** Removes operations and models while preserving the Authorize dialog. */
     function empty(system) {
         const document = system.specSelectors.specJson().toJS();
-        system.specActions.updateSpec(JSON.stringify({ ...document, paths: {} }));
+        const securitySchemes = document?.components?.securitySchemes ?? {};
+        system.specActions.updateSpec(JSON.stringify({
+            ...document, paths: {}, components: { securitySchemes }
+        }));
     }
 
     /** Reads an uncached description, rejecting redirects and external origins. */

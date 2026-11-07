@@ -5,11 +5,6 @@ package com.eshabakhov.surok.user;
 
 import com.eshabakhov.surok.User;
 import com.fasterxml.jackson.databind.JsonNode;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.ExampleObject;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import java.net.URI;
 import java.util.List;
 import org.jooq.DSLContext;
@@ -30,7 +25,6 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RestController
 @RequestMapping("/api/users")
-@Tag(name = "Users")
 public class UserController {
 
     /** Database context. */
@@ -48,68 +42,7 @@ public class UserController {
      * @throws Exception If registration fails
      */
     @PostMapping
-    @Operation(summary = "Register new user")
-    @ApiResponse(
-        responseCode = "201",
-        description = "User registered successfully",
-        content = @Content(
-            mediaType = "application/json",
-            examples = {
-                @ExampleObject(
-                    name = "Success",
-                    value = """
-                        {
-                            "id": 1,
-                            "username": "john_doe",
-                            "email": "john@example.com"
-                        }"""
-                )
-            }
-        )
-    )
-    @ApiResponse(
-        responseCode = "400",
-        description = "Registration failed",
-        content = @Content(
-            mediaType = "application/json",
-            examples = {
-                @ExampleObject(
-                    name = "Username taken",
-                    value = """
-                        {
-                            "message": "Username already exists",
-                            "timestamp": "2025-02-02T18:00:00Z"
-                        }"""
-                ),
-                @ExampleObject(
-                    name = "Email taken",
-                    value = """
-                        {
-                            "message": "Email already exists",
-                            "timestamp": "2025-02-02T18:00:00Z"
-                        }"""
-                )
-            }
-        )
-    )
     public ResponseEntity<User> register(
-        @io.swagger.v3.oas.annotations.parameters.RequestBody(
-            description = "Registration request",
-            content = @Content(
-                examples = {
-                    @ExampleObject(
-                        name = "Regular registration",
-                        value = """
-                            {
-                                "username": "john_doe",
-                                "password": "securePassword123",
-                                "email": "john@example.com"
-                            }
-                            """
-                    )
-                }
-            )
-        )
         @RequestBody final JsonNode request
     ) throws Exception {
         final JsonNode username = request.get("username");
@@ -144,7 +77,6 @@ public class UserController {
      * @throws Exception If remove fails
      */
     @DeleteMapping("/{user}")
-    @Operation(summary = "Remove role from user")
     public ResponseEntity<Void> remove(
         @PathVariable final long user, @AuthenticationPrincipal final User actor
     ) throws Exception {
@@ -162,51 +94,8 @@ public class UserController {
      * @throws Exception if assign fails
      */
     @PostMapping("/{user}/roles")
-    @Operation(summary = "Assign role to user")
-    @ApiResponse(
-        responseCode = "201",
-        description = "Role assigned successfully",
-        content = @Content(
-            mediaType = "application/json",
-            examples = {
-                @ExampleObject(
-                    name = "Success",
-                    value = """
-                        {
-                            "id": 1,
-                            "userId": 5,
-                            "role": "TEACHER",
-                            "scope": "account"
-                        }"""
-                )
-            }
-        )
-    )
     public ResponseEntity<Role> assignRole(
         @PathVariable final long user,
-        @io.swagger.v3.oas.annotations.parameters.RequestBody(
-            description = "Role assignment request",
-            content = @Content(
-                examples = {
-                    @ExampleObject(
-                        name = "Assign teacher role",
-                        value = """
-                            {
-                                "role": "TEACHER"
-                            }
-                            """
-                    ),
-                    @ExampleObject(
-                        name = "Assign admin role",
-                        value = """
-                            {
-                                "role": "ADMIN"
-                            }
-                            """
-                    )
-                }
-            )
-        )
         @RequestBody final JsonNode request,
         @AuthenticationPrincipal final User actor
     ) throws Exception {
@@ -247,7 +136,6 @@ public class UserController {
      * @return ResponseEntity with list of {@link Role}
      */
     @GetMapping("/{user}/roles")
-    @Operation(summary = "Get all roles for user")
     public ResponseEntity<List<Role>> listRoles(
         @PathVariable final long user, @AuthenticationPrincipal final User actor
     ) throws Exception {
@@ -269,7 +157,6 @@ public class UserController {
      * @throws Exception If delete fails
      */
     @DeleteMapping("/{user}/roles/{role}")
-    @Operation(summary = "Remove role from user")
     public ResponseEntity<Void> removeRole(
         @PathVariable final long user,
         @PathVariable final long role,

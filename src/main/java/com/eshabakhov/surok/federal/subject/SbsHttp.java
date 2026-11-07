@@ -27,8 +27,6 @@ import com.eshabakhov.surok.security.CsToken;
 import com.eshabakhov.surok.user.Roles;
 import com.eshabakhov.surok.user.UrBrief;
 import com.fasterxml.jackson.databind.JsonNode;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -63,7 +61,6 @@ import org.springframework.web.server.ResponseStatusException;
  */
 @RestController
 @RequestMapping({"/federal/subjects", "/schools/{school}/subjects"})
-@Tag(name = "Subjects")
 @SuppressWarnings("PMD.GodClass")
 public class SbsHttp {
 
@@ -99,7 +96,6 @@ public class SbsHttp {
             "application/vnd.surok.subjects.v1+xml"
         }
     )
-    @Operation(summary = "List subjects")
     public ResponseEntity<?> selection(
         @PathVariable(required = false) final Long school,
         final Filters filters,
@@ -169,7 +165,6 @@ public class SbsHttp {
             "application/vnd.surok.subject-v1+xml"
         }
     )
-    @Operation(summary = "Get subject")
     public ResponseEntity<?> subject(
         @PathVariable(required = false) final Long school,
         @PathVariable final long subject,
@@ -228,7 +223,6 @@ public class SbsHttp {
             "application/vnd.surok.subject-v1+xml"
         }
     )
-    @Operation(summary = "Create subject from form")
     public ResponseEntity<?> create(
         @PathVariable(required = false) final Long school,
         @RequestParam final MultiValueMap<String, String> parameters,
@@ -270,7 +264,6 @@ public class SbsHttp {
             "application/vnd.surok.subject-v1+xml"
         }
     )
-    @Operation(summary = "Create subject from JSON")
     public ResponseEntity<?> create(
         @PathVariable(required = false) final Long school,
         @RequestBody final JsonNode json,
@@ -306,7 +299,6 @@ public class SbsHttp {
             "application/vnd.surok.subject-v1+xml"
         }
     )
-    @Operation(summary = "Update subject from form")
     public ResponseEntity<?> revise(
         @PathVariable(required = false) final Long school,
         @PathVariable final long subject,
@@ -349,7 +341,6 @@ public class SbsHttp {
             "application/vnd.surok.subject-v1+xml"
         }
     )
-    @Operation(summary = "Update subject from JSON")
     public ResponseEntity<?> revise(
         @PathVariable(required = false) final Long school,
         @PathVariable final long subject,
@@ -382,7 +373,6 @@ public class SbsHttp {
             "application/vnd.surok.subject-v1+xml"
         }
     )
-    @Operation(summary = "Remove subject")
     public ResponseEntity<Void> remove(
         @PathVariable(required = false) final Long school,
         @PathVariable final long subject, final HttpServletRequest request,

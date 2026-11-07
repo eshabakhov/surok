@@ -4,67 +4,64 @@
 package com.eshabakhov.surok.security;
 
 import com.eshabakhov.surok.security.permission.Permissions;
-import io.swagger.v3.oas.models.OpenAPI;
-import java.util.List;
-import org.springdoc.core.customizers.OpenApiCustomizer;
-import org.springframework.beans.factory.annotation.Qualifier;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import java.io.IOException;
+import java.util.Locale;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.stereotype.Component;
-import org.springframework.util.AntPathMatcher;
 import org.springframework.web.bind.annotation.RequestMethod;
 
 /**
- * Documentation restricted by the controllers' existing authorization expressions.
- * School routes describe operations available for the caller's own school;
- * actual requests still undergo method and resource authorization.
- * Register as an OpenApiCustomizer with springdoc caching disabled.
+ * A description restricted by the application's current permissions.
+ * For example, an anonymous request only receives public operations.
  *
  * @since 0.0.1
  */
-@Component
-public final class OaAccessible implements OpenApiCustomizer {
+public final class OaAccessible implements ApiDescription {
+
+    /** Source of an independent document. */
+    private final ApiDescription origin;
 
     /** Shared controller permissions. */
     private final Permissions permissions;
 
-    /** Paths permitted without authentication in the security chains. */
-    private final List<String> anonymous;
-
     /**
      * New caller-specific documentation.
      *
+     * @param origin Canonical description
      * @param permissions Shared controller permission catalog
-     * @param anonymous Public routes
      */
-    public OaAccessible(
-        final Permissions permissions, @Qualifier("publicPaths") final List<String> anonymous
-    ) {
+    public OaAccessible(final ApiDescription origin, final Permissions permissions) {
+        this.origin = origin;
         this.permissions = permissions;
-        this.anonymous = anonymous;
     }
 
     @Override
-    public void customise(final OpenAPI document) {
-        document.getPaths().forEach(
-            (path, item) -> item.readOperationsMap().forEach(
-                (method, operation) -> {
-                    if (this.permissions.allows(
-                        path, RequestMethod.valueOf(method.name()),
-                        SecurityContextHolder.getContext().getAuthentication()
-                    )) {
-                        if (this.anonymous.stream().anyMatch(
-                            pattern -> new AntPathMatcher().match(pattern, path)
-                        )) {
-                            operation.setSecurity(List.of());
-                        }
-                    } else {
-                        item.operation(method, null);
-                    }
+    public ObjectNode read() throws IOException {
+        final ObjectNode document = this.origin.read();
+        final ObjectNode paths = document.withObjectProperty("paths");
+        final Authentication actor = SecurityContextHolder.getContext().getAuthentication();
+        paths.properties().removeIf(
+            entry -> !this.restrict(entry.getKey(), paths.withObjectProperty(entry.getKey()), actor)
+        );
+        return document;
+    }
+
+    /*
+     * Remove inaccessible methods while retaining shared path metadata.
+     */
+    private boolean restrict(final String path, final ObjectNode item, final Authentication actor) {
+        boolean visible = false;
+        for (final RequestMethod method : RequestMethod.values()) {
+            final String name = method.name().toLowerCase(Locale.ROOT);
+            if (item.has(name)) {
+                if (this.permissions.allows(path, method, actor)) {
+                    visible = true;
+                } else {
+                    item.remove(name);
                 }
-            )
-        );
-        document.getPaths().entrySet().removeIf(
-            entry -> entry.getValue().readOperations().isEmpty()
-        );
+            }
+        }
+        return visible;
     }
 }

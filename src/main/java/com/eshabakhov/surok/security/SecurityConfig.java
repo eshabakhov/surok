@@ -3,19 +3,11 @@
  */
 package com.eshabakhov.surok.security;
 
-import io.swagger.v3.oas.models.Components;
-import io.swagger.v3.oas.models.OpenAPI;
-import io.swagger.v3.oas.models.info.Info;
-import io.swagger.v3.oas.models.media.ObjectSchema;
-import io.swagger.v3.oas.models.media.XML;
-import io.swagger.v3.oas.models.security.SecurityRequirement;
-import io.swagger.v3.oas.models.security.SecurityScheme;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.info.BuildProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -46,10 +38,8 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 /**
  * Spring security config.
- * Includes OpenAPI security schemes and XML response metadata.
  *
  * @since 0.0.1
- * @checkstyle ClassFanOutComplexityCheck (6 lines)
  */
 @Configuration
 @EnableWebSecurity
@@ -340,34 +330,6 @@ public class SecurityConfig {
     @Bean
     PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
-    }
-
-    /**
-     * OpenAPI definition with basic authentication support.
-     *
-     * @param build Maven build information
-     * @return OpenAPI definition
-     * @checkstyle NonStaticMethodCheck (2 lines)
-     */
-    @Bean
-    OpenAPI openApi(final BuildProperties build) {
-        return new OpenAPI().info(
-            new Info()
-                .title("Surok API")
-                .version(build.getVersion())
-            ).components(
-                new Components().addSchemas(
-                    "LoadDraftXml", new ObjectSchema().xml(new XML().name("draft"))
-                ).addSchemas(
-                    "PermissionsXml", new ObjectSchema().xml(new XML().name("permissions"))
-                ).addSecuritySchemes(
-                    "Basic auth",
-                    new SecurityScheme()
-                        .type(SecurityScheme.Type.HTTP)
-                        .scheme("basic")
-                    )
-            )
-            .addSecurityItem(new SecurityRequirement().addList("Basic auth"));
     }
 
     private void authentication(final HttpSecurity http, final PasswordEncoder encoder) {

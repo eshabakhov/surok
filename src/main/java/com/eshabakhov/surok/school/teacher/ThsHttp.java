@@ -27,8 +27,6 @@ import com.eshabakhov.surok.school.teacher.input.ThInputHttp;
 import com.eshabakhov.surok.security.CsToken;
 import com.eshabakhov.surok.user.UrBrief;
 import com.fasterxml.jackson.databind.JsonNode;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -64,7 +62,6 @@ import org.springframework.web.server.ResponseStatusException;
  */
 @RestController
 @RequestMapping("/schools/{school}/teachers")
-@Tag(name = "Teachers")
 public class ThsHttp {
 
     /** Database context. */
@@ -99,7 +96,6 @@ public class ThsHttp {
             "application/vnd.surok.teachers.v1+xml"
         }
     )
-    @Operation(summary = "List teachers")
     public ResponseEntity<?> selection(
         @PathVariable final long school,
         final Filters filters,
@@ -164,7 +160,6 @@ public class ThsHttp {
             "application/vnd.surok.teacher-v1+xml"
         }
     )
-    @Operation(summary = "Get teacher")
     public ResponseEntity<?> teacher(
         @PathVariable final long school,
         @PathVariable final long teacher,
@@ -218,7 +213,6 @@ public class ThsHttp {
             "application/vnd.surok.teacher-v1+xml"
         }
     )
-    @Operation(summary = "Create teacher from form")
     public ResponseEntity<?> create(
         @PathVariable final long school,
         @RequestParam final MultiValueMap<String, String> parameters,
@@ -260,7 +254,6 @@ public class ThsHttp {
             "application/vnd.surok.teacher-v1+xml"
         }
     )
-    @Operation(summary = "Create teacher from JSON")
     public ResponseEntity<?> create(
         @PathVariable final long school,
         @RequestBody final JsonNode json,
@@ -296,7 +289,6 @@ public class ThsHttp {
             "application/vnd.surok.teacher-v1+xml"
         }
     )
-    @Operation(summary = "Update teacher from form")
     public ResponseEntity<?> revise(
         @PathVariable final long school,
         @PathVariable final long teacher,
@@ -340,7 +332,6 @@ public class ThsHttp {
             "application/vnd.surok.teacher-v1+xml"
         }
     )
-    @Operation(summary = "Update teacher from JSON")
     public ResponseEntity<?> revise(
         @PathVariable final long school,
         @PathVariable final long teacher,
@@ -368,7 +359,6 @@ public class ThsHttp {
      * @throws Exception If removal fails
      */
     @DeleteMapping("/{teacher}")
-    @Operation(summary = "Remove teacher")
     public ResponseEntity<Void> remove(
         @PathVariable final long school,
         @PathVariable final long teacher,

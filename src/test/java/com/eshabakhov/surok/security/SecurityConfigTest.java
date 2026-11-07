@@ -12,7 +12,6 @@ import com.eshabakhov.surok.user.Roles;
 import com.eshabakhov.surok.user.UrsPostgres;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.swagger.v3.oas.models.OpenAPI;
 import java.util.List;
 import java.util.UUID;
 import org.hamcrest.MatcherAssert;
@@ -527,19 +526,6 @@ final class SecurityConfigTest {
             mvc.perform(MockMvcRequestBuilders.get("/oauth2/authorization/yandex"))
                 .andReturn().getResponse().getHeader(HttpHeaders.LOCATION),
             Matchers.startsWith("https://oauth.yandex.ru/authorize?")
-        );
-    }
-
-    /**
-     * API documentation must use the version of the built artifact.
-     *
-     * @param api OpenAPI definition
-     */
-    @Test
-    void exposesBuildVersion(@Autowired final OpenAPI api) {
-        Assertions.assertEquals(
-            this.build.getVersion(), api.getInfo().getVersion(),
-            "OpenAPI version differs from the built artifact"
         );
     }
 

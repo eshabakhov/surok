@@ -50,6 +50,10 @@ from the website session. School-specific access is checked on every API request
 Credentials remain in memory until logout or page reload; use HTTPS outside
 local development. **Try it out** includes the application's CSRF token.
 
+Maintain the OpenAPI description in `src/main/resources/openapi.yml`.
+The server filters that document by the current user's permissions for
+`/api-docs` (JSON) and `/api-docs.yaml` (YAML).
+
 Administrators can open `/permissions` to inspect resource access by role.
 The page supports searching actions and endpoints; `✓*` means access within the
 user's school. JSON and XML representations are selectable in Swagger UI.

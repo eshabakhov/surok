@@ -26,11 +26,6 @@ import com.eshabakhov.surok.school.SlsBrief;
 import com.eshabakhov.surok.school.SlsPostgres;
 import com.eshabakhov.surok.security.CsToken;
 import com.eshabakhov.surok.user.UrBrief;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -64,7 +59,6 @@ import org.springframework.web.server.ResponseStatusException;
  */
 @RestController
 @RequestMapping("/federal/curriculums/{curriculum}/requirements")
-@Tag(name = "Federal Curriculum Requirements")
 public class RqsHttp {
 
     /** JOOQ context. */
@@ -99,12 +93,6 @@ public class RqsHttp {
             "application/vnd.surok.federal-curriculum-requirements.v1+json",
             "application/vnd.surok.federal-curriculum-requirements.v1+xml"
         }
-    )
-    @Operation(summary = "List federal curriculum requirements")
-    @ApiResponse(
-        responseCode = "200",
-        description = "Federal curriculum requirements",
-        content = @Content(schema = @Schema(type = "object"))
     )
     public ResponseEntity<?> selection(
         @PathVariable("curriculum") final long current,
@@ -172,13 +160,6 @@ public class RqsHttp {
             "application/vnd.surok.federal-curriculum-requirement-v1+xml"
         }
     )
-    @Operation(summary = "Get federal curriculum requirement")
-    @ApiResponse(
-        responseCode = "200",
-        description = "Federal curriculum requirement",
-        content = @Content(schema = @Schema(type = "object"))
-    )
-    @ApiResponse(responseCode = "404", description = "Requirement not found")
     public ResponseEntity<?> requirement(
         @PathVariable("curriculum") final long current,
         @PathVariable final long requirement,
@@ -230,15 +211,6 @@ public class RqsHttp {
             "application/vnd.surok.federal-curriculum-requirement-v1+xml"
         }
     )
-    @Operation(summary = "Create federal curriculum requirement")
-    @ApiResponse(
-        responseCode = "201",
-        description = "Federal curriculum requirement created"
-    )
-    @ApiResponse(
-        responseCode = "302",
-        description = "HTML client redirected to the requirements"
-    )
     public ResponseEntity<?> create(
         @PathVariable("curriculum") final long current,
         @RequestParam final MultiValueMap<String, String> parameters,
@@ -274,16 +246,6 @@ public class RqsHttp {
             "application/vnd.surok.federal-curriculum-requirement-v1+xml"
         }
     )
-    @Operation(summary = "Update federal curriculum requirement")
-    @ApiResponse(
-        responseCode = "200",
-        description = "Federal curriculum requirement updated"
-    )
-    @ApiResponse(
-        responseCode = "302",
-        description = "HTML client redirected to the requirements"
-    )
-    @ApiResponse(responseCode = "404", description = "Requirement not found")
     public ResponseEntity<?> revise(
         @PathVariable("curriculum") final long current,
         @PathVariable final long requirement,
@@ -380,12 +342,6 @@ public class RqsHttp {
      * @throws Exception If removal fails
      */
     @DeleteMapping("/{requirement}")
-    @Operation(summary = "Remove federal curriculum requirement")
-    @ApiResponse(
-        responseCode = "204",
-        description = "Federal curriculum requirement removed"
-    )
-    @ApiResponse(responseCode = "404", description = "Requirement not found")
     public ResponseEntity<Void> remove(
         @PathVariable("curriculum") final long current,
         @PathVariable final long requirement,

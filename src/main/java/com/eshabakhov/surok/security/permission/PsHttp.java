@@ -14,12 +14,6 @@ import com.eshabakhov.surok.school.SlsPostgres;
 import com.eshabakhov.surok.security.CsToken;
 import com.eshabakhov.surok.user.AuthUser;
 import com.eshabakhov.surok.user.UrBrief;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.ExampleObject;
-import io.swagger.v3.oas.annotations.media.Schema;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import java.nio.charset.StandardCharsets;
 import org.jooq.DSLContext;
@@ -40,7 +34,6 @@ import org.springframework.web.server.ResponseStatusException;
  * @since 0.0.1
  */
 @RestController
-@Tag(name = "Permissions")
 public class PsHttp {
 
     /** Live controller permissions. */
@@ -76,88 +69,6 @@ public class PsHttp {
             "application/vnd.surok.permissions.v1+xml"
         }
     )
-    @Operation(
-        summary = "View permissions by resource and role",
-        description = """
-            Administrator-only matrix of registered application controllers and their authorization
-            rules. Select the response media type in Swagger's response selector. Each access
-            entry contains role, title and scope: all (no school restriction), school (own school
-            only), or denied. Additional conditions are described in condition. Main resource
-            routes are listed, excluding GET aliases for forms and fragments. Examples show an
-            excerpt; the response includes all roles, including ANONYMOUS
-            """
-    )
-    @ApiResponse(
-        responseCode = "200", description = "Permission matrix",
-        content = {
-            @Content(
-                mediaType = MediaType.TEXT_HTML_VALUE,
-                schema = @Schema(type = "string"),
-                examples = @ExampleObject(
-                    name = "matrix", value = "<html lang=\"ru\"><body>Права доступа</body></html>"
-                )
-            ),
-            @Content(
-                mediaType = "application/vnd.surok.permissions.v1+json",
-                schema = @Schema(type = "object"),
-                examples = @ExampleObject(
-                    name = "matrix",
-                    value = """
-                        {
-                            "operations": [{
-                                "resource": "Права доступа",
-                                "action": "Просмотр прав доступа",
-                                "path": "/permissions",
-                                "consumes": "",
-                                "condition": "",
-                                "method": "GET",
-                                "access": [
-                                    {"role": "ADMIN", "title": "Администратор", "scope": "all"},
-                                    {"role": "VIEWER", "title": "Наблюдатель", "scope": "denied"}
-                                ]
-                            }]
-                        }
-                        """
-                )
-            ),
-            @Content(
-                mediaType = "application/vnd.surok.permissions.v1+xml",
-                schema = @Schema(ref = "#/components/schemas/PermissionsXml"),
-                examples = @ExampleObject(
-                    name = "matrix",
-                    value = """
-                        <permissions>
-                            <operations>
-                                <operation>
-                                    <resource>Права доступа</resource>
-                                    <action>Просмотр прав доступа</action>
-                                    <path>/permissions</path>
-                                    <consumes></consumes>
-                                    <condition></condition>
-                                    <method>GET</method>
-                                    <access>
-                                        <grant>
-                                            <role>ADMIN</role>
-                                            <title>Администратор</title>
-                                            <scope>all</scope>
-                                        </grant>
-                                        <grant>
-                                            <role>VIEWER</role>
-                                            <title>Наблюдатель</title>
-                                            <scope>denied</scope>
-                                        </grant>
-                                    </access>
-                                </operation>
-                            </operations>
-                        </permissions>
-                        """
-                )
-            )
-        }
-    )
-    @ApiResponse(responseCode = "401", description = "Authentication required for API access")
-    @ApiResponse(responseCode = "403", description = "Administrator role required")
-    @ApiResponse(responseCode = "406", description = "Unsupported representation")
     public ResponseEntity<?> page(
         @AuthenticationPrincipal final AuthUser user, final HttpServletRequest request
     ) throws Exception {

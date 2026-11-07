@@ -6,6 +6,15 @@ const { test } = require('node:test');
 /** Builds an isolated Swagger runtime with controllable HTTP responses. */
 function runtime(fetch) {
     const state = { authorized: false, documents: [], errors: [] };
+    const initial = {
+        openapi: '3.0.1',
+        paths: { secret: {} },
+        components: {
+            schemas: { Private: { type: 'object' } },
+            examples: { Secret: { value: { name: 'Закрытая запись' } } },
+            securitySchemes: { 'Basic auth': { type: 'http', scheme: 'basic' } }
+        }
+    };
     const context = {
         window: {
             fetch,
@@ -18,7 +27,10 @@ function runtime(fetch) {
     vm.runInNewContext(fs.readFileSync('src/main/resources/static/js/swagger.js', 'utf8'), context);
     const system = {
         getConfigs: () => ({ url: '/app/api-docs' }),
-        specSelectors: { url: () => '/app/api-docs', specJson: () => ({ toJS: () => ({ openapi: '3.0.1', paths: { secret: {} } }) }) },
+        specSelectors: {
+            url: () => '/app/api-docs',
+            specJson: () => ({ toJS: () => state.documents.at(-1) || initial })
+        },
         specActions: { updateSpec: spec => state.documents.push(JSON.parse(spec)) },
         errActions: { newAuthErr: error => state.errors.push(error), clear: () => {} },
         authActions: { logout: () => { state.authorized = false; } }
@@ -99,4 +111,14 @@ test('Network failures do not retain authorized operations', async () => {
     const state = runtime(async () => { throw new Error('Offline'); });
     await state.authorize(credentials());
     assert.deepEqual([state.authorized, state.documents.at(-1).paths, state.errors.length], [false, {}, 1]);
+});
+
+test('Logout clears protected components even if the public description cannot be loaded', async () => {
+    const state = runtime(async () => { throw new Error('Offline'); });
+    await state.logout(['Basic auth']);
+    assert.deepEqual(
+        state.documents.at(-1).components,
+        { securitySchemes: { 'Basic auth': { type: 'http', scheme: 'basic' } } },
+        'Logout retained protected models or removed the authorization scheme'
+    );
 });
