@@ -205,33 +205,34 @@ final class XsClasspathTest {
         );
     }
 
-    /**
-     * Verifies both forms use the shared CSRF input.
-     *
-     * @param view Selected form
-     */
-    @ParameterizedTest
-    @ValueSource(strings = {"create", "edit"})
-    void includesCsrfInSchoolForms(final String view) {
-        final String stylesheet;
-        if ("create".equals(view)) {
-            stylesheet = "xslt/schools.xsl";
-        } else {
-            stylesheet = "xslt/school.xsl";
-        }
+    /** Verifies the creation form submits its CSRF token as a hidden field. */
+    @Test
+    void includesCsrfInSchoolCreationForm() {
         MatcherAssert.assertThat(
-            "School form lost its CSRF field",
-            new XsClasspath(stylesheet, view).transform(
+            "School creation form lost its hidden CSRF field",
+            new XsClasspath("xslt/schools.xsl", "create").transform(
+                "<surok><csrf><parameter>_csrf</parameter><token>токен</token></csrf></surok>"
+            ),
+            Matchers.containsString("<input name=\"_csrf\" type=\"hidden\" value=\"токен\"")
+        );
+    }
+
+    /** Verifies the edit page provides the CSRF token and header name to JavaScript. */
+    @Test
+    void exposesCsrfMetadataForSchoolUpdates() {
+        MatcherAssert.assertThat(
+            "School edit page omitted the CSRF token or header name for the PUT request",
+            new XsClasspath("xslt/school.xsl", "edit").transform(
                 """
                 <surok>
-                    <csrf><parameter>_csrf</parameter><token>токен</token></csrf>
+                    <csrf><header>X-XSRF-TOKEN</header><token>токен</token></csrf>
                     <schools><school><id>7</id><name>Лицей</name></school></schools>
                 </surok>
                 """
             ),
             Matchers.allOf(
-                Matchers.containsString("name=\"_csrf\""),
-                Matchers.containsString("value=\"токен\"")
+                Matchers.containsString("<meta name=\"_csrf\" content=\"токен\""),
+                Matchers.containsString("<meta name=\"_csrf_header\" content=\"X-XSRF-TOKEN\"")
             )
         );
     }

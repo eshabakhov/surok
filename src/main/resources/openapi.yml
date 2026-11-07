@@ -52,6 +52,7 @@ paths:
       tags:
         - Schools
       summary: Update school
+      description: Update the school with JSON. The browser edit form uses this operation.
       operationId: revise
       parameters:
         - name: school
@@ -3982,58 +3983,6 @@ paths:
               examples:
                 example:
                   $ref: "#/components/examples/HtmlPageSchoolEditHtml"
-    post:
-      tags:
-        - Schools
-      summary: Update school
-      operationId: revise_12
-      parameters:
-        - name: school
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
-            description: School identifier.
-            minimum: 1
-          description: School identifier.
-          example: 12
-      responses:
-        "200":
-          description: The resource was updated.
-          content:
-            application/vnd.surok.school-v1+json:
-              schema:
-                $ref: "#/components/schemas/School"
-              examples:
-                example:
-                  $ref: "#/components/examples/SchoolJson"
-            application/vnd.surok.school-v1+xml:
-              schema:
-                $ref: "#/components/schemas/School"
-              examples:
-                example:
-                  $ref: "#/components/examples/SchoolXml"
-        "302":
-          description: Browser requests are redirected to the resource page. No body.
-          headers:
-            Location:
-              description: Relative URL of the resource or page to open.
-              schema:
-                type: string
-              example: /schools/12
-        "400":
-          $ref: "#/components/responses/InvalidRequest"
-      requestBody:
-        description: Replacement fields for the existing resource.
-        required: true
-        content:
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: "#/components/schemas/SchoolForm"
-            examples:
-              example:
-                $ref: "#/components/examples/SchoolForm"
   /schools/{school}/classes/{clazz}/edit:
     get:
       tags:
@@ -10805,7 +10754,7 @@ components:
           description: CSRF token supplied by the page; omit this field when using the CSRF header.
     SchoolForm:
       type: object
-      description: Browser form. Fields used to create or update a school.
+      description: Browser form used to create a school.
       required:
         - name
       properties:
@@ -11397,10 +11346,14 @@ components:
       summary: Rendered HTML document or fragment. The example shows the relevant part of the response.
       value: <main><h1>Расписания</h1></main>
     HtmlPageSchoolEditHtml:
-      summary: Rendered HTML document or fragment. The example shows the relevant part of the response.
-      value: <form method="post"><input name="name" value="Лицей № 42"></form>
+      summary: Edit form that submits JSON with PUT through JavaScript.
+      value: |-
+        <form id="school-edit-form" action="/schools/12" method="post">
+          <input id="school-name" name="name" value="Лицей № 42">
+          <button type="submit" disabled>Сохранить</button>
+        </form>
     SchoolForm:
-      summary: Browser form. Fields used to create or update a school.
+      summary: Browser form used to create a school.
       value:
         name: Лицей № 42
     HtmlPageSchoolClassEditHtml:

@@ -233,26 +233,6 @@ public class SlsHttp {
     }
 
     /**
-     * Revises a school from form fields.
-     *
-     * @param school School identifier
-     * @param parameters Form fields
-     * @param request HTTP request
-     * @param user Acting user
-     * @return Revised representation or redirect
-     * @throws Exception If revision fails
-     */
-    @PostMapping(value = "/{school}/edit", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
-    public ResponseEntity<?> revise(
-        @PathVariable final long school,
-        @RequestParam final MultiValueMap<String, String> parameters,
-        final HttpServletRequest request,
-        @AuthenticationPrincipal final User user
-    ) throws Exception {
-        return this.save(request, new SlInputHttp(parameters), school, false, user);
-    }
-
-    /**
      * Revises an existing school from JSON without creating a replacement.
      *
      * @param school School identifier

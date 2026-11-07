@@ -209,6 +209,36 @@ final class OaHttpTest {
     }
 
     /**
+     * Documents school updates at the resource and preserves the edit page.
+     *
+     * @param mvc HTTP client
+     * @throws Exception If the description cannot be read
+     */
+    @Test
+    void publishesOneSchoolUpdateOperation(@Autowired final MockMvc mvc) throws Exception {
+        final JsonNode paths = Json.mapper().readTree(
+            mvc.perform(
+                MockMvcRequestBuilders.get("/api-docs").with(
+                    SecurityMockMvcRequestPostProcessors.user("администратор").roles("ADMIN")
+                )
+            ).andReturn().getResponse().getContentAsByteArray()
+        ).path("paths");
+        final JsonNode content = paths.path("/schools/{school}").path("put")
+            .path("requestBody").path("content");
+        final JsonNode edit = paths.path("/schools/{school}/edit");
+        MatcherAssert.assertThat(
+            "Swagger exposed a separate form update or lost an update representation",
+            List.of(
+                content.has("application/json"),
+                content.has("application/vnd.surok.school-v1+json"),
+                edit.has("get"),
+                edit.has("post")
+            ),
+            Matchers.contains(true, true, true, false)
+        );
+    }
+
+    /**
      * Documents the page and fragment as distinct media types of a single list operation.
      *
      * @param mvc HTTP client
