@@ -7,7 +7,8 @@ for (const [resource, list, segment] of [
     ['teacher', 'teachers', 'teachers'],
     ['schedule', 'schedules', 'schedules'],
     ['school-class', 'school-classes', 'classes'],
-    ['building', 'buildings', 'buildings']
+    ['building', 'buildings', 'buildings'],
+    ['cabinet', 'cabinets', 'buildings/9/cabinets']
 ]) {
     test(`${resource} sorting requests and replaces the fragment at the collection URL`, () => {
         const script = file => fs.readFileSync('src/main/resources/static/js/' + file, 'utf8')

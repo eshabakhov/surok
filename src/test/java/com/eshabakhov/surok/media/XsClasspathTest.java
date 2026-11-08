@@ -308,11 +308,11 @@ final class XsClasspathTest {
     }
 
     @ParameterizedTest
-    @CsvSource({"building, create", "cabinet, create", "cabinet, edit"})
-    void printsValidationErrorsOnForms(final String entity, final String view) {
+    @ValueSource(strings = {"building", "cabinet"})
+    void printsValidationErrorsOnCreationForms(final String entity) {
         MatcherAssert.assertThat(
             "Invalid form submissions must show the existing validation message",
-            XsClasspathTest.page(entity, view, true),
+            XsClasspathTest.page(entity, "create", true),
             Matchers.allOf(
                 Matchers.containsString("class=\"error-message\""),
                 Matchers.containsString("Название не может быть пустым"),
@@ -321,21 +321,27 @@ final class XsClasspathTest {
         );
     }
 
-    /** Verifies the building forms use the collection and item URLs with their CSRF data. */
-    @Test
-    void connectsBuildingFormsToCanonicalRoutes() {
+    /**
+     * Verifies the forms use the collection and item URLs with their CSRF data.
+     *
+     * @param entity Resource name
+     * @param path Collection URL
+     */
+    @ParameterizedTest
+    @CsvSource({"building, /schools/3/buildings", "cabinet, /schools/3/buildings/4/cabinets"})
+    void connectsFormsToCanonicalRoutes(final String entity, final String path) {
         MatcherAssert.assertThat(
-            "The building forms lost their canonical actions or CSRF metadata",
+            "The forms lost their canonical actions or CSRF metadata",
             List.of(
-                XsClasspathTest.page("building", "create", false),
-                XsClasspathTest.page("building", "edit", false)
+                XsClasspathTest.page(entity, "create", false),
+                XsClasspathTest.page(entity, "edit", false)
             ),
             Matchers.contains(
-                Matchers.containsString("action=\"/schools/3/buildings\""),
+                Matchers.containsString(String.format("action=\"%s\"", path)),
                 Matchers.allOf(
-                    Matchers.containsString("action=\"/schools/3/buildings/7\""),
-                    Matchers.containsString("id=\"building-edit-form\""),
-                    Matchers.containsString("src=\"/js/school/building-edit.js\""),
+                    Matchers.containsString(String.format("action=\"%s/7\"", path)),
+                    Matchers.containsString(String.format("id=\"%s-edit-form\"", entity)),
+                    Matchers.containsString(String.format("src=\"/js/school/%s-edit.js\"", entity)),
                     Matchers.containsString("<meta name=\"_csrf\" content=\"token\""),
                     Matchers.containsString("<meta name=\"_csrf_header\" content=\"X-XSRF-TOKEN\"")
                 )

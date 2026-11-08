@@ -7,7 +7,8 @@ $(() => {
         results: '#cabinets-results',
         pagination: '#cabinets-pagination',
         rows: '#cabinets-container .cabinet-row',
-        sort: '.cabinets-sort'
+        sort: '.cabinets-sort',
+        accept: 'text/vnd.surok.cabinets-fragment+html'
     });
     $(document).on('click', '.btn-delete-row', function () {
         const button = $(this);

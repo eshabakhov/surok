@@ -9,7 +9,7 @@ const page = ({ kind = 'school', failure } = {}) => {
     const visits = [];
     const names = {
         school: 'Лицей № 42', teacher: 'Анна Петрова',
-        schedule: 'Расписание на весну', building: 'Северный корпус'
+        schedule: 'Расписание на весну', building: 'Северный корпус', cabinet: 'Кабинет 204'
     };
     const input = { value: names[kind] };
     const grade = { valueAsNumber: 7 };
@@ -20,7 +20,7 @@ const page = ({ kind = 'school', failure } = {}) => {
     let protect;
     const segments = {
         school: '', teacher: '/teachers/31', schedule: '/schedules/31',
-        'school-class': '/classes/31', building: '/buildings/31'
+        'school-class': '/classes/31', building: '/buildings/31', cabinet: '/buildings/9/cabinets/31'
     };
     const fields = new Map([
         ['[name="name"]', input], ['[name="grade"]', grade], ['[name="litera"]', litera],
@@ -197,5 +197,31 @@ test('A building validation error keeps the entered name and allows another atte
             building.message.textContent, building.visits],
         ['  ', false, false, 'Название не может быть пустым', []],
         'The building edit form lost the input or failed to show the validation error'
+    );
+});
+
+test('The cabinet edit form sends protected JSON PUT within the selected building', () => {
+    const cabinet = page({ kind: 'cabinet' });
+    const intercepted = cabinet.submit();
+    const request = cabinet.requests[0];
+    const uri = 'https://school.test/schools/12/buildings/9/cabinets/31';
+    const media = 'application/vnd.surok.cabinet-v1+json';
+    assert.deepEqual(
+        [intercepted, request.method, request.url, request.contentType, request.headers.Accept,
+            request.headers['X-XSRF-TOKEN'], JSON.parse(request.data), cabinet.visits],
+        [true, 'PUT', uri, media, media, 'masked-token', { name: 'Кабинет 204' }, [uri]],
+        'The cabinet edit form did not use the protected update for the selected building'
+    );
+});
+
+test('A cabinet validation error keeps the entered name and allows another attempt', () => {
+    const cabinet = page({ kind: 'cabinet', failure: { status: 400 } });
+    cabinet.input.value = '  ';
+    cabinet.submit();
+    assert.deepEqual(
+        [cabinet.input.value, cabinet.button.disabled, cabinet.message.hidden,
+            cabinet.message.textContent, cabinet.visits],
+        ['  ', false, false, 'Название не может быть пустым', []],
+        'The cabinet edit form lost the input or failed to show the validation error'
     );
 });

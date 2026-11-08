@@ -148,18 +148,27 @@
                 </div>
             </div>
         </div>
-        <xsl:if test="/surok/error = 'true'">
-            <div class="error-message">Название не может быть пустым</div>
+        <xsl:if test="$view = 'edit' or /surok/error = 'true'">
+            <div id="cabinet-form-error" class="error-message" role="alert">
+                <xsl:choose>
+                    <xsl:when test="/surok/error = 'true'">Название не может быть пустым</xsl:when>
+                    <xsl:otherwise><xsl:attribute name="hidden">hidden</xsl:attribute></xsl:otherwise>
+                </xsl:choose>
+            </div>
+        </xsl:if>
+        <xsl:if test="$view = 'edit'">
+            <noscript><p class="error-message">Включите JavaScript, чтобы сохранить изменения.</p></noscript>
         </xsl:if>
         <div class="cabinet-form-wrap">
             <form method="post" class="cabinet-form">
+                <xsl:if test="$view = 'edit'"><xsl:attribute name="id">cabinet-edit-form</xsl:attribute></xsl:if>
                 <xsl:attribute name="action">
                     <xsl:choose>
-                        <xsl:when test="$view = 'edit'"><xsl:value-of select="concat($base, '/', $selected/id, '/edit')"/></xsl:when>
-                        <xsl:otherwise><xsl:value-of select="concat($base, '/create')"/></xsl:otherwise>
+                        <xsl:when test="$view = 'edit'"><xsl:value-of select="concat($base, '/', $selected/id)"/></xsl:when>
+                        <xsl:otherwise><xsl:value-of select="$base"/></xsl:otherwise>
                     </xsl:choose>
                 </xsl:attribute>
-                <xsl:call-template name="csrf-input"/>
+                <xsl:if test="$view = 'create'"><xsl:call-template name="csrf-input"/></xsl:if>
                 <label for="cabinet-name" class="cabinet-form-field">
                     Название кабинета
                     <input id="cabinet-name" name="name" type="text" autofocus="autofocus"
@@ -186,12 +195,22 @@
                         <xsl:text>Отмена</xsl:text>
                     </a>
                     <button class="btn-primary" type="submit">
-                        <xsl:choose><xsl:when test="$view = 'edit'">Сохранить</xsl:when><xsl:otherwise>Создать</xsl:otherwise></xsl:choose>
+                        <xsl:choose>
+                            <xsl:when test="$view = 'edit'">
+                                <xsl:attribute name="disabled">disabled</xsl:attribute>Сохранить
+                            </xsl:when>
+                            <xsl:otherwise>Создать</xsl:otherwise>
+                        </xsl:choose>
                     </button>
                 </div>
             </form>
         </div>
     </xsl:template>
 
-    <xsl:template name="scripts"><script type="module" src="/js/school/cabinets.js"></script></xsl:template>
+    <xsl:template name="scripts">
+        <xsl:choose>
+            <xsl:when test="$view = 'edit'"><script type="module" src="/js/school/cabinet-edit.js"></script></xsl:when>
+            <xsl:otherwise><script type="module" src="/js/school/cabinets.js"></script></xsl:otherwise>
+        </xsl:choose>
+    </xsl:template>
 </xsl:stylesheet>

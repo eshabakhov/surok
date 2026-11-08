@@ -32,9 +32,11 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 import org.jooq.DSLContext;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -65,6 +67,15 @@ import org.springframework.web.server.ResponseStatusException;
 @RequestMapping("/schools/{school}/buildings/{building}/cabinets")
 public class CbsHttp {
 
+    /** JSON representation of the cabinet collection. */
+    private static final String JSON = "application/vnd.surok.cabinets.v1+json";
+
+    /** XML representation of the cabinet collection. */
+    private static final String XML = "application/vnd.surok.cabinets.v1+xml";
+
+    /** HTML representation containing only the cabinet results. */
+    private static final String FRAGMENT = "text/vnd.surok.cabinets-fragment+html";
+
     /** Database context. */
     private final DSLContext ctx;
 
@@ -78,7 +89,7 @@ public class CbsHttp {
     }
 
     /**
-     * Shows a collection, its fragment or a creation form.
+     * Shows a collection or its results fragment.
      *
      * @param school School identifier
      * @param building Building identifier
@@ -90,14 +101,7 @@ public class CbsHttp {
      * @return Negotiated representation
      * @throws Exception If lookup or printing fails
      */
-    @GetMapping(
-        value = {"", "/", "/fragment", "/create"},
-        produces = {
-            MediaType.TEXT_HTML_VALUE,
-            "application/vnd.surok.cabinets.v1+json",
-            "application/vnd.surok.cabinets.v1+xml"
-        }
-    )
+    @GetMapping(produces = {MediaType.TEXT_HTML_VALUE, CbsHttp.JSON, CbsHttp.XML, CbsHttp.FRAGMENT})
     public ResponseEntity<?> selection(
         @PathVariable final long school,
         @PathVariable final long building,
@@ -107,10 +111,16 @@ public class CbsHttp {
         final HttpServletRequest request,
         @AuthenticationPrincipal final User user
     ) throws Exception {
-        final MediaType type = new AcHttp(request, "cabinets.v1").type();
-        final School sch = new SlsAuthorized(
-            new SlsPostgres(this.ctx), user
-        ).school(school);
+        final MediaType type = new AcHttp(
+            request,
+            List.of(
+                MediaType.TEXT_HTML,
+                MediaType.valueOf(CbsHttp.JSON),
+                MediaType.valueOf(CbsHttp.XML),
+                MediaType.valueOf(CbsHttp.FRAGMENT)
+            )
+        ).type();
+        final School sch = new SlsAuthorized(new SlsPostgres(this.ctx), user).school(school);
         final Building build = sch.buildings().building(building);
         final Set<Filter> requested = new LinkedHashSet<>(filters.filters());
         requested.addAll(
@@ -122,29 +132,49 @@ public class CbsHttp {
         final Cabinets selected = build.cabinets().selection(
             applied, page, sorts
         );
-        return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8)).body(
-            switch (type.toString()) {
-                case MediaType.TEXT_HTML_VALUE -> {
-                    final String view;
-                    if (request.getRequestURI().endsWith("/fragment")) {
-                        view = "list-fragment";
-                    } else if (request.getRequestURI().endsWith("/create")) {
-                        view = "create";
-                    } else {
-                        view = "list";
+        return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8))
+            .varyBy(HttpHeaders.ACCEPT).body(
+                switch (type.toString()) {
+                    case MediaType.TEXT_HTML_VALUE, CbsHttp.FRAGMENT -> {
+                        final String view;
+                        if (MediaType.TEXT_HTML.equals(type)) {
+                            view = "list";
+                        } else {
+                            view = "list-fragment";
+                        }
+                        yield this.web(request, sch, view).with("building", build).with(
+                            "cabinets", new CbsWeb(selected, applied, sorts)
+                        ).print();
                     }
-                    yield this.web(request, sch, view).with("building", build).with(
-                        "cabinets", new CbsWeb(selected, applied, sorts)
-                    ).print();
+                    case CbsHttp.JSON -> selected.print(new MdJson()).print();
+                    case CbsHttp.XML -> selected.print(new MdXml("cabinets")).print();
+                    case null, default -> throw new ResponseStatusException(
+                        HttpStatus.NOT_ACCEPTABLE, "Unsupported Accept header"
+                    );
                 }
-                case "application/vnd.surok.cabinets.v1+json" ->
-                    selected.print(new MdJson()).print();
-                case "application/vnd.surok.cabinets.v1+xml" ->
-                    selected.print(new MdXml("cabinets")).print();
-                case null, default -> throw new ResponseStatusException(
-                    HttpStatus.NOT_ACCEPTABLE, "Unsupported Accept header"
-                );
-            }
+            );
+    }
+
+    /**
+     * Shows the browser form for creating a cabinet.
+     *
+     * @param school School identifier
+     * @param building Building identifier
+     * @param request HTTP request
+     * @param user Acting user
+     * @return HTML creation form
+     * @throws Exception If lookup or printing fails
+     */
+    @GetMapping(value = "/create", produces = MediaType.TEXT_HTML_VALUE)
+    public ResponseEntity<String> form(
+        @PathVariable final long school, @PathVariable final long building,
+        final HttpServletRequest request, @AuthenticationPrincipal final User user
+    ) throws Exception {
+        final MediaType type = new AcHttp(request, List.of(MediaType.TEXT_HTML)).type();
+        final School sch = new SlsAuthorized(new SlsPostgres(this.ctx), user).school(school);
+        return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8)).body(
+            this.web(request, sch, "create")
+                .with("building", sch.buildings().building(building)).print()
         );
     }
 
@@ -217,7 +247,6 @@ public class CbsHttp {
      * @throws Exception If creation fails
      */
     @PostMapping(
-        value = "/create",
         consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE,
         produces = {
             MediaType.TEXT_HTML_VALUE,
@@ -235,20 +264,13 @@ public class CbsHttp {
         final MediaType type = new AcHttp(request, "cabinet-v1").type();
         ResponseEntity<?> response;
         try {
-            response = CbsHttp.result(
-                type,
-                new SlsAuthorized(new SlsPostgres(this.ctx), user)
-                .school(school).buildings().building(building).cabinets()
-                    .create(new CbInputHttp(parameters)), HttpStatus.CREATED,
-                String.format("/schools/%d/buildings/%d/cabinets", school, building),
-                String.format("/schools/%d/buildings/%d/cabinets", school, building)
-            );
+            response = this.create(type, school, building, new CbInputHttp(parameters), user);
         } catch (final CabinetInputException exception) {
             if (!MediaType.TEXT_HTML.equals(type)) {
                 throw exception;
             }
             response = ResponseEntity.status(HttpStatus.FOUND).location(
-                URI.create(String.format("%s?error=empty", request.getRequestURI()))
+                URI.create(String.format("%s/create?error=empty", request.getRequestURI()))
             ).build();
         }
         return response;
@@ -266,7 +288,6 @@ public class CbsHttp {
      * @throws Exception If creation fails
      */
     @PostMapping(
-        value = {"", "/", "/create"},
         consumes = "application/vnd.surok.cabinet-v1+json",
         produces = {
             MediaType.TEXT_HTML_VALUE,
@@ -281,67 +302,9 @@ public class CbsHttp {
         final HttpServletRequest request,
         @AuthenticationPrincipal final User user
     ) throws Exception {
-        return CbsHttp.result(
-            new AcHttp(request, "cabinet-v1").type(),
-            new SlsAuthorized(new SlsPostgres(this.ctx), user)
-                .school(school).buildings().building(building).cabinets()
-                .create(new CbInputHttp(json)), HttpStatus.CREATED,
-            String.format("/schools/%d/buildings/%d/cabinets", school, building),
-            String.format("/schools/%d/buildings/%d/cabinets", school, building)
+        return this.create(
+            new AcHttp(request, "cabinet-v1").type(), school, building, new CbInputHttp(json), user
         );
-    }
-
-    /**
-     * Revises a cabinet from form fields.
-     *
-     * @param school School identifier
-     * @param building Building identifier
-     * @param cabinet Entity identifier
-     * @param parameters Form fields
-     * @param request HTTP request
-     * @param user Acting user
-     * @return Revised representation or redirect
-     * @throws Exception If revision fails
-     */
-    @PostMapping(
-        value = "/{cabinet}/edit",
-        consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE,
-        produces = {
-            MediaType.TEXT_HTML_VALUE,
-            "application/vnd.surok.cabinet-v1+json",
-            "application/vnd.surok.cabinet-v1+xml"
-        }
-    )
-    public ResponseEntity<?> revise(
-        @PathVariable final long school,
-        @PathVariable final long building,
-        @PathVariable final long cabinet,
-        @RequestParam final MultiValueMap<String, String> parameters,
-        final HttpServletRequest request,
-        @AuthenticationPrincipal final User user
-    ) throws Exception {
-        final MediaType type = new AcHttp(request, "cabinet-v1").type();
-        ResponseEntity<?> response;
-        try {
-            final Cabinet revised = new SlsAuthorized(new SlsPostgres(this.ctx), user)
-                .school(school).buildings().building(building).cabinets()
-                .revise(cabinet, new CbInputHttp(parameters));
-            response = CbsHttp.result(
-                type, revised, HttpStatus.OK,
-                String.format("/schools/%d/buildings/%d/cabinets", school, building),
-                String.format(
-                    "/schools/%d/buildings/%d/cabinets/%d", school, building, revised.uid()
-                )
-            );
-        } catch (final CabinetInputException exception) {
-            if (!MediaType.TEXT_HTML.equals(type)) {
-                throw exception;
-            }
-            response = ResponseEntity.status(HttpStatus.FOUND).location(
-                URI.create(String.format("%s?error=empty", request.getRequestURI()))
-            ).build();
-        }
-        return response;
     }
 
     /**
@@ -404,6 +367,20 @@ public class CbsHttp {
         new SlsAuthorized(new SlsPostgres(this.ctx), user)
             .school(school).buildings().building(building).cabinets().remove(cabinet);
         return ResponseEntity.noContent().build();
+    }
+
+    private ResponseEntity<?> create(
+        final MediaType type, final long school, final long building,
+        final CabinetInput input, final User user
+    ) throws Exception {
+        final String base = String.format("/schools/%d/buildings/%d/cabinets", school, building);
+        return CbsHttp.result(
+            type,
+            new SlsAuthorized(new SlsPostgres(this.ctx), user)
+                .school(school).buildings().building(building).cabinets()
+                .create(input),
+            HttpStatus.CREATED, base, base
+        );
     }
 
     private static ResponseEntity<?> result(
