@@ -1672,6 +1672,7 @@ paths:
       tags:
         - Buildings
       summary: Update building
+      description: Update the building with versioned JSON. The browser edit form uses this operation.
       operationId: revise_5
       parameters:
         - name: school
@@ -3730,74 +3731,6 @@ paths:
               examples:
                 example:
                   $ref: "#/components/examples/HtmlPageBuildingEditHtml"
-    post:
-      tags:
-        - Buildings
-      summary: Update building
-      operationId: revise_14
-      parameters:
-        - name: school
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
-            description: School identifier.
-            minimum: 1
-          description: School identifier.
-          example: 12
-        - name: building
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
-            description: School building identifier.
-            minimum: 1
-          description: School building identifier.
-          example: 7
-      responses:
-        "200":
-          description: The resource was updated.
-          headers:
-            Location:
-              description: Relative URL of the resource or page to open.
-              schema:
-                type: string
-              example: /schools/12/buildings/7
-          content:
-            application/vnd.surok.building-v1+json:
-              schema:
-                $ref: "#/components/schemas/Building"
-              examples:
-                example:
-                  $ref: "#/components/examples/BuildingJson"
-            application/vnd.surok.building-v1+xml:
-              schema:
-                $ref: "#/components/schemas/Building"
-              examples:
-                example:
-                  $ref: "#/components/examples/BuildingXml"
-        "302":
-          description: Browser requests are redirected to the resource page. No body.
-          headers:
-            Location:
-              description: Relative URL of the resource or page to open.
-              schema:
-                type: string
-              example: /schools/12/buildings/7
-        "400":
-          $ref: "#/components/responses/InvalidRequest"
-      requestBody:
-        description: Replacement fields for the existing resource.
-        required: true
-        content:
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: "#/components/schemas/BuildingForm"
-            examples:
-              example:
-                $ref: "#/components/examples/BuildingForm"
   /schools/{school}/buildings/{building}/cabinets/{cabinet}/edit:
     get:
       tags:
@@ -4423,7 +4356,7 @@ paths:
     get:
       tags:
         - Buildings
-      summary: List buildings
+      summary: Open the building creation form
       operationId: selection_12
       parameters:
         - name: school
@@ -4436,279 +4369,22 @@ paths:
             minimum: 1
           description: School identifier.
           example: 12
-        - name: filter
-          in: query
-          description: "Repeat to combine filters. Each value uses field:value. Supported fields: name and name_ct."
-          style: form
-          explode: true
-          schema:
-            type: array
-            items:
-              type: string
-          example:
-            - name_ct:А
-        - name: limit
-          in: query
-          description: Maximum number of entries per page. Defaults to 15.
-          schema:
-            type: integer
-            format: int32
-            description: Page size.
-            minimum: 1
-            default: 15
-          example: 15
-        - name: offset
-          in: query
-          description: One-based page number. Defaults to 1.
-          schema:
-            type: integer
-            format: int32
-            description: Page number.
-            minimum: 1
-            default: 1
-          example: 1
-        - name: sort
-          in: query
-          description: Repeat for multiple sort keys. Use field:ASC or field:DESC.
-          style: form
-          explode: true
-          schema:
-            type: array
-            items:
-              type: string
-          example:
-            - name:ASC
       responses:
         "200":
-          description: Page of matching records.
+          description: HTML page with the building creation form.
           content:
-            application/vnd.surok.buildings.v1+json:
-              schema:
-                $ref: "#/components/schemas/BuildingList"
-              examples:
-                example:
-                  $ref: "#/components/examples/BuildingListJson"
-            application/vnd.surok.buildings.v1+xml:
-              schema:
-                $ref: "#/components/schemas/BuildingListXml"
-              examples:
-                example:
-                  $ref: "#/components/examples/BuildingListXml"
             text/html:
               schema:
                 $ref: "#/components/schemas/HtmlPage"
               examples:
                 example:
                   $ref: "#/components/examples/HtmlPageBuildingCreateHtml"
-      description: For HTML, render the creation form; data formats return the collection.
-    post:
-      tags:
-        - Buildings
-      summary: Create building
-      operationId: create_12
-      parameters:
-        - name: school
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
-            description: School identifier.
-            minimum: 1
-          description: School identifier.
-          example: 12
-      responses:
-        "201":
-          description: The resource was created.
-          headers:
-            Location:
-              description: Relative URL of the resource or page to open.
-              schema:
-                type: string
-              example: /schools/12/buildings/7
-          content:
-            application/vnd.surok.building-v1+json:
-              schema:
-                $ref: "#/components/schemas/Building"
-              examples:
-                example:
-                  $ref: "#/components/examples/BuildingJson"
-            application/vnd.surok.building-v1+xml:
-              schema:
-                $ref: "#/components/schemas/Building"
-              examples:
-                example:
-                  $ref: "#/components/examples/BuildingXml"
-        "302":
-          description: Browser requests are redirected to the resource page. No body.
-          headers:
-            Location:
-              description: Relative URL of the resource or page to open.
-              schema:
-                type: string
-              example: /schools/12/buildings
-        "400":
-          $ref: "#/components/responses/InvalidRequest"
-      requestBody:
-        description: Fields for the new resource.
-        required: true
-        content:
-          application/vnd.surok.building-v1+json:
-            schema:
-              $ref: "#/components/schemas/BuildingInput"
-            examples:
-              example:
-                $ref: "#/components/examples/BuildingInputJson"
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: "#/components/schemas/BuildingForm"
-            examples:
-              example:
-                $ref: "#/components/examples/BuildingForm"
-  /schools/{school}/buildings/:
-    get:
-      tags:
-        - Buildings
-      summary: List buildings
-      operationId: selection_13
-      parameters:
-        - name: school
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
-            description: School identifier.
-            minimum: 1
-          description: School identifier.
-          example: 12
-        - name: filter
-          in: query
-          description: "Repeat to combine filters. Each value uses field:value. Supported fields: name and name_ct."
-          style: form
-          explode: true
-          schema:
-            type: array
-            items:
-              type: string
-          example:
-            - name_ct:А
-        - name: limit
-          in: query
-          description: Maximum number of entries per page. Defaults to 15.
-          schema:
-            type: integer
-            format: int32
-            description: Page size.
-            minimum: 1
-            default: 15
-          example: 15
-        - name: offset
-          in: query
-          description: One-based page number. Defaults to 1.
-          schema:
-            type: integer
-            format: int32
-            description: Page number.
-            minimum: 1
-            default: 1
-          example: 1
-        - name: sort
-          in: query
-          description: Repeat for multiple sort keys. Use field:ASC or field:DESC.
-          style: form
-          explode: true
-          schema:
-            type: array
-            items:
-              type: string
-          example:
-            - name:ASC
-      responses:
-        "200":
-          description: Page of matching records.
-          content:
-            application/vnd.surok.buildings.v1+json:
-              schema:
-                $ref: "#/components/schemas/BuildingList"
-              examples:
-                example:
-                  $ref: "#/components/examples/BuildingListJson"
-            application/vnd.surok.buildings.v1+xml:
-              schema:
-                $ref: "#/components/schemas/BuildingListXml"
-              examples:
-                example:
-                  $ref: "#/components/examples/BuildingListXml"
-            text/html:
-              schema:
-                $ref: "#/components/schemas/HtmlPage"
-              examples:
-                example:
-                  $ref: "#/components/examples/HtmlPageBuildingListHtml"
-    post:
-      tags:
-        - Buildings
-      summary: Create building
-      operationId: create_13
-      parameters:
-        - name: school
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
-            description: School identifier.
-            minimum: 1
-          description: School identifier.
-          example: 12
-      responses:
-        "201":
-          description: The resource was created.
-          headers:
-            Location:
-              description: Relative URL of the resource or page to open.
-              schema:
-                type: string
-              example: /schools/12/buildings/7
-          content:
-            application/vnd.surok.building-v1+json:
-              schema:
-                $ref: "#/components/schemas/Building"
-              examples:
-                example:
-                  $ref: "#/components/examples/BuildingJson"
-            application/vnd.surok.building-v1+xml:
-              schema:
-                $ref: "#/components/schemas/Building"
-              examples:
-                example:
-                  $ref: "#/components/examples/BuildingXml"
-        "302":
-          description: Browser requests are redirected to the resource page. No body.
-          headers:
-            Location:
-              description: Relative URL of the resource or page to open.
-              schema:
-                type: string
-              example: /schools/12/buildings
-        "400":
-          $ref: "#/components/responses/InvalidRequest"
-      requestBody:
-        description: Fields for the new resource.
-        required: true
-        content:
-          application/vnd.surok.building-v1+json:
-            schema:
-              $ref: "#/components/schemas/BuildingInput"
-            examples:
-              example:
-                $ref: "#/components/examples/BuildingInputJson"
   /schools/{school}/buildings:
     get:
       tags:
         - Buildings
       summary: List buildings
+      description: Select a full HTML page, an HTML results fragment, JSON, or XML with the Accept header.
       operationId: selection_14
       parameters:
         - name: school
@@ -4766,6 +4442,12 @@ paths:
       responses:
         "200":
           description: Page of matching records.
+          headers:
+            Vary:
+              description: The response representation depends on the Accept request header.
+              schema:
+                type: string
+              example: Accept
           content:
             application/vnd.surok.buildings.v1+json:
               schema:
@@ -4785,6 +4467,12 @@ paths:
               examples:
                 example:
                   $ref: "#/components/examples/HtmlPageBuildingListHtml"
+            text/vnd.surok.buildings-fragment+html:
+              schema:
+                $ref: "#/components/schemas/HtmlPage"
+              examples:
+                example:
+                  $ref: "#/components/examples/HtmlPageBuildingFragmentHtml"
     post:
       tags:
         - Buildings
@@ -4834,7 +4522,7 @@ paths:
         "400":
           $ref: "#/components/responses/InvalidRequest"
       requestBody:
-        description: Fields for the new resource.
+        description: Fields for the new building. Send versioned JSON or a URL-encoded form.
         required: true
         content:
           application/vnd.surok.building-v1+json:
@@ -4843,6 +4531,12 @@ paths:
             examples:
               example:
                 $ref: "#/components/examples/BuildingInputJson"
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/BuildingForm"
+            examples:
+              example:
+                $ref: "#/components/examples/BuildingForm"
   /schools/create:
     get:
       tags:
@@ -7197,88 +6891,6 @@ paths:
               examples:
                 example:
                   $ref: "#/components/examples/HtmlPageCabinetFragmentHtml"
-      description: Return a partial HTML view or the negotiated data representation.
-  /schools/{school}/buildings/fragment:
-    get:
-      tags:
-        - Buildings
-      summary: List buildings
-      operationId: selection_33
-      parameters:
-        - name: school
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
-            description: School identifier.
-            minimum: 1
-          description: School identifier.
-          example: 12
-        - name: filter
-          in: query
-          description: "Repeat to combine filters. Each value uses field:value. Supported fields: name and name_ct."
-          style: form
-          explode: true
-          schema:
-            type: array
-            items:
-              type: string
-          example:
-            - name_ct:А
-        - name: limit
-          in: query
-          description: Maximum number of entries per page. Defaults to 15.
-          schema:
-            type: integer
-            format: int32
-            description: Page size.
-            minimum: 1
-            default: 15
-          example: 15
-        - name: offset
-          in: query
-          description: One-based page number. Defaults to 1.
-          schema:
-            type: integer
-            format: int32
-            description: Page number.
-            minimum: 1
-            default: 1
-          example: 1
-        - name: sort
-          in: query
-          description: Repeat for multiple sort keys. Use field:ASC or field:DESC.
-          style: form
-          explode: true
-          schema:
-            type: array
-            items:
-              type: string
-          example:
-            - name:ASC
-      responses:
-        "200":
-          description: Page of matching records.
-          content:
-            application/vnd.surok.buildings.v1+json:
-              schema:
-                $ref: "#/components/schemas/BuildingList"
-              examples:
-                example:
-                  $ref: "#/components/examples/BuildingListJson"
-            application/vnd.surok.buildings.v1+xml:
-              schema:
-                $ref: "#/components/schemas/BuildingListXml"
-              examples:
-                example:
-                  $ref: "#/components/examples/BuildingListXml"
-            text/html:
-              schema:
-                $ref: "#/components/schemas/HtmlPage"
-              examples:
-                example:
-                  $ref: "#/components/examples/HtmlPageBuildingFragmentHtml"
       description: Return a partial HTML view or the negotiated data representation.
   /permissions:
     get:
@@ -9697,7 +9309,7 @@ components:
           description: CSRF token supplied by the page; omit this field when using the CSRF header.
     BuildingForm:
       type: object
-      description: Browser form. Fields used to create or update a school building.
+      description: Browser form used to create a school building.
       required:
         - name
       properties:
@@ -10329,10 +9941,14 @@ components:
       summary: Rendered HTML document or fragment. The example shows the relevant part of the response.
       value: <main><h1>Школьные классы</h1></main>
     HtmlPageBuildingEditHtml:
-      summary: Rendered HTML document or fragment. The example shows the relevant part of the response.
-      value: <form method="post"><input name="name" value="Учебный корпус"></form>
+      summary: Edit form that submits versioned JSON with PUT through JavaScript.
+      value: |-
+        <form id="building-edit-form" action="/schools/12/buildings/7" method="post">
+          <input id="building-name" name="name" value="Учебный корпус">
+          <button type="submit" disabled>Сохранить</button>
+        </form>
     BuildingForm:
-      summary: Browser form. Fields used to create or update a school building.
+      summary: Browser form used to create a school building.
       value:
         name: Учебный корпус
     HtmlPageCabinetEditHtml:
@@ -10410,7 +10026,7 @@ components:
         </buildings>
     HtmlPageBuildingCreateHtml:
       summary: Rendered HTML document or fragment. The example shows the relevant part of the response.
-      value: <form method="post"><input name="name" value=""></form>
+      value: <form action="/schools/12/buildings" method="post"><input name="name" value=""></form>
     HtmlPageBuildingListHtml:
       summary: Rendered HTML document or fragment. The example shows the relevant part of the response.
       value: <main><h1>Корпуса</h1></main>
@@ -10833,7 +10449,7 @@ components:
       value: <table><tbody><tr><td>Кабинет 204</td></tr></tbody></table>
     HtmlPageBuildingFragmentHtml:
       summary: Rendered HTML document or fragment. The example shows the relevant part of the response.
-      value: <table><tbody><tr><td>Учебный корпус</td></tr></tbody></table>
+      value: <div id="buildings-results"><div class="card-grid" id="buildings-container"></div></div>
     HtmlPageSchoolFragmentHtml:
       summary: HTML fragment containing only the results of the school list.
       value: |-

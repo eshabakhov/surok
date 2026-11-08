@@ -7,7 +7,10 @@ const { test } = require('node:test');
 const page = ({ kind = 'school', failure } = {}) => {
     const requests = [];
     const visits = [];
-    const names = { school: 'Лицей № 42', teacher: 'Анна Петрова', schedule: 'Расписание на весну' };
+    const names = {
+        school: 'Лицей № 42', teacher: 'Анна Петрова',
+        schedule: 'Расписание на весну', building: 'Северный корпус'
+    };
     const input = { value: names[kind] };
     const grade = { valueAsNumber: 7 };
     const litera = { value: 'Б' };
@@ -15,7 +18,10 @@ const page = ({ kind = 'school', failure } = {}) => {
     const message = { hidden: true, textContent: '' };
     let listener;
     let protect;
-    const segments = { school: '', teacher: '/teachers/31', schedule: '/schedules/31', 'school-class': '/classes/31' };
+    const segments = {
+        school: '', teacher: '/teachers/31', schedule: '/schedules/31',
+        'school-class': '/classes/31', building: '/buildings/31'
+    };
     const fields = new Map([
         ['[name="name"]', input], ['[name="grade"]', grade], ['[name="litera"]', litera],
         ['button[type="submit"]', button]
@@ -165,5 +171,31 @@ test('A duplicate class is reported without clearing the grade or letter', () =>
             clazz.message.textContent, clazz.visits],
         [7, 'Б', false, false, 'Класс с такой параллелью и литерой уже существует', []],
         'The class edit form lost the fields or failed to show the conflict'
+    );
+});
+
+test('The building edit form sends protected JSON PUT and opens the building', () => {
+    const building = page({ kind: 'building' });
+    const intercepted = building.submit();
+    const request = building.requests[0];
+    const uri = 'https://school.test/schools/12/buildings/31';
+    const media = 'application/vnd.surok.building-v1+json';
+    assert.deepEqual(
+        [intercepted, request.method, request.url, request.contentType, request.headers.Accept,
+            request.headers['X-XSRF-TOKEN'], JSON.parse(request.data), building.visits],
+        [true, 'PUT', uri, media, media, 'masked-token', { name: 'Северный корпус' }, [uri]],
+        'The building edit form did not use the protected canonical update'
+    );
+});
+
+test('A building validation error keeps the entered name and allows another attempt', () => {
+    const building = page({ kind: 'building', failure: { status: 400 } });
+    building.input.value = '  ';
+    building.submit();
+    assert.deepEqual(
+        [building.input.value, building.button.disabled, building.message.hidden,
+            building.message.textContent, building.visits],
+        ['  ', false, false, 'Название не может быть пустым', []],
+        'The building edit form lost the input or failed to show the validation error'
     );
 });

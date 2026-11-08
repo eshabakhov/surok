@@ -308,7 +308,7 @@ final class XsClasspathTest {
     }
 
     @ParameterizedTest
-    @CsvSource({"building, create", "building, edit", "cabinet, create", "cabinet, edit"})
+    @CsvSource({"building, create", "cabinet, create", "cabinet, edit"})
     void printsValidationErrorsOnForms(final String entity, final String view) {
         MatcherAssert.assertThat(
             "Invalid form submissions must show the existing validation message",
@@ -317,6 +317,28 @@ final class XsClasspathTest {
                 Matchers.containsString("class=\"error-message\""),
                 Matchers.containsString("Название не может быть пустым"),
                 Matchers.containsString("name=\"_csrf\" type=\"hidden\" value=\"token\"")
+            )
+        );
+    }
+
+    /** Verifies the building forms use the collection and item URLs with their CSRF data. */
+    @Test
+    void connectsBuildingFormsToCanonicalRoutes() {
+        MatcherAssert.assertThat(
+            "The building forms lost their canonical actions or CSRF metadata",
+            List.of(
+                XsClasspathTest.page("building", "create", false),
+                XsClasspathTest.page("building", "edit", false)
+            ),
+            Matchers.contains(
+                Matchers.containsString("action=\"/schools/3/buildings\""),
+                Matchers.allOf(
+                    Matchers.containsString("action=\"/schools/3/buildings/7\""),
+                    Matchers.containsString("id=\"building-edit-form\""),
+                    Matchers.containsString("src=\"/js/school/building-edit.js\""),
+                    Matchers.containsString("<meta name=\"_csrf\" content=\"token\""),
+                    Matchers.containsString("<meta name=\"_csrf_header\" content=\"X-XSRF-TOKEN\"")
+                )
             )
         );
     }
@@ -484,7 +506,8 @@ final class XsClasspathTest {
                 <school><id>3</id><name>Школа</name><schedules><schedule>
                 <id>5</id><name>Первое полугодие</name></schedule></schedules></school>
                 %2$s<error>%3$s</error>
-                <csrf><parameter>_csrf</parameter><token>token</token></csrf>
+                <csrf><parameter>_csrf</parameter><token>token</token>
+                    <header>X-XSRF-TOKEN</header></csrf>
                 <%1$ss><%1$s><id>7</id><name>Южный зал</name></%1$s>
                 <page><offset>5</offset><limit>15</limit><total>150</total>
                 <totalPages>10</totalPages><hasNext>true</hasNext>
