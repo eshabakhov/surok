@@ -1829,6 +1829,7 @@ paths:
       tags:
         - Cabinets
       summary: Update classroom
+      description: Update the cabinet with versioned JSON. The browser edit form uses this operation.
       operationId: revise_6
       parameters:
         - name: school
@@ -3790,89 +3791,11 @@ paths:
               examples:
                 example:
                   $ref: "#/components/examples/HtmlPageCabinetEditHtml"
-    post:
-      tags:
-        - Cabinets
-      summary: Update classroom
-      operationId: revise_15
-      parameters:
-        - name: school
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
-            description: School identifier.
-            minimum: 1
-          description: School identifier.
-          example: 12
-        - name: building
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
-            description: School building identifier.
-            minimum: 1
-          description: School building identifier.
-          example: 7
-        - name: cabinet
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
-            description: Classroom identifier.
-            minimum: 1
-          description: Classroom identifier.
-          example: 17
-      responses:
-        "200":
-          description: The resource was updated.
-          headers:
-            Location:
-              description: Relative URL of the resource or page to open.
-              schema:
-                type: string
-              example: /schools/12/buildings/7/cabinets/17
-          content:
-            application/vnd.surok.cabinet-v1+json:
-              schema:
-                $ref: "#/components/schemas/Cabinet"
-              examples:
-                example:
-                  $ref: "#/components/examples/CabinetJson"
-            application/vnd.surok.cabinet-v1+xml:
-              schema:
-                $ref: "#/components/schemas/Cabinet"
-              examples:
-                example:
-                  $ref: "#/components/examples/CabinetXml"
-        "302":
-          description: Browser requests are redirected to the resource page. No body.
-          headers:
-            Location:
-              description: Relative URL of the resource or page to open.
-              schema:
-                type: string
-              example: /schools/12/buildings/7/cabinets/17
-        "400":
-          $ref: "#/components/responses/InvalidRequest"
-      requestBody:
-        description: Replacement fields for the existing resource.
-        required: true
-        content:
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: "#/components/schemas/CabinetForm"
-            examples:
-              example:
-                $ref: "#/components/examples/CabinetForm"
   /schools/{school}/buildings/{building}/cabinets/create:
     get:
       tags:
         - Cabinets
-      summary: List cabinets
+      summary: Open the cabinet creation form
       operationId: selection_9
       parameters:
         - name: school
@@ -3895,309 +3818,22 @@ paths:
             minimum: 1
           description: School building identifier.
           example: 7
-        - name: filter
-          in: query
-          description: "Repeat to combine filters. Each value uses field:value. Supported fields: name and name_ct."
-          style: form
-          explode: true
-          schema:
-            type: array
-            items:
-              type: string
-          example:
-            - name_ct:А
-        - name: limit
-          in: query
-          description: Maximum number of entries per page. Defaults to 15.
-          schema:
-            type: integer
-            format: int32
-            description: Page size.
-            minimum: 1
-            default: 15
-          example: 15
-        - name: offset
-          in: query
-          description: One-based page number. Defaults to 1.
-          schema:
-            type: integer
-            format: int32
-            description: Page number.
-            minimum: 1
-            default: 1
-          example: 1
-        - name: sort
-          in: query
-          description: Repeat for multiple sort keys. Use field:ASC or field:DESC.
-          style: form
-          explode: true
-          schema:
-            type: array
-            items:
-              type: string
-          example:
-            - name:ASC
       responses:
         "200":
-          description: Page of matching records.
+          description: HTML page with the cabinet creation form.
           content:
-            application/vnd.surok.cabinets.v1+json:
-              schema:
-                $ref: "#/components/schemas/CabinetList"
-              examples:
-                example:
-                  $ref: "#/components/examples/CabinetListJson"
-            application/vnd.surok.cabinets.v1+xml:
-              schema:
-                $ref: "#/components/schemas/CabinetListXml"
-              examples:
-                example:
-                  $ref: "#/components/examples/CabinetListXml"
             text/html:
               schema:
                 $ref: "#/components/schemas/HtmlPage"
               examples:
                 example:
                   $ref: "#/components/examples/HtmlPageCabinetCreateHtml"
-      description: For HTML, render the creation form; data formats return the collection.
-    post:
-      tags:
-        - Cabinets
-      summary: Create classroom
-      operationId: create_9
-      parameters:
-        - name: school
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
-            description: School identifier.
-            minimum: 1
-          description: School identifier.
-          example: 12
-        - name: building
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
-            description: School building identifier.
-            minimum: 1
-          description: School building identifier.
-          example: 7
-      responses:
-        "201":
-          description: The resource was created.
-          headers:
-            Location:
-              description: Relative URL of the resource or page to open.
-              schema:
-                type: string
-              example: /schools/12/buildings/7/cabinets/17
-          content:
-            application/vnd.surok.cabinet-v1+json:
-              schema:
-                $ref: "#/components/schemas/Cabinet"
-              examples:
-                example:
-                  $ref: "#/components/examples/CabinetJson"
-            application/vnd.surok.cabinet-v1+xml:
-              schema:
-                $ref: "#/components/schemas/Cabinet"
-              examples:
-                example:
-                  $ref: "#/components/examples/CabinetXml"
-        "302":
-          description: Browser requests are redirected to the resource page. No body.
-          headers:
-            Location:
-              description: Relative URL of the resource or page to open.
-              schema:
-                type: string
-              example: /schools/12/buildings/7/cabinets
-        "400":
-          $ref: "#/components/responses/InvalidRequest"
-      requestBody:
-        description: Fields for the new resource.
-        required: true
-        content:
-          application/vnd.surok.cabinet-v1+json:
-            schema:
-              $ref: "#/components/schemas/CabinetInput"
-            examples:
-              example:
-                $ref: "#/components/examples/CabinetInputJson"
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: "#/components/schemas/CabinetForm"
-            examples:
-              example:
-                $ref: "#/components/examples/CabinetForm"
-  /schools/{school}/buildings/{building}/cabinets/:
-    get:
-      tags:
-        - Cabinets
-      summary: List cabinets
-      operationId: selection_10
-      parameters:
-        - name: school
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
-            description: School identifier.
-            minimum: 1
-          description: School identifier.
-          example: 12
-        - name: building
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
-            description: School building identifier.
-            minimum: 1
-          description: School building identifier.
-          example: 7
-        - name: filter
-          in: query
-          description: "Repeat to combine filters. Each value uses field:value. Supported fields: name and name_ct."
-          style: form
-          explode: true
-          schema:
-            type: array
-            items:
-              type: string
-          example:
-            - name_ct:А
-        - name: limit
-          in: query
-          description: Maximum number of entries per page. Defaults to 15.
-          schema:
-            type: integer
-            format: int32
-            description: Page size.
-            minimum: 1
-            default: 15
-          example: 15
-        - name: offset
-          in: query
-          description: One-based page number. Defaults to 1.
-          schema:
-            type: integer
-            format: int32
-            description: Page number.
-            minimum: 1
-            default: 1
-          example: 1
-        - name: sort
-          in: query
-          description: Repeat for multiple sort keys. Use field:ASC or field:DESC.
-          style: form
-          explode: true
-          schema:
-            type: array
-            items:
-              type: string
-          example:
-            - name:ASC
-      responses:
-        "200":
-          description: Page of matching records.
-          content:
-            application/vnd.surok.cabinets.v1+json:
-              schema:
-                $ref: "#/components/schemas/CabinetList"
-              examples:
-                example:
-                  $ref: "#/components/examples/CabinetListJson"
-            application/vnd.surok.cabinets.v1+xml:
-              schema:
-                $ref: "#/components/schemas/CabinetListXml"
-              examples:
-                example:
-                  $ref: "#/components/examples/CabinetListXml"
-            text/html:
-              schema:
-                $ref: "#/components/schemas/HtmlPage"
-              examples:
-                example:
-                  $ref: "#/components/examples/HtmlPageCabinetListHtml"
-    post:
-      tags:
-        - Cabinets
-      summary: Create classroom
-      operationId: create_10
-      parameters:
-        - name: school
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
-            description: School identifier.
-            minimum: 1
-          description: School identifier.
-          example: 12
-        - name: building
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
-            description: School building identifier.
-            minimum: 1
-          description: School building identifier.
-          example: 7
-      responses:
-        "201":
-          description: The resource was created.
-          headers:
-            Location:
-              description: Relative URL of the resource or page to open.
-              schema:
-                type: string
-              example: /schools/12/buildings/7/cabinets/17
-          content:
-            application/vnd.surok.cabinet-v1+json:
-              schema:
-                $ref: "#/components/schemas/Cabinet"
-              examples:
-                example:
-                  $ref: "#/components/examples/CabinetJson"
-            application/vnd.surok.cabinet-v1+xml:
-              schema:
-                $ref: "#/components/schemas/Cabinet"
-              examples:
-                example:
-                  $ref: "#/components/examples/CabinetXml"
-        "302":
-          description: Browser requests are redirected to the resource page. No body.
-          headers:
-            Location:
-              description: Relative URL of the resource or page to open.
-              schema:
-                type: string
-              example: /schools/12/buildings/7/cabinets
-        "400":
-          $ref: "#/components/responses/InvalidRequest"
-      requestBody:
-        description: Fields for the new resource.
-        required: true
-        content:
-          application/vnd.surok.cabinet-v1+json:
-            schema:
-              $ref: "#/components/schemas/CabinetInput"
-            examples:
-              example:
-                $ref: "#/components/examples/CabinetInputJson"
   /schools/{school}/buildings/{building}/cabinets:
     get:
       tags:
         - Cabinets
       summary: List cabinets
+      description: Select a full HTML page, an HTML results fragment, JSON, or XML with the Accept header.
       operationId: selection_11
       parameters:
         - name: school
@@ -4265,6 +3901,12 @@ paths:
       responses:
         "200":
           description: Page of matching records.
+          headers:
+            Vary:
+              description: The response representation depends on the Accept request header.
+              schema:
+                type: string
+              example: Accept
           content:
             application/vnd.surok.cabinets.v1+json:
               schema:
@@ -4284,6 +3926,12 @@ paths:
               examples:
                 example:
                   $ref: "#/components/examples/HtmlPageCabinetListHtml"
+            text/vnd.surok.cabinets-fragment+html:
+              schema:
+                $ref: "#/components/schemas/HtmlPage"
+              examples:
+                example:
+                  $ref: "#/components/examples/HtmlPageCabinetFragmentHtml"
     post:
       tags:
         - Cabinets
@@ -4343,7 +3991,7 @@ paths:
         "400":
           $ref: "#/components/responses/InvalidRequest"
       requestBody:
-        description: Fields for the new resource.
+        description: Fields for the new cabinet. Send versioned JSON or a URL-encoded form.
         required: true
         content:
           application/vnd.surok.cabinet-v1+json:
@@ -4352,6 +4000,12 @@ paths:
             examples:
               example:
                 $ref: "#/components/examples/CabinetInputJson"
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/CabinetForm"
+            examples:
+              example:
+                $ref: "#/components/examples/CabinetForm"
   /schools/{school}/buildings/create:
     get:
       tags:
@@ -6800,98 +6454,6 @@ paths:
                   $ref: "#/components/examples/HtmlPageLoadDraftFragmentHtml"
         "404":
           $ref: "#/components/responses/NotFound"
-  /schools/{school}/buildings/{building}/cabinets/fragment:
-    get:
-      tags:
-        - Cabinets
-      summary: List cabinets
-      operationId: selection_32
-      parameters:
-        - name: school
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
-            description: School identifier.
-            minimum: 1
-          description: School identifier.
-          example: 12
-        - name: building
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
-            description: School building identifier.
-            minimum: 1
-          description: School building identifier.
-          example: 7
-        - name: filter
-          in: query
-          description: "Repeat to combine filters. Each value uses field:value. Supported fields: name and name_ct."
-          style: form
-          explode: true
-          schema:
-            type: array
-            items:
-              type: string
-          example:
-            - name_ct:А
-        - name: limit
-          in: query
-          description: Maximum number of entries per page. Defaults to 15.
-          schema:
-            type: integer
-            format: int32
-            description: Page size.
-            minimum: 1
-            default: 15
-          example: 15
-        - name: offset
-          in: query
-          description: One-based page number. Defaults to 1.
-          schema:
-            type: integer
-            format: int32
-            description: Page number.
-            minimum: 1
-            default: 1
-          example: 1
-        - name: sort
-          in: query
-          description: Repeat for multiple sort keys. Use field:ASC or field:DESC.
-          style: form
-          explode: true
-          schema:
-            type: array
-            items:
-              type: string
-          example:
-            - name:ASC
-      responses:
-        "200":
-          description: Page of matching records.
-          content:
-            application/vnd.surok.cabinets.v1+json:
-              schema:
-                $ref: "#/components/schemas/CabinetList"
-              examples:
-                example:
-                  $ref: "#/components/examples/CabinetListJson"
-            application/vnd.surok.cabinets.v1+xml:
-              schema:
-                $ref: "#/components/schemas/CabinetListXml"
-              examples:
-                example:
-                  $ref: "#/components/examples/CabinetListXml"
-            text/html:
-              schema:
-                $ref: "#/components/schemas/HtmlPage"
-              examples:
-                example:
-                  $ref: "#/components/examples/HtmlPageCabinetFragmentHtml"
-      description: Return a partial HTML view or the negotiated data representation.
   /permissions:
     get:
       tags:
@@ -9322,7 +8884,7 @@ components:
           description: CSRF token supplied by the page; omit this field when using the CSRF header.
     CabinetForm:
       type: object
-      description: Browser form. Fields used to create or update a classroom.
+      description: Browser form used to create a classroom.
       required:
         - name
       properties:
@@ -9952,10 +9514,14 @@ components:
       value:
         name: Учебный корпус
     HtmlPageCabinetEditHtml:
-      summary: Rendered HTML document or fragment. The example shows the relevant part of the response.
-      value: <form method="post"><input name="name" value="Кабинет 204"></form>
+      summary: Edit form that submits versioned JSON with PUT through JavaScript.
+      value: |-
+        <form id="cabinet-edit-form" action="/schools/12/buildings/7/cabinets/17" method="post">
+          <input id="cabinet-name" name="name" value="Кабинет 204">
+          <button type="submit" disabled>Сохранить</button>
+        </form>
     CabinetForm:
-      summary: Browser form. Fields used to create or update a classroom.
+      summary: Browser form used to create a classroom.
       value:
         name: Кабинет 204
     CabinetListJson:
@@ -9990,7 +9556,7 @@ components:
         </cabinets>
     HtmlPageCabinetCreateHtml:
       summary: Rendered HTML document or fragment. The example shows the relevant part of the response.
-      value: <form method="post"><input name="name" value=""></form>
+      value: <form action="/schools/12/buildings/7/cabinets" method="post"><input name="name" value=""></form>
     HtmlPageCabinetListHtml:
       summary: Rendered HTML document or fragment. The example shows the relevant part of the response.
       value: <main><h1>Кабинеты</h1></main>
@@ -10446,7 +10012,7 @@ components:
       value: <div id="school-classes-results"><div class="card-grid" id="school-classes-container"></div></div>
     HtmlPageCabinetFragmentHtml:
       summary: Rendered HTML document or fragment. The example shows the relevant part of the response.
-      value: <table><tbody><tr><td>Кабинет 204</td></tr></tbody></table>
+      value: <div id="cabinets-results"><div class="card-grid" id="cabinets-container"></div></div>
     HtmlPageBuildingFragmentHtml:
       summary: Rendered HTML document or fragment. The example shows the relevant part of the response.
       value: <div id="buildings-results"><div class="card-grid" id="buildings-container"></div></div>

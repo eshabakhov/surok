@@ -253,7 +253,8 @@ final class OaHttpTest {
         "teachers, teacher, teachers",
         "schedules, schedule, schedules",
         "classes, school-class, school-classes",
-        "buildings, building, buildings"
+        "buildings, building, buildings",
+        "buildings/{building}/cabinets, cabinet, cabinets"
     })
     void publishesCanonicalSchoolCollectionOperations(
         final ArgumentsAccessor arguments, @Autowired final MockMvc mvc
@@ -303,7 +304,8 @@ final class OaHttpTest {
         "teachers, teacher, teacher, true",
         "schedules, schedule, schedule, true",
         "classes, clazz, school-class, true",
-        "buildings, building, building, false"
+        "buildings, building, building, false",
+        "buildings/{building}/cabinets, cabinet, cabinet, false"
     })
     void publishesOneSchoolResourceUpdateOperation(
         final ArgumentsAccessor arguments, @Autowired final MockMvc mvc
