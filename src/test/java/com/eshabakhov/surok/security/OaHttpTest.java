@@ -11,7 +11,8 @@ import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.aggregator.ArgumentsAccessor;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.info.BuildProperties;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -243,15 +244,22 @@ final class OaHttpTest {
     /**
      * Documents canonical collection operations and a separate HTML creation form.
      *
-     * @param resource Singular resource name
+     * @param arguments Collection path segment and media type identifiers
      * @param mvc HTTP client
      * @throws Exception If the description cannot be read
      */
     @ParameterizedTest
-    @ValueSource(strings = {"teacher", "schedule"})
+    @CsvSource({
+        "teachers, teacher, teachers",
+        "schedules, schedule, schedules",
+        "classes, school-class, school-classes"
+    })
     void publishesCanonicalSchoolCollectionOperations(
-        final String resource, @Autowired final MockMvc mvc
+        final ArgumentsAccessor arguments, @Autowired final MockMvc mvc
     ) throws Exception {
+        final String segment = arguments.getString(0);
+        final String resource = arguments.getString(1);
+        final String media = arguments.getString(2);
         final JsonNode paths = Json.mapper().readTree(
             mvc.perform(
                 MockMvcRequestBuilders.get("/api-docs").with(
@@ -259,7 +267,7 @@ final class OaHttpTest {
                 )
             ).andReturn().getResponse().getContentAsByteArray()
         ).path("paths");
-        final String path = String.format("/schools/{school}/%ss", resource);
+        final String path = String.format("/schools/{school}/%s", segment);
         final JsonNode collection = paths.path(path);
         final JsonNode listing = collection.path("get").path("responses").path("200")
             .path("content");
@@ -270,7 +278,7 @@ final class OaHttpTest {
             "Swagger lost a collection representation or exposed a legacy alias",
             List.of(
                 listing.has("text/html"),
-                listing.has(String.format("text/vnd.surok.%ss-fragment+html", resource)),
+                listing.has(String.format("text/vnd.surok.%s-fragment+html", media)),
                 creation.has(String.format("application/vnd.surok.%s-v1+json", resource)),
                 creation.has("application/x-www-form-urlencoded"),
                 content.has("text/html") && content.size() == 1,
@@ -283,17 +291,24 @@ final class OaHttpTest {
     }
 
     /**
-     * Documents one teacher update and keeps the separate edit page.
+     * Documents one update operation and keeps the separate edit page.
      *
-     * @param resource Singular resource name
+     * @param arguments Collection path segment, item placeholder and media type identifier
      * @param mvc HTTP client
      * @throws Exception If the description cannot be read
      */
     @ParameterizedTest
-    @ValueSource(strings = {"teacher", "schedule"})
+    @CsvSource({
+        "teachers, teacher, teacher",
+        "schedules, schedule, schedule",
+        "classes, clazz, school-class"
+    })
     void publishesOneSchoolResourceUpdateOperation(
-        final String resource, @Autowired final MockMvc mvc
+        final ArgumentsAccessor arguments, @Autowired final MockMvc mvc
     ) throws Exception {
+        final String segment = arguments.getString(0);
+        final String parameter = arguments.getString(1);
+        final String resource = arguments.getString(2);
         final JsonNode paths = Json.mapper().readTree(
             mvc.perform(
                 MockMvcRequestBuilders.get("/api-docs").with(
@@ -301,7 +316,7 @@ final class OaHttpTest {
                 )
             ).andReturn().getResponse().getContentAsByteArray()
         ).path("paths");
-        final String path = String.format("/schools/{school}/%ss/{%s}", resource, resource);
+        final String path = String.format("/schools/{school}/%s/{%s}", segment, parameter);
         final JsonNode update = paths.path(path).path("put");
         final JsonNode content = update.path("requestBody").path("content");
         final JsonNode edit = paths.path(String.format("%s/edit", path));

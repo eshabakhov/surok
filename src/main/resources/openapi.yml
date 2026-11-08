@@ -1500,6 +1500,7 @@ paths:
       tags:
         - SchoolClasses
       summary: Update school class
+      description: Update the school class with versioned JSON. The browser edit form uses this operation.
       operationId: revise_4
       parameters:
         - name: school
@@ -1554,6 +1555,31 @@ paths:
               example: /schools/12/classes/41
         "400":
           $ref: "#/components/responses/InvalidRequest"
+        "409":
+          description: A class in this school already has the requested grade and letter.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                status: 409
+                title: Конфликт данных
+                message: School class `5А` already exists
+                timestamp: "2026-11-07T10:00:00Z"
+            application/xml:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example: |-
+                <error>
+                  <status>409</status>
+                  <title>Конфликт данных</title>
+                  <message>School class `5А` already exists</message>
+                  <timestamp>2026-11-07T10:00:00Z</timestamp>
+                </error>
+            text/html:
+              schema:
+                $ref: "#/components/schemas/HtmlPage"
+              example: <main><h1>Конфликт данных</h1></main>
       requestBody:
         description: Replacement fields for the existing resource.
         required: true
@@ -3470,79 +3496,11 @@ paths:
               examples:
                 example:
                   $ref: "#/components/examples/HtmlPageSchoolClassEditHtml"
-    post:
-      tags:
-        - SchoolClasses
-      summary: Update school class
-      operationId: revise_13
-      parameters:
-        - name: school
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
-            description: School identifier.
-            minimum: 1
-          description: School identifier.
-          example: 12
-        - name: clazz
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
-            description: School class identifier.
-            minimum: 1
-          description: School class identifier.
-          example: 41
-      responses:
-        "200":
-          description: The resource was updated.
-          headers:
-            Location:
-              description: Relative URL of the resource or page to open.
-              schema:
-                type: string
-              example: /schools/12/classes/41
-          content:
-            application/vnd.surok.school-class-v1+json:
-              schema:
-                $ref: "#/components/schemas/SchoolClass"
-              examples:
-                example:
-                  $ref: "#/components/examples/SchoolClassJson"
-            application/vnd.surok.school-class-v1+xml:
-              schema:
-                $ref: "#/components/schemas/SchoolClass"
-              examples:
-                example:
-                  $ref: "#/components/examples/SchoolClassXml"
-        "302":
-          description: Browser requests are redirected to the resource page. No body.
-          headers:
-            Location:
-              description: Relative URL of the resource or page to open.
-              schema:
-                type: string
-              example: /schools/12/classes/41
-        "400":
-          $ref: "#/components/responses/InvalidRequest"
-      requestBody:
-        description: Replacement fields for the existing resource.
-        required: true
-        content:
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: "#/components/schemas/SchoolClassForm"
-            examples:
-              example:
-                $ref: "#/components/examples/SchoolClassForm"
   /schools/{school}/classes/create:
     get:
       tags:
         - SchoolClasses
-      summary: List classes
+      summary: Open the class creation form
       operationId: selection_6
       parameters:
         - name: school
@@ -3555,279 +3513,22 @@ paths:
             minimum: 1
           description: School identifier.
           example: 12
-        - name: filter
-          in: query
-          description: "Repeat to combine filters. Each value uses field:value. Supported fields: name and name_ct."
-          style: form
-          explode: true
-          schema:
-            type: array
-            items:
-              type: string
-          example:
-            - name_ct:А
-        - name: limit
-          in: query
-          description: Maximum number of entries per page. Defaults to 15.
-          schema:
-            type: integer
-            format: int32
-            description: Page size.
-            minimum: 1
-            default: 15
-          example: 15
-        - name: offset
-          in: query
-          description: One-based page number. Defaults to 1.
-          schema:
-            type: integer
-            format: int32
-            description: Page number.
-            minimum: 1
-            default: 1
-          example: 1
-        - name: sort
-          in: query
-          description: Repeat for multiple sort keys. Use field:ASC or field:DESC.
-          style: form
-          explode: true
-          schema:
-            type: array
-            items:
-              type: string
-          example:
-            - name:ASC
       responses:
         "200":
-          description: Page of matching records.
+          description: HTML page with the class creation form.
           content:
-            application/vnd.surok.school-classes.v1+json:
-              schema:
-                $ref: "#/components/schemas/SchoolClassList"
-              examples:
-                example:
-                  $ref: "#/components/examples/SchoolClassListJson"
-            application/vnd.surok.school-classes.v1+xml:
-              schema:
-                $ref: "#/components/schemas/SchoolClassListXml"
-              examples:
-                example:
-                  $ref: "#/components/examples/SchoolClassListXml"
             text/html:
               schema:
                 $ref: "#/components/schemas/HtmlPage"
               examples:
                 example:
                   $ref: "#/components/examples/HtmlPageSchoolClassCreateHtml"
-      description: For HTML, render the creation form; data formats return the collection.
-    post:
-      tags:
-        - SchoolClasses
-      summary: Create school class
-      operationId: create_6
-      parameters:
-        - name: school
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
-            description: School identifier.
-            minimum: 1
-          description: School identifier.
-          example: 12
-      responses:
-        "201":
-          description: The resource was created.
-          headers:
-            Location:
-              description: Relative URL of the resource or page to open.
-              schema:
-                type: string
-              example: /schools/12/classes/41
-          content:
-            application/vnd.surok.school-class-v1+json:
-              schema:
-                $ref: "#/components/schemas/SchoolClass"
-              examples:
-                example:
-                  $ref: "#/components/examples/SchoolClassJson"
-            application/vnd.surok.school-class-v1+xml:
-              schema:
-                $ref: "#/components/schemas/SchoolClass"
-              examples:
-                example:
-                  $ref: "#/components/examples/SchoolClassXml"
-        "302":
-          description: Browser requests are redirected to the resource page. No body.
-          headers:
-            Location:
-              description: Relative URL of the resource or page to open.
-              schema:
-                type: string
-              example: /schools/12/classes
-        "400":
-          $ref: "#/components/responses/InvalidRequest"
-      requestBody:
-        description: Fields for the new resource.
-        required: true
-        content:
-          application/vnd.surok.school-class-v1+json:
-            schema:
-              $ref: "#/components/schemas/SchoolClassInput"
-            examples:
-              example:
-                $ref: "#/components/examples/SchoolClassInputJson"
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: "#/components/schemas/SchoolClassForm"
-            examples:
-              example:
-                $ref: "#/components/examples/SchoolClassForm"
-  /schools/{school}/classes/:
-    get:
-      tags:
-        - SchoolClasses
-      summary: List classes
-      operationId: selection_7
-      parameters:
-        - name: school
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
-            description: School identifier.
-            minimum: 1
-          description: School identifier.
-          example: 12
-        - name: filter
-          in: query
-          description: "Repeat to combine filters. Each value uses field:value. Supported fields: name and name_ct."
-          style: form
-          explode: true
-          schema:
-            type: array
-            items:
-              type: string
-          example:
-            - name_ct:А
-        - name: limit
-          in: query
-          description: Maximum number of entries per page. Defaults to 15.
-          schema:
-            type: integer
-            format: int32
-            description: Page size.
-            minimum: 1
-            default: 15
-          example: 15
-        - name: offset
-          in: query
-          description: One-based page number. Defaults to 1.
-          schema:
-            type: integer
-            format: int32
-            description: Page number.
-            minimum: 1
-            default: 1
-          example: 1
-        - name: sort
-          in: query
-          description: Repeat for multiple sort keys. Use field:ASC or field:DESC.
-          style: form
-          explode: true
-          schema:
-            type: array
-            items:
-              type: string
-          example:
-            - name:ASC
-      responses:
-        "200":
-          description: Page of matching records.
-          content:
-            application/vnd.surok.school-classes.v1+json:
-              schema:
-                $ref: "#/components/schemas/SchoolClassList"
-              examples:
-                example:
-                  $ref: "#/components/examples/SchoolClassListJson"
-            application/vnd.surok.school-classes.v1+xml:
-              schema:
-                $ref: "#/components/schemas/SchoolClassListXml"
-              examples:
-                example:
-                  $ref: "#/components/examples/SchoolClassListXml"
-            text/html:
-              schema:
-                $ref: "#/components/schemas/HtmlPage"
-              examples:
-                example:
-                  $ref: "#/components/examples/HtmlPageSchoolClassListHtml"
-    post:
-      tags:
-        - SchoolClasses
-      summary: Create school class
-      operationId: create_7
-      parameters:
-        - name: school
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
-            description: School identifier.
-            minimum: 1
-          description: School identifier.
-          example: 12
-      responses:
-        "201":
-          description: The resource was created.
-          headers:
-            Location:
-              description: Relative URL of the resource or page to open.
-              schema:
-                type: string
-              example: /schools/12/classes/41
-          content:
-            application/vnd.surok.school-class-v1+json:
-              schema:
-                $ref: "#/components/schemas/SchoolClass"
-              examples:
-                example:
-                  $ref: "#/components/examples/SchoolClassJson"
-            application/vnd.surok.school-class-v1+xml:
-              schema:
-                $ref: "#/components/schemas/SchoolClass"
-              examples:
-                example:
-                  $ref: "#/components/examples/SchoolClassXml"
-        "302":
-          description: Browser requests are redirected to the resource page. No body.
-          headers:
-            Location:
-              description: Relative URL of the resource or page to open.
-              schema:
-                type: string
-              example: /schools/12/classes
-        "400":
-          $ref: "#/components/responses/InvalidRequest"
-      requestBody:
-        description: Fields for the new resource.
-        required: true
-        content:
-          application/vnd.surok.school-class-v1+json:
-            schema:
-              $ref: "#/components/schemas/SchoolClassInput"
-            examples:
-              example:
-                $ref: "#/components/examples/SchoolClassInputJson"
   /schools/{school}/classes:
     get:
       tags:
         - SchoolClasses
       summary: List classes
+      description: Select a full HTML page, an HTML results fragment, JSON, or XML with the Accept header.
       operationId: selection_8
       parameters:
         - name: school
@@ -3885,6 +3586,12 @@ paths:
       responses:
         "200":
           description: Page of matching records.
+          headers:
+            Vary:
+              description: The response representation depends on the Accept request header.
+              schema:
+                type: string
+              example: Accept
           content:
             application/vnd.surok.school-classes.v1+json:
               schema:
@@ -3904,6 +3611,12 @@ paths:
               examples:
                 example:
                   $ref: "#/components/examples/HtmlPageSchoolClassListHtml"
+            text/vnd.surok.school-classes-fragment+html:
+              schema:
+                $ref: "#/components/schemas/HtmlPage"
+              examples:
+                example:
+                  $ref: "#/components/examples/HtmlPageSchoolClassFragmentHtml"
     post:
       tags:
         - SchoolClasses
@@ -3953,7 +3666,7 @@ paths:
         "400":
           $ref: "#/components/responses/InvalidRequest"
       requestBody:
-        description: Fields for the new resource.
+        description: Fields for the new school class. Send versioned JSON or a URL-encoded form.
         required: true
         content:
           application/vnd.surok.school-class-v1+json:
@@ -3962,6 +3675,12 @@ paths:
             examples:
               example:
                 $ref: "#/components/examples/SchoolClassInputJson"
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/SchoolClassForm"
+            examples:
+              example:
+                $ref: "#/components/examples/SchoolClassForm"
   /schools/{school}/buildings/{building}/edit:
     get:
       tags:
@@ -7387,88 +7106,6 @@ paths:
                   $ref: "#/components/examples/HtmlPageLoadDraftFragmentHtml"
         "404":
           $ref: "#/components/responses/NotFound"
-  /schools/{school}/classes/fragment:
-    get:
-      tags:
-        - SchoolClasses
-      summary: List classes
-      operationId: selection_31
-      parameters:
-        - name: school
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
-            description: School identifier.
-            minimum: 1
-          description: School identifier.
-          example: 12
-        - name: filter
-          in: query
-          description: "Repeat to combine filters. Each value uses field:value. Supported fields: name and name_ct."
-          style: form
-          explode: true
-          schema:
-            type: array
-            items:
-              type: string
-          example:
-            - name_ct:А
-        - name: limit
-          in: query
-          description: Maximum number of entries per page. Defaults to 15.
-          schema:
-            type: integer
-            format: int32
-            description: Page size.
-            minimum: 1
-            default: 15
-          example: 15
-        - name: offset
-          in: query
-          description: One-based page number. Defaults to 1.
-          schema:
-            type: integer
-            format: int32
-            description: Page number.
-            minimum: 1
-            default: 1
-          example: 1
-        - name: sort
-          in: query
-          description: Repeat for multiple sort keys. Use field:ASC or field:DESC.
-          style: form
-          explode: true
-          schema:
-            type: array
-            items:
-              type: string
-          example:
-            - name:ASC
-      responses:
-        "200":
-          description: Page of matching records.
-          content:
-            application/vnd.surok.school-classes.v1+json:
-              schema:
-                $ref: "#/components/schemas/SchoolClassList"
-              examples:
-                example:
-                  $ref: "#/components/examples/SchoolClassListJson"
-            application/vnd.surok.school-classes.v1+xml:
-              schema:
-                $ref: "#/components/schemas/SchoolClassListXml"
-              examples:
-                example:
-                  $ref: "#/components/examples/SchoolClassListXml"
-            text/html:
-              schema:
-                $ref: "#/components/schemas/HtmlPage"
-              examples:
-                example:
-                  $ref: "#/components/examples/HtmlPageSchoolClassFragmentHtml"
-      description: Return a partial HTML view or the negotiated data representation.
   /schools/{school}/buildings/{building}/cabinets/fragment:
     get:
       tags:
@@ -10041,7 +9678,7 @@ components:
           description: CSRF token supplied by the page; omit this field when using the CSRF header.
     SchoolClassForm:
       type: object
-      description: Browser form. Grade and letter of a school class.
+      description: Browser form for creating a class with a grade and letter.
       required:
         - grade
         - litera
@@ -10639,10 +10276,15 @@ components:
       value:
         name: Лицей № 42
     HtmlPageSchoolClassEditHtml:
-      summary: Rendered HTML document or fragment. The example shows the relevant part of the response.
-      value: <form method="post"><input name="litera" value="А"></form>
+      summary: Edit form that submits versioned JSON with PUT through JavaScript.
+      value: |-
+        <form id="school-class-edit-form" action="/schools/12/classes/41" method="post">
+          <input id="grade-name" name="grade" type="number" value="5">
+          <input id="litera-name" name="litera" value="А">
+          <button type="submit" disabled>Сохранить</button>
+        </form>
     SchoolClassForm:
-      summary: Browser form. Grade and letter of a school class.
+      summary: Browser form for creating a class with a grade and letter.
       value:
         grade: 5
         litera: А
@@ -10682,7 +10324,7 @@ components:
         </classes>
     HtmlPageSchoolClassCreateHtml:
       summary: Rendered HTML document or fragment. The example shows the relevant part of the response.
-      value: <form method="post"><input name="litera" value=""></form>
+      value: <form action="/schools/12/classes" method="post"><input name="grade"><input name="litera"></form>
     HtmlPageSchoolClassListHtml:
       summary: Rendered HTML document or fragment. The example shows the relevant part of the response.
       value: <main><h1>Школьные классы</h1></main>
@@ -11185,7 +10827,7 @@ components:
       value: <div id="schedules-results"><div class="card-grid" id="schedules-container"></div></div>
     HtmlPageSchoolClassFragmentHtml:
       summary: Rendered HTML document or fragment. The example shows the relevant part of the response.
-      value: <table><tbody><tr><td>5А</td></tr></tbody></table>
+      value: <div id="school-classes-results"><div class="card-grid" id="school-classes-container"></div></div>
     HtmlPageCabinetFragmentHtml:
       summary: Rendered HTML document or fragment. The example shows the relevant part of the response.
       value: <table><tbody><tr><td>Кабинет 204</td></tr></tbody></table>

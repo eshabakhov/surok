@@ -31,9 +31,11 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 import org.jooq.DSLContext;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -64,6 +66,15 @@ import org.springframework.web.server.ResponseStatusException;
 @RequestMapping("/schools/{school}/classes")
 public class ScsHttp {
 
+    /** JSON representation of the school class collection. */
+    private static final String JSON = "application/vnd.surok.school-classes.v1+json";
+
+    /** XML representation of the school class collection. */
+    private static final String XML = "application/vnd.surok.school-classes.v1+xml";
+
+    /** HTML representation containing only the class results. */
+    private static final String FRAGMENT = "text/vnd.surok.school-classes-fragment+html";
+
     /** Database context. */
     private final DSLContext ctx;
 
@@ -77,7 +88,7 @@ public class ScsHttp {
     }
 
     /**
-     * Shows a collection, its fragment or a creation form.
+     * Shows a collection or its results fragment.
      *
      * @param school School identifier
      * @param filters Filtering
@@ -88,14 +99,7 @@ public class ScsHttp {
      * @return Negotiated representation
      * @throws Exception If lookup or printing fails
      */
-    @GetMapping(
-        value = {"", "/", "/fragment", "/create"},
-        produces = {
-            MediaType.TEXT_HTML_VALUE,
-            "application/vnd.surok.school-classes.v1+json",
-            "application/vnd.surok.school-classes.v1+xml"
-        }
-    )
+    @GetMapping(produces = {MediaType.TEXT_HTML_VALUE, ScsHttp.JSON, ScsHttp.XML, ScsHttp.FRAGMENT})
     public ResponseEntity<?> selection(
         @PathVariable final long school,
         final Filters filters,
@@ -104,7 +108,15 @@ public class ScsHttp {
         final HttpServletRequest request,
         @AuthenticationPrincipal final User actor
     ) throws Exception {
-        final MediaType type = new AcHttp(request, "school-classes.v1").type();
+        final MediaType type = new AcHttp(
+            request,
+            List.of(
+                MediaType.TEXT_HTML,
+                MediaType.valueOf(ScsHttp.JSON),
+                MediaType.valueOf(ScsHttp.XML),
+                MediaType.valueOf(ScsHttp.FRAGMENT)
+            )
+        ).type();
         final School sch = new SlsAuthorized(new SlsPostgres(this.ctx), actor).school(school);
         final Set<Filter> requested = new LinkedHashSet<>(filters.filters());
         requested.addAll(
@@ -116,29 +128,52 @@ public class ScsHttp {
         final SchoolClasses selected = sch.schoolClasses().selection(
             applied, page, sorts
         );
-        return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8)).body(
-            switch (type.toString()) {
-                case MediaType.TEXT_HTML_VALUE -> {
-                    final String view;
-                    if (request.getRequestURI().endsWith("/fragment")) {
-                        view = "list-fragment";
-                    } else if (request.getRequestURI().endsWith("/create")) {
-                        view = "create";
-                    } else {
-                        view = "list";
+        return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8))
+            .varyBy(HttpHeaders.ACCEPT).body(
+                switch (type.toString()) {
+                    case MediaType.TEXT_HTML_VALUE, ScsHttp.FRAGMENT -> {
+                        final String view;
+                        if (MediaType.TEXT_HTML.equals(type)) {
+                            view = "list";
+                        } else {
+                            view = "list-fragment";
+                        }
+                        yield this.web(request, sch, view).with(
+                            "classes", new ScsWeb(selected, applied, sorts)
+                        ).print();
                     }
-                    yield this.web(request, sch, view).with(
-                        "classes", new ScsWeb(selected, applied, sorts)
-                    ).print();
+                    case ScsHttp.JSON -> selected.print(new MdJson()).print();
+                    case ScsHttp.XML -> selected.print(new MdXml("classes")).print();
+                    case null, default -> throw new ResponseStatusException(
+                        HttpStatus.NOT_ACCEPTABLE, "Unsupported Accept header"
+                    );
                 }
-                case "application/vnd.surok.school-classes.v1+json" ->
-                    selected.print(new MdJson()).print();
-                case "application/vnd.surok.school-classes.v1+xml" ->
-                    selected.print(new MdXml("classes")).print();
-                case null, default -> throw new ResponseStatusException(
-                    HttpStatus.NOT_ACCEPTABLE, "Unsupported Accept header"
-                );
-            }
+            );
+    }
+
+    /**
+     * Shows the browser form for creating a class.
+     *
+     * @param school School identifier
+     * @param request HTTP request
+     * @param actor Acting user
+     * @return HTML creation form
+     * @throws Exception If lookup or printing fails
+     */
+    @GetMapping(value = "/create", produces = MediaType.TEXT_HTML_VALUE)
+    public ResponseEntity<String> form(
+        @PathVariable final long school, final HttpServletRequest request,
+        @AuthenticationPrincipal final User actor
+    ) throws Exception {
+        return ResponseEntity.ok().contentType(
+            new MediaType(
+                new AcHttp(request, List.of(MediaType.TEXT_HTML)).type(), StandardCharsets.UTF_8
+            )
+        ).body(
+            this.web(
+                request, new SlsAuthorized(new SlsPostgres(this.ctx), actor).school(school),
+                "create"
+            ).print()
         );
     }
 
@@ -205,7 +240,6 @@ public class ScsHttp {
      * @throws Exception If creation fails
      */
     @PostMapping(
-        value = "/create",
         consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE,
         produces = {
             MediaType.TEXT_HTML_VALUE,
@@ -222,19 +256,13 @@ public class ScsHttp {
         final MediaType type = new AcHttp(request, "school-class-v1").type();
         ResponseEntity<?> response;
         try {
-            response = ScsHttp.result(
-                type,
-                new SlsAuthorized(new SlsPostgres(this.ctx), actor).school(school).schoolClasses()
-                    .create(new ScInputHttp(parameters)), HttpStatus.CREATED,
-                String.format("/schools/%d/classes", school),
-                String.format("/schools/%d/classes", school)
-            );
+            response = this.create(type, school, new ScInputHttp(parameters), actor);
         } catch (final SchoolClassInputException exception) {
             if (!MediaType.TEXT_HTML.equals(type)) {
                 throw exception;
             }
             response = ResponseEntity.status(HttpStatus.FOUND).location(
-                URI.create(String.format("%s?error=empty", request.getRequestURI()))
+                URI.create(String.format("%s/create?error=empty", request.getRequestURI()))
             ).build();
         }
         return response;
@@ -251,7 +279,6 @@ public class ScsHttp {
      * @throws Exception If creation fails
      */
     @PostMapping(
-        value = {"", "/", "/create"},
         consumes = "application/vnd.surok.school-class-v1+json",
         produces = {
             MediaType.TEXT_HTML_VALUE,
@@ -265,61 +292,9 @@ public class ScsHttp {
         final HttpServletRequest request,
         @AuthenticationPrincipal final User actor
     ) throws Exception {
-        return ScsHttp.result(
-            new AcHttp(request, "school-class-v1").type(),
-            new SlsAuthorized(new SlsPostgres(this.ctx), actor).school(school).schoolClasses()
-                .create(new ScInputHttp(json)), HttpStatus.CREATED,
-            String.format("/schools/%d/classes", school),
-            String.format("/schools/%d/classes", school)
+        return this.create(
+            new AcHttp(request, "school-class-v1").type(), school, new ScInputHttp(json), actor
         );
-    }
-
-    /**
-     * Revises a class from form fields.
-     *
-     * @param school School identifier
-     * @param clazz Entity identifier
-     * @param parameters Form fields
-     * @param request HTTP request
-     * @param actor Acting user
-     * @return Revised representation or redirect
-     * @throws Exception If revision fails
-     */
-    @PostMapping(
-        value = "/{clazz}/edit",
-        consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE,
-        produces = {
-            MediaType.TEXT_HTML_VALUE,
-            "application/vnd.surok.school-class-v1+json",
-            "application/vnd.surok.school-class-v1+xml"
-        }
-    )
-    public ResponseEntity<?> revise(
-        @PathVariable final long school,
-        @PathVariable final long clazz,
-        @RequestParam final MultiValueMap<String, String> parameters,
-        final HttpServletRequest request,
-        @AuthenticationPrincipal final User actor
-    ) throws Exception {
-        final MediaType type = new AcHttp(request, "school-class-v1").type();
-        ResponseEntity<?> response;
-        try {
-            final SchoolClass revised = new SlsAuthorized(
-                new SlsPostgres(this.ctx), actor
-            ).school(school).schoolClasses().revise(clazz, new ScInputHttp(parameters));
-            response = ScsHttp.result(
-                type, revised, HttpStatus.OK, String.format("/schools/%d/classes", school),
-                String.format("/schools/%d/classes/%d", school, revised.uid())
-            );
-        } catch (final SchoolClassInputException exception) {
-            if (!MediaType.TEXT_HTML.equals(type)) {
-                throw exception;
-            }
-            response = ResponseEntity.status(HttpStatus.FOUND).location(
-                URI.create(String.format("%s?error=empty", request.getRequestURI()))
-            ).build();
-        }
-        return response;
     }
 
     /**
@@ -377,6 +352,18 @@ public class ScsHttp {
         new SlsAuthorized(new SlsPostgres(this.ctx), actor)
             .school(school).schoolClasses().remove(clazz);
         return ResponseEntity.noContent().build();
+    }
+
+    private ResponseEntity<?> create(
+        final MediaType type, final long school, final SchoolClassInput input, final User actor
+    ) throws Exception {
+        final String base = String.format("/schools/%d/classes", school);
+        return ScsHttp.result(
+            type,
+            new SlsAuthorized(new SlsPostgres(this.ctx), actor).school(school).schoolClasses()
+                .create(input),
+            HttpStatus.CREATED, base, base
+        );
     }
 
     private static ResponseEntity<?> result(
