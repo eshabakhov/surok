@@ -7,7 +7,8 @@ $(() => {
         results: '#schedules-results',
         pagination: '#schedules-pagination',
         rows: '#schedules-container .schedule-row',
-        sort: '.schedules-sort'
+        sort: '.schedules-sort',
+        accept: 'text/vnd.surok.schedules-fragment+html'
     });
     $(document).on('click', '.btn-delete-row', function () {
         const button = $(this);

@@ -19,4 +19,9 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
-      - uses: ludeeus/action-shellcheck@master
+      - name: Run ShellCheck
+        shell: bash
+        run: |
+          shellcheck --version
+          git ls-files -z -- '*.sh' '*.bash' '*.dash' '*.ksh' '*.shlib' \
+            | xargs -0 -r shellcheck --format=gcc --

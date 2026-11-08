@@ -17,11 +17,12 @@ import org.junit.jupiter.params.provider.ValueSource;
  */
 final class XsSchedulesTest {
 
-    @ParameterizedTest
-    @ValueSource(strings = {"create", "edit"})
-    void printsProtectedForms(final String view) {
+    /** Verifies the native creation form submits a hidden CSRF token. */
+    @Test
+    void printsTheProtectedCreationForm() {
         MatcherAssert.assertThat(
-            XsSchedulesTest.page(view),
+            "The schedule creation page lost the hidden CSRF field or form assets",
+            XsSchedulesTest.page("create"),
             Matchers.allOf(
                 Matchers.containsString("name=\"_csrf\" type=\"hidden\" value=\"token\""),
                 Matchers.containsString("id=\"schedule-name\" name=\"name\""),
@@ -39,7 +40,7 @@ final class XsSchedulesTest {
         MatcherAssert.assertThat(
             page.substring(page.indexOf("<main")),
             Matchers.allOf(
-                Matchers.containsString("action=\"/schools/3/schedules/create\""),
+                Matchers.containsString("action=\"/schools/3/schedules\""),
                 Matchers.containsString("value=\"\""),
                 Matchers.containsString("placeholder=\"Например: Расписание 2026/2027\""),
                 Matchers.not(Matchers.containsString("value=\"Учебный год\""))
@@ -50,9 +51,14 @@ final class XsSchedulesTest {
     @Test
     void printsEditingValue() {
         MatcherAssert.assertThat(
+            "The schedule edit page lost its canonical action, CSRF metadata or value",
             XsSchedulesTest.page("edit"),
             Matchers.allOf(
-                Matchers.containsString("action=\"/schools/3/schedules/7/edit\""),
+                Matchers.containsString("action=\"/schools/3/schedules/7\""),
+                Matchers.containsString("id=\"schedule-edit-form\""),
+                Matchers.containsString("src=\"/js/school/schedule-edit.js\""),
+                Matchers.containsString("<meta name=\"_csrf\" content=\"token\""),
+                Matchers.containsString("<meta name=\"_csrf_header\" content=\"X-XSRF-TOKEN\""),
                 Matchers.containsString("value=\"Учебный год\""),
                 Matchers.containsString("Сохранить"),
                 Matchers.not(Matchers.containsString("placeholder=\"Например:"))
@@ -145,7 +151,8 @@ final class XsSchedulesTest {
                     <id>9</id><name>Учебный год</name>
                 </schedule></schedules></school>
                 <summary><classCount>2</classCount><subjectCount>3</subjectCount></summary>
-                <error>empty</error><csrf><parameter>_csrf</parameter><token>token</token></csrf>
+                <error>empty</error><csrf><parameter>_csrf</parameter><token>token</token>
+                    <header>X-XSRF-TOKEN</header></csrf>
                 <schedules><schedule>
                     <id>7</id><name>Учебный год</name>
                 </schedule><sorts><item><name>name</name><direction>NONE</direction>

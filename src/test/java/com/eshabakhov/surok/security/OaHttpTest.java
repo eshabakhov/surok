@@ -10,6 +10,8 @@ import java.util.List;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.info.BuildProperties;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -241,12 +243,15 @@ final class OaHttpTest {
     /**
      * Documents canonical collection operations and a separate HTML creation form.
      *
+     * @param resource Singular resource name
      * @param mvc HTTP client
      * @throws Exception If the description cannot be read
      */
-    @Test
-    void publishesCanonicalTeacherCollectionOperations(@Autowired final MockMvc mvc)
-        throws Exception {
+    @ParameterizedTest
+    @ValueSource(strings = {"teacher", "schedule"})
+    void publishesCanonicalSchoolCollectionOperations(
+        final String resource, @Autowired final MockMvc mvc
+    ) throws Exception {
         final JsonNode paths = Json.mapper().readTree(
             mvc.perform(
                 MockMvcRequestBuilders.get("/api-docs").with(
@@ -254,7 +259,7 @@ final class OaHttpTest {
                 )
             ).andReturn().getResponse().getContentAsByteArray()
         ).path("paths");
-        final String path = "/schools/{school}/teachers";
+        final String path = String.format("/schools/{school}/%ss", resource);
         final JsonNode collection = paths.path(path);
         final JsonNode listing = collection.path("get").path("responses").path("200")
             .path("content");
@@ -262,11 +267,11 @@ final class OaHttpTest {
         final JsonNode form = paths.path(String.format("%s/create", path));
         final JsonNode content = form.path("get").path("responses").path("200").path("content");
         MatcherAssert.assertThat(
-            "Swagger lost a teacher representation or exposed a collection alias",
+            "Swagger lost a collection representation or exposed a legacy alias",
             List.of(
                 listing.has("text/html"),
-                listing.has("text/vnd.surok.teachers-fragment+html"),
-                creation.has("application/vnd.surok.teacher-v1+json"),
+                listing.has(String.format("text/vnd.surok.%ss-fragment+html", resource)),
+                creation.has(String.format("application/vnd.surok.%s-v1+json", resource)),
                 creation.has("application/x-www-form-urlencoded"),
                 content.has("text/html") && content.size() == 1,
                 form.has("post"),
@@ -280,11 +285,15 @@ final class OaHttpTest {
     /**
      * Documents one teacher update and keeps the separate edit page.
      *
+     * @param resource Singular resource name
      * @param mvc HTTP client
      * @throws Exception If the description cannot be read
      */
-    @Test
-    void publishesOneTeacherUpdateOperation(@Autowired final MockMvc mvc) throws Exception {
+    @ParameterizedTest
+    @ValueSource(strings = {"teacher", "schedule"})
+    void publishesOneSchoolResourceUpdateOperation(
+        final String resource, @Autowired final MockMvc mvc
+    ) throws Exception {
         final JsonNode paths = Json.mapper().readTree(
             mvc.perform(
                 MockMvcRequestBuilders.get("/api-docs").with(
@@ -292,13 +301,14 @@ final class OaHttpTest {
                 )
             ).andReturn().getResponse().getContentAsByteArray()
         ).path("paths");
-        final JsonNode update = paths.path("/schools/{school}/teachers/{teacher}").path("put");
+        final String path = String.format("/schools/{school}/%ss/{%s}", resource, resource);
+        final JsonNode update = paths.path(path).path("put");
         final JsonNode content = update.path("requestBody").path("content");
-        final JsonNode edit = paths.path("/schools/{school}/teachers/{teacher}/edit");
+        final JsonNode edit = paths.path(String.format("%s/edit", path));
         MatcherAssert.assertThat(
             "Swagger exposed the legacy update or omitted the JSON body or conflict response",
             List.of(
-                content.has("application/vnd.surok.teacher-v1+json"),
+                content.has(String.format("application/vnd.surok.%s-v1+json", resource)),
                 update.path("responses").has("409"),
                 edit.has("get"),
                 edit.has("post")

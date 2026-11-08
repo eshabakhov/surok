@@ -31,9 +31,11 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 import org.jooq.DSLContext;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -64,6 +66,15 @@ import org.springframework.web.server.ResponseStatusException;
 @RequestMapping("/schools/{school}/schedules")
 public class SdsHttp {
 
+    /** JSON representation of the schedule collection. */
+    private static final String JSON = "application/vnd.surok.schedules.v1+json";
+
+    /** XML representation of the schedule collection. */
+    private static final String XML = "application/vnd.surok.schedules.v1+xml";
+
+    /** HTML representation containing only the schedule results. */
+    private static final String FRAGMENT = "text/vnd.surok.schedules-fragment+html";
+
     /** Database context. */
     private final DSLContext ctx;
 
@@ -77,7 +88,7 @@ public class SdsHttp {
     }
 
     /**
-     * Shows a collection, its fragment or a creation form.
+     * Shows a collection or its results fragment.
      *
      * @param school School identifier
      * @param filters Filtering
@@ -88,14 +99,7 @@ public class SdsHttp {
      * @return Negotiated representation
      * @throws Exception If lookup or printing fails
      */
-    @GetMapping(
-        value = {"", "/", "/fragment", "/create"},
-        produces = {
-            MediaType.TEXT_HTML_VALUE,
-            "application/vnd.surok.schedules.v1+json",
-            "application/vnd.surok.schedules.v1+xml"
-        }
-    )
+    @GetMapping(produces = {MediaType.TEXT_HTML_VALUE, SdsHttp.JSON, SdsHttp.XML, SdsHttp.FRAGMENT})
     public ResponseEntity<?> selection(
         @PathVariable final long school,
         final Filters filters,
@@ -104,7 +108,15 @@ public class SdsHttp {
         final HttpServletRequest request,
         @AuthenticationPrincipal final User actor
     ) throws Exception {
-        final MediaType type = new AcHttp(request, "schedules.v1").type();
+        final MediaType type = new AcHttp(
+            request,
+            List.of(
+                MediaType.TEXT_HTML,
+                MediaType.valueOf(SdsHttp.JSON),
+                MediaType.valueOf(SdsHttp.XML),
+                MediaType.valueOf(SdsHttp.FRAGMENT)
+            )
+        ).type();
         final School sch = new SlsAuthorized(new SlsPostgres(this.ctx), actor).school(school);
         final Set<Filter> requested = new LinkedHashSet<>(filters.filters());
         requested.addAll(
@@ -116,29 +128,50 @@ public class SdsHttp {
         final Schedules selected = sch.schedules().selection(
             applied, page, sorts
         );
-        return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8)).body(
-            switch (type.toString()) {
-                case MediaType.TEXT_HTML_VALUE -> {
-                    final String view;
-                    if (request.getRequestURI().endsWith("/fragment")) {
-                        view = "list-fragment";
-                    } else if (request.getRequestURI().endsWith("/create")) {
-                        view = "create";
-                    } else {
-                        view = "list";
+        return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8))
+            .varyBy(HttpHeaders.ACCEPT).body(
+                switch (type.toString()) {
+                    case MediaType.TEXT_HTML_VALUE, SdsHttp.FRAGMENT -> {
+                        final String view;
+                        if (MediaType.TEXT_HTML.equals(type)) {
+                            view = "list";
+                        } else {
+                            view = "list-fragment";
+                        }
+                        yield this.web(request, sch, view).with(
+                            "schedules", new SdsWeb(selected, applied, sorts)
+                        ).print();
                     }
-                    yield this.web(request, sch, view).with(
-                        "schedules", new SdsWeb(selected, applied, sorts)
-                    ).print();
+                    case SdsHttp.JSON -> selected.print(new MdJson()).print();
+                    case SdsHttp.XML -> selected.print(new MdXml("schedules")).print();
+                    case null, default -> throw new ResponseStatusException(
+                        HttpStatus.NOT_ACCEPTABLE, "Unsupported Accept header"
+                    );
                 }
-                case "application/vnd.surok.schedules.v1+json" ->
-                    selected.print(new MdJson()).print();
-                case "application/vnd.surok.schedules.v1+xml" ->
-                    selected.print(new MdXml("schedules")).print();
-                case null, default -> throw new ResponseStatusException(
-                    HttpStatus.NOT_ACCEPTABLE, "Unsupported Accept header"
-                );
-            }
+            );
+    }
+
+    /**
+     * Shows the browser form for creating a schedule.
+     *
+     * @param school School identifier
+     * @param request HTTP request
+     * @param actor Acting user
+     * @return HTML creation form
+     * @throws Exception If lookup or printing fails
+     */
+    @GetMapping(value = "/create", produces = MediaType.TEXT_HTML_VALUE)
+    public ResponseEntity<String> form(
+        @PathVariable final long school, final HttpServletRequest request,
+        @AuthenticationPrincipal final User actor
+    ) throws Exception {
+        return ResponseEntity.ok().contentType(
+            new MediaType(MediaType.TEXT_HTML, StandardCharsets.UTF_8)
+        ).body(
+            this.web(
+                request, new SlsAuthorized(new SlsPostgres(this.ctx), actor).school(school),
+                "create"
+            ).print()
         );
     }
 
@@ -207,7 +240,6 @@ public class SdsHttp {
      * @throws Exception If creation fails
      */
     @PostMapping(
-        value = "/create",
         consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE,
         produces = {
             MediaType.TEXT_HTML_VALUE,
@@ -224,13 +256,7 @@ public class SdsHttp {
         final MediaType type = new AcHttp(request, "schedule-v1").type();
         ResponseEntity<?> response;
         try {
-            response = SdsHttp.result(
-                type,
-                new SlsAuthorized(new SlsPostgres(this.ctx), actor).school(school).schedules()
-                    .create(new SdInputHttp(parameters)), HttpStatus.CREATED,
-                String.format("/schools/%d/schedules", school),
-                String.format("/schools/%d/schedules", school)
-            );
+            response = this.create(type, school, new SdInputHttp(parameters), actor);
         } catch (final ScheduleInputException | ScheduleAlreadyExistsException exception) {
             response = SdsHttp.rejected(type, request, exception);
         }
@@ -248,7 +274,6 @@ public class SdsHttp {
      * @throws Exception If creation fails
      */
     @PostMapping(
-        value = {"", "/", "/create"},
         consumes = "application/vnd.surok.schedule-v1+json",
         produces = {
             MediaType.TEXT_HTML_VALUE,
@@ -262,57 +287,9 @@ public class SdsHttp {
         final HttpServletRequest request,
         @AuthenticationPrincipal final User actor
     ) throws Exception {
-        return SdsHttp.result(
-            new AcHttp(request, "schedule-v1").type(),
-            new SlsAuthorized(new SlsPostgres(this.ctx), actor).school(school).schedules()
-                .create(new SdInputHttp(json)), HttpStatus.CREATED,
-            String.format("/schools/%d/schedules", school),
-            String.format("/schools/%d/schedules", school)
+        return this.create(
+            new AcHttp(request, "schedule-v1").type(), school, new SdInputHttp(json), actor
         );
-    }
-
-    /**
-     * Revises a schedule from form fields.
-     *
-     * @param school School identifier
-     * @param schedule Entity identifier
-     * @param parameters Form fields
-     * @param request HTTP request
-     * @param actor Acting user
-     * @return Revised representation or redirect
-     * @throws Exception If revision fails
-     */
-    @PostMapping(
-        value = "/{schedule}/edit",
-        consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE,
-        produces = {
-            MediaType.TEXT_HTML_VALUE,
-            "application/vnd.surok.schedule-v1+json",
-            "application/vnd.surok.schedule-v1+xml"
-        }
-    )
-    public ResponseEntity<?> revise(
-        @PathVariable final long school,
-        @PathVariable final long schedule,
-        @RequestParam final MultiValueMap<String, String> parameters,
-        final HttpServletRequest request,
-        @AuthenticationPrincipal final User actor
-    ) throws Exception {
-        final MediaType type = new AcHttp(request, "schedule-v1").type();
-        ResponseEntity<?> response;
-        try {
-            final Schedule revised = new SlsAuthorized(
-                new SlsPostgres(this.ctx), actor
-            ).school(school).schedules()
-                .revise(schedule, new SdInputHttp(parameters));
-            response = SdsHttp.result(
-                type, revised, HttpStatus.OK, String.format("/schools/%d/schedules", school),
-                String.format("/schools/%d/schedules/%d", school, revised.uid())
-            );
-        } catch (final ScheduleInputException | ScheduleAlreadyExistsException exception) {
-            response = SdsHttp.rejected(type, request, exception);
-        }
-        return response;
     }
 
     /**
@@ -373,6 +350,18 @@ public class SdsHttp {
         return ResponseEntity.noContent().build();
     }
 
+    private ResponseEntity<?> create(
+        final MediaType type, final long school, final ScheduleInput input, final User actor
+    ) throws Exception {
+        final String base = String.format("/schools/%d/schedules", school);
+        return SdsHttp.result(
+            type,
+            new SlsAuthorized(new SlsPostgres(this.ctx), actor).school(school).schedules()
+                .create(input),
+            HttpStatus.CREATED, base, base
+        );
+    }
+
     private static ResponseEntity<?> result(
         final MediaType type,
         final Schedule selected,
@@ -412,7 +401,7 @@ public class SdsHttp {
             error = "duplicate";
         }
         return ResponseEntity.status(HttpStatus.FOUND).location(
-            URI.create(String.format("%s?error=%s", request.getRequestURI(), error))
+            URI.create(String.format("%s/create?error=%s", request.getRequestURI(), error))
         ).build();
     }
 
