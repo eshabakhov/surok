@@ -24,6 +24,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -119,7 +120,7 @@ final class ScsHttpTest {
             value = "name:2";
         }
         this.mvc.perform(
-            MockMvcRequestBuilders.get("/schools/1/classes/")
+            MockMvcRequestBuilders.get("/schools/1/classes")
                 .session(this.session(Roles.RoleEnum.VIEWER, 1L))
                 .accept("application/vnd.surok.school-classes.v1+json")
                 .param(parameter, value).param("limit", "1")
@@ -170,7 +171,7 @@ final class ScsHttpTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"", "/", "/fragment", "/create", "/10", "/10/edit"})
+    @ValueSource(strings = {"", "/create", "/10", "/10/edit"})
     void rendersXsltPages(final String suffix) throws Exception {
         this.mvc.perform(
             MockMvcRequestBuilders.get(String.format("/schools/1/classes%s", suffix))
@@ -183,7 +184,7 @@ final class ScsHttpTest {
     @ParameterizedTest
     @ValueSource(strings = {"application/json", "application/xml", "application/pdf", "*/*;q=0"})
     void rejectsUnsupportedRepresentations(final String accept) throws Exception {
-        for (final String suffix : List.of("", "/fragment", "/create", "/10", "/10/edit")) {
+        for (final String suffix : List.of("", "/create", "/10", "/10/edit")) {
             this.mvc.perform(
                 MockMvcRequestBuilders.get(String.format("/schools/1/classes%s", suffix))
                     .session(this.session(Roles.RoleEnum.VIEWER, 1L)).header("Accept", accept)
@@ -191,12 +192,12 @@ final class ScsHttpTest {
         }
     }
 
-    @ParameterizedTest
-    @ValueSource(strings = {"", "/", "/create"})
-    void createsVersionedJson(final String suffix) throws Exception {
+    /** Verifies the collection accepts versioned JSON for creation. */
+    @Test
+    void createsVersionedJson() throws Exception {
         this.mvc.perform(
             this.authorized(
-                MockMvcRequestBuilders.post(String.format("/schools/1/classes%s", suffix)),
+                MockMvcRequestBuilders.post("/schools/1/classes"),
                 Roles.RoleEnum.DIRECTOR
             ).contentType("application/vnd.surok.school-class-v1+json")
                 .accept("application/vnd.surok.school-class-v1+json")
@@ -210,15 +211,24 @@ final class ScsHttpTest {
             );
     }
 
+    /** Verifies both fields can be updated using the edit page's CSRF token. */
     @Test
-    void revisesBothFieldsThroughForm() throws Exception {
+    void revisesBothFieldsThroughTheEditPagesCsrfHeader() throws Exception {
+        final MockHttpSession session = this.session(Roles.RoleEnum.DIRECTOR, 1L);
+        final MvcResult form = this.mvc.perform(
+            MockMvcRequestBuilders.get("/schools/1/classes/10/edit").session(session)
+        ).andExpect(MockMvcResultMatchers.status().isOk()).andReturn();
+        final CsrfToken token = (CsrfToken) form.getRequest().getAttribute(
+            CsrfToken.class.getName()
+        );
         this.mvc.perform(
-            this.authorized(
-                MockMvcRequestBuilders.post("/schools/1/classes/10/edit"), Roles.RoleEnum.DIRECTOR
-            ).contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                .param("grade", "3").param("litera", " В ")
-        ).andExpect(MockMvcResultMatchers.status().isFound())
-            .andExpect(MockMvcResultMatchers.redirectedUrl("/schools/1/classes/10"));
+            MockMvcRequestBuilders.put("/schools/1/classes/10").session(session)
+                .cookie(form.getResponse().getCookies())
+                .header(token.getHeaderName(), token.getToken())
+                .contentType("application/vnd.surok.school-class-v1+json")
+                .accept("application/vnd.surok.school-class-v1+json")
+                .content("{\"grade\":3,\"litera\":\" В \"}")
+        ).andExpect(MockMvcResultMatchers.status().isOk());
         this.mvc.perform(
             MockMvcRequestBuilders.get("/schools/1/classes/10")
                 .session(this.session(Roles.RoleEnum.VIEWER, 1L))
@@ -275,16 +285,110 @@ final class ScsHttpTest {
         ).andExpect(MockMvcResultMatchers.jsonPath("$.name").value("2А"));
     }
 
-    @ParameterizedTest
-    @ValueSource(strings = {"/create", "/10/edit"})
-    void redirectsInvalidForms(final String suffix) throws Exception {
-        final String path = String.format("/schools/1/classes%s", suffix);
+    /** Verifies invalid form input returns to the creation page. */
+    @Test
+    void redirectsInvalidClassCreation() throws Exception {
         this.mvc.perform(
-            this.authorized(MockMvcRequestBuilders.post(path), Roles.RoleEnum.DIRECTOR)
-                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+            this.authorized(
+                MockMvcRequestBuilders.post("/schools/1/classes"), Roles.RoleEnum.DIRECTOR
+            ).contentType(MediaType.APPLICATION_FORM_URLENCODED)
                 .param("grade", "bad").param("litera", "А")
         ).andExpect(MockMvcResultMatchers.status().isFound()).andExpect(
-            MockMvcResultMatchers.redirectedUrl(String.format("%s?error=empty", path))
+            MockMvcResultMatchers.redirectedUrl("/schools/1/classes/create?error=empty")
+        );
+    }
+
+    /** Verifies the native form creates a class at the canonical collection URL. */
+    @Test
+    void createsAClassThroughTheProtectedForm() throws Exception {
+        final MockHttpSession session = this.session(Roles.RoleEnum.DIRECTOR, 1L);
+        final MvcResult form = this.mvc.perform(
+            MockMvcRequestBuilders.get("/schools/1/classes/create").session(session)
+        ).andExpect(MockMvcResultMatchers.status().isOk()).andReturn();
+        final CsrfToken token = (CsrfToken) form.getRequest().getAttribute(
+            CsrfToken.class.getName()
+        );
+        this.mvc.perform(
+            MockMvcRequestBuilders.post("/schools/1/classes").session(session)
+                .cookie(form.getResponse().getCookies())
+                .param(token.getParameterName(), token.getToken())
+                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                .param("grade", "4").param("litera", "Г")
+        ).andExpect(MockMvcResultMatchers.redirectedUrl("/schools/1/classes"));
+    }
+
+    /**
+     * Verifies removed creation and update aliases reject requests.
+     *
+     * @param suffix Removed route suffix
+     * @param type Former request format
+     */
+    @ParameterizedTest
+    @CsvSource({
+        "/, application/vnd.surok.school-class-v1+json",
+        "/create, application/vnd.surok.school-class-v1+json",
+        "/create, application/x-www-form-urlencoded",
+        "/10/edit, application/x-www-form-urlencoded"
+    })
+    void rejectsLegacyClassMutationRoutes(final String suffix, final String type) throws Exception {
+        final MockHttpServletRequestBuilder request = MockMvcRequestBuilders.post(
+            String.format("/schools/1/classes%s", suffix)
+        ).contentType(type);
+        if (MediaType.APPLICATION_FORM_URLENCODED_VALUE.equals(type)) {
+            request.param("grade", "5").param("litera", "Д");
+        } else {
+            request.content("{\"grade\":5,\"litera\":\"Д\"}");
+        }
+        this.mvc.perform(this.authorized(request, Roles.RoleEnum.DIRECTOR))
+            .andExpect(MockMvcResultMatchers.status().is4xxClientError());
+    }
+
+    /**
+     * Verifies the old list aliases no longer expose a collection.
+     *
+     * @param suffix Removed route suffix
+     */
+    @ParameterizedTest
+    @ValueSource(strings = {"/", "/fragment"})
+    void rejectsLegacyClassListRoutes(final String suffix) throws Exception {
+        this.mvc.perform(
+            MockMvcRequestBuilders.get(String.format("/schools/1/classes%s", suffix))
+                .session(this.session(Roles.RoleEnum.VIEWER, 1L)).accept(MediaType.TEXT_HTML)
+        ).andExpect(MockMvcResultMatchers.status().is4xxClientError());
+    }
+
+    /** Verifies the creation route exposes the HTML form. */
+    @Test
+    void rejectsCollectionJsonAtTheClassCreationForm() throws Exception {
+        this.mvc.perform(
+            MockMvcRequestBuilders.get("/schools/1/classes/create")
+                .session(this.session(Roles.RoleEnum.DIRECTOR, 1L))
+                .accept("application/vnd.surok.school-classes.v1+json")
+        ).andExpect(MockMvcResultMatchers.status().isNotAcceptable());
+    }
+
+    /** Verifies the fragment keeps filtering and omits the surrounding page. */
+    @Test
+    void rendersFilteredClassResultsAsAFragment() throws Exception {
+        final String type = "text/vnd.surok.school-classes-fragment+html";
+        this.mvc.perform(
+            MockMvcRequestBuilders.get("/schools/1/classes")
+                .session(this.session(Roles.RoleEnum.VIEWER, 1L)).accept(type)
+                .param("filter", "name:2А").param("limit", "1")
+        ).andExpectAll(
+            MockMvcResultMatchers.status().isOk(),
+            MockMvcResultMatchers.content().contentTypeCompatibleWith(type),
+            MockMvcResultMatchers.header().stringValues(
+                HttpHeaders.VARY, Matchers.hasItem(HttpHeaders.ACCEPT)
+            ),
+            MockMvcResultMatchers.content().string(
+                Matchers.allOf(
+                    Matchers.containsString("id=\"school-classes-results\""),
+                    Matchers.containsString("2А"),
+                    Matchers.not(Matchers.containsString("10Б")),
+                    Matchers.not(Matchers.containsString("<html"))
+                )
+            )
         );
     }
 
@@ -293,7 +397,7 @@ final class ScsHttpTest {
     void rejectsUnsupportedInput(final String content) throws Exception {
         this.mvc.perform(
             this.authorized(
-                MockMvcRequestBuilders.post("/schools/1/classes/create"), Roles.RoleEnum.DIRECTOR
+                MockMvcRequestBuilders.post("/schools/1/classes"), Roles.RoleEnum.DIRECTOR
             ).contentType(content).accept("application/vnd.surok.school-class-v1+json")
                 .content("{\"grade\":3,\"litera\":\"А\"}")
         ).andExpect(MockMvcResultMatchers.status().isUnsupportedMediaType());
@@ -314,15 +418,12 @@ final class ScsHttpTest {
             ).contentType("application/vnd.surok.school-class-v1+json").header("Accept", accept)
                 .content("{\"grade\":4,\"litera\":\"А\"}")
         ).andExpect(MockMvcResultMatchers.status().isNotAcceptable());
-        for (final String suffix : List.of("/create", "/10/edit")) {
-            this.mvc.perform(
-                this.authorized(
-                    MockMvcRequestBuilders.post(String.format("/schools/1/classes%s", suffix)),
-                    Roles.RoleEnum.DIRECTOR
-                ).contentType(MediaType.APPLICATION_FORM_URLENCODED).header("Accept", accept)
-                    .param("grade", "6").param("litera", "А")
-            ).andExpect(MockMvcResultMatchers.status().isNotAcceptable());
-        }
+        this.mvc.perform(
+            this.authorized(
+                MockMvcRequestBuilders.post("/schools/1/classes"), Roles.RoleEnum.DIRECTOR
+            ).contentType(MediaType.APPLICATION_FORM_URLENCODED).header("Accept", accept)
+                .param("grade", "6").param("litera", "А")
+        ).andExpect(MockMvcResultMatchers.status().isNotAcceptable());
         this.mvc.perform(
             MockMvcRequestBuilders.get("/schools/1/classes")
                 .session(this.session(Roles.RoleEnum.VIEWER, 1L))
@@ -352,7 +453,7 @@ final class ScsHttpTest {
     void deniesViewerMutationsAndForeignSchools() throws Exception {
         this.mvc.perform(
             this.authorized(
-                MockMvcRequestBuilders.post("/schools/1/classes/create"), Roles.RoleEnum.VIEWER
+                MockMvcRequestBuilders.post("/schools/1/classes"), Roles.RoleEnum.VIEWER
             ).contentType(MediaType.APPLICATION_FORM_URLENCODED)
                 .param("grade", "3").param("litera", "А")
         ).andExpect(MockMvcResultMatchers.status().isForbidden());
@@ -366,7 +467,7 @@ final class ScsHttpTest {
     void deniesClassCreationToSubscribedMemberWithoutSchoolRole() throws Exception {
         this.mvc.perform(
             this.authorized(
-                MockMvcRequestBuilders.post("/schools/1/classes/create"),
+                MockMvcRequestBuilders.post("/schools/1/classes"),
                 Roles.RoleEnum.BASIC_MAKER
             ).contentType(MediaType.APPLICATION_FORM_URLENCODED)
                 .param("grade", "7").param("litera", "Я")
@@ -377,7 +478,7 @@ final class ScsHttpTest {
     void allowsDeputyDirectorToCreateAClass() throws Exception {
         this.mvc.perform(
             this.authorized(
-                MockMvcRequestBuilders.post("/schools/1/classes/create"),
+                MockMvcRequestBuilders.post("/schools/1/classes"),
                 Roles.RoleEnum.DEPUTY_DIRECTOR
             ).contentType(MediaType.APPLICATION_FORM_URLENCODED)
                 .param("grade", "7").param("litera", "Я")
@@ -387,7 +488,7 @@ final class ScsHttpTest {
     @Test
     void protectsMutationsWithCsrf() throws Exception {
         this.mvc.perform(
-            MockMvcRequestBuilders.post("/schools/1/classes/create")
+            MockMvcRequestBuilders.post("/schools/1/classes")
                 .session(this.session(Roles.RoleEnum.DIRECTOR, 1L))
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                 .param("grade", "3").param("litera", "А")

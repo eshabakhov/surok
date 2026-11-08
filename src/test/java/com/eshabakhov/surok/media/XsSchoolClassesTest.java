@@ -17,11 +17,12 @@ import org.junit.jupiter.params.provider.ValueSource;
  */
 final class XsSchoolClassesTest {
 
-    @ParameterizedTest
-    @ValueSource(strings = {"create", "edit"})
-    void printsProtectedForms(final String view) {
+    /** Verifies the native creation form submits a hidden CSRF token. */
+    @Test
+    void printsTheProtectedCreationForm() {
         MatcherAssert.assertThat(
-            XsSchoolClassesTest.page(view),
+            "The class creation form lost its hidden CSRF field or form assets",
+            XsSchoolClassesTest.page("create"),
             Matchers.allOf(
                 Matchers.containsString("name=\"_csrf\" type=\"hidden\" value=\"token\""),
                 Matchers.containsString("id=\"grade-name\" name=\"grade\" type=\"number\""),
@@ -40,7 +41,7 @@ final class XsSchoolClassesTest {
         MatcherAssert.assertThat(
             page.substring(page.indexOf("<main")),
             Matchers.allOf(
-                Matchers.containsString("action=\"/schools/3/classes/create\""),
+                Matchers.containsString("action=\"/schools/3/classes\""),
                 Matchers.containsString("value=\"\""),
                 Matchers.containsString("placeholder=\"Например: 10\""),
                 Matchers.not(Matchers.containsString("value=\"5\"")),
@@ -52,9 +53,14 @@ final class XsSchoolClassesTest {
     @Test
     void printsBothEditingValues() {
         MatcherAssert.assertThat(
+            "The class edit page lost its values, canonical action or CSRF metadata",
             XsSchoolClassesTest.page("edit"),
             Matchers.allOf(
-                Matchers.containsString("action=\"/schools/3/classes/7/edit\""),
+                Matchers.containsString("action=\"/schools/3/classes/7\""),
+                Matchers.containsString("id=\"school-class-edit-form\""),
+                Matchers.containsString("src=\"/js/school/school-class-edit.js\""),
+                Matchers.containsString("<meta name=\"_csrf\" content=\"token\""),
+                Matchers.containsString("<meta name=\"_csrf_header\" content=\"X-XSRF-TOKEN\""),
                 Matchers.containsString("value=\"5\""),
                 Matchers.containsString("value=\"А\""),
                 Matchers.containsString("Сохранить"),
@@ -141,7 +147,8 @@ final class XsSchoolClassesTest {
                 <school><id>3</id><name>Школа</name><schedules><schedule>
                     <id>9</id><name>Учебный год</name>
                 </schedule></schedules></school>
-                <error>true</error><csrf><parameter>_csrf</parameter><token>token</token></csrf>
+                <error>true</error><csrf><parameter>_csrf</parameter><token>token</token>
+                    <header>X-XSRF-TOKEN</header></csrf>
                 <classes><school-class>
                     <id>7</id><name>5А</name><grade>5</grade><litera>А</litera>
                 </school-class><sorts><item><name>name</name><direction>NONE</direction>

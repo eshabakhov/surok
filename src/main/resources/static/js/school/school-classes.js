@@ -7,7 +7,8 @@ $(() => {
         results: '#school-classes-results',
         pagination: '#school-classes-pagination',
         rows: '#school-classes-container .school-class-row',
-        sort: '.school-classes-sort'
+        sort: '.school-classes-sort',
+        accept: 'text/vnd.surok.school-classes-fragment+html'
     });
     $(document).on('click', '.btn-delete-row', function () {
         const button = $(this);
