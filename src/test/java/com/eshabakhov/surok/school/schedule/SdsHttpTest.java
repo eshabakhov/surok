@@ -21,6 +21,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -112,7 +113,7 @@ final class SdsHttpTest {
     @Test
     void printsJsonPage() throws Exception {
         this.mvc.perform(
-            MockMvcRequestBuilders.get("/schools/1/schedules/")
+            MockMvcRequestBuilders.get("/schools/1/schedules")
                 .accept("application/vnd.surok.schedules.v1+json")
                 .session(this.session(Roles.RoleEnum.VIEWER, 1L))
                 .param("name_ct", "north").param("limit", "1")
@@ -165,18 +166,30 @@ final class SdsHttpTest {
         ).andExpect(MockMvcResultMatchers.status().isForbidden());
     }
 
+    /**
+     * Verifies the collection is the only schedule creation address.
+     *
+     * @param suffix Removed route suffix
+     * @param type Former request format
+     */
     @ParameterizedTest
-    @ValueSource(strings = {"", "/", "/create"})
-    void createsThroughJsonAliases(final String suffix) throws Exception {
-        this.mvc.perform(
-            this.authorized(
-                MockMvcRequestBuilders.post(
-                    String.format("%s%s", "/schools/1/schedules", suffix)
-                ), Roles.RoleEnum.DIRECTOR
-            ).contentType("application/vnd.surok.schedule-v1+json")
-                .accept("application/vnd.surok.schedule-v1+json").content("{\"name\":\"East\"}")
-        ).andExpect(MockMvcResultMatchers.status().isCreated())
-            .andExpect(MockMvcResultMatchers.jsonPath("$.name").value("East"));
+    @CsvSource({
+        "/, application/vnd.surok.schedule-v1+json",
+        "/create, application/vnd.surok.schedule-v1+json",
+        "/create, application/x-www-form-urlencoded"
+    })
+    void rejectsLegacyScheduleCreationRoutes(final String suffix, final String type)
+        throws Exception {
+        final MockHttpServletRequestBuilder request = MockMvcRequestBuilders.post(
+            String.format("/schools/1/schedules%s", suffix)
+        ).contentType(type);
+        if (MediaType.APPLICATION_FORM_URLENCODED_VALUE.equals(type)) {
+            request.param("name", "Расписание из старой формы");
+        } else {
+            request.content("{\"name\":\"Расписание из старого API\"}");
+        }
+        this.mvc.perform(this.authorized(request, Roles.RoleEnum.DIRECTOR))
+            .andExpect(MockMvcResultMatchers.status().is4xxClientError());
     }
 
     @ParameterizedTest
@@ -188,16 +201,12 @@ final class SdsHttpTest {
         }
     )
     void rejectsUnsupportedInputBeforeMutation(final String type) throws Exception {
-        for (final String suffix : List.of("", "/", "/create", "/10/edit")) {
-            this.mvc.perform(
-                this.authorized(
-                    MockMvcRequestBuilders.post(
-                        String.format("%s%s", "/schools/1/schedules", suffix)
-                    ), Roles.RoleEnum.DIRECTOR
-                ).contentType(type).accept("application/vnd.surok.schedule-v1+json")
-                    .content("{\"name\":\"Rejected\"}")
-            ).andExpect(MockMvcResultMatchers.status().isUnsupportedMediaType());
-        }
+        this.mvc.perform(
+            this.authorized(
+                MockMvcRequestBuilders.post("/schools/1/schedules"), Roles.RoleEnum.DIRECTOR
+            ).contentType(type).accept("application/vnd.surok.schedule-v1+json")
+                .content("{\"name\":\"Rejected\"}")
+        ).andExpect(MockMvcResultMatchers.status().isUnsupportedMediaType());
         this.mvc.perform(
             this.authorized(
                 MockMvcRequestBuilders.put("/schools/1/schedules/10"),
@@ -268,7 +277,7 @@ final class SdsHttpTest {
     @Test
     void rendersSchedulePages() throws Exception {
         for (final String path : List.of(
-            "", "/fragment", "/create", "/10", "/10/edit"
+            "", "/create", "/10", "/10/edit"
         )) {
             this.mvc.perform(
                 MockMvcRequestBuilders.get(String.format("/schools/1/schedules%s", path))
@@ -279,14 +288,14 @@ final class SdsHttpTest {
         }
     }
 
-    @ParameterizedTest
-    @ValueSource(strings = {"/create", "/10/edit"})
-    void redirectsInvalidBrowserForms(final String suffix) throws Exception {
-        final String form = String.format("/schools/1/schedules%s", suffix);
+    /** Verifies a blank name is still reported on the native creation form. */
+    @Test
+    void redirectsInvalidScheduleCreation() throws Exception {
+        final String form = "/schools/1/schedules/create";
         this.mvc.perform(
-            this.authorized(MockMvcRequestBuilders.post(form), Roles.RoleEnum.DIRECTOR)
-                .accept(MediaType.TEXT_HTML)
-                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+            this.authorized(
+                MockMvcRequestBuilders.post("/schools/1/schedules"), Roles.RoleEnum.DIRECTOR
+            ).accept(MediaType.TEXT_HTML).contentType(MediaType.APPLICATION_FORM_URLENCODED)
                 .param("name", " ")
         ).andExpect(MockMvcResultMatchers.status().isFound()).andExpect(
             MockMvcResultMatchers.redirectedUrl(String.format("%s?error=empty", form))
@@ -307,18 +316,21 @@ final class SdsHttpTest {
         ).andExpect(MockMvcResultMatchers.jsonPath("$.page.total").value(2));
     }
 
+    /**
+     * Verifies data clients still receive validation errors when creating from form fields.
+     *
+     * @param accept Response representation
+     */
     @ParameterizedTest
-    @CsvSource({
-        "/create, application/vnd.surok.schedule-v1+json",
-        "/create, application/vnd.surok.schedule-v1+xml",
-        "/10/edit, application/vnd.surok.schedule-v1+json",
-        "/10/edit, application/vnd.surok.schedule-v1+xml"
-    })
-    void keepsApiValidationForFormFields(final String suffix, final String accept)
-        throws Exception {
+    @ValueSource(
+        strings = {
+            "application/vnd.surok.schedule-v1+json", "application/vnd.surok.schedule-v1+xml"
+        }
+    )
+    void keepsApiValidationForCreationFormFields(final String accept) throws Exception {
         this.mvc.perform(
             this.authorized(
-                MockMvcRequestBuilders.post(String.format("/schools/1/schedules%s", suffix)),
+                MockMvcRequestBuilders.post("/schools/1/schedules"),
                 Roles.RoleEnum.DIRECTOR
             ).header("Accept", accept)
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
@@ -327,22 +339,24 @@ final class SdsHttpTest {
             .andExpect(MockMvcResultMatchers.header().doesNotExist("Location"));
     }
 
+    /** Verifies the edit page supplies a CSRF token accepted by the JSON update. */
     @Test
-    void revisesThroughProtectedForm() throws Exception {
+    void revisesThroughTheEditPagesCsrfHeader() throws Exception {
+        final MockHttpSession session = this.session(Roles.RoleEnum.DIRECTOR, 1L);
+        final MvcResult form = this.mvc.perform(
+            MockMvcRequestBuilders.get("/schools/1/schedules/10/edit").session(session)
+        ).andExpect(MockMvcResultMatchers.status().isOk()).andReturn();
+        final CsrfToken token = (CsrfToken) form.getRequest().getAttribute(
+            CsrfToken.class.getName()
+        );
         this.mvc.perform(
-            this.authorized(
-                MockMvcRequestBuilders.post("/schools/1/schedules/10/edit"),
-                Roles.RoleEnum.DIRECTOR
-            ).accept(MediaType.TEXT_HTML)
-                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                .param("name", " Revised through form ")
-        ).andExpect(MockMvcResultMatchers.status().isFound())
-            .andExpect(MockMvcResultMatchers.redirectedUrl("/schools/1/schedules/10"));
-        this.mvc.perform(
-            MockMvcRequestBuilders.get("/schools/1/schedules/10")
-                .session(this.session(Roles.RoleEnum.DIRECTOR, 1L))
+            MockMvcRequestBuilders.put("/schools/1/schedules/10")
+                .session(session).cookie(form.getResponse().getCookies())
+                .header(token.getHeaderName(), token.getToken())
+                .contentType("application/vnd.surok.schedule-v1+json")
                 .accept("application/vnd.surok.schedule-v1+json")
-        ).andExpect(MockMvcResultMatchers.jsonPath("$.name").value("Revised through form"));
+                .content("{\"name\":\" Расписание на весну \"}")
+        ).andExpect(MockMvcResultMatchers.jsonPath("$.name").value("Расписание на весну"));
     }
 
     @Test
@@ -355,7 +369,7 @@ final class SdsHttpTest {
             CsrfToken.class.getName()
         );
         this.mvc.perform(
-            MockMvcRequestBuilders.post("/schools/1/schedules/create")
+            MockMvcRequestBuilders.post("/schools/1/schedules")
                 .session(session).cookie(form.getResponse().getCookies())
                 .param(token.getParameterName(), token.getToken())
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
@@ -448,7 +462,7 @@ final class SdsHttpTest {
     @ParameterizedTest
     @ValueSource(strings = {"application/json", "application/xml"})
     void rejectsUnversionedRepresentations(final String accept) throws Exception {
-        for (final String suffix : List.of("", "/", "/fragment", "/create", "/10", "/10/edit")) {
+        for (final String suffix : List.of("", "/create", "/10", "/10/edit")) {
             this.mvc.perform(
                 MockMvcRequestBuilders.get(String.format("%s%s", "/schools/1/schedules", suffix))
                     .session(this.session(Roles.RoleEnum.VIEWER, 1L)).header("Accept", accept)
@@ -469,8 +483,9 @@ final class SdsHttpTest {
             .andExpect(MockMvcResultMatchers.jsonPath("$.items[0].name").value(first))
             .andExpect(MockMvcResultMatchers.jsonPath("$.items[1].name").value(second));
         this.mvc.perform(
-            MockMvcRequestBuilders.get("/schools/1/schedules/fragment")
-                .session(this.session(Roles.RoleEnum.VIEWER, 1L)).accept(MediaType.TEXT_HTML)
+            MockMvcRequestBuilders.get("/schools/1/schedules")
+                .session(this.session(Roles.RoleEnum.VIEWER, 1L))
+                .accept("text/vnd.surok.schedules-fragment+html")
                 .param("sort", String.format("name:%s", direction))
         ).andExpect(MockMvcResultMatchers.status().isOk()).andExpect(
             MockMvcResultMatchers.content().string(
@@ -490,6 +505,67 @@ final class SdsHttpTest {
         ).andExpect(MockMvcResultMatchers.status().isOk())
             .andExpect(MockMvcResultMatchers.jsonPath("$.items.length()").value(1))
             .andExpect(MockMvcResultMatchers.jsonPath("$.page.limit").value(1));
+    }
+
+    /** Verifies the negotiated fragment keeps filtering and omits the page chrome. */
+    @Test
+    void rendersFilteredScheduleResultsAsAFragment() throws Exception {
+        final String type = "text/vnd.surok.schedules-fragment+html";
+        this.mvc.perform(
+            MockMvcRequestBuilders.get("/schools/1/schedules")
+                .session(this.session(Roles.RoleEnum.VIEWER, 1L)).accept(type)
+                .param("filter", "name:North").param("limit", "1")
+        ).andExpectAll(
+            MockMvcResultMatchers.status().isOk(),
+            MockMvcResultMatchers.content().contentTypeCompatibleWith(type),
+            MockMvcResultMatchers.header().stringValues(
+                HttpHeaders.VARY, Matchers.hasItem(HttpHeaders.ACCEPT)
+            ),
+            MockMvcResultMatchers.content().string(
+                Matchers.allOf(
+                    Matchers.containsString("id=\"schedules-results\""),
+                    Matchers.containsString("North"),
+                    Matchers.not(Matchers.containsString("South")),
+                    Matchers.not(Matchers.containsString("<html"))
+                )
+            )
+        );
+    }
+
+    /**
+     * Verifies removed list aliases no longer return the schedule collection.
+     *
+     * @param suffix Removed route suffix
+     */
+    @ParameterizedTest
+    @ValueSource(strings = {"/", "/fragment"})
+    void rejectsLegacyScheduleListRoutes(final String suffix) throws Exception {
+        this.mvc.perform(
+            MockMvcRequestBuilders.get(String.format("/schools/1/schedules%s", suffix))
+                .session(this.session(Roles.RoleEnum.VIEWER, 1L)).accept(MediaType.TEXT_HTML)
+        ).andExpect(MockMvcResultMatchers.status().is4xxClientError());
+    }
+
+    /** Verifies the creation page only represents the HTML form. */
+    @Test
+    void rejectsCollectionJsonAtTheScheduleCreationForm() throws Exception {
+        this.mvc.perform(
+            MockMvcRequestBuilders.get("/schools/1/schedules/create")
+                .session(this.session(Roles.RoleEnum.DIRECTOR, 1L))
+                .accept("application/vnd.surok.schedules.v1+json")
+        ).andExpect(MockMvcResultMatchers.status().isNotAcceptable());
+    }
+
+    /** Verifies a blank edit is reported to the browser as a validation error. */
+    @Test
+    void rejectsBlankScheduleNamesOnUpdate() throws Exception {
+        this.mvc.perform(
+            this.authorized(
+                MockMvcRequestBuilders.put("/schools/1/schedules/10"), Roles.RoleEnum.DIRECTOR
+            ).accept("application/vnd.surok.schedule-v1+json")
+                .contentType("application/vnd.surok.schedule-v1+json")
+                .content("{\"name\":\" \"}")
+        ).andExpect(MockMvcResultMatchers.status().isBadRequest());
     }
 
     @Test
@@ -542,7 +618,7 @@ final class SdsHttpTest {
     void rejectsUnsupportedRepresentationBeforeFormCreation(final String accept) throws Exception {
         this.mvc.perform(
             this.authorized(
-                MockMvcRequestBuilders.post("/schools/1/schedules/create"),
+                MockMvcRequestBuilders.post("/schools/1/schedules"),
                 Roles.RoleEnum.DIRECTOR
             ).header("Accept", accept)
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
@@ -579,28 +655,17 @@ final class SdsHttpTest {
             .andExpect(MockMvcResultMatchers.jsonPath("$.name").value("North"));
     }
 
-    @ParameterizedTest
-    @ValueSource(
-        strings = {
-            "application/pdf", "*/*;q=0", "invalid", "application/json;q=2",
-            "application/json", "application/xml"
-        }
-    )
-    void rejectsUnsupportedRepresentationBeforeFormRevision(final String accept) throws Exception {
+    /** Verifies the edit page URL cannot process a legacy form update. */
+    @Test
+    void rejectsTheLegacyScheduleUpdateRoute() throws Exception {
         this.mvc.perform(
             this.authorized(
                 MockMvcRequestBuilders.post("/schools/1/schedules/10/edit"),
                 Roles.RoleEnum.DIRECTOR
-            ).header("Accept", accept)
+            ).accept(MediaType.TEXT_HTML)
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                .param("name", "Rejected")
-        ).andExpect(MockMvcResultMatchers.status().isNotAcceptable());
-        this.mvc.perform(
-            MockMvcRequestBuilders.get("/schools/1/schedules/10")
-                .session(this.session(Roles.RoleEnum.DIRECTOR, 1L))
-                .accept("application/vnd.surok.schedule-v1+json")
-        ).andExpect(MockMvcResultMatchers.status().isOk())
-            .andExpect(MockMvcResultMatchers.jsonPath("$.name").value("North"));
+                .param("name", "Отклонённое название")
+        ).andExpect(MockMvcResultMatchers.status().isMethodNotAllowed());
     }
 
     @Test
@@ -613,7 +678,7 @@ final class SdsHttpTest {
             CsrfToken.class.getName()
         );
         this.mvc.perform(
-            MockMvcRequestBuilders.post("/schools/1/schedules/create")
+            MockMvcRequestBuilders.post("/schools/1/schedules")
                 .session(session).cookie(form.getResponse().getCookies())
                 .param(token.getParameterName(), token.getToken())
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
@@ -624,7 +689,7 @@ final class SdsHttpTest {
     @Test
     void requiresCsrfOnBrowserMutation() throws Exception {
         this.mvc.perform(
-            MockMvcRequestBuilders.post("/schools/1/schedules/create")
+            MockMvcRequestBuilders.post("/schools/1/schedules")
                 .session(this.session(Roles.RoleEnum.DIRECTOR, 1L))
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                 .param("name", "Forbidden")
@@ -652,7 +717,7 @@ final class SdsHttpTest {
             CsrfToken.class.getName()
         );
         this.mvc.perform(
-            MockMvcRequestBuilders.post("/schools/1/schedules/create")
+            MockMvcRequestBuilders.post("/schools/1/schedules")
                 .session(session).cookie(form.getResponse().getCookies())
                 .param(token.getParameterName(), token.getToken())
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
@@ -711,13 +776,14 @@ final class SdsHttpTest {
         ).andExpect(MockMvcResultMatchers.jsonPath("$.name").value("North"));
     }
 
-    @ParameterizedTest
-    @ValueSource(strings = {"/create", "/11/edit"})
-    void redirectsDuplicateForms(final String suffix) throws Exception {
-        final String path = String.format("/schools/1/schedules%s", suffix);
+    /** Verifies that duplicate schedule creation still redirects to the native form. */
+    @Test
+    void redirectsDuplicateScheduleCreation() throws Exception {
+        final String path = "/schools/1/schedules/create";
         this.mvc.perform(
-            this.authorized(MockMvcRequestBuilders.post(path), Roles.RoleEnum.DIRECTOR)
-                .contentType(MediaType.APPLICATION_FORM_URLENCODED).param("name", " North ")
+            this.authorized(
+                MockMvcRequestBuilders.post("/schools/1/schedules"), Roles.RoleEnum.DIRECTOR
+            ).contentType(MediaType.APPLICATION_FORM_URLENCODED).param("name", " North ")
         ).andExpect(MockMvcResultMatchers.status().isFound()).andExpect(
             MockMvcResultMatchers.redirectedUrl(String.format("%s?error=duplicate", path))
         );

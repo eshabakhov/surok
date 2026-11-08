@@ -7,15 +7,14 @@ const { test } = require('node:test');
 const page = ({ kind = 'school', failure } = {}) => {
     const requests = [];
     const visits = [];
-    const input = { value: kind === 'teacher' ? 'Анна Петрова' : 'Лицей № 42' };
+    const names = { school: 'Лицей № 42', teacher: 'Анна Петрова', schedule: 'Расписание на весну' };
+    const input = { value: names[kind] };
     const button = { disabled: true };
     const message = { hidden: true, textContent: '' };
     let listener;
     let protect;
     const form = {
-        action: kind === 'teacher'
-            ? 'https://school.test/schools/12/teachers/31'
-            : 'https://school.test/schools/12',
+        action: 'https://school.test/schools/12' + (kind === 'school' ? '' : `/${kind}s/31`),
         querySelector: selector => selector === '[name="name"]' ? input : button,
         addEventListener: (type, handler) => { if (type === 'submit') { listener = handler; } }
     };
@@ -109,5 +108,30 @@ test('A duplicate teacher name is reported without clearing the input', () => {
             teacher.message.textContent, teacher.visits],
         ['Анна Петрова', false, false, 'Учитель с таким именем уже существует', []],
         'The teacher edit form lost the input or failed to show the conflict'
+    );
+});
+
+test('The schedule form sends versioned JSON PUT with CSRF and opens the schedule', () => {
+    const schedule = page({ kind: 'schedule' });
+    const intercepted = schedule.submit();
+    const request = schedule.requests[0];
+    const uri = 'https://school.test/schools/12/schedules/31';
+    const media = 'application/vnd.surok.schedule-v1+json';
+    assert.deepEqual(
+        [intercepted, request.method, request.url, request.contentType, request.headers.Accept,
+            request.headers['X-XSRF-TOKEN'], JSON.parse(request.data), schedule.visits],
+        [true, 'PUT', uri, media, media, 'masked-token', { name: 'Расписание на весну' }, [uri]],
+        'The schedule edit form did not use the protected canonical update'
+    );
+});
+
+test('A duplicate schedule name is reported without clearing the input', () => {
+    const schedule = page({ kind: 'schedule', failure: { status: 409 } });
+    schedule.submit();
+    assert.deepEqual(
+        [schedule.input.value, schedule.button.disabled, schedule.message.hidden,
+            schedule.message.textContent, schedule.visits],
+        ['Расписание на весну', false, false, 'Расписание с таким названием уже существует', []],
+        'The schedule edit form lost the input or failed to show the conflict'
     );
 });

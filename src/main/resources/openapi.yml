@@ -450,6 +450,7 @@ paths:
       tags:
         - Schedules
       summary: Update schedule
+      description: Update the schedule with versioned JSON. The browser edit form uses this operation.
       operationId: revise_2
       parameters:
         - name: school
@@ -504,6 +505,31 @@ paths:
               example: /schools/12/schedules/25
         "400":
           $ref: "#/components/responses/InvalidRequest"
+        "409":
+          description: An active schedule in this school already has the requested name.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                status: 409
+                title: Конфликт данных
+                message: Schedule `Основное расписание` already exists
+                timestamp: "2026-11-07T10:00:00Z"
+            application/xml:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example: |-
+                <error>
+                  <status>409</status>
+                  <title>Конфликт данных</title>
+                  <message>Schedule `Основное расписание` already exists</message>
+                  <timestamp>2026-11-07T10:00:00Z</timestamp>
+                </error>
+            text/html:
+              schema:
+                $ref: "#/components/schemas/HtmlPage"
+              example: <main><h1>Конфликт данных</h1></main>
       requestBody:
         description: Replacement fields for the existing resource.
         required: true
@@ -3171,79 +3197,11 @@ paths:
               examples:
                 example:
                   $ref: "#/components/examples/HtmlPageScheduleEditHtml"
-    post:
-      tags:
-        - Schedules
-      summary: Update schedule
-      operationId: revise_11
-      parameters:
-        - name: school
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
-            description: School identifier.
-            minimum: 1
-          description: School identifier.
-          example: 12
-        - name: schedule
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
-            description: Timetable identifier.
-            minimum: 1
-          description: Timetable identifier.
-          example: 25
-      responses:
-        "200":
-          description: The resource was updated.
-          headers:
-            Location:
-              description: Relative URL of the resource or page to open.
-              schema:
-                type: string
-              example: /schools/12/schedules/25
-          content:
-            application/vnd.surok.schedule-v1+json:
-              schema:
-                $ref: "#/components/schemas/Schedule"
-              examples:
-                example:
-                  $ref: "#/components/examples/ScheduleJson"
-            application/vnd.surok.schedule-v1+xml:
-              schema:
-                $ref: "#/components/schemas/Schedule"
-              examples:
-                example:
-                  $ref: "#/components/examples/ScheduleXml"
-        "302":
-          description: Browser requests are redirected to the resource page. No body.
-          headers:
-            Location:
-              description: Relative URL of the resource or page to open.
-              schema:
-                type: string
-              example: /schools/12/schedules/25
-        "400":
-          $ref: "#/components/responses/InvalidRequest"
-      requestBody:
-        description: Replacement fields for the existing resource.
-        required: true
-        content:
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: "#/components/schemas/ScheduleForm"
-            examples:
-              example:
-                $ref: "#/components/examples/ScheduleForm"
   /schools/{school}/schedules/create:
     get:
       tags:
         - Schedules
-      summary: List schedules
+      summary: Open the schedule creation form
       operationId: selection_3
       parameters:
         - name: school
@@ -3256,140 +3214,22 @@ paths:
             minimum: 1
           description: School identifier.
           example: 12
-        - name: filter
-          in: query
-          description: "Repeat to combine filters. Each value uses field:value. Supported fields: name and name_ct."
-          style: form
-          explode: true
-          schema:
-            type: array
-            items:
-              type: string
-          example:
-            - name_ct:А
-        - name: limit
-          in: query
-          description: Maximum number of entries per page. Defaults to 15.
-          schema:
-            type: integer
-            format: int32
-            description: Page size.
-            minimum: 1
-            default: 15
-          example: 15
-        - name: offset
-          in: query
-          description: One-based page number. Defaults to 1.
-          schema:
-            type: integer
-            format: int32
-            description: Page number.
-            minimum: 1
-            default: 1
-          example: 1
-        - name: sort
-          in: query
-          description: Repeat for multiple sort keys. Use field:ASC or field:DESC.
-          style: form
-          explode: true
-          schema:
-            type: array
-            items:
-              type: string
-          example:
-            - name:ASC
       responses:
         "200":
-          description: Page of matching records.
+          description: HTML page with the schedule creation form.
           content:
-            application/vnd.surok.schedules.v1+json:
-              schema:
-                $ref: "#/components/schemas/ScheduleList"
-              examples:
-                example:
-                  $ref: "#/components/examples/ScheduleListJson"
-            application/vnd.surok.schedules.v1+xml:
-              schema:
-                $ref: "#/components/schemas/ScheduleListXml"
-              examples:
-                example:
-                  $ref: "#/components/examples/ScheduleListXml"
             text/html:
               schema:
                 $ref: "#/components/schemas/HtmlPage"
               examples:
                 example:
                   $ref: "#/components/examples/HtmlPageScheduleCreateHtml"
-      description: For HTML, render the creation form; data formats return the collection.
-    post:
-      tags:
-        - Schedules
-      summary: Create schedule
-      operationId: create_3
-      parameters:
-        - name: school
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
-            description: School identifier.
-            minimum: 1
-          description: School identifier.
-          example: 12
-      responses:
-        "201":
-          description: The resource was created.
-          headers:
-            Location:
-              description: Relative URL of the resource or page to open.
-              schema:
-                type: string
-              example: /schools/12/schedules/25
-          content:
-            application/vnd.surok.schedule-v1+json:
-              schema:
-                $ref: "#/components/schemas/Schedule"
-              examples:
-                example:
-                  $ref: "#/components/examples/ScheduleJson"
-            application/vnd.surok.schedule-v1+xml:
-              schema:
-                $ref: "#/components/schemas/Schedule"
-              examples:
-                example:
-                  $ref: "#/components/examples/ScheduleXml"
-        "302":
-          description: Browser requests are redirected to the resource page. No body.
-          headers:
-            Location:
-              description: Relative URL of the resource or page to open.
-              schema:
-                type: string
-              example: /schools/12/schedules
-        "400":
-          $ref: "#/components/responses/InvalidRequest"
-      requestBody:
-        description: Fields for the new resource.
-        required: true
-        content:
-          application/vnd.surok.schedule-v1+json:
-            schema:
-              $ref: "#/components/schemas/ScheduleInput"
-            examples:
-              example:
-                $ref: "#/components/examples/ScheduleInputJson"
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: "#/components/schemas/ScheduleForm"
-            examples:
-              example:
-                $ref: "#/components/examples/ScheduleForm"
   /schools/{school}/schedules:
     get:
       tags:
         - Schedules
       summary: List schedules
+      description: Select a full HTML page, an HTML results fragment, JSON, or XML with the Accept header.
       operationId: selection_4
       parameters:
         - name: school
@@ -3447,6 +3287,12 @@ paths:
       responses:
         "200":
           description: Page of matching records.
+          headers:
+            Vary:
+              description: The response representation depends on the Accept request header.
+              schema:
+                type: string
+              example: Accept
           content:
             application/vnd.surok.schedules.v1+json:
               schema:
@@ -3466,6 +3312,12 @@ paths:
               examples:
                 example:
                   $ref: "#/components/examples/HtmlPageScheduleListHtml"
+            text/vnd.surok.schedules-fragment+html:
+              schema:
+                $ref: "#/components/schemas/HtmlPage"
+              examples:
+                example:
+                  $ref: "#/components/examples/HtmlPageScheduleFragmentHtml"
     post:
       tags:
         - Schedules
@@ -3515,7 +3367,7 @@ paths:
         "400":
           $ref: "#/components/responses/InvalidRequest"
       requestBody:
-        description: Fields for the new resource.
+        description: Fields for the new schedule. Send versioned JSON or a URL-encoded form.
         required: true
         content:
           application/vnd.surok.schedule-v1+json:
@@ -3524,145 +3376,12 @@ paths:
             examples:
               example:
                 $ref: "#/components/examples/ScheduleInputJson"
-  /schools/{school}/schedules/:
-    get:
-      tags:
-        - Schedules
-      summary: List schedules
-      operationId: selection_5
-      parameters:
-        - name: school
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
-            description: School identifier.
-            minimum: 1
-          description: School identifier.
-          example: 12
-        - name: filter
-          in: query
-          description: "Repeat to combine filters. Each value uses field:value. Supported fields: name and name_ct."
-          style: form
-          explode: true
-          schema:
-            type: array
-            items:
-              type: string
-          example:
-            - name_ct:А
-        - name: limit
-          in: query
-          description: Maximum number of entries per page. Defaults to 15.
-          schema:
-            type: integer
-            format: int32
-            description: Page size.
-            minimum: 1
-            default: 15
-          example: 15
-        - name: offset
-          in: query
-          description: One-based page number. Defaults to 1.
-          schema:
-            type: integer
-            format: int32
-            description: Page number.
-            minimum: 1
-            default: 1
-          example: 1
-        - name: sort
-          in: query
-          description: Repeat for multiple sort keys. Use field:ASC or field:DESC.
-          style: form
-          explode: true
-          schema:
-            type: array
-            items:
-              type: string
-          example:
-            - name:ASC
-      responses:
-        "200":
-          description: Page of matching records.
-          content:
-            application/vnd.surok.schedules.v1+json:
-              schema:
-                $ref: "#/components/schemas/ScheduleList"
-              examples:
-                example:
-                  $ref: "#/components/examples/ScheduleListJson"
-            application/vnd.surok.schedules.v1+xml:
-              schema:
-                $ref: "#/components/schemas/ScheduleListXml"
-              examples:
-                example:
-                  $ref: "#/components/examples/ScheduleListXml"
-            text/html:
-              schema:
-                $ref: "#/components/schemas/HtmlPage"
-              examples:
-                example:
-                  $ref: "#/components/examples/HtmlPageScheduleListHtml"
-    post:
-      tags:
-        - Schedules
-      summary: Create schedule
-      operationId: create_5
-      parameters:
-        - name: school
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
-            description: School identifier.
-            minimum: 1
-          description: School identifier.
-          example: 12
-      responses:
-        "201":
-          description: The resource was created.
-          headers:
-            Location:
-              description: Relative URL of the resource or page to open.
-              schema:
-                type: string
-              example: /schools/12/schedules/25
-          content:
-            application/vnd.surok.schedule-v1+json:
-              schema:
-                $ref: "#/components/schemas/Schedule"
-              examples:
-                example:
-                  $ref: "#/components/examples/ScheduleJson"
-            application/vnd.surok.schedule-v1+xml:
-              schema:
-                $ref: "#/components/schemas/Schedule"
-              examples:
-                example:
-                  $ref: "#/components/examples/ScheduleXml"
-        "302":
-          description: Browser requests are redirected to the resource page. No body.
-          headers:
-            Location:
-              description: Relative URL of the resource or page to open.
-              schema:
-                type: string
-              example: /schools/12/schedules
-        "400":
-          $ref: "#/components/responses/InvalidRequest"
-      requestBody:
-        description: Fields for the new resource.
-        required: true
-        content:
-          application/vnd.surok.schedule-v1+json:
+          application/x-www-form-urlencoded:
             schema:
-              $ref: "#/components/schemas/ScheduleInput"
+              $ref: "#/components/schemas/ScheduleForm"
             examples:
               example:
-                $ref: "#/components/examples/ScheduleInputJson"
+                $ref: "#/components/examples/ScheduleForm"
   /schools/{school}/edit:
     get:
       tags:
@@ -7668,88 +7387,6 @@ paths:
                   $ref: "#/components/examples/HtmlPageLoadDraftFragmentHtml"
         "404":
           $ref: "#/components/responses/NotFound"
-  /schools/{school}/schedules/fragment:
-    get:
-      tags:
-        - Schedules
-      summary: List schedules
-      operationId: selection_30
-      parameters:
-        - name: school
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
-            description: School identifier.
-            minimum: 1
-          description: School identifier.
-          example: 12
-        - name: filter
-          in: query
-          description: "Repeat to combine filters. Each value uses field:value. Supported fields: name and name_ct."
-          style: form
-          explode: true
-          schema:
-            type: array
-            items:
-              type: string
-          example:
-            - name_ct:А
-        - name: limit
-          in: query
-          description: Maximum number of entries per page. Defaults to 15.
-          schema:
-            type: integer
-            format: int32
-            description: Page size.
-            minimum: 1
-            default: 15
-          example: 15
-        - name: offset
-          in: query
-          description: One-based page number. Defaults to 1.
-          schema:
-            type: integer
-            format: int32
-            description: Page number.
-            minimum: 1
-            default: 1
-          example: 1
-        - name: sort
-          in: query
-          description: Repeat for multiple sort keys. Use field:ASC or field:DESC.
-          style: form
-          explode: true
-          schema:
-            type: array
-            items:
-              type: string
-          example:
-            - name:ASC
-      responses:
-        "200":
-          description: Page of matching records.
-          content:
-            application/vnd.surok.schedules.v1+json:
-              schema:
-                $ref: "#/components/schemas/ScheduleList"
-              examples:
-                example:
-                  $ref: "#/components/examples/ScheduleListJson"
-            application/vnd.surok.schedules.v1+xml:
-              schema:
-                $ref: "#/components/schemas/ScheduleListXml"
-              examples:
-                example:
-                  $ref: "#/components/examples/ScheduleListXml"
-            text/html:
-              schema:
-                $ref: "#/components/schemas/HtmlPage"
-              examples:
-                example:
-                  $ref: "#/components/examples/HtmlPageScheduleFragmentHtml"
-      description: Return a partial HTML view or the negotiated data representation.
   /schools/{school}/classes/fragment:
     get:
       tags:
@@ -10378,7 +10015,7 @@ components:
           description: CSRF token supplied by the page; omit this field when using the CSRF header.
     ScheduleForm:
       type: object
-      description: Browser form. Fields used to create or update a timetable.
+      description: Browser form used to create a timetable.
       required:
         - name
       properties:
@@ -10944,10 +10581,14 @@ components:
       summary: Rendered HTML document or fragment. The example shows the relevant part of the response.
       value: <main><h1>Учителя</h1></main>
     HtmlPageScheduleEditHtml:
-      summary: Rendered HTML document or fragment. The example shows the relevant part of the response.
-      value: <form method="post"><input name="name" value="Основное расписание"></form>
+      summary: Edit form that submits versioned JSON with PUT through JavaScript.
+      value: |-
+        <form id="schedule-edit-form" action="/schools/12/schedules/25" method="post">
+          <input id="schedule-name" name="name" value="Основное расписание">
+          <button type="submit" disabled>Сохранить</button>
+        </form>
     ScheduleForm:
-      summary: Browser form. Fields used to create or update a timetable.
+      summary: Browser form used to create a timetable.
       value:
         name: Основное расписание
     ScheduleListJson:
@@ -10982,7 +10623,7 @@ components:
         </schedules>
     HtmlPageScheduleCreateHtml:
       summary: Rendered HTML document or fragment. The example shows the relevant part of the response.
-      value: <form method="post"><input name="name" value=""></form>
+      value: <form action="/schools/12/schedules" method="post"><input name="name" value=""></form>
     HtmlPageScheduleListHtml:
       summary: Rendered HTML document or fragment. The example shows the relevant part of the response.
       value: <main><h1>Расписания</h1></main>
@@ -11541,7 +11182,7 @@ components:
       value: <table><tbody><tr><th>5А</th><td>3</td></tr></tbody></table>
     HtmlPageScheduleFragmentHtml:
       summary: Rendered HTML document or fragment. The example shows the relevant part of the response.
-      value: <table><tbody><tr><td>Основное расписание</td></tr></tbody></table>
+      value: <div id="schedules-results"><div class="card-grid" id="schedules-container"></div></div>
     HtmlPageSchoolClassFragmentHtml:
       summary: Rendered HTML document or fragment. The example shows the relevant part of the response.
       value: <table><tbody><tr><td>5А</td></tr></tbody></table>
