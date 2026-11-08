@@ -252,7 +252,8 @@ final class OaHttpTest {
     @CsvSource({
         "teachers, teacher, teachers",
         "schedules, schedule, schedules",
-        "classes, school-class, school-classes"
+        "classes, school-class, school-classes",
+        "buildings, building, buildings"
     })
     void publishesCanonicalSchoolCollectionOperations(
         final ArgumentsAccessor arguments, @Autowired final MockMvc mvc
@@ -293,15 +294,16 @@ final class OaHttpTest {
     /**
      * Documents one update operation and keeps the separate edit page.
      *
-     * @param arguments Collection path segment, item placeholder and media type identifier
+     * @param arguments Collection segment, item placeholder, media identifier and conflict support
      * @param mvc HTTP client
      * @throws Exception If the description cannot be read
      */
     @ParameterizedTest
     @CsvSource({
-        "teachers, teacher, teacher",
-        "schedules, schedule, schedule",
-        "classes, clazz, school-class"
+        "teachers, teacher, teacher, true",
+        "schedules, schedule, schedule, true",
+        "classes, clazz, school-class, true",
+        "buildings, building, building, false"
     })
     void publishesOneSchoolResourceUpdateOperation(
         final ArgumentsAccessor arguments, @Autowired final MockMvc mvc
@@ -321,14 +323,14 @@ final class OaHttpTest {
         final JsonNode content = update.path("requestBody").path("content");
         final JsonNode edit = paths.path(String.format("%s/edit", path));
         MatcherAssert.assertThat(
-            "Swagger exposed the legacy update or omitted the JSON body or conflict response",
+            "Swagger exposed a legacy update or changed the JSON update contract",
             List.of(
                 content.has(String.format("application/vnd.surok.%s-v1+json", resource)),
                 update.path("responses").has("409"),
                 edit.has("get"),
                 edit.has("post")
             ),
-            Matchers.contains(true, true, true, false)
+            Matchers.contains(true, arguments.getBoolean(3), true, false)
         );
     }
 

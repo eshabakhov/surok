@@ -31,9 +31,11 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 import org.jooq.DSLContext;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -64,6 +66,15 @@ import org.springframework.web.server.ResponseStatusException;
 @RequestMapping("/schools/{school}/buildings")
 public class BdsHttp {
 
+    /** JSON representation of the building collection. */
+    private static final String JSON = "application/vnd.surok.buildings.v1+json";
+
+    /** XML representation of the building collection. */
+    private static final String XML = "application/vnd.surok.buildings.v1+xml";
+
+    /** HTML representation containing only the building results. */
+    private static final String FRAGMENT = "text/vnd.surok.buildings-fragment+html";
+
     /** Database context. */
     private final DSLContext ctx;
 
@@ -77,7 +88,7 @@ public class BdsHttp {
     }
 
     /**
-     * Shows a collection, its fragment or a creation form.
+     * Shows a collection or its results fragment.
      *
      * @param school School identifier
      * @param filters Filtering
@@ -88,14 +99,7 @@ public class BdsHttp {
      * @return Negotiated representation
      * @throws Exception If lookup or printing fails
      */
-    @GetMapping(
-        value = {"", "/", "/fragment", "/create"},
-        produces = {
-            MediaType.TEXT_HTML_VALUE,
-            "application/vnd.surok.buildings.v1+json",
-            "application/vnd.surok.buildings.v1+xml"
-        }
-    )
+    @GetMapping(produces = {MediaType.TEXT_HTML_VALUE, BdsHttp.JSON, BdsHttp.XML, BdsHttp.FRAGMENT})
     public ResponseEntity<?> selection(
         @PathVariable final long school,
         final Filters filters,
@@ -104,10 +108,16 @@ public class BdsHttp {
         final HttpServletRequest request,
         @AuthenticationPrincipal final User user
     ) throws Exception {
-        final MediaType type = new AcHttp(request, "buildings.v1").type();
-        final School sch = new SlsAuthorized(
-            new SlsPostgres(this.ctx), user
-        ).school(school);
+        final MediaType type = new AcHttp(
+            request,
+            List.of(
+                MediaType.TEXT_HTML,
+                MediaType.valueOf(BdsHttp.JSON),
+                MediaType.valueOf(BdsHttp.XML),
+                MediaType.valueOf(BdsHttp.FRAGMENT)
+            )
+        ).type();
+        final School sch = new SlsAuthorized(new SlsPostgres(this.ctx), user).school(school);
         final Set<Filter> requested = new LinkedHashSet<>(filters.filters());
         requested.addAll(
             Stream.of("name", "name_ct")
@@ -118,29 +128,52 @@ public class BdsHttp {
         final Buildings selected = sch.buildings().selection(
             applied, page, sorts
         );
-        return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8)).body(
-            switch (type.toString()) {
-                case MediaType.TEXT_HTML_VALUE -> {
-                    final String view;
-                    if (request.getRequestURI().endsWith("/fragment")) {
-                        view = "list-fragment";
-                    } else if (request.getRequestURI().endsWith("/create")) {
-                        view = "create";
-                    } else {
-                        view = "list";
+        return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8))
+            .varyBy(HttpHeaders.ACCEPT).body(
+                switch (type.toString()) {
+                    case MediaType.TEXT_HTML_VALUE, BdsHttp.FRAGMENT -> {
+                        final String view;
+                        if (MediaType.TEXT_HTML.equals(type)) {
+                            view = "list";
+                        } else {
+                            view = "list-fragment";
+                        }
+                        yield this.web(request, sch, view).with(
+                            "buildings", new BdsWeb(selected, applied, sorts)
+                        ).print();
                     }
-                    yield this.web(request, sch, view).with(
-                        "buildings", new BdsWeb(selected, applied, sorts)
-                    ).print();
+                    case BdsHttp.JSON -> selected.print(new MdJson()).print();
+                    case BdsHttp.XML -> selected.print(new MdXml("buildings")).print();
+                    case null, default -> throw new ResponseStatusException(
+                        HttpStatus.NOT_ACCEPTABLE, "Unsupported Accept header"
+                    );
                 }
-                case "application/vnd.surok.buildings.v1+json" ->
-                    selected.print(new MdJson()).print();
-                case "application/vnd.surok.buildings.v1+xml" ->
-                    selected.print(new MdXml("buildings")).print();
-                case null, default -> throw new ResponseStatusException(
-                    HttpStatus.NOT_ACCEPTABLE, "Unsupported Accept header"
-                );
-            }
+            );
+    }
+
+    /**
+     * Shows the browser form for creating a building.
+     *
+     * @param school School identifier
+     * @param request HTTP request
+     * @param user Acting user
+     * @return HTML creation form
+     * @throws Exception If lookup or printing fails
+     */
+    @GetMapping(value = "/create", produces = MediaType.TEXT_HTML_VALUE)
+    public ResponseEntity<String> form(
+        @PathVariable final long school, final HttpServletRequest request,
+        @AuthenticationPrincipal final User user
+    ) throws Exception {
+        return ResponseEntity.ok().contentType(
+            new MediaType(
+                new AcHttp(request, List.of(MediaType.TEXT_HTML)).type(), StandardCharsets.UTF_8
+            )
+        ).body(
+            this.web(
+                request, new SlsAuthorized(new SlsPostgres(this.ctx), user).school(school),
+                "create"
+            ).print()
         );
     }
 
@@ -209,7 +242,6 @@ public class BdsHttp {
      * @throws Exception If creation fails
      */
     @PostMapping(
-        value = "/create",
         consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE,
         produces = {
             MediaType.TEXT_HTML_VALUE,
@@ -226,19 +258,13 @@ public class BdsHttp {
         final MediaType type = new AcHttp(request, "building-v1").type();
         ResponseEntity<?> response;
         try {
-            response = BdsHttp.result(
-                type,
-                new SlsAuthorized(new SlsPostgres(this.ctx), user).school(school).buildings()
-                    .create(new BdInputHttp(parameters)), HttpStatus.CREATED,
-                String.format("/schools/%d/buildings", school),
-                String.format("/schools/%d/buildings", school)
-            );
+            response = this.create(type, school, new BdInputHttp(parameters), user);
         } catch (final BuildingInputException exception) {
             if (!MediaType.TEXT_HTML.equals(type)) {
                 throw exception;
             }
             response = ResponseEntity.status(HttpStatus.FOUND).location(
-                URI.create(String.format("%s?error=empty", request.getRequestURI()))
+                URI.create(String.format("%s/create?error=empty", request.getRequestURI()))
             ).build();
         }
         return response;
@@ -255,7 +281,6 @@ public class BdsHttp {
      * @throws Exception If creation fails
      */
     @PostMapping(
-        value = {"", "/", "/create"},
         consumes = "application/vnd.surok.building-v1+json",
         produces = {
             MediaType.TEXT_HTML_VALUE,
@@ -269,62 +294,9 @@ public class BdsHttp {
         final HttpServletRequest request,
         @AuthenticationPrincipal final User user
     ) throws Exception {
-        return BdsHttp.result(
-            new AcHttp(request, "building-v1").type(),
-            new SlsAuthorized(new SlsPostgres(this.ctx), user).school(school).buildings()
-                .create(new BdInputHttp(json)), HttpStatus.CREATED,
-            String.format("/schools/%d/buildings", school),
-            String.format("/schools/%d/buildings", school)
+        return this.create(
+            new AcHttp(request, "building-v1").type(), school, new BdInputHttp(json), user
         );
-    }
-
-    /**
-     * Revises a building from form fields.
-     *
-     * @param school School identifier
-     * @param building Entity identifier
-     * @param parameters Form fields
-     * @param request HTTP request
-     * @param user Acting user
-     * @return Revised representation or redirect
-     * @throws Exception If revision fails
-     */
-    @PostMapping(
-        value = "/{building}/edit",
-        consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE,
-        produces = {
-            MediaType.TEXT_HTML_VALUE,
-            "application/vnd.surok.building-v1+json",
-            "application/vnd.surok.building-v1+xml"
-        }
-    )
-    public ResponseEntity<?> revise(
-        @PathVariable final long school,
-        @PathVariable final long building,
-        @RequestParam final MultiValueMap<String, String> parameters,
-        final HttpServletRequest request,
-        @AuthenticationPrincipal final User user
-    ) throws Exception {
-        final MediaType type = new AcHttp(request, "building-v1").type();
-        ResponseEntity<?> response;
-        try {
-            final Building revised = new SlsAuthorized(
-                new SlsPostgres(this.ctx), user
-            ).school(school).buildings()
-                .revise(building, new BdInputHttp(parameters));
-            response = BdsHttp.result(
-                type, revised, HttpStatus.OK, String.format("/schools/%d/buildings", school),
-                String.format("/schools/%d/buildings/%d", school, revised.uid())
-            );
-        } catch (final BuildingInputException exception) {
-            if (!MediaType.TEXT_HTML.equals(type)) {
-                throw exception;
-            }
-            response = ResponseEntity.status(HttpStatus.FOUND).location(
-                URI.create(String.format("%s?error=empty", request.getRequestURI()))
-            ).build();
-        }
-        return response;
     }
 
     /**
@@ -383,6 +355,18 @@ public class BdsHttp {
         new SlsAuthorized(new SlsPostgres(this.ctx), user)
             .school(school).buildings().remove(building);
         return ResponseEntity.noContent().build();
+    }
+
+    private ResponseEntity<?> create(
+        final MediaType type, final long school, final BuildingInput input, final User user
+    ) throws Exception {
+        final String base = String.format("/schools/%d/buildings", school);
+        return BdsHttp.result(
+            type,
+            new SlsAuthorized(new SlsPostgres(this.ctx), user).school(school).buildings()
+                .create(input),
+            HttpStatus.CREATED, base, base
+        );
     }
 
     private static ResponseEntity<?> result(
