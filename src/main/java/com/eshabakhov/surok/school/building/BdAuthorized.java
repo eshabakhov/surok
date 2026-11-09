@@ -8,8 +8,10 @@ import com.eshabakhov.surok.School;
 import com.eshabakhov.surok.User;
 import com.eshabakhov.surok.school.building.cabinet.Cabinets;
 import com.eshabakhov.surok.school.building.cabinet.CbsAuthorized;
-import com.eshabakhov.surok.user.Roles;
-import org.springframework.security.access.AccessDeniedException;
+import com.eshabakhov.surok.security.right.RtAdmin;
+import com.eshabakhov.surok.security.right.RtDirectorOrDeputy;
+import com.eshabakhov.surok.security.right.RtEither;
+import com.eshabakhov.surok.security.right.RtSchoolMember;
 
 /**
  * Building that checks the acting user's school role for each operation.
@@ -49,29 +51,28 @@ public final class BdAuthorized implements Building {
 
     @Override
     public Building revise(final BuildingInput input) throws Exception {
-        if (!this.actor.isAdmin() && (!this.school.users().contains(this.actor)
-            || !this.school.users().roles(this.actor).contains(Roles.RoleEnum.DIRECTOR)
-            && !this.school.users().roles(this.actor).contains(Roles.RoleEnum.DEPUTY_DIRECTOR))) {
-            throw new AccessDeniedException(
-                "Only a school director or deputy can revise a building"
-            );
-        }
-        return new BdAuthorized(this.origin.revise(input), this.school, this.actor);
+        return new BdAuthorized(
+            new RtEither(
+                new RtAdmin(this.actor), new RtDirectorOrDeputy(this.actor, this.school)
+            ).permit(this.origin).revise(input),
+            this.school, this.actor
+        );
     }
 
     @Override
     public Cabinets cabinets() {
-        if (!this.actor.isAdmin() && !this.school.users().contains(this.actor)) {
-            throw new AccessDeniedException("Only a school member can view cabinets");
-        }
-        return new CbsAuthorized(this.origin.cabinets(), this.school, this.actor);
+        return new CbsAuthorized(
+            new RtEither(
+                new RtAdmin(this.actor), new RtSchoolMember(this.actor, this.school)
+            ).permit(this.origin).cabinets(),
+            this.school, this.actor
+        );
     }
 
     @Override
     public <T> Media<T> print(final Media<T> media) throws Exception {
-        if (!this.actor.isAdmin() && !this.school.users().contains(this.actor)) {
-            throw new AccessDeniedException("Only a school member can view a building");
-        }
-        return this.origin.print(media);
+        return new RtEither(
+            new RtAdmin(this.actor), new RtSchoolMember(this.actor, this.school)
+        ).permit(this.origin).print(media);
     }
 }

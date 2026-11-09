@@ -17,6 +17,8 @@ import com.eshabakhov.surok.school.schoolclass.SchoolClasses;
 import com.eshabakhov.surok.school.schoolclass.ScsAuthorized;
 import com.eshabakhov.surok.school.teacher.Teachers;
 import com.eshabakhov.surok.school.teacher.ThsAuthorized;
+import com.eshabakhov.surok.security.right.RtAdmin;
+import com.eshabakhov.surok.security.right.RtEither;
 import com.eshabakhov.surok.security.right.RtSchoolDirector;
 import com.eshabakhov.surok.security.right.RtSchoolMember;
 import com.eshabakhov.surok.user.UrsAuthorized;
@@ -55,7 +57,9 @@ public final class SlAuthorized implements School {
     @Override
     public School revise(final SchoolInput input) throws Exception {
         return new SlAuthorized(
-            new RtSchoolDirector(this.actor, this.origin).permit(this.origin).revise(input),
+            new RtEither(
+                new RtAdmin(this.actor), new RtSchoolDirector(this.actor, this.origin)
+            ).permit(this.origin).revise(input),
             this.actor
         );
     }
@@ -63,14 +67,18 @@ public final class SlAuthorized implements School {
     @Override
     public Users users() {
         return new UrsAuthorized(
-            new RtSchoolMember(this.actor, this.origin).permit(this.origin).users(), this.actor
+            new RtEither(
+                new RtAdmin(this.actor), new RtSchoolMember(this.actor, this.origin)
+            ).permit(this.origin).users(), this.actor
         );
     }
 
     @Override
     public Buildings buildings() {
         return new BdsAuthorized(
-            new RtSchoolMember(this.actor, this.origin).permit(this.origin).buildings(),
+            new RtEither(
+                new RtAdmin(this.actor), new RtSchoolMember(this.actor, this.origin)
+            ).permit(this.origin).buildings(),
             this.origin, this.actor
         );
     }
@@ -78,7 +86,9 @@ public final class SlAuthorized implements School {
     @Override
     public Teachers teachers() {
         return new ThsAuthorized(
-            new RtSchoolMember(this.actor, this.origin).permit(this.origin).teachers(),
+            new RtEither(
+                new RtAdmin(this.actor), new RtSchoolMember(this.actor, this.origin)
+            ).permit(this.origin).teachers(),
             this.origin, this.actor
         );
     }
@@ -86,7 +96,9 @@ public final class SlAuthorized implements School {
     @Override
     public SchoolClasses schoolClasses() {
         return new ScsAuthorized(
-            new RtSchoolMember(this.actor, this.origin).permit(this.origin).schoolClasses(),
+            new RtEither(
+                new RtAdmin(this.actor), new RtSchoolMember(this.actor, this.origin)
+            ).permit(this.origin).schoolClasses(),
             this.origin, this.actor
         );
     }
@@ -94,7 +106,9 @@ public final class SlAuthorized implements School {
     @Override
     public Subjects subjects() {
         return new SbsAuthorized(
-            new RtSchoolMember(this.actor, this.origin).permit(this.origin).subjects(),
+            new RtEither(
+                new RtAdmin(this.actor), new RtSchoolMember(this.actor, this.origin)
+            ).permit(this.origin).subjects(),
             this.origin, this.actor
         );
     }
@@ -102,13 +116,17 @@ public final class SlAuthorized implements School {
     @Override
     public Schedules schedules() {
         return new SdsAuthorized(
-            new RtSchoolMember(this.actor, this.origin).permit(this.origin).schedules(),
+            new RtEither(
+                new RtAdmin(this.actor), new RtSchoolMember(this.actor, this.origin)
+            ).permit(this.origin).schedules(),
             this.origin, this.actor
         );
     }
 
     @Override
     public <T> Media<T> print(final Media<T> media) throws Exception {
-        return new RtSchoolMember(this.actor, this.origin).permit(this.origin).print(media);
+        return new RtEither(
+            new RtAdmin(this.actor), new RtSchoolMember(this.actor, this.origin)
+        ).permit(this.origin).print(media);
     }
 }
