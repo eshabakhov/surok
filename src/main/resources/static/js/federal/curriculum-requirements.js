@@ -24,7 +24,8 @@ $(() => {
     const sortFields = ['grade', 'subject', 'hours', 'part'];
     const results = fragment(
         '#requirements-results',
-        $('#requirements-body').data('search-url')
+        $('#requirements-body').data('search-url'),
+        { Accept: 'text/vnd.surok.federal-curriculum-requirements-fragment+html' }
     );
     const shown = remembered(results, path);
     const restored = filters(query(window.location.search), filterFields);

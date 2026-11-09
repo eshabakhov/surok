@@ -8,7 +8,9 @@ $(() => {
     const path = window.location.pathname;
     const fields = ['title'];
     const sortFields = ['title', 'level', 'week', 'year'];
-    const results = fragment('#federal-curriculums-results', `${path}/fragment`);
+    const results = fragment('#federal-curriculums-results', path, {
+        Accept: 'text/vnd.surok.federal-curriculums-fragment+html'
+    });
     const shown = remembered(results, path);
     const search = $('#federal-curriculum-search');
     search.val(filters(query(window.location.search), fields).value('title'));

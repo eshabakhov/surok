@@ -32,6 +32,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import org.jooq.DSLContext;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -61,6 +62,10 @@ import org.springframework.web.server.ResponseStatusException;
 @RequestMapping("/federal/curriculums/{curriculum}/requirements")
 public class RqsHttp {
 
+    /** HTML fragment representation of the requirement collection. */
+    private static final String FRAGMENT =
+        "text/vnd.surok.federal-curriculum-requirements-fragment+html";
+
     /** JOOQ context. */
     private final DSLContext ctx;
 
@@ -87,11 +92,12 @@ public class RqsHttp {
      * @throws Exception If selection fails
      */
     @GetMapping(
-        value = {"", "/fragment"},
+        value = "",
         produces = {
             MediaType.TEXT_HTML_VALUE,
             "application/vnd.surok.federal-curriculum-requirements.v1+json",
-            "application/vnd.surok.federal-curriculum-requirements.v1+xml"
+            "application/vnd.surok.federal-curriculum-requirements.v1+xml",
+            RqsHttp.FRAGMENT
         }
     )
     public ResponseEntity<?> selection(
@@ -102,45 +108,57 @@ public class RqsHttp {
         final HttpServletRequest request,
         @AuthenticationPrincipal final User actor
     ) throws Exception {
-        final MediaType type = new AcHttp(request, "federal-curriculum-requirements.v1").type();
+        final MediaType type = new AcHttp(
+            request,
+            List.of(
+                MediaType.TEXT_HTML,
+                MediaType.valueOf(
+                    "application/vnd.surok.federal-curriculum-requirements.v1+json"
+                ),
+                MediaType.valueOf(
+                    "application/vnd.surok.federal-curriculum-requirements.v1+xml"
+                ),
+                MediaType.valueOf(RqsHttp.FRAGMENT)
+            )
+        ).type();
         final Curriculum curriculum = new CrsAuthorized(
             new CrsPostgres(this.ctx), actor
         ).curriculum(current);
         final Requirements selected = curriculum.requirements().selection(filters, page, sorts);
-        return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8)).body(
-            switch (type.toString()) {
-                case MediaType.TEXT_HTML_VALUE -> {
-                    final String view;
-                    final String uri = request.getRequestURI();
-                    if (uri != null && uri.endsWith("/fragment")) {
-                        view = "list-fragment";
-                    } else {
-                        view = "list";
-                    }
-                    yield this.web(request, view).with(
-                        "subjects", new SbsFederal(this.ctx)
-                    ).with("firstGrade", curriculum.grades().getFirst()).with(
-                        "lastGrade", curriculum.grades().getLast()
-                    ).with(
-                        "curriculums",
-                        new CrsSingle(
-                            new CrsPostgres(this.ctx),
-                            new CrWithRequirements(
-                                curriculum,
-                                new RqsWeb(selected, filters, sorts)
+        return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8))
+            .varyBy(HttpHeaders.ACCEPT).body(
+                switch (type.toString()) {
+                    case MediaType.TEXT_HTML_VALUE, RqsHttp.FRAGMENT -> {
+                        final String view;
+                        if (MediaType.TEXT_HTML.equals(type)) {
+                            view = "list";
+                        } else {
+                            view = "list-fragment";
+                        }
+                        yield this.web(request, view).with(
+                            "subjects", new SbsFederal(this.ctx)
+                        ).with("firstGrade", curriculum.grades().getFirst()).with(
+                            "lastGrade", curriculum.grades().getLast()
+                        ).with(
+                            "curriculums",
+                            new CrsSingle(
+                                new CrsPostgres(this.ctx),
+                                new CrWithRequirements(
+                                    curriculum,
+                                    new RqsWeb(selected, filters, sorts)
+                                )
                             )
-                        )
-                    ).print();
+                        ).print();
+                    }
+                    case "application/vnd.surok.federal-curriculum-requirements.v1+json" ->
+                        selected.print(new MdJson()).print();
+                    case "application/vnd.surok.federal-curriculum-requirements.v1+xml" ->
+                        selected.print(new MdXml("requirements")).print();
+                    case null, default -> throw new ResponseStatusException(
+                        HttpStatus.NOT_ACCEPTABLE, "Unsupported Accept header"
+                    );
                 }
-                case "application/vnd.surok.federal-curriculum-requirements.v1+json" ->
-                    selected.print(new MdJson()).print();
-                case "application/vnd.surok.federal-curriculum-requirements.v1+xml" ->
-                    selected.print(new MdXml("requirements")).print();
-                case null, default -> throw new ResponseStatusException(
-                    HttpStatus.NOT_ACCEPTABLE, "Unsupported Accept header"
-                );
-            }
-        );
+            );
     }
 
     /**
@@ -223,42 +241,6 @@ public class RqsHttp {
                 new RqInputForm(parameters.toSingleValueMap())
             ),
             HttpStatus.CREATED, current
-        );
-    }
-
-    /**
-     * Updates a curriculum requirement.
-     *
-     * @param current Curriculum ID
-     * @param requirement Requirement ID
-     * @param parameters Requirement input parameters
-     * @param request HTTP request
-     * @param actor Authenticated user
-     * @return Response with the negotiated representation or redirect
-     * @throws Exception If update fails
-     */
-    @PostMapping(
-        value = "/{requirement}",
-        consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE,
-        produces = {
-            MediaType.TEXT_HTML_VALUE,
-            "application/vnd.surok.federal-curriculum-requirement-v1+json",
-            "application/vnd.surok.federal-curriculum-requirement-v1+xml"
-        }
-    )
-    public ResponseEntity<?> revise(
-        @PathVariable("curriculum") final long current,
-        @PathVariable final long requirement,
-        @RequestParam final MultiValueMap<String, String> parameters,
-        final HttpServletRequest request,
-        @AuthenticationPrincipal final User actor
-    ) throws Exception {
-        return RqsHttp.result(
-            new AcHttp(request, "federal-curriculum-requirement-v1").type(),
-            new RqsAuthorized(new RqsPostgres(this.ctx, current), actor).revise(
-                requirement, new RqInputHttp(parameters)
-            ),
-            HttpStatus.OK, current
         );
     }
 

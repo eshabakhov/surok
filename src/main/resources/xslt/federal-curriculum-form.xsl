@@ -22,17 +22,22 @@
                 </xsl:if>
             </div>
         </div>
+        <xsl:if test="$editing">
+            <div id="curriculum-form-error" class="error-message" role="alert" hidden="hidden"></div>
+            <noscript><p class="error-message">Включите JavaScript, чтобы сохранить изменения.</p></noscript>
+        </xsl:if>
         <div class="curriculum-form-wrap">
             <form class="curriculum-form" method="post">
+                <xsl:if test="$editing"><xsl:attribute name="id">curriculum-edit-form</xsl:attribute></xsl:if>
                 <xsl:attribute name="action">
                     <xsl:choose>
                         <xsl:when test="$editing">
-                            <xsl:value-of select="concat('/federal/curriculums/', $curriculum/id, '/edit')"/>
+                            <xsl:value-of select="concat('/federal/curriculums/', $curriculum/id)"/>
                         </xsl:when>
-                        <xsl:otherwise>/federal/curriculums/create</xsl:otherwise>
+                        <xsl:otherwise>/federal/curriculums</xsl:otherwise>
                     </xsl:choose>
                 </xsl:attribute>
-                <xsl:call-template name="csrf-input"/>
+                <xsl:if test="not($editing)"><xsl:call-template name="csrf-input"/></xsl:if>
                 <label class="curriculum-form-field" for="title-name">
                     <xsl:text>Название</xsl:text>
                     <input id="title-name"
@@ -123,7 +128,7 @@
                     </a>
                     <button class="btn-primary" type="submit">
                         <xsl:choose>
-                            <xsl:when test="$editing">Сохранить</xsl:when>
+                            <xsl:when test="$editing"><xsl:attribute name="disabled">disabled</xsl:attribute>Сохранить</xsl:when>
                             <xsl:otherwise>Создать</xsl:otherwise>
                         </xsl:choose>
                     </button>

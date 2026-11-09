@@ -196,9 +196,12 @@ final class RqsHttpTest {
     @Test
     void returnsRequirementsHtmlFragment() throws Exception {
         final MockHttpServletRequest request = new MockHttpServletRequest();
-        request.addHeader(HttpHeaders.ACCEPT, "text/html");
+        request.addHeader(
+            HttpHeaders.ACCEPT,
+            "text/vnd.surok.federal-curriculum-requirements-fragment+html"
+        );
         request.setRequestURI(
-            "/federal/curriculums/1/requirements/fragment"
+            "/federal/curriculums/1/requirements"
         );
         final User user = new UrPostgres(
             this.ctx,
@@ -523,8 +526,8 @@ final class RqsHttpTest {
         parameters.add("subjectId", "502");
         parameters.add("hours", "4");
         parameters.add("partType", "MANDATORY");
-        final ResponseEntity<?> response = new RqsHttp(this.ctx).revise(
-            1L, 7L, parameters, request, this.actor
+        final ResponseEntity<?> response = new RqsHttp(this.ctx).update(
+            1L, 7L, parameters.toSingleValueMap(), request, this.actor
         );
         MatcherAssert.assertThat(
             "HTML revision must not return a response body",
@@ -553,8 +556,8 @@ final class RqsHttpTest {
         parameters.add("partType", "MANDATORY");
         MatcherAssert.assertThat(
             "JSON revision must return revised fields",
-            ((ObjectNode) new RqsHttp(this.ctx).revise(
-                1L, 7L, parameters, request, this.actor
+            ((ObjectNode) new RqsHttp(this.ctx).update(
+                1L, 7L, parameters.toSingleValueMap(), request, this.actor
             ).getBody())
                 .path("subject").path("name").asText(),
             Matchers.is("Algebra")
@@ -576,8 +579,8 @@ final class RqsHttpTest {
         parameters.add("partType", "MANDATORY");
         MatcherAssert.assertThat(
             "XML revision must return revised fields",
-            (String) new RqsHttp(this.ctx).revise(
-                1L, 7L, parameters, request, this.actor
+            (String) new RqsHttp(this.ctx).update(
+                1L, 7L, parameters.toSingleValueMap(), request, this.actor
             ).getBody(),
             Matchers.containsString(
                 "<subject><id>502</id><name>Algebra</name><origin>FEDERAL</origin></subject>"
@@ -597,7 +600,9 @@ final class RqsHttpTest {
         parameters.add("partType", "MANDATORY");
         Assertions.assertThrows(
             ResponseStatusException.class,
-            () -> new RqsHttp(this.ctx).revise(1L, 7L, parameters, request, this.actor)
+            () -> new RqsHttp(this.ctx).update(
+                1L, 7L, parameters.toSingleValueMap(), request, this.actor
+            )
         );
     }
 

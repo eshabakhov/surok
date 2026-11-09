@@ -178,16 +178,8 @@ public final class PmMethod implements Permission {
 
     private String curriculums() {
         return switch (this.handler.getMethod().getName()) {
-            case "create", "revise", "remove" -> "hasRole('ADMIN')";
-            case "curriculum", "selection" -> {
-                final String rule;
-                if (this.path.endsWith("/create") || this.path.endsWith("/edit")) {
-                    rule = "hasRole('ADMIN')";
-                } else {
-                    rule = "true";
-                }
-                yield rule;
-            }
+            case "create", "revise", "remove", "form", "edit" -> "hasRole('ADMIN')";
+            case "curriculum", "selection" -> "true";
             case null, default -> "false";
         };
     }
@@ -195,7 +187,7 @@ public final class PmMethod implements Permission {
     private String requirements() {
         return switch (this.handler.getMethod().getName()) {
             case "selection", "requirement" -> "true";
-            case "create", "revise", "add", "update", "remove" -> "hasRole('ADMIN')";
+            case "create", "add", "update", "remove" -> "hasRole('ADMIN')";
             case null, default -> "false";
         };
     }

@@ -4835,6 +4835,18 @@ paths:
               examples:
                 example:
                   $ref: "#/components/examples/HtmlPageRequirementListHtml"
+            text/vnd.surok.federal-curriculum-requirements-fragment+html:
+              schema:
+                $ref: "#/components/schemas/HtmlPage"
+              examples:
+                example:
+                  $ref: "#/components/examples/HtmlPageRequirementFragmentHtml"
+          headers:
+            Vary:
+              description: Response representation depends on the Accept header.
+              schema:
+                type: string
+              example: Accept
     post:
       tags:
         - Federal Curriculum Requirements
@@ -4911,8 +4923,8 @@ paths:
     get:
       tags:
         - Federal Curriculums
-      summary: Get federal curriculum
-      operationId: curriculum
+      summary: Get federal curriculum editing form
+      operationId: editCurriculum
       parameters:
         - name: curriculum
           in: path
@@ -4926,32 +4938,8 @@ paths:
           example: 61
       responses:
         "200":
-          description: The requested resource.
+          description: HTML form for editing a federal curriculum.
           content:
-            application/vnd.surok.federal-curriculum-v1+json:
-              schema:
-                $ref: "#/components/schemas/CurriculumV1"
-              examples:
-                example:
-                  $ref: "#/components/examples/CurriculumV1Json"
-            application/vnd.surok.federal-curriculum-v1+xml:
-              schema:
-                $ref: "#/components/schemas/CurriculumV1"
-              examples:
-                example:
-                  $ref: "#/components/examples/CurriculumV1Xml"
-            application/vnd.surok.federal-curriculum-v2+json:
-              schema:
-                $ref: "#/components/schemas/CurriculumV2"
-              examples:
-                example:
-                  $ref: "#/components/examples/CurriculumV2Json"
-            application/vnd.surok.federal-curriculum-v2+xml:
-              schema:
-                $ref: "#/components/schemas/CurriculumV2"
-              examples:
-                example:
-                  $ref: "#/components/examples/CurriculumV2Xml"
             text/html:
               schema:
                 $ref: "#/components/schemas/HtmlPage"
@@ -4960,205 +4948,23 @@ paths:
                   $ref: "#/components/examples/HtmlPageCurriculumEditHtml"
         "404":
           $ref: "#/components/responses/NotFound"
-    post:
-      tags:
-        - Federal Curriculums
-      summary: Update federal curriculum
-      operationId: revise_18
-      parameters:
-        - name: curriculum
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
-            description: Federal curriculum identifier.
-            minimum: 1
-          description: Federal curriculum identifier.
-          example: 61
-      responses:
-        "200":
-          description: The resource was updated.
-          content:
-            application/vnd.surok.federal-curriculum-v1+json:
-              schema:
-                $ref: "#/components/schemas/CurriculumV1"
-              examples:
-                example:
-                  $ref: "#/components/examples/CurriculumV1Json"
-            application/vnd.surok.federal-curriculum-v1+xml:
-              schema:
-                $ref: "#/components/schemas/CurriculumV1"
-              examples:
-                example:
-                  $ref: "#/components/examples/CurriculumV1Xml"
-            application/vnd.surok.federal-curriculum-v2+json:
-              schema:
-                $ref: "#/components/schemas/CurriculumV2"
-              examples:
-                example:
-                  $ref: "#/components/examples/CurriculumV2Json"
-            application/vnd.surok.federal-curriculum-v2+xml:
-              schema:
-                $ref: "#/components/schemas/CurriculumV2"
-              examples:
-                example:
-                  $ref: "#/components/examples/CurriculumV2Xml"
-        "302":
-          description: Browser requests are redirected to the resource page. No body.
-          headers:
-            Location:
-              description: Relative URL of the resource or page to open.
-              schema:
-                type: string
-              example: /federal/curriculums/61
-        "400":
-          $ref: "#/components/responses/InvalidRequest"
-        "404":
-          $ref: "#/components/responses/NotFound"
-      requestBody:
-        description: Replacement fields for the existing resource.
-        required: true
-        content:
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: "#/components/schemas/CurriculumForm"
-            examples:
-              example:
-                $ref: "#/components/examples/CurriculumForm"
   /federal/curriculums/create:
     get:
       tags:
         - Federal Curriculums
-      summary: List federal curriculums
-      operationId: selection_25
-      parameters:
-        - name: filter
-          in: query
-          description: >-
-            Repeat to combine filters. Each value uses field:value. Supported fields: title and
-            title_ct.
-          style: form
-          explode: true
-          schema:
-            type: array
-            items:
-              type: string
-          example:
-            - title_ct:Основной
-        - name: limit
-          in: query
-          description: Maximum number of entries per page. Defaults to 15.
-          schema:
-            type: integer
-            format: int32
-            description: Page size.
-            minimum: 1
-            default: 15
-          example: 15
-        - name: offset
-          in: query
-          description: One-based page number. Defaults to 1.
-          schema:
-            type: integer
-            format: int32
-            description: Page number.
-            minimum: 1
-            default: 1
-          example: 1
-        - name: sort
-          in: query
-          description: Repeat for multiple sort keys. Use field:ASC or field:DESC.
-          style: form
-          explode: true
-          schema:
-            type: array
-            items:
-              type: string
-          example:
-            - title:ASC
+      summary: Get federal curriculum creation form
+      operationId: formCurriculum
       responses:
         "200":
-          description: Page of matching records.
+          description: HTML form for creating a federal curriculum.
           content:
-            application/vnd.surok.federal-curriculums.v1+json:
-              schema:
-                $ref: "#/components/schemas/CurriculumList"
-              examples:
-                example:
-                  $ref: "#/components/examples/CurriculumListJson"
-            application/vnd.surok.federal-curriculums.v1+xml:
-              schema:
-                $ref: "#/components/schemas/CurriculumListXml"
-              examples:
-                example:
-                  $ref: "#/components/examples/CurriculumListXml"
             text/html:
               schema:
                 $ref: "#/components/schemas/HtmlPage"
               examples:
                 example:
                   $ref: "#/components/examples/HtmlPageCurriculumCreateHtml"
-      description: For HTML, render the creation form; data formats return the collection.
-    post:
-      tags:
-        - Federal Curriculums
-      summary: Create federal curriculum
-      operationId: create_25
-      responses:
-        "201":
-          description: The resource was created.
-          headers:
-            Location:
-              description: Relative URL of the resource or page to open.
-              schema:
-                type: string
-              example: /federal/curriculums/61
-          content:
-            application/vnd.surok.federal-curriculum-v1+json:
-              schema:
-                $ref: "#/components/schemas/CurriculumV1"
-              examples:
-                example:
-                  $ref: "#/components/examples/CurriculumV1Json"
-            application/vnd.surok.federal-curriculum-v1+xml:
-              schema:
-                $ref: "#/components/schemas/CurriculumV1"
-              examples:
-                example:
-                  $ref: "#/components/examples/CurriculumV1Xml"
-            application/vnd.surok.federal-curriculum-v2+json:
-              schema:
-                $ref: "#/components/schemas/CurriculumV2"
-              examples:
-                example:
-                  $ref: "#/components/examples/CurriculumV2Json"
-            application/vnd.surok.federal-curriculum-v2+xml:
-              schema:
-                $ref: "#/components/schemas/CurriculumV2"
-              examples:
-                example:
-                  $ref: "#/components/examples/CurriculumV2Xml"
-        "302":
-          description: Browser requests are redirected to the resource page. No body.
-          headers:
-            Location:
-              description: Relative URL of the resource or page to open.
-              schema:
-                type: string
-              example: /federal/curriculums/61
-        "400":
-          $ref: "#/components/responses/InvalidRequest"
-      requestBody:
-        description: Fields for the new resource.
-        required: true
-        content:
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: "#/components/schemas/CurriculumForm"
-            examples:
-              example:
-                $ref: "#/components/examples/CurriculumForm"
+      description: Browser form for creating a federal curriculum.
   /api/users:
     post:
       tags:
@@ -5930,90 +5736,6 @@ paths:
           $ref: "#/components/responses/AccessDenied"
         "406":
           $ref: "#/components/responses/UnsupportedRepresentation"
-  /federal/curriculums/{curriculum}/requirements/fragment:
-    get:
-      tags:
-        - Federal Curriculum Requirements
-      summary: List federal curriculum requirements
-      operationId: selection_37
-      parameters:
-        - name: curriculum
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
-            description: Federal curriculum identifier.
-            minimum: 1
-          description: Federal curriculum identifier.
-          example: 61
-        - name: filter
-          in: query
-          description: >-
-            Repeat to combine filters. Each value uses field:value. Supported fields: grade, subject or
-            subjectName, part or partType.
-          style: form
-          explode: true
-          schema:
-            type: array
-            items:
-              type: string
-          example:
-            - grade:5
-        - name: limit
-          in: query
-          description: Maximum number of entries per page. Defaults to 15.
-          schema:
-            type: integer
-            format: int32
-            description: Page size.
-            minimum: 1
-            default: 15
-          example: 15
-        - name: offset
-          in: query
-          description: One-based page number. Defaults to 1.
-          schema:
-            type: integer
-            format: int32
-            description: Page number.
-            minimum: 1
-            default: 1
-          example: 1
-        - name: sort
-          in: query
-          description: Repeat for multiple sort keys. Use field:ASC or field:DESC.
-          style: form
-          explode: true
-          schema:
-            type: array
-            items:
-              type: string
-          example:
-            - grade:ASC
-      responses:
-        "200":
-          description: Page of matching records.
-          content:
-            application/vnd.surok.federal-curriculum-requirements.v1+json:
-              schema:
-                $ref: "#/components/schemas/RequirementList"
-              examples:
-                example:
-                  $ref: "#/components/examples/RequirementListJson"
-            application/vnd.surok.federal-curriculum-requirements.v1+xml:
-              schema:
-                $ref: "#/components/schemas/RequirementListXml"
-              examples:
-                example:
-                  $ref: "#/components/examples/RequirementListXml"
-            text/html:
-              schema:
-                $ref: "#/components/schemas/HtmlPage"
-              examples:
-                example:
-                  $ref: "#/components/examples/HtmlPageRequirementFragmentHtml"
-      description: Return a partial HTML view or the negotiated data representation.
   /federal/curriculums/{curriculum}:
     get:
       tags:
@@ -6067,6 +5789,86 @@ paths:
                   $ref: "#/components/examples/HtmlPageCurriculumHtml"
         "404":
           $ref: "#/components/responses/NotFound"
+    put:
+      tags:
+      - Federal Curriculums
+      summary: Update federal curriculum
+      operationId: reviseCurriculum
+      parameters:
+      - name: curriculum
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+          description: Federal curriculum identifier.
+          minimum: 1
+        description: Federal curriculum identifier.
+        example: 61
+      responses:
+        '200':
+          description: The resource was updated.
+          content:
+            application/vnd.surok.federal-curriculum-v1+json:
+              schema:
+                $ref: '#/components/schemas/CurriculumV1'
+              examples:
+                example:
+                  $ref: '#/components/examples/CurriculumV1Json'
+            application/vnd.surok.federal-curriculum-v1+xml:
+              schema:
+                $ref: '#/components/schemas/CurriculumV1'
+              examples:
+                example:
+                  $ref: '#/components/examples/CurriculumV1Xml'
+            application/vnd.surok.federal-curriculum-v2+json:
+              schema:
+                $ref: '#/components/schemas/CurriculumV2'
+              examples:
+                example:
+                  $ref: '#/components/examples/CurriculumV2Json'
+            application/vnd.surok.federal-curriculum-v2+xml:
+              schema:
+                $ref: '#/components/schemas/CurriculumV2'
+              examples:
+                example:
+                  $ref: '#/components/examples/CurriculumV2Xml'
+        '302':
+          description: Browser requests are redirected to the resource page. No body.
+          headers:
+            Location:
+              description: Relative URL of the resource or page to open.
+              schema:
+                type: string
+              example: /federal/curriculums/61
+        '400':
+          $ref: '#/components/responses/InvalidRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      requestBody:
+        description: Replacement federal curriculum fields supplied as versioned JSON.
+        required: true
+        content:
+          application/vnd.surok.federal-curriculum-v1+json:
+            schema:
+              $ref: '#/components/schemas/CurriculumInput'
+            example:
+              title: Основной план
+              level: BASIC
+              week: FIVE_DAYS
+              version: '1'
+              year: 2026/2027
+              description: Учебный план
+          application/vnd.surok.federal-curriculum-v2+json:
+            schema:
+              $ref: '#/components/schemas/CurriculumInput'
+            example:
+              title: Основной план
+              level: BASIC
+              week: FIVE_DAYS
+              version: '1'
+              year: 2026/2027
+              description: Учебный план
     delete:
       tags:
         - Federal Curriculums
@@ -6161,98 +5963,97 @@ paths:
               examples:
                 example:
                   $ref: "#/components/examples/HtmlPageCurriculumListHtml"
-  /federal/curriculums/fragment:
-    get:
-      tags:
-        - Federal Curriculums
-      summary: List federal curriculums
-      operationId: selection_39
-      parameters:
-        - name: filter
-          in: query
-          description: >-
-            Repeat to combine filters. Each value uses field:value. Supported fields: title and
-            title_ct.
-          style: form
-          explode: true
-          schema:
-            type: array
-            items:
-              type: string
-          example:
-            - title_ct:Основной
-        - name: limit
-          in: query
-          description: Maximum number of entries per page. Defaults to 15.
-          schema:
-            type: integer
-            format: int32
-            description: Page size.
-            minimum: 1
-            default: 15
-          example: 15
-        - name: offset
-          in: query
-          description: One-based page number. Defaults to 1.
-          schema:
-            type: integer
-            format: int32
-            description: Page number.
-            minimum: 1
-            default: 1
-          example: 1
-        - name: sort
-          in: query
-          description: Repeat for multiple sort keys. Use field:ASC or field:DESC.
-          style: form
-          explode: true
-          schema:
-            type: array
-            items:
-              type: string
-          example:
-            - title:ASC
-      responses:
-        "200":
-          description: Page of matching records.
-          content:
-            application/vnd.surok.federal-curriculums.v1+json:
-              schema:
-                $ref: "#/components/schemas/CurriculumList"
-              examples:
-                example:
-                  $ref: "#/components/examples/CurriculumListJson"
-            application/vnd.surok.federal-curriculums.v1+xml:
-              schema:
-                $ref: "#/components/schemas/CurriculumListXml"
-              examples:
-                example:
-                  $ref: "#/components/examples/CurriculumListXml"
-            text/html:
+            text/vnd.surok.federal-curriculums-fragment+html:
               schema:
                 $ref: "#/components/schemas/HtmlPage"
               examples:
                 example:
                   $ref: "#/components/examples/HtmlPageCurriculumFragmentHtml"
-      description: Return a partial HTML view or the negotiated data representation.
-  /:
-    get:
-      tags:
-        - home-http
-      operationId: page_5
-      responses:
-        "200":
-          description: Rendered browser page.
-          content:
-            text/html:
+          headers:
+            Vary:
+              description: Response representation depends on the Accept header.
               schema:
-                $ref: "#/components/schemas/HtmlPage"
+                type: string
+              example: Accept
+    post:
+      tags:
+      - Federal Curriculums
+      summary: Create federal curriculum
+      operationId: createCurriculum
+      responses:
+        '201':
+          description: The resource was created.
+          headers:
+            Location:
+              description: Relative URL of the resource or page to open.
+              schema:
+                type: string
+              example: /federal/curriculums/61
+          content:
+            application/vnd.surok.federal-curriculum-v1+json:
+              schema:
+                $ref: '#/components/schemas/CurriculumV1'
               examples:
                 example:
-                  $ref: "#/components/examples/HtmlPageHomeHtml"
-      security: []
-      summary: Home page
-      description: Public entry page of Surok.
+                  $ref: '#/components/examples/CurriculumV1Json'
+            application/vnd.surok.federal-curriculum-v1+xml:
+              schema:
+                $ref: '#/components/schemas/CurriculumV1'
+              examples:
+                example:
+                  $ref: '#/components/examples/CurriculumV1Xml'
+            application/vnd.surok.federal-curriculum-v2+json:
+              schema:
+                $ref: '#/components/schemas/CurriculumV2'
+              examples:
+                example:
+                  $ref: '#/components/examples/CurriculumV2Json'
+            application/vnd.surok.federal-curriculum-v2+xml:
+              schema:
+                $ref: '#/components/schemas/CurriculumV2'
+              examples:
+                example:
+                  $ref: '#/components/examples/CurriculumV2Xml'
+        '302':
+          description: Browser requests are redirected to the resource page. No body.
+          headers:
+            Location:
+              description: Relative URL of the resource or page to open.
+              schema:
+                type: string
+              example: /federal/curriculums/61
+        '400':
+          $ref: '#/components/responses/InvalidRequest'
+      requestBody:
+        description: Fields for a new federal curriculum, supplied as versioned JSON or a browser form.
+        required: true
+        content:
+          application/vnd.surok.federal-curriculum-v1+json:
+            schema:
+              $ref: '#/components/schemas/CurriculumInput'
+            example:
+              title: Основной план
+              level: BASIC
+              week: FIVE_DAYS
+              version: '1'
+              year: 2026/2027
+              description: Учебный план
+          application/vnd.surok.federal-curriculum-v2+json:
+            schema:
+              $ref: '#/components/schemas/CurriculumInput'
+            example:
+              title: Основной план
+              level: BASIC
+              week: FIVE_DAYS
+              version: '1'
+              year: 2026/2027
+              description: Учебный план
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CurriculumForm'
+            examples:
+              example:
+                $ref: '#/components/examples/CurriculumForm'
   /schools/{school}/users/{user}/roles/{role}:
     delete:
       tags:

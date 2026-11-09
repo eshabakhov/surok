@@ -116,7 +116,7 @@ final class SecurityConfigTest {
                             )
                         )
                     ).andReturn().getResponse().getContentAsString()
-                ).path("paths").path("/federal/curriculums/create").has("post"),
+                ).path("paths").path("/federal/curriculums").has("post"),
                 mapper.readTree(
                     mvc.perform(MockMvcRequestBuilders.get("/api-docs"))
                         .andReturn().getResponse().getContentAsString()
@@ -145,7 +145,7 @@ final class SecurityConfigTest {
             "Reader documentation omitted the catalogue or exposed administrative operations",
             List.of(
                 paths.path("/federal/curriculums").has("get"),
-                paths.path("/federal/curriculums/create").has("post"),
+                paths.path("/federal/curriculums").has("post"),
                 paths.path("/federal/subjects").has("post"), paths.has("/schools")
             ),
             Matchers.contains(true, false, false, true)
