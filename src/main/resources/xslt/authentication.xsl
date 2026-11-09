@@ -130,7 +130,7 @@
                     <h1 class="card-title">Surok - Регистрация</h1>
                     <div class="card-desc">Создайте аккаунт для доступа к платформе</div>
                 </div>
-                <form class="login-form" id="register-form" method="post" action="/users/register">
+                <form class="login-form" id="register-form" method="post" action="/users">
                     <xsl:call-template name="csrf-input"/>
                     <div class="field">
                         <label for="username">Логин</label>

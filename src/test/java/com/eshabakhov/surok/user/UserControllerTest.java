@@ -4,6 +4,7 @@
 package com.eshabakhov.surok.user;
 
 import com.eshabakhov.surok.User;
+import java.util.List;
 import java.util.UUID;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
@@ -18,6 +19,7 @@ import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequ
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
@@ -40,6 +42,40 @@ final class UserControllerTest {
         new PostgreSQLContainer<>("postgres:16-alpine");
 
     /**
+     * Creates an account through the canonical collection path.
+     *
+     * @param mvc HTTP client
+     * @throws Exception If registration fails
+     */
+    @Test
+    void registersAccountWithoutAnApiPrefix(@Autowired final MockMvc mvc) throws Exception {
+        final String name = UUID.randomUUID().toString();
+        final MvcResult result = mvc.perform(
+            MockMvcRequestBuilders.post("/users").contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON).content(
+                    String.format(
+                        """
+                        {"username":"%s","password":"ValidPassword1!",
+                        "email":"%s@example.com"}
+                        """,
+                        name, name
+                    )
+                ).with(SecurityMockMvcRequestPostProcessors.csrf())
+        ).andReturn();
+        MatcherAssert.assertThat(
+            "Registration did not create an account at the canonical user URI",
+            List.of(
+                String.valueOf(result.getResponse().getStatus()),
+                result.getResponse().getHeader("Location")
+            ),
+            Matchers.contains(
+                Matchers.is(String.valueOf(HttpStatus.CREATED.value())),
+                Matchers.matchesPattern("/users/[0-9]+")
+            )
+        );
+    }
+
+    /**
      * Rejects a regular user's attempt to list global roles.
      *
      * @param mvc HTTP client
@@ -57,7 +93,7 @@ final class UserControllerTest {
         MatcherAssert.assertThat(
             "A regular user listed global roles",
             mvc.perform(
-                MockMvcRequestBuilders.get("/api/users/{user}/roles", actor.uid()).with(
+                MockMvcRequestBuilders.get("/users/{user}/roles", actor.uid()).with(
                     SecurityMockMvcRequestPostProcessors.user(new AuthUser(actor))
                 )
             ).andReturn().getResponse().getStatus(),
@@ -83,9 +119,10 @@ final class UserControllerTest {
         MatcherAssert.assertThat(
             "A regular user assigned a global role",
             mvc.perform(
-                MockMvcRequestBuilders.post("/api/users/{user}/roles", actor.uid())
+                MockMvcRequestBuilders.post("/users/{user}/roles", actor.uid())
                     .contentType(MediaType.APPLICATION_JSON)
-                    .content("{\"role\":\"PRO_MAKER\"}").with(
+                    .content("{\"role\":\"PRO_MAKER\"}")
+                    .with(SecurityMockMvcRequestPostProcessors.csrf()).with(
                         SecurityMockMvcRequestPostProcessors.user(new AuthUser(actor))
                     )
             ).andReturn().getResponse().getStatus(),
@@ -113,16 +150,24 @@ final class UserControllerTest {
             String.format("%s@example.com", UUID.randomUUID()), false
         );
         actor.roles().grant(Roles.RoleEnum.ADMIN);
+        final MvcResult result = mvc.perform(
+            MockMvcRequestBuilders.post("/users/{user}/roles", target.uid())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"role\":\"PRO_MAKER\"}")
+                .with(SecurityMockMvcRequestPostProcessors.csrf()).with(
+                    SecurityMockMvcRequestPostProcessors.user(new AuthUser(actor))
+                )
+        ).andReturn();
         MatcherAssert.assertThat(
-            "An administrator could not assign a global role",
-            mvc.perform(
-                MockMvcRequestBuilders.post("/api/users/{user}/roles", target.uid())
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content("{\"role\":\"PRO_MAKER\"}").with(
-                        SecurityMockMvcRequestPostProcessors.user(new AuthUser(actor))
-                    )
-            ).andReturn().getResponse().getStatus(),
-            Matchers.is(HttpStatus.CREATED.value())
+            "An administrator did not create a global role at the canonical URI",
+            List.of(
+                String.valueOf(result.getResponse().getStatus()),
+                result.getResponse().getHeader("Location")
+            ),
+            Matchers.contains(
+                Matchers.is(String.valueOf(HttpStatus.CREATED.value())),
+                Matchers.startsWith(String.format("/users/%d/roles/", target.uid()))
+            )
         );
     }
 

@@ -41,7 +41,7 @@ final class XsPublicTest {
         MatcherAssert.assertThat(
             XsPublicTest.page("register"),
             Matchers.allOf(
-                Matchers.containsString("action=\"/users/register\""),
+                Matchers.containsString("action=\"/users\""),
                 Matchers.containsString("minlength=\"8\""),
                 Matchers.containsString("id=\"confirm-password\""),
                 Matchers.containsString("data-target=\"confirm-password\""),

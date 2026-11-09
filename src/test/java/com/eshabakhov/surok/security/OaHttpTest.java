@@ -119,9 +119,45 @@ final class OaHttpTest {
             "YAML omitted administrator operations or exposed them to an anonymous visitor",
             List.of(
                 allowed.has("/permissions"), anonymous.has("/permissions"),
-                anonymous.path("/users/register").has("post")
+                anonymous.path("/users").has("post")
             ),
             Matchers.contains(true, false, true)
+        );
+    }
+
+    /**
+     * Groups account and school membership operations under one Swagger tag.
+     *
+     * @param mvc HTTP client
+     * @throws Exception If the description cannot be read
+     */
+    @Test
+    void publishesCanonicalUserOperationsTogether(@Autowired final MockMvc mvc)
+        throws Exception {
+        final JsonNode paths = Json.mapper().readTree(
+            mvc.perform(
+                MockMvcRequestBuilders.get("/api-docs").with(
+                    SecurityMockMvcRequestPostProcessors.user("администратор").roles("ADMIN")
+                )
+            ).andReturn().getResponse().getContentAsByteArray()
+        ).path("paths");
+        MatcherAssert.assertThat(
+            "Swagger retained user API aliases or split user operations across tags",
+            List.of(
+                paths.has("/users"),
+                paths.has("/users/{user}/roles"),
+                paths.has("/schools/{school}/users"),
+                paths.has("/api/users"),
+                paths.properties().stream().filter(
+                    path -> path.getKey().startsWith("/users")
+                        || path.getKey().contains("/users/")
+                        || path.getKey().endsWith("/users")
+                ).flatMap(path -> path.getValue().properties().stream()).allMatch(
+                    operation -> operation.getValue().path("tags").size() == 1
+                        && "Users".equals(operation.getValue().path("tags").path(0).asText())
+                )
+            ),
+            Matchers.contains(true, true, true, false, true)
         );
     }
 
