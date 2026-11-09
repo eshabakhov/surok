@@ -5791,20 +5791,20 @@ paths:
           $ref: "#/components/responses/NotFound"
     put:
       tags:
-      - Federal Curriculums
+        - Federal Curriculums
       summary: Update federal curriculum
       operationId: reviseCurriculum
       parameters:
-      - name: curriculum
-        in: path
-        required: true
-        schema:
-          type: integer
-          format: int64
+        - name: curriculum
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+            description: Federal curriculum identifier.
+            minimum: 1
           description: Federal curriculum identifier.
-          minimum: 1
-        description: Federal curriculum identifier.
-        example: 61
+          example: 61
       responses:
         '200':
           description: The resource was updated.
@@ -5977,7 +5977,7 @@ paths:
               example: Accept
     post:
       tags:
-      - Federal Curriculums
+        - Federal Curriculums
       summary: Create federal curriculum
       operationId: createCurriculum
       responses:
