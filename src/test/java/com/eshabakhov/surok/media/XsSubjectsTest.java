@@ -19,18 +19,20 @@ import org.junit.jupiter.params.provider.ValueSource;
 final class XsSubjectsTest {
 
     @ParameterizedTest
-    @ValueSource(strings = {"create", "edit"})
-    void printsProtectedForms(final String view) {
+    @CsvSource({
+        "create, 'name=\"_csrf\" type=\"hidden\" value=\"token\"'",
+        "edit, 'src=\"/js/school/subject-edit.js\"'"
+    })
+    void printsProtectedForms(final String view, final String expected) {
         MatcherAssert.assertThat(
             new XsClasspath("xslt/subjects.xsl", view).transform(
                 XsSubjectsTest.document().replaceAll("(?s)<school>.*?</school>", "")
             ),
             Matchers.allOf(
-                Matchers.containsString("name=\"_csrf\" type=\"hidden\" value=\"token\""),
                 Matchers.containsString("id=\"subject-name\" name=\"name\""),
                 Matchers.containsString("Название не может быть пустым"),
                 Matchers.containsString("href=\"/css/school/subjects.css\""),
-                Matchers.containsString("src=\"/js/school/subjects.js\""),
+                Matchers.containsString(expected),
                 Matchers.not(Matchers.containsString("style=\""))
             )
         );
@@ -42,7 +44,7 @@ final class XsSubjectsTest {
             "The school form linked a catalogue entry instead of creating an additional subject",
             XsSubjectsTest.page("create"),
             Matchers.allOf(
-                Matchers.containsString("action=\"/schools/3/subjects/create\""),
+                Matchers.containsString("action=\"/schools/3/subjects\""),
                 Matchers.containsString("id=\"subject-name\" name=\"name\""),
                 Matchers.not(Matchers.containsString("name=\"subjectId\"")),
                 Matchers.not(Matchers.containsString("data-linked="))
@@ -58,7 +60,7 @@ final class XsSubjectsTest {
         MatcherAssert.assertThat(
             page.substring(page.indexOf("<main")),
             Matchers.allOf(
-                Matchers.containsString("action=\"/federal/subjects/create\""),
+                Matchers.containsString("action=\"/federal/subjects\""),
                 Matchers.containsString("value=\"\""),
                 Matchers.containsString("placeholder=\"Например: Математика\""),
                 Matchers.not(Matchers.containsString("value=\"Математика\""))
@@ -73,7 +75,7 @@ final class XsSubjectsTest {
                 XsSubjectsTest.document().replaceAll("(?s)<school>.*?</school>", "")
             ),
             Matchers.allOf(
-                Matchers.containsString("action=\"/federal/subjects/7/edit\""),
+                Matchers.containsString("action=\"/federal/subjects/7\""),
                 Matchers.containsString("value=\"Математика\""),
                 Matchers.containsString("Сохранить"),
                 Matchers.not(Matchers.containsString("placeholder=\"Например:"))

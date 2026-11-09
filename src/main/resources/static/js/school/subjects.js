@@ -7,7 +7,8 @@ $(() => {
         results: '#subjects-results',
         pagination: '#subjects-pagination',
         rows: '#subjects-container .subject-row',
-        sort: '.subjects-sort'
+        sort: '.subjects-sort',
+        accept: 'text/vnd.surok.subjects-fragment+html'
     });
     $(document).on('click', '.btn-delete-row', function () {
         const button = $(this);

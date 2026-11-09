@@ -189,7 +189,7 @@ final class SbsHttpTest {
     @Test
     void printsJsonPage() throws Exception {
         this.mvc.perform(
-            MockMvcRequestBuilders.get("/schools/1/subjects/")
+            MockMvcRequestBuilders.get("/schools/1/subjects")
                 .accept("application/vnd.surok.subjects.v1+json")
                 .session(this.session(Roles.RoleEnum.VIEWER, 1L))
                 .param("name_ct", "north").param("limit", "1")
@@ -233,17 +233,15 @@ final class SbsHttpTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"", "/", "/create"})
-    void createsThroughJsonAliases(final String suffix) throws Exception {
+    @CsvSource({"/,404", "/create,405"})
+    void rejectsJsonCreationAliases(final String suffix, final int status) throws Exception {
         this.mvc.perform(
             this.authorized(
-                MockMvcRequestBuilders.post(
-                    String.format("%s%s", "/schools/1/subjects", suffix)
-                ), Roles.RoleEnum.DIRECTOR
+                MockMvcRequestBuilders.post(String.format("/schools/1/subjects%s", suffix)),
+                Roles.RoleEnum.DIRECTOR
             ).contentType("application/vnd.surok.subject-v1+json")
                 .accept("application/vnd.surok.subject-v1+json").content("{\"name\":\"East\"}")
-        ).andExpect(MockMvcResultMatchers.status().isCreated())
-            .andExpect(MockMvcResultMatchers.jsonPath("$.name").value("East"));
+        ).andExpect(MockMvcResultMatchers.status().is(status));
     }
 
     @ParameterizedTest
@@ -255,16 +253,12 @@ final class SbsHttpTest {
         }
     )
     void rejectsUnsupportedInputBeforeMutation(final String type) throws Exception {
-        for (final String suffix : List.of("", "/", "/create", "/10/edit")) {
-            this.mvc.perform(
-                this.authorized(
-                    MockMvcRequestBuilders.post(
-                        String.format("%s%s", "/schools/1/subjects", suffix)
-                    ), Roles.RoleEnum.DIRECTOR
-                ).contentType(type).accept("application/vnd.surok.subject-v1+json")
-                    .content("{\"name\":\"Rejected\"}")
-            ).andExpect(MockMvcResultMatchers.status().isUnsupportedMediaType());
-        }
+        this.mvc.perform(
+            this.authorized(
+                MockMvcRequestBuilders.post("/schools/1/subjects"), Roles.RoleEnum.DIRECTOR
+            ).contentType(type).accept("application/vnd.surok.subject-v1+json")
+                .content("{\"name\":\"Rejected\"}")
+        ).andExpect(MockMvcResultMatchers.status().isUnsupportedMediaType());
         this.mvc.perform(
             this.authorized(
                 MockMvcRequestBuilders.put("/schools/1/subjects/10"),
@@ -335,7 +329,7 @@ final class SbsHttpTest {
     @Test
     void rendersSubjectPages() throws Exception {
         for (final String path : List.of(
-            "", "/fragment", "/create", "/10", "/10/edit"
+            "", "/create", "/10", "/10/edit"
         )) {
             this.mvc.perform(
                 MockMvcRequestBuilders.get(String.format("/schools/1/subjects%s", path))
@@ -346,15 +340,14 @@ final class SbsHttpTest {
         }
     }
 
-    @ParameterizedTest
-    @ValueSource(strings = {"/create", "/10/edit"})
-    void redirectsInvalidBrowserForms(final String suffix) throws Exception {
-        final String form = String.format("/schools/1/subjects%s", suffix);
+    @Test
+    void redirectsInvalidBrowserForms() throws Exception {
+        final String form = "/schools/1/subjects/create";
         this.mvc.perform(
-            this.authorized(MockMvcRequestBuilders.post(form), Roles.RoleEnum.DIRECTOR)
-                .accept(MediaType.TEXT_HTML)
-                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                .param("name", " ")
+            this.authorized(
+                MockMvcRequestBuilders.post("/schools/1/subjects"), Roles.RoleEnum.DIRECTOR
+            ).accept(MediaType.TEXT_HTML)
+                .contentType(MediaType.APPLICATION_FORM_URLENCODED).param("name", " ")
         ).andExpect(MockMvcResultMatchers.status().isFound()).andExpect(
             MockMvcResultMatchers.redirectedUrl(String.format("%s?error=empty", form))
         );
@@ -375,18 +368,16 @@ final class SbsHttpTest {
     }
 
     @ParameterizedTest
-    @CsvSource({
-        "/create, application/vnd.surok.subject-v1+json",
-        "/create, application/vnd.surok.subject-v1+xml",
-        "/10/edit, application/vnd.surok.subject-v1+json",
-        "/10/edit, application/vnd.surok.subject-v1+xml"
-    })
-    void keepsApiValidationForFormFields(final String suffix, final String accept)
-        throws Exception {
+    @ValueSource(
+        strings = {
+            "application/vnd.surok.subject-v1+json",
+            "application/vnd.surok.subject-v1+xml"
+        }
+    )
+    void keepsApiValidationForFormFields(final String accept) throws Exception {
         this.mvc.perform(
             this.authorized(
-                MockMvcRequestBuilders.post(String.format("/schools/1/subjects%s", suffix)),
-                Roles.RoleEnum.DIRECTOR
+                MockMvcRequestBuilders.post("/schools/1/subjects"), Roles.RoleEnum.DIRECTOR
             ).header("Accept", accept)
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                 .param("name", " ")
@@ -395,16 +386,22 @@ final class SbsHttpTest {
     }
 
     @Test
-    void revisesThroughProtectedForm() throws Exception {
+    void revisesThroughTheEditPagesCsrfHeader() throws Exception {
+        final MockHttpSession session = this.session(Roles.RoleEnum.DIRECTOR, 1L);
+        final MvcResult form = this.mvc.perform(
+            MockMvcRequestBuilders.get("/schools/1/subjects/10/edit").session(session)
+        ).andReturn();
+        final CsrfToken token = (CsrfToken) form.getRequest().getAttribute(
+            CsrfToken.class.getName()
+        );
         this.mvc.perform(
-            this.authorized(
-                MockMvcRequestBuilders.post("/schools/1/subjects/10/edit"),
-                Roles.RoleEnum.DIRECTOR
-            ).accept(MediaType.TEXT_HTML)
-                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                .param("name", " Revised through form ")
-        ).andExpect(MockMvcResultMatchers.status().isFound())
-            .andExpect(MockMvcResultMatchers.redirectedUrl("/schools/1/subjects/10"));
+            MockMvcRequestBuilders.put("/schools/1/subjects/10")
+                .session(session).cookie(form.getResponse().getCookies())
+                .header(token.getHeaderName(), token.getToken())
+                .accept("application/vnd.surok.subject-v1+json")
+                .contentType("application/vnd.surok.subject-v1+json")
+                .content("{\"name\":\" Revised through form \"}")
+        ).andExpect(MockMvcResultMatchers.status().isOk());
         this.mvc.perform(
             MockMvcRequestBuilders.get("/schools/1/subjects/10")
                 .session(this.session(Roles.RoleEnum.DIRECTOR, 1L))
@@ -422,7 +419,7 @@ final class SbsHttpTest {
             CsrfToken.class.getName()
         );
         this.mvc.perform(
-            MockMvcRequestBuilders.post("/schools/1/subjects/create")
+            MockMvcRequestBuilders.post("/schools/1/subjects")
                 .session(session).cookie(form.getResponse().getCookies())
                 .param(token.getParameterName(), token.getToken())
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
@@ -515,7 +512,7 @@ final class SbsHttpTest {
     @ParameterizedTest
     @ValueSource(strings = {"application/json", "application/xml"})
     void rejectsUnversionedRepresentations(final String accept) throws Exception {
-        for (final String suffix : List.of("", "/", "/fragment", "/create", "/10", "/10/edit")) {
+        for (final String suffix : List.of("", "/create", "/10", "/10/edit")) {
             this.mvc.perform(
                 MockMvcRequestBuilders.get(String.format("%s%s", "/schools/1/subjects", suffix))
                     .session(this.session(Roles.RoleEnum.VIEWER, 1L)).header("Accept", accept)
@@ -535,15 +532,40 @@ final class SbsHttpTest {
         ).andExpect(MockMvcResultMatchers.status().isOk())
             .andExpect(MockMvcResultMatchers.jsonPath("$.items[0].name").value(first))
             .andExpect(MockMvcResultMatchers.jsonPath("$.items[1].name").value(second));
+        final String fragment = "text/vnd.surok.subjects-fragment+html";
         this.mvc.perform(
-            MockMvcRequestBuilders.get("/schools/1/subjects/fragment")
-                .session(this.session(Roles.RoleEnum.VIEWER, 1L)).accept(MediaType.TEXT_HTML)
+            MockMvcRequestBuilders.get("/schools/1/subjects")
+                .session(this.session(Roles.RoleEnum.VIEWER, 1L)).accept(fragment)
                 .param("sort", String.format("name:%s", direction))
         ).andExpect(MockMvcResultMatchers.status().isOk()).andExpect(
+            MockMvcResultMatchers.content().contentTypeCompatibleWith(fragment)
+        ).andExpect(
             MockMvcResultMatchers.content().string(
-                Matchers.containsString("class=\"subjects-sort active\"")
+                Matchers.allOf(
+                    Matchers.containsString("class=\"subjects-sort active\""),
+                    Matchers.not(Matchers.containsString("<html"))
+                )
             )
         );
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"/", "/fragment"})
+    void rejectsLegacySubjectListRoutes(final String suffix) throws Exception {
+        this.mvc.perform(
+            MockMvcRequestBuilders.get(String.format("/schools/1/subjects%s", suffix))
+                .session(this.session(Roles.RoleEnum.VIEWER, 1L)).accept(MediaType.TEXT_HTML)
+        ).andExpect(MockMvcResultMatchers.status().is4xxClientError());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"/create", "/10/edit"})
+    void offersSubjectFormsOnlyAsHtml(final String suffix) throws Exception {
+        this.mvc.perform(
+            MockMvcRequestBuilders.get(String.format("/schools/1/subjects%s", suffix))
+                .session(this.session(Roles.RoleEnum.DIRECTOR, 1L))
+                .accept("application/vnd.surok.subject-v1+json")
+        ).andExpect(MockMvcResultMatchers.status().isNotAcceptable());
     }
 
     @Test
@@ -609,7 +631,7 @@ final class SbsHttpTest {
     void rejectsUnsupportedRepresentationBeforeFormCreation(final String accept) throws Exception {
         this.mvc.perform(
             this.authorized(
-                MockMvcRequestBuilders.post("/schools/1/subjects/create"),
+                MockMvcRequestBuilders.post("/schools/1/subjects"),
                 Roles.RoleEnum.DIRECTOR
             ).header("Accept", accept)
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
@@ -646,30 +668,6 @@ final class SbsHttpTest {
             .andExpect(MockMvcResultMatchers.jsonPath("$.name").value("North"));
     }
 
-    @ParameterizedTest
-    @ValueSource(
-        strings = {
-            "application/pdf", "*/*;q=0", "invalid", "application/json;q=2",
-            "application/json", "application/xml"
-        }
-    )
-    void rejectsUnsupportedRepresentationBeforeFormRevision(final String accept) throws Exception {
-        this.mvc.perform(
-            this.authorized(
-                MockMvcRequestBuilders.post("/schools/1/subjects/10/edit"),
-                Roles.RoleEnum.DIRECTOR
-            ).header("Accept", accept)
-                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                .param("name", "Rejected")
-        ).andExpect(MockMvcResultMatchers.status().isNotAcceptable());
-        this.mvc.perform(
-            MockMvcRequestBuilders.get("/schools/1/subjects/10")
-                .session(this.session(Roles.RoleEnum.DIRECTOR, 1L))
-                .accept("application/vnd.surok.subject-v1+json")
-        ).andExpect(MockMvcResultMatchers.status().isOk())
-            .andExpect(MockMvcResultMatchers.jsonPath("$.name").value("North"));
-    }
-
     @Test
     void deniesFormMutationForViewer() throws Exception {
         final MockHttpSession session = this.session(Roles.RoleEnum.VIEWER, 1L);
@@ -680,7 +678,7 @@ final class SbsHttpTest {
             CsrfToken.class.getName()
         );
         this.mvc.perform(
-            MockMvcRequestBuilders.post("/schools/1/subjects/create")
+            MockMvcRequestBuilders.post("/schools/1/subjects")
                 .session(session).cookie(form.getResponse().getCookies())
                 .param(token.getParameterName(), token.getToken())
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
@@ -691,7 +689,7 @@ final class SbsHttpTest {
     @Test
     void requiresCsrfOnBrowserMutation() throws Exception {
         this.mvc.perform(
-            MockMvcRequestBuilders.post("/schools/1/subjects/create")
+            MockMvcRequestBuilders.post("/schools/1/subjects")
                 .session(this.session(Roles.RoleEnum.DIRECTOR, 1L))
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                 .param("name", "Forbidden")
@@ -719,7 +717,7 @@ final class SbsHttpTest {
             CsrfToken.class.getName()
         );
         this.mvc.perform(
-            MockMvcRequestBuilders.post("/schools/1/subjects/create")
+            MockMvcRequestBuilders.post("/schools/1/subjects")
                 .session(session).cookie(form.getResponse().getCookies())
                 .param(token.getParameterName(), token.getToken())
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
@@ -778,13 +776,13 @@ final class SbsHttpTest {
         ).andExpect(MockMvcResultMatchers.jsonPath("$.name").value("North"));
     }
 
-    @ParameterizedTest
-    @ValueSource(strings = {"/create", "/11/edit"})
-    void redirectsDuplicateForms(final String suffix) throws Exception {
-        final String path = String.format("/schools/1/subjects%s", suffix);
+    @Test
+    void redirectsDuplicateForms() throws Exception {
+        final String path = "/schools/1/subjects/create";
         this.mvc.perform(
-            this.authorized(MockMvcRequestBuilders.post(path), Roles.RoleEnum.DIRECTOR)
-                .contentType(MediaType.APPLICATION_FORM_URLENCODED).param("name", " North ")
+            this.authorized(
+                MockMvcRequestBuilders.post("/schools/1/subjects"), Roles.RoleEnum.DIRECTOR
+            ).contentType(MediaType.APPLICATION_FORM_URLENCODED).param("name", " North ")
         ).andExpect(MockMvcResultMatchers.status().isFound()).andExpect(
             MockMvcResultMatchers.redirectedUrl(String.format("%s?error=duplicate", path))
         );

@@ -4354,8 +4354,8 @@ paths:
     get:
       tags:
         - Subjects
-      summary: Get subject
-      operationId: subject_2
+      summary: Get subject editing form
+      operationId: editSubjectFederal
       parameters:
         - name: subject
           in: path
@@ -4369,90 +4369,20 @@ paths:
           example: 29
       responses:
         "200":
-          description: The requested resource.
+          description: HTML form for editing a subject.
           content:
-            application/vnd.surok.subject-v1+json:
-              schema:
-                $ref: "#/components/schemas/Subject"
-              examples:
-                example:
-                  $ref: "#/components/examples/SubjectJson"
-            application/vnd.surok.subject-v1+xml:
-              schema:
-                $ref: "#/components/schemas/Subject"
-              examples:
-                example:
-                  $ref: "#/components/examples/SubjectXml"
             text/html:
               schema:
                 $ref: "#/components/schemas/HtmlPage"
               examples:
                 example:
                   $ref: "#/components/examples/HtmlPageSubjectEditHtml"
-    post:
-      tags:
-        - Subjects
-      summary: Update subject
-      operationId: revise_16
-      parameters:
-        - name: subject
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
-            description: Subject identifier.
-            minimum: 1
-          description: Subject identifier.
-          example: 29
-      responses:
-        "200":
-          description: The resource was updated.
-          headers:
-            Location:
-              description: Relative URL of the resource or page to open.
-              schema:
-                type: string
-              example: /federal/subjects/29
-          content:
-            application/vnd.surok.subject-v1+json:
-              schema:
-                $ref: "#/components/schemas/Subject"
-              examples:
-                example:
-                  $ref: "#/components/examples/SubjectJson"
-            application/vnd.surok.subject-v1+xml:
-              schema:
-                $ref: "#/components/schemas/Subject"
-              examples:
-                example:
-                  $ref: "#/components/examples/SubjectXml"
-        "302":
-          description: Browser requests are redirected to the resource page. No body.
-          headers:
-            Location:
-              description: Relative URL of the resource or page to open.
-              schema:
-                type: string
-              example: /federal/subjects/29
-        "400":
-          $ref: "#/components/responses/InvalidRequest"
-      requestBody:
-        description: Replacement fields for the existing resource.
-        required: true
-        content:
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: "#/components/schemas/SubjectForm"
-            examples:
-              example:
-                $ref: "#/components/examples/SubjectForm"
   /schools/{school}/subjects/{subject}/edit:
     get:
       tags:
         - Subjects
-      summary: Get subject
-      operationId: subject_3
+      summary: Get subject editing form
+      operationId: editSubjectSchool
       parameters:
         - name: school
           in: path
@@ -4476,225 +4406,37 @@ paths:
           example: 29
       responses:
         "200":
-          description: The requested resource.
+          description: HTML form for editing a subject.
           content:
-            application/vnd.surok.subject-v1+json:
-              schema:
-                $ref: "#/components/schemas/Subject"
-              examples:
-                example:
-                  $ref: "#/components/examples/SubjectSchoolJson"
-            application/vnd.surok.subject-v1+xml:
-              schema:
-                $ref: "#/components/schemas/Subject"
-              examples:
-                example:
-                  $ref: "#/components/examples/SubjectSchoolXml"
             text/html:
               schema:
                 $ref: "#/components/schemas/HtmlPage"
               examples:
                 example:
                   $ref: "#/components/examples/HtmlPageSubjectEditHtml"
-    post:
-      tags:
-        - Subjects
-      summary: Update subject
-      operationId: revise_17
-      parameters:
-        - name: school
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
-            description: School identifier.
-            minimum: 1
-          description: School identifier.
-          example: 12
-        - name: subject
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
-            description: Subject identifier.
-            minimum: 1
-          description: Subject identifier.
-          example: 29
-      responses:
-        "200":
-          description: The resource was updated.
-          headers:
-            Location:
-              description: Relative URL of the resource or page to open.
-              schema:
-                type: string
-              example: /schools/12/subjects/29
-          content:
-            application/vnd.surok.subject-v1+json:
-              schema:
-                $ref: "#/components/schemas/Subject"
-              examples:
-                example:
-                  $ref: "#/components/examples/SubjectSchoolJson"
-            application/vnd.surok.subject-v1+xml:
-              schema:
-                $ref: "#/components/schemas/Subject"
-              examples:
-                example:
-                  $ref: "#/components/examples/SubjectSchoolXml"
-        "302":
-          description: Browser requests are redirected to the resource page. No body.
-          headers:
-            Location:
-              description: Relative URL of the resource or page to open.
-              schema:
-                type: string
-              example: /schools/12/subjects/29
-        "400":
-          $ref: "#/components/responses/InvalidRequest"
-      requestBody:
-        description: Replacement fields for the existing resource.
-        required: true
-        content:
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: "#/components/schemas/SubjectForm"
-            examples:
-              example:
-                $ref: "#/components/examples/SubjectForm"
   /federal/subjects/create:
     get:
       tags:
         - Subjects
-      summary: List subjects
-      operationId: selection_18
-      parameters:
-        - name: filter
-          in: query
-          description: "Repeat to combine filters. Each value uses field:value. Supported fields: name and name_ct."
-          style: form
-          explode: true
-          schema:
-            type: array
-            items:
-              type: string
-          example:
-            - name_ct:А
-        - name: limit
-          in: query
-          description: Maximum number of entries per page. Defaults to 15.
-          schema:
-            type: integer
-            format: int32
-            description: Page size.
-            minimum: 1
-            default: 15
-          example: 15
-        - name: offset
-          in: query
-          description: One-based page number. Defaults to 1.
-          schema:
-            type: integer
-            format: int32
-            description: Page number.
-            minimum: 1
-            default: 1
-          example: 1
-        - name: sort
-          in: query
-          description: Repeat for multiple sort keys. Use field:ASC or field:DESC.
-          style: form
-          explode: true
-          schema:
-            type: array
-            items:
-              type: string
-          example:
-            - name:ASC
+      summary: Get subject creation form
+      operationId: formSubjectFederal
       responses:
         "200":
-          description: Page of matching records.
+          description: HTML form for creating a subject.
           content:
-            application/vnd.surok.subjects.v1+json:
-              schema:
-                $ref: "#/components/schemas/SubjectList"
-              examples:
-                example:
-                  $ref: "#/components/examples/SubjectListJson"
-            application/vnd.surok.subjects.v1+xml:
-              schema:
-                $ref: "#/components/schemas/SubjectListXml"
-              examples:
-                example:
-                  $ref: "#/components/examples/SubjectListXml"
             text/html:
               schema:
                 $ref: "#/components/schemas/HtmlPage"
               examples:
                 example:
                   $ref: "#/components/examples/HtmlPageSubjectCreateHtml"
-      description: For HTML, render the creation form; data formats return the collection.
-    post:
-      tags:
-        - Subjects
-      summary: Create subject
-      operationId: create_18
-      responses:
-        "201":
-          description: The resource was created.
-          headers:
-            Location:
-              description: Relative URL of the resource or page to open.
-              schema:
-                type: string
-              example: /federal/subjects/29
-          content:
-            application/vnd.surok.subject-v1+json:
-              schema:
-                $ref: "#/components/schemas/Subject"
-              examples:
-                example:
-                  $ref: "#/components/examples/SubjectJson"
-            application/vnd.surok.subject-v1+xml:
-              schema:
-                $ref: "#/components/schemas/Subject"
-              examples:
-                example:
-                  $ref: "#/components/examples/SubjectXml"
-        "302":
-          description: Browser requests are redirected to the resource page. No body.
-          headers:
-            Location:
-              description: Relative URL of the resource or page to open.
-              schema:
-                type: string
-              example: /federal/subjects
-        "400":
-          $ref: "#/components/responses/InvalidRequest"
-      requestBody:
-        description: Fields for the new resource.
-        required: true
-        content:
-          application/vnd.surok.subject-v1+json:
-            schema:
-              $ref: "#/components/schemas/SubjectInput"
-            examples:
-              example:
-                $ref: "#/components/examples/SubjectInputJson"
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: "#/components/schemas/SubjectForm"
-            examples:
-              example:
-                $ref: "#/components/examples/SubjectForm"
+      description: Browser form for creating a subject.
   /schools/{school}/subjects/create:
     get:
       tags:
         - Subjects
-      summary: List subjects
-      operationId: selection_19
+      summary: Get subject creation form
+      operationId: formSubjectSchool
       parameters:
         - name: school
           in: path
@@ -4706,392 +4448,17 @@ paths:
             minimum: 1
           description: School identifier.
           example: 12
-        - name: filter
-          in: query
-          description: "Repeat to combine filters. Each value uses field:value. Supported fields: name and name_ct."
-          style: form
-          explode: true
-          schema:
-            type: array
-            items:
-              type: string
-          example:
-            - name_ct:А
-        - name: limit
-          in: query
-          description: Maximum number of entries per page. Defaults to 15.
-          schema:
-            type: integer
-            format: int32
-            description: Page size.
-            minimum: 1
-            default: 15
-          example: 15
-        - name: offset
-          in: query
-          description: One-based page number. Defaults to 1.
-          schema:
-            type: integer
-            format: int32
-            description: Page number.
-            minimum: 1
-            default: 1
-          example: 1
-        - name: sort
-          in: query
-          description: Repeat for multiple sort keys. Use field:ASC or field:DESC.
-          style: form
-          explode: true
-          schema:
-            type: array
-            items:
-              type: string
-          example:
-            - name:ASC
       responses:
         "200":
-          description: Page of matching records.
+          description: HTML form for creating a subject.
           content:
-            application/vnd.surok.subjects.v1+json:
-              schema:
-                $ref: "#/components/schemas/SubjectList"
-              examples:
-                example:
-                  $ref: "#/components/examples/SubjectListSchoolJson"
-            application/vnd.surok.subjects.v1+xml:
-              schema:
-                $ref: "#/components/schemas/SubjectListXml"
-              examples:
-                example:
-                  $ref: "#/components/examples/SubjectListXmlSchool"
             text/html:
               schema:
                 $ref: "#/components/schemas/HtmlPage"
               examples:
                 example:
                   $ref: "#/components/examples/HtmlPageSubjectCreateHtml"
-      description: For HTML, render the creation form; data formats return the collection.
-    post:
-      tags:
-        - Subjects
-      summary: Create subject
-      operationId: create_19
-      parameters:
-        - name: school
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
-            description: School identifier.
-            minimum: 1
-          description: School identifier.
-          example: 12
-      responses:
-        "201":
-          description: The resource was created.
-          headers:
-            Location:
-              description: Relative URL of the resource or page to open.
-              schema:
-                type: string
-              example: /schools/12/subjects/29
-          content:
-            application/vnd.surok.subject-v1+json:
-              schema:
-                $ref: "#/components/schemas/Subject"
-              examples:
-                example:
-                  $ref: "#/components/examples/SubjectSchoolJson"
-            application/vnd.surok.subject-v1+xml:
-              schema:
-                $ref: "#/components/schemas/Subject"
-              examples:
-                example:
-                  $ref: "#/components/examples/SubjectSchoolXml"
-        "302":
-          description: Browser requests are redirected to the resource page. No body.
-          headers:
-            Location:
-              description: Relative URL of the resource or page to open.
-              schema:
-                type: string
-              example: /schools/12/subjects
-        "400":
-          $ref: "#/components/responses/InvalidRequest"
-      requestBody:
-        description: Fields for the new resource.
-        required: true
-        content:
-          application/vnd.surok.subject-v1+json:
-            schema:
-              $ref: "#/components/schemas/SubjectInput"
-            examples:
-              example:
-                $ref: "#/components/examples/SubjectInputJson"
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: "#/components/schemas/SubjectForm"
-            examples:
-              example:
-                $ref: "#/components/examples/SubjectForm"
-  /federal/subjects/:
-    get:
-      tags:
-        - Subjects
-      summary: List subjects
-      operationId: selection_20
-      parameters:
-        - name: filter
-          in: query
-          description: "Repeat to combine filters. Each value uses field:value. Supported fields: name and name_ct."
-          style: form
-          explode: true
-          schema:
-            type: array
-            items:
-              type: string
-          example:
-            - name_ct:А
-        - name: limit
-          in: query
-          description: Maximum number of entries per page. Defaults to 15.
-          schema:
-            type: integer
-            format: int32
-            description: Page size.
-            minimum: 1
-            default: 15
-          example: 15
-        - name: offset
-          in: query
-          description: One-based page number. Defaults to 1.
-          schema:
-            type: integer
-            format: int32
-            description: Page number.
-            minimum: 1
-            default: 1
-          example: 1
-        - name: sort
-          in: query
-          description: Repeat for multiple sort keys. Use field:ASC or field:DESC.
-          style: form
-          explode: true
-          schema:
-            type: array
-            items:
-              type: string
-          example:
-            - name:ASC
-      responses:
-        "200":
-          description: Page of matching records.
-          content:
-            application/vnd.surok.subjects.v1+json:
-              schema:
-                $ref: "#/components/schemas/SubjectList"
-              examples:
-                example:
-                  $ref: "#/components/examples/SubjectListJson"
-            application/vnd.surok.subjects.v1+xml:
-              schema:
-                $ref: "#/components/schemas/SubjectListXml"
-              examples:
-                example:
-                  $ref: "#/components/examples/SubjectListXml"
-            text/html:
-              schema:
-                $ref: "#/components/schemas/HtmlPage"
-              examples:
-                example:
-                  $ref: "#/components/examples/HtmlPageSubjectListHtml"
-    post:
-      tags:
-        - Subjects
-      summary: Create subject
-      operationId: create_20
-      responses:
-        "201":
-          description: The resource was created.
-          headers:
-            Location:
-              description: Relative URL of the resource or page to open.
-              schema:
-                type: string
-              example: /federal/subjects/29
-          content:
-            application/vnd.surok.subject-v1+json:
-              schema:
-                $ref: "#/components/schemas/Subject"
-              examples:
-                example:
-                  $ref: "#/components/examples/SubjectJson"
-            application/vnd.surok.subject-v1+xml:
-              schema:
-                $ref: "#/components/schemas/Subject"
-              examples:
-                example:
-                  $ref: "#/components/examples/SubjectXml"
-        "302":
-          description: Browser requests are redirected to the resource page. No body.
-          headers:
-            Location:
-              description: Relative URL of the resource or page to open.
-              schema:
-                type: string
-              example: /federal/subjects
-        "400":
-          $ref: "#/components/responses/InvalidRequest"
-      requestBody:
-        description: Fields for the new resource.
-        required: true
-        content:
-          application/vnd.surok.subject-v1+json:
-            schema:
-              $ref: "#/components/schemas/SubjectInput"
-            examples:
-              example:
-                $ref: "#/components/examples/SubjectInputJson"
-  /schools/{school}/subjects/:
-    get:
-      tags:
-        - Subjects
-      summary: List subjects
-      operationId: selection_21
-      parameters:
-        - name: school
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
-            description: School identifier.
-            minimum: 1
-          description: School identifier.
-          example: 12
-        - name: filter
-          in: query
-          description: "Repeat to combine filters. Each value uses field:value. Supported fields: name and name_ct."
-          style: form
-          explode: true
-          schema:
-            type: array
-            items:
-              type: string
-          example:
-            - name_ct:А
-        - name: limit
-          in: query
-          description: Maximum number of entries per page. Defaults to 15.
-          schema:
-            type: integer
-            format: int32
-            description: Page size.
-            minimum: 1
-            default: 15
-          example: 15
-        - name: offset
-          in: query
-          description: One-based page number. Defaults to 1.
-          schema:
-            type: integer
-            format: int32
-            description: Page number.
-            minimum: 1
-            default: 1
-          example: 1
-        - name: sort
-          in: query
-          description: Repeat for multiple sort keys. Use field:ASC or field:DESC.
-          style: form
-          explode: true
-          schema:
-            type: array
-            items:
-              type: string
-          example:
-            - name:ASC
-      responses:
-        "200":
-          description: Page of matching records.
-          content:
-            application/vnd.surok.subjects.v1+json:
-              schema:
-                $ref: "#/components/schemas/SubjectList"
-              examples:
-                example:
-                  $ref: "#/components/examples/SubjectListSchoolJson"
-            application/vnd.surok.subjects.v1+xml:
-              schema:
-                $ref: "#/components/schemas/SubjectListXml"
-              examples:
-                example:
-                  $ref: "#/components/examples/SubjectListXmlSchool"
-            text/html:
-              schema:
-                $ref: "#/components/schemas/HtmlPage"
-              examples:
-                example:
-                  $ref: "#/components/examples/HtmlPageSubjectListHtml"
-    post:
-      tags:
-        - Subjects
-      summary: Create subject
-      operationId: create_21
-      parameters:
-        - name: school
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
-            description: School identifier.
-            minimum: 1
-          description: School identifier.
-          example: 12
-      responses:
-        "201":
-          description: The resource was created.
-          headers:
-            Location:
-              description: Relative URL of the resource or page to open.
-              schema:
-                type: string
-              example: /schools/12/subjects/29
-          content:
-            application/vnd.surok.subject-v1+json:
-              schema:
-                $ref: "#/components/schemas/Subject"
-              examples:
-                example:
-                  $ref: "#/components/examples/SubjectSchoolJson"
-            application/vnd.surok.subject-v1+xml:
-              schema:
-                $ref: "#/components/schemas/Subject"
-              examples:
-                example:
-                  $ref: "#/components/examples/SubjectSchoolXml"
-        "302":
-          description: Browser requests are redirected to the resource page. No body.
-          headers:
-            Location:
-              description: Relative URL of the resource or page to open.
-              schema:
-                type: string
-              example: /schools/12/subjects
-        "400":
-          $ref: "#/components/responses/InvalidRequest"
-      requestBody:
-        description: Fields for the new resource.
-        required: true
-        content:
-          application/vnd.surok.subject-v1+json:
-            schema:
-              $ref: "#/components/schemas/SubjectInput"
-            examples:
-              example:
-                $ref: "#/components/examples/SubjectInputJson"
+      description: Browser form for creating a subject.
   /federal/subjects:
     get:
       tags:
@@ -5144,6 +4511,12 @@ paths:
       responses:
         "200":
           description: Page of matching records.
+          headers:
+            Vary:
+              description: The response representation depends on the Accept request header.
+              schema:
+                type: string
+              example: Accept
           content:
             application/vnd.surok.subjects.v1+json:
               schema:
@@ -5163,6 +4536,12 @@ paths:
               examples:
                 example:
                   $ref: "#/components/examples/HtmlPageSubjectListHtml"
+            text/vnd.surok.subjects-fragment+html:
+              schema:
+                $ref: "#/components/schemas/HtmlPage"
+              examples:
+                example:
+                  $ref: "#/components/examples/HtmlPageSubjectFragmentHtml"
     post:
       tags:
         - Subjects
@@ -5201,7 +4580,7 @@ paths:
         "400":
           $ref: "#/components/responses/InvalidRequest"
       requestBody:
-        description: Fields for the new resource.
+        description: Fields for the new subject. Send versioned JSON or a URL-encoded form.
         required: true
         content:
           application/vnd.surok.subject-v1+json:
@@ -5210,6 +4589,12 @@ paths:
             examples:
               example:
                 $ref: "#/components/examples/SubjectInputJson"
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/SubjectForm"
+            examples:
+              example:
+                $ref: "#/components/examples/SubjectForm"
   /schools/{school}/subjects:
     get:
       tags:
@@ -5272,6 +4657,12 @@ paths:
       responses:
         "200":
           description: Page of matching records.
+          headers:
+            Vary:
+              description: The response representation depends on the Accept request header.
+              schema:
+                type: string
+              example: Accept
           content:
             application/vnd.surok.subjects.v1+json:
               schema:
@@ -5291,6 +4682,12 @@ paths:
               examples:
                 example:
                   $ref: "#/components/examples/HtmlPageSubjectListHtml"
+            text/vnd.surok.subjects-fragment+html:
+              schema:
+                $ref: "#/components/schemas/HtmlPage"
+              examples:
+                example:
+                  $ref: "#/components/examples/HtmlPageSubjectFragmentHtml"
     post:
       tags:
         - Subjects
@@ -5340,7 +4737,7 @@ paths:
         "400":
           $ref: "#/components/responses/InvalidRequest"
       requestBody:
-        description: Fields for the new resource.
+        description: Fields for the new subject. Send versioned JSON or a URL-encoded form.
         required: true
         content:
           application/vnd.surok.subject-v1+json:
@@ -5349,6 +4746,12 @@ paths:
             examples:
               example:
                 $ref: "#/components/examples/SubjectInputJson"
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/SubjectForm"
+            examples:
+              example:
+                $ref: "#/components/examples/SubjectForm"
   /federal/curriculums/{curriculum}/requirements:
     get:
       tags:
@@ -6527,160 +5930,6 @@ paths:
           $ref: "#/components/responses/AccessDenied"
         "406":
           $ref: "#/components/responses/UnsupportedRepresentation"
-  /schools/{school}/subjects/fragment:
-    get:
-      tags:
-        - Subjects
-      summary: List subjects
-      operationId: selection_35
-      parameters:
-        - name: school
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
-            description: School identifier.
-            minimum: 1
-          description: School identifier.
-          example: 12
-        - name: filter
-          in: query
-          description: "Repeat to combine filters. Each value uses field:value. Supported fields: name and name_ct."
-          style: form
-          explode: true
-          schema:
-            type: array
-            items:
-              type: string
-          example:
-            - name_ct:А
-        - name: limit
-          in: query
-          description: Maximum number of entries per page. Defaults to 15.
-          schema:
-            type: integer
-            format: int32
-            description: Page size.
-            minimum: 1
-            default: 15
-          example: 15
-        - name: offset
-          in: query
-          description: One-based page number. Defaults to 1.
-          schema:
-            type: integer
-            format: int32
-            description: Page number.
-            minimum: 1
-            default: 1
-          example: 1
-        - name: sort
-          in: query
-          description: Repeat for multiple sort keys. Use field:ASC or field:DESC.
-          style: form
-          explode: true
-          schema:
-            type: array
-            items:
-              type: string
-          example:
-            - name:ASC
-      responses:
-        "200":
-          description: Page of matching records.
-          content:
-            application/vnd.surok.subjects.v1+json:
-              schema:
-                $ref: "#/components/schemas/SubjectList"
-              examples:
-                example:
-                  $ref: "#/components/examples/SubjectListSchoolJson"
-            application/vnd.surok.subjects.v1+xml:
-              schema:
-                $ref: "#/components/schemas/SubjectListXml"
-              examples:
-                example:
-                  $ref: "#/components/examples/SubjectListXmlSchool"
-            text/html:
-              schema:
-                $ref: "#/components/schemas/HtmlPage"
-              examples:
-                example:
-                  $ref: "#/components/examples/HtmlPageSubjectFragmentHtml"
-      description: Return a partial HTML view or the negotiated data representation.
-  /federal/subjects/fragment:
-    get:
-      tags:
-        - Subjects
-      summary: List subjects
-      operationId: selection_36
-      parameters:
-        - name: filter
-          in: query
-          description: "Repeat to combine filters. Each value uses field:value. Supported fields: name and name_ct."
-          style: form
-          explode: true
-          schema:
-            type: array
-            items:
-              type: string
-          example:
-            - name_ct:А
-        - name: limit
-          in: query
-          description: Maximum number of entries per page. Defaults to 15.
-          schema:
-            type: integer
-            format: int32
-            description: Page size.
-            minimum: 1
-            default: 15
-          example: 15
-        - name: offset
-          in: query
-          description: One-based page number. Defaults to 1.
-          schema:
-            type: integer
-            format: int32
-            description: Page number.
-            minimum: 1
-            default: 1
-          example: 1
-        - name: sort
-          in: query
-          description: Repeat for multiple sort keys. Use field:ASC or field:DESC.
-          style: form
-          explode: true
-          schema:
-            type: array
-            items:
-              type: string
-          example:
-            - name:ASC
-      responses:
-        "200":
-          description: Page of matching records.
-          content:
-            application/vnd.surok.subjects.v1+json:
-              schema:
-                $ref: "#/components/schemas/SubjectList"
-              examples:
-                example:
-                  $ref: "#/components/examples/SubjectListJson"
-            application/vnd.surok.subjects.v1+xml:
-              schema:
-                $ref: "#/components/schemas/SubjectListXml"
-              examples:
-                example:
-                  $ref: "#/components/examples/SubjectListXml"
-            text/html:
-              schema:
-                $ref: "#/components/schemas/HtmlPage"
-              examples:
-                example:
-                  $ref: "#/components/examples/HtmlPageSubjectFragmentHtml"
-      description: Return a partial HTML view or the negotiated data representation.
   /federal/curriculums/{curriculum}/requirements/fragment:
     get:
       tags:

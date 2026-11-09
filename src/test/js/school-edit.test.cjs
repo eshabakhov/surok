@@ -9,7 +9,8 @@ const page = ({ kind = 'school', failure } = {}) => {
     const visits = [];
     const names = {
         school: 'Лицей № 42', teacher: 'Анна Петрова',
-        schedule: 'Расписание на весну', building: 'Северный корпус', cabinet: 'Кабинет 204'
+        schedule: 'Расписание на весну', building: 'Северный корпус',
+        cabinet: 'Кабинет 204', subject: 'Робототехника'
     };
     const input = { value: names[kind] };
     const grade = { valueAsNumber: 7 };
@@ -20,7 +21,8 @@ const page = ({ kind = 'school', failure } = {}) => {
     let protect;
     const segments = {
         school: '', teacher: '/teachers/31', schedule: '/schedules/31',
-        'school-class': '/classes/31', building: '/buildings/31', cabinet: '/buildings/9/cabinets/31'
+        'school-class': '/classes/31', building: '/buildings/31',
+        cabinet: '/buildings/9/cabinets/31', subject: '/subjects/31'
     };
     const fields = new Map([
         ['[name="name"]', input], ['[name="grade"]', grade], ['[name="litera"]', litera],
@@ -223,5 +225,30 @@ test('A cabinet validation error keeps the entered name and allows another attem
             cabinet.message.textContent, cabinet.visits],
         ['  ', false, false, 'Название не может быть пустым', []],
         'The cabinet edit form lost the input or failed to show the validation error'
+    );
+});
+
+test('The subject edit form sends protected JSON PUT and opens the subject', () => {
+    const subject = page({ kind: 'subject' });
+    const intercepted = subject.submit();
+    const request = subject.requests[0];
+    const uri = 'https://school.test/schools/12/subjects/31';
+    const media = 'application/vnd.surok.subject-v1+json';
+    assert.deepEqual(
+        [intercepted, request.method, request.url, request.contentType, request.headers.Accept,
+            request.headers['X-XSRF-TOKEN'], JSON.parse(request.data), subject.visits],
+        [true, 'PUT', uri, media, media, 'masked-token', { name: 'Робототехника' }, [uri]],
+        'The subject edit form did not use the protected canonical update'
+    );
+});
+
+test('A duplicate subject name is reported without clearing the input', () => {
+    const subject = page({ kind: 'subject', failure: { status: 409 } });
+    subject.submit();
+    assert.deepEqual(
+        [subject.input.value, subject.button.disabled, subject.message.hidden,
+            subject.message.textContent, subject.visits],
+        ['Робототехника', false, false, 'Предмет с таким названием уже существует', []],
+        'The subject edit form lost the input or failed to show the conflict'
     );
 });
