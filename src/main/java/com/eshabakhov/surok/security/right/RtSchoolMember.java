@@ -7,7 +7,7 @@ import com.eshabakhov.surok.School;
 import com.eshabakhov.surok.User;
 
 /**
- * Right of an administrator or a current school member.
+ * Right of a current school member.
  * For example, a member may inspect buildings in their school.
  *
  * @since 0.0.1
@@ -33,6 +33,6 @@ public final class RtSchoolMember implements Right {
 
     @Override
     public boolean allows() {
-        return this.actor.isAdmin() || this.school.users().contains(this.actor);
+        return this.school.users().contains(this.actor);
     }
 }

@@ -11,6 +11,7 @@ import com.eshabakhov.surok.Schools;
 import com.eshabakhov.surok.Sorts;
 import com.eshabakhov.surok.User;
 import com.eshabakhov.surok.security.right.RtAdmin;
+import com.eshabakhov.surok.security.right.RtEither;
 import com.eshabakhov.surok.security.right.RtSchoolMembership;
 import java.util.stream.StreamSupport;
 
@@ -43,7 +44,9 @@ public final class SlsAuthorized implements Schools {
     @Override
     public boolean contains(final long id) {
         return this.origin.contains(id)
-            && new RtSchoolMembership(this.actor, id).allows();
+            && new RtEither(
+                new RtAdmin(this.actor), new RtSchoolMembership(this.actor, id)
+            ).allows();
     }
 
     @Override
@@ -54,7 +57,9 @@ public final class SlsAuthorized implements Schools {
     @Override
     public School school(final long id) throws Exception {
         return new SlAuthorized(
-            new RtSchoolMembership(this.actor, id).permit(this.origin).school(id), this.actor
+            new RtEither(
+                new RtAdmin(this.actor), new RtSchoolMembership(this.actor, id)
+            ).permit(this.origin).school(id), this.actor
         );
     }
 
@@ -76,7 +81,9 @@ public final class SlsAuthorized implements Schools {
         return StreamSupport.stream(
             this.origin.iterate().spliterator(), false
         ).filter(
-            school -> new RtSchoolMembership(this.actor, school.uid()).allows()
+            school -> new RtEither(
+                new RtAdmin(this.actor), new RtSchoolMembership(this.actor, school.uid())
+            ).allows()
         ).<School>map(school -> new SlAuthorized(school, this.actor)).toList();
     }
 

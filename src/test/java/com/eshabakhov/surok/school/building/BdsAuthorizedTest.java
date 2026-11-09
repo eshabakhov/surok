@@ -73,6 +73,55 @@ final class BdsAuthorizedTest {
     }
 
     /**
+     * Allows a school deputy director to create a building.
+     *
+     * @param ctx Database context
+     * @throws Exception If setup or creation fails
+     */
+    @Test
+    void createsABuildingForTheDeputyDirector(@Autowired final DSLContext ctx) throws Exception {
+        final User actor = new UrsPostgres(ctx).register(
+            UUID.randomUUID().toString(), "ValidPassword1!",
+            String.format("%s@example.com", UUID.randomUUID()), false
+        );
+        final School school = new SlsPostgres(ctx).create(
+            new SlInputName(new SlInput(), "Школа заместителя")
+        );
+        school.users().add(actor);
+        school.users().roles(actor).grant(Roles.RoleEnum.DEPUTY_DIRECTOR);
+        MatcherAssert.assertThat(
+            "A deputy director could not create a building",
+            new BdsAuthorized(school.buildings(), school, actor).create(
+                new BdInputName(new BdInput(), "Корпус заместителя")
+            ).uid(), Matchers.greaterThan(0L)
+        );
+    }
+
+    /**
+     * Allows a global administrator to create a building without school membership.
+     *
+     * @param ctx Database context
+     * @throws Exception If setup or creation fails
+     */
+    @Test
+    void createsABuildingForAnAdministrator(@Autowired final DSLContext ctx) throws Exception {
+        final User actor = new UrsPostgres(ctx).register(
+            UUID.randomUUID().toString(), "ValidPassword1!",
+            String.format("%s@example.com", UUID.randomUUID()), false
+        );
+        actor.roles().grant(Roles.RoleEnum.ADMIN);
+        final School school = new SlsPostgres(ctx).create(
+            new SlInputName(new SlInput(), "Чужая школа администратора")
+        );
+        MatcherAssert.assertThat(
+            "An administrator could not create a building without membership",
+            new BdsAuthorized(school.buildings(), school, actor).create(
+                new BdInputName(new BdInput(), "Корпус администратора")
+            ).uid(), Matchers.greaterThan(0L)
+        );
+    }
+
+    /**
      * Rejects a viewer even though registration gave it BASIC_MAKER.
      *
      * @param ctx Database context

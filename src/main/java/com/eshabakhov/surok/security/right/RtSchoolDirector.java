@@ -8,7 +8,7 @@ import com.eshabakhov.surok.User;
 import com.eshabakhov.surok.user.Roles;
 
 /**
- * Right of an administrator or a school director to revise a school.
+ * Right of a school director to revise a school.
  * For example, a deputy director cannot change the school's own details.
  *
  * @since 0.0.1
@@ -34,7 +34,7 @@ public final class RtSchoolDirector implements Right {
 
     @Override
     public boolean allows() {
-        return this.actor.isAdmin() || new RtSchoolMember(this.actor, this.school).allows()
+        return new RtSchoolMember(this.actor, this.school).allows()
             && this.school.users().roles(this.actor).contains(Roles.RoleEnum.DIRECTOR);
     }
 }

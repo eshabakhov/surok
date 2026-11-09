@@ -32,6 +32,6 @@ public final class RtSchoolMembership implements Right {
 
     @Override
     public boolean allows() {
-        return this.actor.isAdmin() || this.actor.schools().contains(this.school);
+        return this.actor.schools().contains(this.school);
     }
 }
