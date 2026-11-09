@@ -129,7 +129,7 @@ paths:
   /schools/{school}/users/{user}:
     put:
       tags:
-        - School users
+        - Users
       summary: Add existing user to school
       operationId: add
       parameters:
@@ -198,7 +198,7 @@ paths:
                   $ref: "#/components/examples/SchoolMemberXml"
     delete:
       tags:
-        - School users
+        - Users
       summary: Remove user from school
       operationId: remove_1
       parameters:
@@ -2426,7 +2426,7 @@ paths:
   /users/subscription/checkout:
     post:
       tags:
-        - subscription-http
+        - Users
       operationId: checkout
       responses:
         "302":
@@ -2453,7 +2453,7 @@ paths:
   /users/subscription/cancel:
     post:
       tags:
-        - subscription-http
+        - Users
       operationId: cancel
       responses:
         "302":
@@ -2478,7 +2478,7 @@ paths:
   /users/register:
     get:
       tags:
-        - auth-http
+        - Users
       operationId: page
       responses:
         "200":
@@ -2493,44 +2493,10 @@ paths:
       security: []
       summary: Open registration form
       description: Renders the browser account registration form.
-    post:
-      tags:
-        - auth-http
-      operationId: register
-      responses:
-        "302":
-          description: Redirect to the next page. No body.
-          headers:
-            Location:
-              description: Relative URL of the resource or page to open.
-              schema:
-                type: string
-              example: /users/login?registered
-        "400":
-          description: Registration form with a validation message.
-          content:
-            text/html:
-              schema:
-                $ref: "#/components/schemas/HtmlPage"
-              examples:
-                example:
-                  $ref: "#/components/examples/HtmlPageRegistrationErrorHtml"
-      security: []
-      summary: Register an account from the browser form
-      requestBody:
-        description: Form fields submitted by the browser.
-        required: true
-        content:
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: "#/components/schemas/RegistrationForm"
-            examples:
-              example:
-                $ref: "#/components/examples/RegistrationForm"
   /schools/{school}/users:
     get:
       tags:
-        - School users
+        - Users
       summary: List school users
       operationId: list
       parameters:
@@ -2562,7 +2528,7 @@ paths:
                   $ref: "#/components/examples/SchoolMemberListXml"
     post:
       tags:
-        - School users
+        - Users
       summary: Add an existing account by username or email
       operationId: attach
       parameters:
@@ -2632,7 +2598,7 @@ paths:
   /schools/{school}/users/{user}/roles:
     get:
       tags:
-        - School users
+        - Users
       summary: List school roles of user
       operationId: roles
       parameters:
@@ -2668,7 +2634,7 @@ paths:
                   $ref: "#/components/examples/SchoolRoleListJson"
     post:
       tags:
-        - School users
+        - Users
       summary: Grant school role
       operationId: grant
       parameters:
@@ -4965,12 +4931,13 @@ paths:
                 example:
                   $ref: "#/components/examples/HtmlPageCurriculumCreateHtml"
       description: Browser form for creating a federal curriculum.
-  /api/users:
+  /users:
     post:
       tags:
         - Users
       summary: Register new user
-      operationId: register_1
+      description: Accepts JSON or the browser registration form.
+      operationId: register
       responses:
         "201":
           description: The user account was created.
@@ -4979,7 +4946,7 @@ paths:
               description: Relative URL of the resource or page to open.
               schema:
                 type: string
-              example: /api/users/53
+              example: /users/53
           content:
             application/json:
               schema:
@@ -4987,10 +4954,32 @@ paths:
               examples:
                 example:
                   $ref: "#/components/examples/AccountJson"
+        "302":
+          description: Browser registration redirects to the sign-in page. No body.
+          headers:
+            Location:
+              description: Relative URL of the page to open.
+              schema:
+                type: string
+              example: /users/login?registered
         "400":
-          $ref: "#/components/responses/InvalidRequest"
+          description: Registration details did not pass validation.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              examples:
+                example:
+                  $ref: "#/components/examples/ErrorInvalidRequestJson"
+            text/html:
+              schema:
+                $ref: "#/components/schemas/HtmlPage"
+              examples:
+                example:
+                  $ref: "#/components/examples/HtmlPageRegistrationErrorHtml"
+      security: []
       requestBody:
-        description: Fields for a new user account.
+        description: Fields for a new user account in JSON or a browser form.
         required: true
         content:
           application/json:
@@ -4999,7 +4988,13 @@ paths:
             examples:
               example:
                 $ref: "#/components/examples/RegistrationInputJson"
-  /api/users/{user}/roles:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/RegistrationForm"
+            examples:
+              example:
+                $ref: "#/components/examples/RegistrationForm"
+  /users/{user}/roles:
     get:
       tags:
         - Users
@@ -5050,7 +5045,7 @@ paths:
               description: Relative URL of the resource or page to open.
               schema:
                 type: string
-              example: /api/users/53/roles/84
+              example: /users/53/roles/84
           content:
             application/json:
               schema:
@@ -5071,7 +5066,7 @@ paths:
   /users/subscription:
     get:
       tags:
-        - subscription-http
+        - Users
       operationId: page_1
       responses:
         "200":
@@ -5115,7 +5110,7 @@ paths:
   /users/login:
     get:
       tags:
-        - auth-http
+        - Users
       operationId: page_2
       responses:
         "200":
@@ -5152,7 +5147,7 @@ paths:
   /users/profile:
     get:
       tags:
-        - profile-http
+        - Users
       operationId: page_3
       responses:
         "200":
@@ -6057,7 +6052,7 @@ paths:
   /schools/{school}/users/{user}/roles/{role}:
     delete:
       tags:
-        - School users
+        - Users
       summary: Revoke school role
       operationId: revoke
       parameters:
@@ -6094,7 +6089,7 @@ paths:
       responses:
         "204":
           description: The resource was removed. This response has no body.
-  /api/users/{user}:
+  /users/{user}:
     delete:
       tags:
         - Users
@@ -6114,7 +6109,7 @@ paths:
       responses:
         "204":
           description: The resource was removed. This response has no body.
-  /api/users/{user}/roles/{role}:
+  /users/{user}/roles/{role}:
     delete:
       tags:
         - Users

@@ -93,7 +93,7 @@ final class SecurityConfigTest {
             List.of(
                 spec.path("paths").has("/users/register"),
                 spec.path("paths").has("/federal/curriculums"),
-                spec.path("paths").path("/users/register").path("post").path("security").isEmpty()
+                spec.path("paths").path("/users").path("post").path("security").isEmpty()
             ),
             Matchers.contains(true, false, true)
         );

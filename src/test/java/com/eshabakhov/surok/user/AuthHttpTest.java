@@ -22,6 +22,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestBuilders;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 import org.springframework.security.web.csrf.CsrfToken;
@@ -178,9 +179,76 @@ final class AuthHttpTest {
     }
 
     @Test
+    void keepsTheSignedInUserWhenOldBasicCredentialsRemain() throws Exception {
+        final User admin = new UrsPostgres(this.ctx).register(
+            "administrator", "ValidPassword1!", "administrator@example.com", false
+        );
+        admin.roles().grant(Roles.RoleEnum.ADMIN);
+        new UrsPostgres(this.ctx).register(
+            "regular", "ValidPassword1!", "regular@example.com", false
+        );
+        final MockHttpSession initial = new MockHttpSession();
+        this.mvc.perform(
+            MockMvcRequestBuilders.post("/login").param("username", "administrator")
+                .param("password", "ValidPassword1!")
+                .session(initial)
+                .with(SecurityMockMvcRequestPostProcessors.csrf())
+        ).andExpect(MockMvcResultMatchers.status().isFound());
+        this.mvc.perform(
+            MockMvcRequestBuilders.post("/logout")
+                .accept(MediaType.TEXT_HTML)
+                .session(initial)
+                .with(SecurityMockMvcRequestPostProcessors.csrf())
+        ).andExpect(MockMvcResultMatchers.status().isFound());
+        this.mvc.perform(
+            MockMvcRequestBuilders.get("/users/profile").accept(MediaType.TEXT_HTML).with(
+                SecurityMockMvcRequestPostProcessors.httpBasic(
+                    "administrator", "ValidPassword1!"
+                )
+            )
+        ).andExpect(MockMvcResultMatchers.status().isFound()).andExpect(
+            MockMvcResultMatchers.redirectedUrlPattern("**/users/login")
+        );
+        final MvcResult second = this.mvc.perform(
+            MockMvcRequestBuilders.post("/login").param("username", "regular")
+                .param("password", "ValidPassword1!")
+                .with(SecurityMockMvcRequestPostProcessors.csrf())
+        ).andExpect(MockMvcResultMatchers.status().isFound()).andReturn();
+        MatcherAssert.assertThat(
+            "An old Basic authorization replaced the new browser session",
+            this.mvc.perform(
+                MockMvcRequestBuilders.get("/users/profile").accept(MediaType.TEXT_HTML)
+                    .session((MockHttpSession) second.getRequest().getSession(false)).with(
+                        SecurityMockMvcRequestPostProcessors.httpBasic(
+                            "administrator", "ValidPassword1!"
+                        )
+                    )
+            ).andReturn().getResponse().getContentAsString(),
+            Matchers.allOf(
+                Matchers.containsString("regular"),
+                Matchers.not(Matchers.containsString("administrator"))
+            )
+        );
+        this.mvc.perform(
+            MockMvcRequestBuilders.get(
+                "/schools/{school}/buildings",
+                new SlsPostgres(this.ctx).create(
+                    new SlInputName(new SlInput(), "Школа администратора")
+                ).uid()
+            ).accept("application/vnd.surok.buildings.v1+json").session(
+                (MockHttpSession) second.getRequest().getSession(false)
+            ).with(
+                SecurityMockMvcRequestPostProcessors.httpBasic(
+                    "administrator", "ValidPassword1!"
+                )
+            )
+        ).andExpect(MockMvcResultMatchers.status().isForbidden());
+    }
+
+    @Test
     void rejectsRegistrationWithoutCsrf() throws Exception {
         this.mvc.perform(
-            MockMvcRequestBuilders.post("/users/register")
+            MockMvcRequestBuilders.post("/users")
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                 .param("username", "visitor").param("email", "visitor@example.com")
                 .param("password", "ValidPassword1!").param("confirmPassword", "ValidPassword1!")
@@ -201,7 +269,7 @@ final class AuthHttpTest {
             MockMvcResultMatchers.content().string(
                 Matchers.allOf(
                     Matchers.containsString("id=\"error-message\" role=\"alert\""),
-                    Matchers.containsString("action=\"/users/register\""),
+                    Matchers.containsString("action=\"/users\""),
                     Matchers.not(Matchers.containsString("value=\"ValidPassword1!\"")),
                     Matchers.not(Matchers.containsString("value=\"weak\""))
                 )
@@ -247,9 +315,9 @@ final class AuthHttpTest {
     }
 
     @Test
-    void rejectsJsonInsteadOfForm() throws Exception {
+    void rejectsUnsupportedRegistrationFormat() throws Exception {
         this.mvc.perform(
-            this.registration().contentType(MediaType.APPLICATION_JSON).content("{}")
+            this.registration().contentType(MediaType.APPLICATION_XML).content("<account/>")
         ).andExpect(MockMvcResultMatchers.status().isUnsupportedMediaType());
         MatcherAssert.assertThat(this.schools(), Matchers.equalTo(0));
     }
@@ -269,17 +337,10 @@ final class AuthHttpTest {
         };
     }
 
-    private MockHttpServletRequestBuilder registration() throws Exception {
-        final MvcResult form = this.mvc.perform(
-            MockMvcRequestBuilders.get("/users/register").accept(MediaType.TEXT_HTML)
-        ).andExpect(MockMvcResultMatchers.status().isOk()).andReturn();
-        final CsrfToken token = (CsrfToken) form.getRequest().getAttribute(
-            CsrfToken.class.getName()
-        );
-        return MockMvcRequestBuilders.post("/users/register")
+    private MockHttpServletRequestBuilder registration() {
+        return MockMvcRequestBuilders.post("/users")
             .accept(MediaType.TEXT_HTML).contentType(MediaType.APPLICATION_FORM_URLENCODED)
-            .cookie(form.getResponse().getCookies())
-            .param(token.getParameterName(), token.getToken())
+            .with(SecurityMockMvcRequestPostProcessors.csrf())
             .param("username", "visitor").param("email", "visitor@example.com")
             .param("password", "ValidPassword1!").param("confirmPassword", "ValidPassword1!");
     }

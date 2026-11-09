@@ -133,8 +133,8 @@ final class RestResponseEntityExceptionHandlerTest {
     @Test
     void rendersUnsupportedRequestFormat() throws Exception {
         this.mvc.perform(
-            MockMvcRequestBuilders.post("/users/register").accept(MediaType.TEXT_HTML)
-                .contentType(MediaType.APPLICATION_JSON).content("{}")
+            MockMvcRequestBuilders.post("/users").accept(MediaType.TEXT_HTML)
+                .contentType(MediaType.APPLICATION_XML).content("<account/>")
                 .with(SecurityMockMvcRequestPostProcessors.csrf())
         ).andExpect(MockMvcResultMatchers.status().isUnsupportedMediaType())
             .andExpect(RestResponseEntityExceptionHandlerTest.page(415));
@@ -155,9 +155,9 @@ final class RestResponseEntityExceptionHandlerTest {
     }
 
     @Test
-    void writesXmlAuthenticationErrorsForLegacyApi() throws Exception {
+    void writesXmlAuthenticationErrorsForUserRoles() throws Exception {
         this.mvc.perform(
-            MockMvcRequestBuilders.get("/api/users").accept(MediaType.APPLICATION_XML)
+            MockMvcRequestBuilders.get("/users/1/roles").accept(MediaType.APPLICATION_XML)
         ).andExpect(MockMvcResultMatchers.status().isUnauthorized()).andExpect(
             MockMvcResultMatchers.content().contentTypeCompatibleWith(MediaType.APPLICATION_XML)
         ).andExpect(MockMvcResultMatchers.xpath("/error/status").string("401"));
@@ -166,7 +166,7 @@ final class RestResponseEntityExceptionHandlerTest {
     @Test
     void rendersCsrfErrorsWithoutRedirecting() throws Exception {
         this.mvc.perform(
-            MockMvcRequestBuilders.post("/users/register").accept(MediaType.TEXT_HTML)
+            MockMvcRequestBuilders.post("/users").accept(MediaType.TEXT_HTML)
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
         ).andExpect(MockMvcResultMatchers.status().isForbidden())
             .andExpect(RestResponseEntityExceptionHandlerTest.page(403));
@@ -179,7 +179,7 @@ final class RestResponseEntityExceptionHandlerTest {
             String.format("%s@example.com", UUID.randomUUID()), false
         );
         this.mvc.perform(
-            MockMvcRequestBuilders.get("/api/users/{user}/roles", actor.uid())
+            MockMvcRequestBuilders.get("/users/{user}/roles", actor.uid())
                 .accept(MediaType.TEXT_HTML).with(
                     SecurityMockMvcRequestPostProcessors.user(new AuthUser(actor))
                 )
@@ -251,8 +251,9 @@ final class RestResponseEntityExceptionHandlerTest {
         MatcherAssert.assertThat(
             "The generic exception handler replaced the user validation response",
             this.mvc.perform(
-                MockMvcRequestBuilders.post("/api/users").accept(MediaType.APPLICATION_JSON)
-                    .contentType(MediaType.APPLICATION_JSON).content("{}").with(
+                MockMvcRequestBuilders.post("/users").accept(MediaType.APPLICATION_JSON)
+                    .contentType(MediaType.APPLICATION_JSON).content("{}")
+                    .with(SecurityMockMvcRequestPostProcessors.csrf()).with(
                         SecurityMockMvcRequestPostProcessors.user("читатель").roles("ADMIN")
                     )
             ).andReturn().getResponse().getStatus(),

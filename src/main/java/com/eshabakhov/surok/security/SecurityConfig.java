@@ -13,6 +13,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.Customizer;
@@ -25,11 +26,12 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
+import org.springframework.security.web.authentication.www.BasicAuthenticationConverter;
+import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.security.web.context.RequestAttributeSecurityContextRepository;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
-import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestHeaderRequestMatcher;
 import org.springframework.web.cors.CorsConfiguration;
@@ -117,7 +119,8 @@ public class SecurityConfig {
     @Bean
     List<String> publicPaths() {
         return List.of(
-            "/users/login", "/users/register", "/favicon.svg", "/css/**", "/js/**",
+            "/users/login", "/users/register", "/users", "/favicon.svg", "/css/**",
+            "/js/**",
             "/", "/actuator/health", "/actuator/health/**"
         );
     }
@@ -193,45 +196,21 @@ public class SecurityConfig {
      *
      * @param http HttpSecurity to configure
      * @param encoder Password encoder
-     * @return Configured SecurityFilterChain
-     * @throws Exception if configuration fails
-     */
-    @Bean
-    @Order(1)
-    SecurityFilterChain apiSecurity(
-        final HttpSecurity http,
-        final PasswordEncoder encoder
-    ) throws Exception {
-        this.authentication(http, encoder);
-        return http
-            .securityMatcher(PathPatternRequestMatcher.withDefaults().matcher("/api/**"))
-            .cors(Customizer.withDefaults())
-            .csrf(AbstractHttpConfigurer::disable)
-            .authorizeHttpRequests(auth -> auth.anyRequest().authenticated()).exceptionHandling(
-                exceptions -> exceptions.authenticationEntryPoint(new ScError())
-                    .accessDeniedHandler(new ScError())
-            )
-            .httpBasic(basic -> basic.authenticationEntryPoint(new ScError()))
-            .build();
-    }
-
-    /**
-     * Security filter chain configuration.
-     *
-     * @param http HttpSecurity to configure
-     * @param encoder Password encoder
      * @param anonymous Public paths
      * @return Configured SecurityFilterChain
      * @throws Exception if configuration fails
      */
     @Bean
-    @Order(2)
+    @Order(1)
     SecurityFilterChain webSecurity(
         final HttpSecurity http,
         final PasswordEncoder encoder,
         @Qualifier("publicPaths") final List<String> anonymous
     ) throws Exception {
-        this.authentication(http, encoder);
+        final BasicAuthenticationFilter basic = new BasicAuthenticationFilter(
+            this.authentication(http, encoder), new ScError()
+        );
+        basic.setAuthenticationConverter(new BcWeb(new BasicAuthenticationConverter()));
         final MediaTypeRequestMatcher wildcard = new MediaTypeRequestMatcher(MediaType.ALL);
         wildcard.setUseEquals(true);
         final MediaTypeRequestMatcher data = new MediaTypeRequestMatcher(
@@ -241,7 +220,8 @@ public class SecurityConfig {
         );
         data.setIgnoredMediaTypes(Set.of(MediaType.ALL));
         return http
-            .httpBasic(basic -> basic.authenticationEntryPoint(new ScError()))
+            .httpBasic(AbstractHttpConfigurer::disable)
+            .addFilterAt(basic, BasicAuthenticationFilter.class)
             .cors(Customizer.withDefaults()).csrf(
                 csrf -> csrf
                     .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
@@ -332,11 +312,15 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
-    private void authentication(final HttpSecurity http, final PasswordEncoder encoder) {
+    private AuthenticationManager authentication(
+        final HttpSecurity http, final PasswordEncoder encoder
+    ) {
         final DaoAuthenticationProvider provider = new DaoAuthenticationProvider(this.userdetails);
         provider.setPasswordEncoder(encoder);
         provider.setHideUserNotFoundExceptions(false);
+        final AuthenticationManager manager = new ProviderManager(provider);
         http.getSharedObject(AuthenticationManagerBuilder.class)
-            .parentAuthenticationManager(new ProviderManager(provider));
+            .parentAuthenticationManager(manager);
+        return manager;
     }
 }

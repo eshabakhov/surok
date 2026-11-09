@@ -77,6 +77,9 @@ public final class PmMethod implements Permission {
         if ("SbsHttp".equals(resource) && this.path.startsWith("/schools/")) {
             resource = "SchoolSubjects";
         }
+        if ("UrsHttp".equals(resource)) {
+            resource = this.userResource();
+        }
         final String key = String.format("%s.%s", resource, this.handler.getMethod().getName());
         String title = this.handler.getMethod().getName();
         if (labels.containsKey(String.format("%s%s", key, this.path))) {
@@ -132,11 +135,10 @@ public final class PmMethod implements Permission {
             case "SlsHttp" -> this.schools();
             case "BdsHttp", "CbsHttp", "ScsHttp", "ThsHttp", "SdsHttp", "ClsHttp", "LdHttp" ->
                 this.resources();
-            case "SlUsersHttp" -> this.members();
             case "CrsHttp" -> this.curriculums();
             case "RqsHttp" -> this.requirements();
             case "SbsHttp" -> this.subjects();
-            case "UserController" -> this.users();
+            case "UrsHttp" -> this.users();
             case "PsHttp" -> "hasRole('ADMIN')";
             case null, default -> "true";
         };
@@ -144,9 +146,30 @@ public final class PmMethod implements Permission {
 
     private String users() {
         return switch (this.handler.getMethod().getName()) {
-            case "register" -> "true";
+            case "authenticationPage", "registerForm", "register", "profile", "subscription",
+                "checkout", "cancel" -> "true";
             case "remove", "assignRole", "listRoles", "removeRole" -> "hasRole('ADMIN')";
+            case "schoolUsers", "schoolRoles" ->
+                "hasRole('ADMIN') or authentication.principal.schools().contains(#school)";
+            case "addSchoolUser", "attachSchoolUser", "removeSchoolUser", "grantSchoolRole",
+                "revokeSchoolRole" -> """
+                    hasRole('ADMIN') or (
+                        authentication.principal.schools().contains(#school) and
+                        hasAuthority('SCHOOL_' + #school + '_DIRECTOR')
+                    )
+                    """;
             case null, default -> "false";
+        };
+    }
+
+    private String userResource() {
+        return switch (this.handler.getMethod().getName()) {
+            case "authenticationPage", "registerForm" -> "UserAuthentication";
+            case "profile" -> "UserProfile";
+            case "subscription", "checkout", "cancel" -> "UserSubscription";
+            case "schoolUsers", "addSchoolUser", "attachSchoolUser", "removeSchoolUser",
+                "schoolRoles", "grantSchoolRole", "revokeSchoolRole" -> "SchoolUsers";
+            case null, default -> "GlobalUsers";
         };
     }
 
@@ -188,20 +211,6 @@ public final class PmMethod implements Permission {
         return switch (this.handler.getMethod().getName()) {
             case "selection", "requirement" -> "true";
             case "create", "add", "update", "remove" -> "hasRole('ADMIN')";
-            case null, default -> "false";
-        };
-    }
-
-    private String members() {
-        return switch (this.handler.getMethod().getName()) {
-            case "list", "roles" ->
-                "hasRole('ADMIN') or authentication.principal.schools().contains(#school)";
-            case "add", "attach", "remove", "grant", "revoke" -> """
-                hasRole('ADMIN') or (
-                    authentication.principal.schools().contains(#school) and
-                    hasAuthority('SCHOOL_' + #school + '_DIRECTOR')
-                )
-                """;
             case null, default -> "false";
         };
     }
