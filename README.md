@@ -65,9 +65,10 @@ in a Docker volume.
 
 The [Build workflow](.github/workflows/build.yml) checks pull requests and
 publishes images from `main` to GHCR with commit SHA and `latest` tags.
-The [Deploy workflow](.github/workflows/deploy.yml) deploys the image for a
-successful build on `main`. To redeploy an existing image, run Deploy manually
-with its full commit SHA in `revision`.
+The [Deploy workflow](.github/workflows/deploy.yml) runs only when started
+manually. After a successful build on `main`, open Actions → Deploy → Run
+workflow, select `main`, and enter the full commit SHA of the published image
+in `revision`.
 
 Production services are defined by the `production` profile in
 [docker-compose.yml](docker-compose.yml). Deployment configuration and required
