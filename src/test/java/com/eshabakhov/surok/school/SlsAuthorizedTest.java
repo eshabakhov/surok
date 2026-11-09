@@ -6,6 +6,7 @@ package com.eshabakhov.surok.school;
 import com.eshabakhov.surok.Schools;
 import com.eshabakhov.surok.User;
 import com.eshabakhov.surok.filter.FiltersRequest;
+import com.eshabakhov.surok.media.MdJson;
 import com.eshabakhov.surok.page.PageRequest;
 import com.eshabakhov.surok.school.input.SlInput;
 import com.eshabakhov.surok.school.input.SlInputName;
@@ -181,6 +182,29 @@ final class SlsAuthorizedTest {
                 new SortsRequest(List.of())
             ).iterate(),
             Matchers.iterableWithSize(1)
+        );
+    }
+
+    /**
+     * Rejects printing a collection when its school membership was revoked.
+     *
+     * @param ctx Database context
+     * @throws Exception If setup fails
+     */
+    @Test
+    void deniesPrintingSchoolsAfterMembershipRemoval(@Autowired final DSLContext ctx)
+        throws Exception {
+        final User actor = new UrsPostgres(ctx).register(
+            UUID.randomUUID().toString(), "ValidPassword1!",
+            String.format("%s@example.com", UUID.randomUUID()), false
+        );
+        final Schools selected = new SlsAuthorized(new SlsPostgres(ctx), actor);
+        actor.schools().create(
+            new SlInputName(new SlInput(), "Школа с отозванным доступом")
+        ).users().remove(actor.uid());
+        Assertions.assertThrows(
+            AccessDeniedException.class, () -> selected.print(new MdJson()),
+            "A former school member printed an unrelated school collection"
         );
     }
 

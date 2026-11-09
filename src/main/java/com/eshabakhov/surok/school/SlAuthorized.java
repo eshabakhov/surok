@@ -17,9 +17,9 @@ import com.eshabakhov.surok.school.schoolclass.SchoolClasses;
 import com.eshabakhov.surok.school.schoolclass.ScsAuthorized;
 import com.eshabakhov.surok.school.teacher.Teachers;
 import com.eshabakhov.surok.school.teacher.ThsAuthorized;
-import com.eshabakhov.surok.user.Roles;
+import com.eshabakhov.surok.security.right.RtSchoolDirector;
+import com.eshabakhov.surok.security.right.RtSchoolMember;
 import com.eshabakhov.surok.user.UrsAuthorized;
-import org.springframework.security.access.AccessDeniedException;
 
 /**
  * School whose revision follows the acting user's current school role.
@@ -54,66 +54,61 @@ public final class SlAuthorized implements School {
 
     @Override
     public School revise(final SchoolInput input) throws Exception {
-        if (!this.actor.isAdmin() && (!this.origin.users().contains(this.actor)
-            || !this.origin.users().roles(this.actor).contains(Roles.RoleEnum.DIRECTOR))) {
-            throw new AccessDeniedException("Only a school director can revise this school");
-        }
-        return new SlAuthorized(this.origin.revise(input), this.actor);
+        return new SlAuthorized(
+            new RtSchoolDirector(this.actor, this.origin).permit(this.origin).revise(input),
+            this.actor
+        );
     }
 
     @Override
     public Users users() {
-        if (!this.actor.isAdmin() && !this.origin.users().contains(this.actor)) {
-            throw new AccessDeniedException("Only a school member can view this school");
-        }
-        return new UrsAuthorized(this.origin.users(), this.actor);
+        return new UrsAuthorized(
+            new RtSchoolMember(this.actor, this.origin).permit(this.origin).users(), this.actor
+        );
     }
 
     @Override
     public Buildings buildings() {
-        if (!this.actor.isAdmin() && !this.origin.users().contains(this.actor)) {
-            throw new AccessDeniedException("Only a school member can view this school");
-        }
-        return new BdsAuthorized(this.origin.buildings(), this.origin, this.actor);
+        return new BdsAuthorized(
+            new RtSchoolMember(this.actor, this.origin).permit(this.origin).buildings(),
+            this.origin, this.actor
+        );
     }
 
     @Override
     public Teachers teachers() {
-        if (!this.actor.isAdmin() && !this.origin.users().contains(this.actor)) {
-            throw new AccessDeniedException("Only a school member can view this school");
-        }
-        return new ThsAuthorized(this.origin.teachers(), this.origin, this.actor);
+        return new ThsAuthorized(
+            new RtSchoolMember(this.actor, this.origin).permit(this.origin).teachers(),
+            this.origin, this.actor
+        );
     }
 
     @Override
     public SchoolClasses schoolClasses() {
-        if (!this.actor.isAdmin() && !this.origin.users().contains(this.actor)) {
-            throw new AccessDeniedException("Only a school member can view this school");
-        }
-        return new ScsAuthorized(this.origin.schoolClasses(), this.origin, this.actor);
+        return new ScsAuthorized(
+            new RtSchoolMember(this.actor, this.origin).permit(this.origin).schoolClasses(),
+            this.origin, this.actor
+        );
     }
 
     @Override
     public Subjects subjects() {
-        if (!this.actor.isAdmin() && !this.origin.users().contains(this.actor)) {
-            throw new AccessDeniedException("Only a school member can view this school");
-        }
-        return new SbsAuthorized(this.origin.subjects(), this.origin, this.actor);
+        return new SbsAuthorized(
+            new RtSchoolMember(this.actor, this.origin).permit(this.origin).subjects(),
+            this.origin, this.actor
+        );
     }
 
     @Override
     public Schedules schedules() {
-        if (!this.actor.isAdmin() && !this.origin.users().contains(this.actor)) {
-            throw new AccessDeniedException("Only a school member can view this school");
-        }
-        return new SdsAuthorized(this.origin.schedules(), this.origin, this.actor);
+        return new SdsAuthorized(
+            new RtSchoolMember(this.actor, this.origin).permit(this.origin).schedules(),
+            this.origin, this.actor
+        );
     }
 
     @Override
     public <T> Media<T> print(final Media<T> media) throws Exception {
-        if (!this.actor.isAdmin() && !this.origin.users().contains(this.actor)) {
-            throw new AccessDeniedException("Only a school member can view this school");
-        }
-        return this.origin.print(media);
+        return new RtSchoolMember(this.actor, this.origin).permit(this.origin).print(media);
     }
 }

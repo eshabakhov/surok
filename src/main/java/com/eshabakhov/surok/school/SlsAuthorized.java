@@ -10,8 +10,9 @@ import com.eshabakhov.surok.School;
 import com.eshabakhov.surok.Schools;
 import com.eshabakhov.surok.Sorts;
 import com.eshabakhov.surok.User;
+import com.eshabakhov.surok.security.right.RtAdmin;
+import com.eshabakhov.surok.security.right.RtSchoolMembership;
 import java.util.stream.StreamSupport;
-import org.springframework.security.access.AccessDeniedException;
 
 /**
  * Schools selected for the current user with school operations guarded.
@@ -42,7 +43,7 @@ public final class SlsAuthorized implements Schools {
     @Override
     public boolean contains(final long id) {
         return this.origin.contains(id)
-            && (this.actor.isAdmin() || this.actor.schools().contains(id));
+            && new RtSchoolMembership(this.actor, id).allows();
     }
 
     @Override
@@ -52,10 +53,9 @@ public final class SlsAuthorized implements Schools {
 
     @Override
     public School school(final long id) throws Exception {
-        if (!this.actor.isAdmin() && !this.actor.schools().contains(id)) {
-            throw new AccessDeniedException("Only a school member can view this school");
-        }
-        return new SlAuthorized(this.origin.school(id), this.actor);
+        return new SlAuthorized(
+            new RtSchoolMembership(this.actor, id).permit(this.origin).school(id), this.actor
+        );
     }
 
     @Override
@@ -63,7 +63,7 @@ public final class SlsAuthorized implements Schools {
         final Filters filters, final Page page, final Sorts sorts
     ) throws Exception {
         final Schools selected;
-        if (this.actor.isAdmin()) {
+        if (new RtAdmin(this.actor).allows()) {
             selected = this.origin.selection(filters, page, sorts);
         } else {
             selected = this.actor.schools().selection(filters, page, sorts);
@@ -76,25 +76,20 @@ public final class SlsAuthorized implements Schools {
         return StreamSupport.stream(
             this.origin.iterate().spliterator(), false
         ).filter(
-            school -> this.actor.isAdmin() || this.actor.schools().contains(school.uid())
+            school -> new RtSchoolMembership(this.actor, school.uid()).allows()
         ).<School>map(school -> new SlAuthorized(school, this.actor)).toList();
     }
 
     @Override
     public void remove(final long id) throws Exception {
-        if (!this.actor.isAdmin()) {
-            throw new AccessDeniedException("Only an administrator can remove a school");
-        }
-        this.origin.remove(id);
+        new RtAdmin(this.actor).permit(this.origin).remove(id);
     }
 
     @Override
     public <T> Media<T> print(final Media<T> media) throws Exception {
-        if (!this.actor.isAdmin()) {
+        if (!new RtAdmin(this.actor).allows()) {
             for (final School school : this.origin.iterate()) {
-                if (!this.actor.schools().contains(school.uid())) {
-                    throw new AccessDeniedException("School membership has changed");
-                }
+                new RtSchoolMembership(this.actor, school.uid()).permit(school);
             }
         }
         return this.origin.print(media);

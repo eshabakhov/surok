@@ -93,6 +93,31 @@ final class SlAuthorizedTest {
     }
 
     /**
+     * Allows a global administrator to revise a school without membership.
+     *
+     * @param ctx Database context
+     * @throws Exception If setup fails
+     */
+    @Test
+    void allowsAnAdministratorToReviseAnUnrelatedSchool(@Autowired final DSLContext ctx)
+        throws Exception {
+        final User actor = new UrsPostgres(ctx).register(
+            UUID.randomUUID().toString(), "ValidPassword1!",
+            String.format("%s@example.com", UUID.randomUUID()), false
+        );
+        actor.roles().grant(Roles.RoleEnum.ADMIN);
+        final School school = new SlsPostgres(ctx).create(
+            new SlInputName(new SlInput(), "Чужая школа администратора")
+        );
+        MatcherAssert.assertThat(
+            "An administrator could not revise an unrelated school",
+            new SlAuthorized(school, actor).revise(
+                new SlInputName(new SlInput(), "Переименованная школа")
+            ).uid(), Matchers.equalTo(school.uid())
+        );
+    }
+
+    /**
      * Checks the current role when a previously allowed school is revised.
      *
      * @param ctx Database context
