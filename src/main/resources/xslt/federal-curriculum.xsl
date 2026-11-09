@@ -45,6 +45,9 @@
         <xsl:if test="$view = 'details'">
             <script type="module" src="/js/federal/curriculum.js"></script>
         </xsl:if>
+        <xsl:if test="$view = 'edit'">
+            <script type="module" src="/js/federal/curriculum-edit.js"></script>
+        </xsl:if>
     </xsl:template>
 
     <xsl:template name="details">

@@ -185,7 +185,7 @@
                     </thead>
                     <tbody id="requirements-body">
                         <xsl:attribute name="data-search-url">
-                            <xsl:value-of select="concat('/federal/curriculums/', $curriculum/id, '/requirements/fragment')"/>
+                            <xsl:value-of select="concat('/federal/curriculums/', $curriculum/id, '/requirements')"/>
                         </xsl:attribute>
                         <xsl:if test="not($requirements/requirement)">
                             <tr id="requirements-empty">
@@ -197,6 +197,7 @@
                         </xsl:if>
                         <xsl:for-each select="$requirements/requirement">
                             <tr class="requirement-row">
+                                <xsl:attribute name="data-uri"><xsl:value-of select="concat('/federal/curriculums/', $curriculum/id, '/requirements/', id)"/></xsl:attribute>
                                 <xsl:attribute name="data-grade"><xsl:value-of select="grade"/></xsl:attribute>
                                 <xsl:attribute name="data-part"><xsl:value-of select="partType"/></xsl:attribute>
                                 <xsl:attribute name="data-hours"><xsl:value-of select="hours"/></xsl:attribute>
@@ -300,25 +301,9 @@
                                                     title="Отмена">
                                                 <xsl:call-template name="cross-icon"/>
                                             </button>
-                                            <form class="requirement-edit-form"
-                                                  method="post">
-                                                <xsl:attribute name="action">
-                                                    <xsl:value-of select="concat('/federal/curriculums/', $curriculum/id, '/requirements/', id)"/>
-                                                </xsl:attribute>
-                                                <xsl:call-template name="csrf-input"/>
-                                                <input class="requirement-form-grade"
-                                                       name="grade"
-                                                       type="hidden"/>
-                                                <xsl:if test="partType = 'MANDATORY'">
-                                                    <input class="requirement-form-subject"
-                                                           name="subjectId" type="hidden"/>
-                                                </xsl:if>
-                                                <input class="requirement-form-hours" name="hours" type="hidden"/>
-                                                <input class="requirement-form-part"
-                                                       name="partType"
-                                                       type="hidden"/>
-                                            </form>
                                         </div>
+                                        <div class="error-message requirement-edit-error"
+                                             role="alert" hidden="hidden"></div>
                                     </td>
                                 </xsl:if>
                             </tr>

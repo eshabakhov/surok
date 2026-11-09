@@ -25,6 +25,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpSession;
@@ -130,7 +131,6 @@ final class CrsHttpTest {
     @ParameterizedTest
     @CsvSource({
         "'', text/html, Основное общее образование",
-        "/fragment, text/html, Основное общее образование",
         "/1, text/html, Основное общее образование",
         "/create, text/html, Начальное общее образование",
         "/1/edit, text/html, Среднее общее образование"
@@ -159,7 +159,6 @@ final class CrsHttpTest {
     @ParameterizedTest
     @CsvSource({
         "'', text/html, Пятидневная",
-        "/fragment, text/html, Пятидневная",
         "/1, text/html, Пятидневная",
         "/create, text/html, Шестидневная",
         "/1/edit, text/html, Шестидневная"
@@ -181,12 +180,12 @@ final class CrsHttpTest {
     @CsvSource({
         "/1, federal-curriculum-v1, json",
         "/1, federal-curriculum-v2, json",
-        "/1/edit, federal-curriculum-v1, xml",
-        "/1/edit, federal-curriculum-v2, xml",
+        "/1, federal-curriculum-v1, xml",
+        "/1, federal-curriculum-v2, xml",
         "'', federal-curriculums.v1, json",
-        "/fragment, federal-curriculums.v1, xml",
+        "'', federal-curriculums.v1, xml",
         "/1/requirements, federal-curriculum-requirements.v1, json",
-        "/1/requirements/fragment, federal-curriculum-requirements.v1, xml",
+        "/1/requirements, federal-curriculum-requirements.v1, xml",
         "/1/requirements/7, federal-curriculum-requirement-v1, json",
         "/1/requirements/7, federal-curriculum-requirement-v1, xml"
     })
@@ -204,12 +203,73 @@ final class CrsHttpTest {
     }
 
     @ParameterizedTest
+    @CsvSource({
+        "'', text/vnd.surok.federal-curriculums-fragment+html",
+        "/1/requirements, text/vnd.surok.federal-curriculum-requirements-fragment+html"
+    })
+    void negotiatesResultsFragments(final String path, final String accept) throws Exception {
+        this.mvc.perform(
+            MockMvcRequestBuilders.get(String.format("/federal/curriculums%s", path))
+                .session(this.session()).accept(accept)
+        ).andExpect(MockMvcResultMatchers.status().isOk()).andExpect(
+            MockMvcResultMatchers.content().contentTypeCompatibleWith(accept)
+        ).andExpect(
+            MockMvcResultMatchers.header().stringValues(
+                HttpHeaders.VARY, Matchers.hasItem(HttpHeaders.ACCEPT)
+            )
+        ).andExpect(
+            MockMvcResultMatchers.content().string(Matchers.not(Matchers.containsString("<html")))
+        );
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"/fragment", "/1/requirements/fragment"})
+    void rejectsLegacyFragmentRoutes(final String path) throws Exception {
+        this.mvc.perform(
+            MockMvcRequestBuilders.get(String.format("/federal/curriculums%s", path))
+                .session(this.session()).accept(MediaType.TEXT_HTML)
+        ).andExpect(MockMvcResultMatchers.status().is4xxClientError());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"/create", "/1/edit"})
+    void offersCurriculumFormsOnlyAsHtml(final String path) throws Exception {
+        this.mvc.perform(
+            MockMvcRequestBuilders.get(String.format("/federal/curriculums%s", path))
+                .session(this.session()).accept("application/vnd.surok.federal-curriculum-v2+json")
+        ).andExpect(MockMvcResultMatchers.status().isNotAcceptable());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"v1", "v2"})
+    void createsCurriculumFromVersionedJson(final String version) throws Exception {
+        final String type = String.format(
+            "application/vnd.surok.federal-curriculum-%s+json", version
+        );
+        this.mvc.perform(
+            this.authorized(
+                MockMvcRequestBuilders.post("/federal/curriculums")
+            ).contentType(type).accept(type).content(
+                """
+                {"title":"After","level":"BASIC","week":"FIVE_DAYS",
+                "version":"2","year":"2026/2027","description":"Description"}
+                """
+            )
+        ).andExpect(MockMvcResultMatchers.status().isCreated()).andExpect(
+            MockMvcResultMatchers.jsonPath("$.title").value("After")
+        ).andExpect(
+            MockMvcResultMatchers.header().string(
+                "Location", Matchers.matchesPattern("/federal/curriculums/[0-9]+")
+            )
+        );
+    }
+
+    @ParameterizedTest
     @NullSource
     @ValueSource(strings = {"*/*", "text/html;q=0.2,application/json;q=0.9"})
     void defaultsHtmlPagesToHtml(final String header) throws Exception {
         for (final String path : List.of(
-            "", "/create", "/fragment", "/1", "/1/edit",
-            "/1/requirements", "/1/requirements/fragment"
+            "", "/create", "/1", "/1/edit", "/1/requirements"
         )) {
             final MockHttpServletRequestBuilder request = MockMvcRequestBuilders.get(
                 String.format("/federal/curriculums%s", path)
@@ -252,10 +312,10 @@ final class CrsHttpTest {
 
     @ParameterizedTest
     @CsvSource({
-        "/create, federal-curriculum-v1, json",
-        "/create, federal-curriculum-v2, xml",
-        "/1/edit, federal-curriculum-v2, json",
-        "/1/edit, federal-curriculum-v1, xml",
+        "'', federal-curriculum-v1, json",
+        "'', federal-curriculum-v2, xml",
+        "/1, federal-curriculum-v2, json",
+        "/1, federal-curriculum-v1, xml",
         "/1/requirements, federal-curriculum-requirement-v1, json",
         "/1/requirements, federal-curriculum-requirement-v1, xml",
         "/1/requirements/7, federal-curriculum-requirement-v1, json",
@@ -266,7 +326,7 @@ final class CrsHttpTest {
     ) throws Exception {
         final String expected = String.format("application/vnd.surok.%s+%s", resource, format);
         final int status;
-        if (path.endsWith("/create") || path.endsWith("/requirements")) {
+        if (path.isEmpty() || path.endsWith("/requirements")) {
             status = 201;
         } else {
             status = 200;
@@ -296,7 +356,7 @@ final class CrsHttpTest {
     )
     void rejectsUnsupportedAcceptBeforeMutation(final String header) throws Exception {
         for (final String path : List.of(
-            "/create", "/1/edit", "/1/requirements", "/1/requirements/7"
+            "", "/1", "/1/requirements", "/1/requirements/7"
         )) {
             this.mvc.perform(this.authorized(path).header("Accept", header))
                 .andExpect(MockMvcResultMatchers.status().isNotAcceptable());
@@ -316,8 +376,8 @@ final class CrsHttpTest {
 
     @ParameterizedTest
     @CsvSource({
-        "/create, /federal/curriculums/[0-9]+",
-        "/1/edit, /federal/curriculums/1",
+        "'', /federal/curriculums/[0-9]+",
+        "/1, /federal/curriculums/1",
         "/1/requirements, /federal/curriculums/1/requirements",
         "/1/requirements/7, /federal/curriculums/1/requirements"
     })
@@ -351,7 +411,7 @@ final class CrsHttpTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"", "/fragment", "/1", "/1/requirements", "/1/requirements/fragment"})
+    @ValueSource(strings = {"", "/1", "/1/requirements"})
     void letsReadersBrowseTheStandard(final String path) throws Exception {
         MatcherAssert.assertThat(
             "An authenticated reader could not browse the federal standard",
@@ -378,7 +438,7 @@ final class CrsHttpTest {
 
     @ParameterizedTest
     @ValueSource(
-        strings = {"/create", "/1/edit", "/1/requirements", "/1/requirements/7"}
+        strings = {"", "/1", "/1/requirements", "/1/requirements/7"}
     )
     void rejectsReaderMutationsWithValidCsrf(final String path) throws Exception {
         MatcherAssert.assertThat(
@@ -414,8 +474,15 @@ final class CrsHttpTest {
         MatcherAssert.assertThat(
             "A requirement accepted an unavailable or school subject",
             this.mvc.perform(
-                this.authorized(path, Roles.RoleEnum.ADMIN).param("subjectId", subject)
-                    .accept("application/vnd.surok.federal-curriculum-requirement-v1+json")
+                this.authorized(path, Roles.RoleEnum.ADMIN)
+                    .param("grade", "6").param("hours", "2")
+                    .param("partType", "MANDATORY").param("subjectId", subject).content(
+                        String.format(
+                            """
+                            {"grade":6,"subjectId":%s,"hours":2,"partType":"MANDATORY"}
+                            """, subject
+                        )
+                    ).accept("application/vnd.surok.federal-curriculum-requirement-v1+json")
             ).andReturn().getResponse().getStatus(),
             Matchers.is(400)
         );
@@ -469,17 +536,29 @@ final class CrsHttpTest {
         );
         final List<Integer> statuses = new ArrayList<>(2);
         for (final String action : List.of("", "/7")) {
+            final MockHttpServletRequestBuilder request;
+            if (action.isEmpty()) {
+                request = MockMvcRequestBuilders.post(
+                    "/federal/curriculums/1/requirements"
+                ).contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                    .param("grade", grade).param("hours", "3")
+                    .param("subjectId", "516").param("partType", "MANDATORY");
+            } else {
+                request = MockMvcRequestBuilders.put(
+                    "/federal/curriculums/1/requirements/7"
+                ).contentType(
+                    "application/vnd.surok.federal-curriculum-requirement-v1+json"
+                ).content(
+                    String.format(
+                        """
+                        {"grade":%s,"subjectId":504,"hours":3,"partType":"MANDATORY"}
+                        """, grade
+                    )
+                );
+            }
             statuses.add(
                 this.mvc.perform(
-                    this.authorized(
-                        MockMvcRequestBuilders.post(
-                            String.format("/federal/curriculums/1/requirements%s", action)
-                        )
-                    ).contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                        .param("grade", grade).param("hours", "3").param(
-                            "subjectId", Map.of("", "516", "/7", "504").get(action)
-                        )
-                        .param("partType", "MANDATORY")
+                    this.authorized(request)
                         .accept("application/vnd.surok.federal-curriculum-requirement-v1+json")
                 ).andReturn().getResponse().getStatus()
             );
@@ -498,16 +577,28 @@ final class CrsHttpTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"create", "7/edit"})
+    @ValueSource(strings = {"", "/7"})
     void preservesRequirementsWhenTheGradeIsOutsideThePlan(final String action) throws Exception {
-        this.mvc.perform(
-            this.authorized(
-                MockMvcRequestBuilders.post(
-                    String.format("/federal/curriculums/1/requirements%s", action)
-                )
+        final MockHttpServletRequestBuilder request;
+        if (action.isEmpty()) {
+            request = MockMvcRequestBuilders.post(
+                "/federal/curriculums/1/requirements"
             ).contentType(MediaType.APPLICATION_FORM_URLENCODED)
                 .param("grade", "3").param("hours", "7")
-                .param("subjectId", "516").param("partType", "MANDATORY")
+                .param("subjectId", "516").param("partType", "MANDATORY");
+        } else {
+            request = MockMvcRequestBuilders.put(
+                "/federal/curriculums/1/requirements/7"
+            ).contentType(
+                "application/vnd.surok.federal-curriculum-requirement-v1+json"
+            ).content(
+                """
+                {"grade":3,"subjectId":516,"hours":7,"partType":"MANDATORY"}
+                """
+            );
+        }
+        this.mvc.perform(
+            this.authorized(request)
                 .accept("application/vnd.surok.federal-curriculum-requirement-v1+json")
         );
         MatcherAssert.assertThat(
@@ -527,12 +618,14 @@ final class CrsHttpTest {
 
     @ParameterizedTest
     @CsvSource({
-        "PRIMARY, 1 2 3 4, ''", "BASIC, 5 6 7 8 9, ''", "SECONDARY, 10 11, ''",
-        "PRIMARY, 1 2 3 4, /fragment", "BASIC, 5 6 7 8 9, /fragment",
-        "SECONDARY, 10 11, /fragment"
+        "PRIMARY, 1 2 3 4, text/html", "BASIC, 5 6 7 8 9, text/html",
+        "SECONDARY, 10 11, text/html",
+        "PRIMARY, 1 2 3 4, text/vnd.surok.federal-curriculum-requirements-fragment+html",
+        "BASIC, 5 6 7 8 9, text/vnd.surok.federal-curriculum-requirements-fragment+html",
+        "SECONDARY, 10 11, text/vnd.surok.federal-curriculum-requirements-fragment+html"
     })
     void offersOnlyGradesOfThePlanInRequirementForms(
-        final String level, final String grades, final String suffix
+        final String level, final String grades, final String accept
     ) throws Exception {
         this.ctx.execute(
             "UPDATE federal_curriculum SET education_level = ?::education_level_type WHERE id = 1",
@@ -540,7 +633,7 @@ final class CrsHttpTest {
         );
         final List<String> expected = new ArrayList<>(2);
         expected.add(grades);
-        if (suffix.isEmpty()) {
+        if (MediaType.TEXT_HTML_VALUE.equals(accept)) {
             expected.add(grades);
         }
         MatcherAssert.assertThat(
@@ -551,8 +644,8 @@ final class CrsHttpTest {
             ).matcher(
                 this.mvc.perform(
                     MockMvcRequestBuilders.get(
-                        String.format("/federal/curriculums/1/requirements%s", suffix)
-                    ).session(this.session()).accept(MediaType.TEXT_HTML)
+                        "/federal/curriculums/1/requirements"
+                    ).session(this.session()).header("Accept", accept)
                 ).andReturn().getResponse().getContentAsString()
             ).results().map(
                 select -> Pattern.compile("<option[^>]*value=\"([0-9]+)\"")
@@ -564,7 +657,30 @@ final class CrsHttpTest {
 
     private MockHttpServletRequestBuilder authorized(final String path, final Roles.RoleEnum role)
         throws Exception {
-        return this.authorized(path, role, HttpMethod.POST);
+        return this.authorized(
+            switch (path) {
+                case "/1" -> MockMvcRequestBuilders.put("/federal/curriculums/1")
+                    .contentType("application/vnd.surok.federal-curriculum-v2+json").content(
+                        """
+                        {"title":"After","level":"BASIC","week":"FIVE_DAYS",
+                        "version":"2","year":"2026/2027","description":"Description"}
+                        """
+                    );
+                case "/1/requirements/7" -> MockMvcRequestBuilders.put(
+                    "/federal/curriculums/1/requirements/7"
+                ).contentType(
+                    "application/vnd.surok.federal-curriculum-requirement-v1+json"
+                ).content(
+                    """
+                    {"grade":6,"subjectId":516,"hours":2,"partType":"MANDATORY"}
+                    """
+                );
+                case null, default -> MockMvcRequestBuilders.post(
+                    String.format("/federal/curriculums%s", path)
+                ).contentType(MediaType.APPLICATION_FORM_URLENCODED);
+            },
+            role
+        );
     }
 
     private MockHttpServletRequestBuilder authorized(
@@ -586,9 +702,7 @@ final class CrsHttpTest {
     }
 
     private MockHttpServletRequestBuilder authorized(final String path) throws Exception {
-        return this.authorized(
-            MockMvcRequestBuilders.post(String.format("/federal/curriculums%s", path))
-        ).contentType(MediaType.APPLICATION_FORM_URLENCODED)
+        return this.authorized(path, Roles.RoleEnum.ADMIN)
             .param("title", "After").param("level", "BASIC").param("week", "FIVE_DAYS")
             .param("version", "2").param("year", "2026/2027").param("description", "Description")
             .param("grade", "6").param("subjectId", "516").param("hours", "2")
@@ -597,9 +711,15 @@ final class CrsHttpTest {
 
     private MockHttpServletRequestBuilder authorized(final MockHttpServletRequestBuilder request)
         throws Exception {
-        final MockHttpSession session = this.session();
+        return this.authorized(request, Roles.RoleEnum.ADMIN);
+    }
+
+    private MockHttpServletRequestBuilder authorized(
+        final MockHttpServletRequestBuilder request, final Roles.RoleEnum role
+    ) throws Exception {
+        final MockHttpSession session = this.session(role);
         final MvcResult form = this.mvc.perform(
-            MockMvcRequestBuilders.get("/federal/curriculums/create").session(session)
+            MockMvcRequestBuilders.get("/federal/subjects").session(session)
         ).andExpect(MockMvcResultMatchers.status().isOk()).andReturn();
         final CsrfToken token = (CsrfToken) form.getRequest().getAttribute(
             CsrfToken.class.getName()

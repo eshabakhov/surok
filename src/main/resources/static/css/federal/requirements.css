@@ -101,8 +101,7 @@
 }
 
 .requirement-save,
-.requirement-cancel,
-.requirement-edit-form {
+.requirement-cancel {
     display: none;
 }
 

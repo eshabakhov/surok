@@ -391,6 +391,83 @@ final class OaHttpTest {
     }
 
     /**
+     * Publishes canonical curriculum and requirement operations for administrators.
+     *
+     * @param mvc HTTP client
+     * @throws Exception If the description cannot be read
+     */
+    @Test
+    void publishesCanonicalFederalStandardOperations(@Autowired final MockMvc mvc)
+        throws Exception {
+        final JsonNode paths = Json.mapper().readTree(
+            mvc.perform(
+                MockMvcRequestBuilders.get("/api-docs").with(
+                    SecurityMockMvcRequestPostProcessors.user("администратор").roles("ADMIN")
+                )
+            ).andReturn().getResponse().getContentAsByteArray()
+        ).path("paths");
+        final JsonNode plans = paths.path("/federal/curriculums");
+        final JsonNode requirements = paths.path("/federal/curriculums/{curriculum}/requirements");
+        MatcherAssert.assertThat(
+            "Swagger lost canonical federal operations or retained duplicate routes",
+            List.of(
+                plans.path("get").path("responses").path("200").path("content")
+                    .has("text/vnd.surok.federal-curriculums-fragment+html"),
+                plans.path("post").path("requestBody").path("content")
+                    .has("application/vnd.surok.federal-curriculum-v2+json"),
+                plans.path("post").path("requestBody").path("content")
+                    .has("application/x-www-form-urlencoded"),
+                paths.path("/federal/curriculums/{curriculum}").has("put"),
+                paths.path("/federal/curriculums/create").has("get"),
+                paths.path("/federal/curriculums/create").has("post"),
+                paths.path("/federal/curriculums/{curriculum}/edit").has("post"),
+                paths.has("/federal/curriculums/fragment"),
+                requirements.path("get").path("responses").path("200").path("content")
+                    .has("text/vnd.surok.federal-curriculum-requirements-fragment+html"),
+                requirements.path("post").path("requestBody").path("content")
+                    .has("application/x-www-form-urlencoded"),
+                paths.path("/federal/curriculums/{curriculum}/requirements/{requirement}")
+                    .has("post"),
+                paths.has("/federal/curriculums/{curriculum}/requirements/fragment")
+            ),
+            Matchers.contains(
+                true, true, true, true, true, false, false, false,
+                true, true, false, false
+            )
+        );
+    }
+
+    /**
+     * Keeps reading operations visible while hiding federal changes from readers.
+     *
+     * @param mvc HTTP client
+     * @throws Exception If the description cannot be read
+     */
+    @Test
+    void keepsFederalStandardReadOnlyForReaders(@Autowired final MockMvc mvc) throws Exception {
+        final JsonNode paths = Json.mapper().readTree(
+            mvc.perform(
+                MockMvcRequestBuilders.get("/api-docs").with(
+                    SecurityMockMvcRequestPostProcessors.user("читатель").roles("VIEWER")
+                )
+            ).andReturn().getResponse().getContentAsByteArray()
+        ).path("paths");
+        MatcherAssert.assertThat(
+            "Reader documentation exposed federal forms or mutations",
+            List.of(
+                paths.path("/federal/curriculums").has("get"),
+                paths.path("/federal/curriculums").has("post"),
+                paths.path("/federal/curriculums/{curriculum}").has("put"),
+                paths.has("/federal/curriculums/create"),
+                paths.has("/federal/curriculums/{curriculum}/edit"),
+                paths.path("/federal/curriculums/{curriculum}/requirements").has("get"),
+                paths.path("/federal/curriculums/{curriculum}/requirements").has("post")
+            ),
+            Matchers.contains(true, false, false, false, false, true, false)
+        );
+    }
+
+    /**
      * Documents the page and fragment as distinct media types of a single list operation.
      *
      * @param mvc HTTP client

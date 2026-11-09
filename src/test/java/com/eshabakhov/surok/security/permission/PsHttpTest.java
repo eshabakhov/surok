@@ -266,7 +266,7 @@ final class PsHttpTest {
         "/schools/{school}/subjects, POST, BASIC_MAKER, denied",
         "/schools/{school}/subjects, GET, VIEWER, school",
         "/federal/curriculums, GET, VIEWER, all",
-        "/federal/curriculums/create, POST, VIEWER, denied",
+        "/federal/curriculums, POST, VIEWER, denied",
         "/federal/curriculums/{curriculum}, GET, VIEWER, all",
         "/federal/curriculums/{curriculum}, DELETE, VIEWER, denied",
         "/federal/curriculums/{curriculum}/requirements, GET, VIEWER, all",
