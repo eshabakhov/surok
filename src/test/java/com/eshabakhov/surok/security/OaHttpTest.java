@@ -337,6 +337,60 @@ final class OaHttpTest {
     }
 
     /**
+     * Keeps subject forms in administrator documentation without duplicate mutations.
+     *
+     * @param mvc HTTP client
+     * @throws Exception If the description cannot be read
+     */
+    @Test
+    void publishesSubjectFormsForAdministrators(@Autowired final MockMvc mvc) throws Exception {
+        final JsonNode paths = Json.mapper().readTree(
+            mvc.perform(
+                MockMvcRequestBuilders.get("/api-docs").with(
+                    SecurityMockMvcRequestPostProcessors.user("администратор").roles("ADMIN")
+                )
+            ).andReturn().getResponse().getContentAsByteArray()
+        ).path("paths");
+        MatcherAssert.assertThat(
+            "Swagger hid the subject forms from administrators or restored duplicate writes",
+            List.of(
+                paths.path("/federal/subjects/create").has("get"),
+                paths.path("/federal/subjects/{subject}/edit").has("get"),
+                paths.path("/schools/{school}/subjects/create").has("get"),
+                paths.path("/schools/{school}/subjects/{subject}/edit").has("get"),
+                paths.path("/federal/subjects/create").has("post"),
+                paths.path("/schools/{school}/subjects/{subject}/edit").has("post")
+            ),
+            Matchers.contains(true, true, true, true, false, false)
+        );
+    }
+
+    /**
+     * Keeps federal editing forms out of reader documentation.
+     *
+     * @param mvc HTTP client
+     * @throws Exception If the description cannot be read
+     */
+    @Test
+    void hidesFederalSubjectFormsFromReaders(@Autowired final MockMvc mvc) throws Exception {
+        final JsonNode paths = Json.mapper().readTree(
+            mvc.perform(
+                MockMvcRequestBuilders.get("/api-docs").with(
+                    SecurityMockMvcRequestPostProcessors.user("читатель").roles("VIEWER")
+                )
+            ).andReturn().getResponse().getContentAsByteArray()
+        ).path("paths");
+        MatcherAssert.assertThat(
+            "Swagger exposed federal subject editing forms to a reader",
+            List.of(
+                paths.has("/federal/subjects/create"),
+                paths.has("/federal/subjects/{subject}/edit")
+            ),
+            Matchers.contains(false, false)
+        );
+    }
+
+    /**
      * Documents the page and fragment as distinct media types of a single list operation.
      *
      * @param mvc HTTP client

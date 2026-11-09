@@ -154,21 +154,13 @@ public final class PmMethod implements Permission {
         final String rule;
         if (this.path.startsWith("/federal/")) {
             rule = switch (this.handler.getMethod().getName()) {
-                case "create", "revise", "remove" -> "hasRole('ADMIN')";
-                case "selection", "subject" -> {
-                    final String allowed;
-                    if (this.path.endsWith("/create") || this.path.endsWith("/edit")) {
-                        allowed = "hasRole('ADMIN')";
-                    } else {
-                        allowed = "true";
-                    }
-                    yield allowed;
-                }
+                case "create", "revise", "remove", "form", "edit" -> "hasRole('ADMIN')";
+                case "selection", "subject" -> "true";
                 case null, default -> "false";
             };
         } else {
             rule = switch (this.handler.getMethod().getName()) {
-                case "selection", "subject" ->
+                case "selection", "subject", "form", "edit" ->
                     "hasRole('ADMIN') or authentication.principal.schools().contains(#school)";
                 case "create", "revise", "remove" -> """
                     hasRole('ADMIN') or (

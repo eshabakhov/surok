@@ -31,9 +31,11 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 import org.jooq.DSLContext;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -61,8 +63,16 @@ import org.springframework.web.server.ResponseStatusException;
  */
 @RestController
 @RequestMapping({"/federal/subjects", "/schools/{school}/subjects"})
-@SuppressWarnings("PMD.GodClass")
 public class SbsHttp {
+
+    /** JSON representation of the subject collection. */
+    private static final String JSON = "application/vnd.surok.subjects.v1+json";
+
+    /** XML representation of the subject collection. */
+    private static final String XML = "application/vnd.surok.subjects.v1+xml";
+
+    /** HTML representation containing only the subject results. */
+    private static final String FRAGMENT = "text/vnd.surok.subjects-fragment+html";
 
     /** Database context. */
     private final DSLContext ctx;
@@ -77,7 +87,7 @@ public class SbsHttp {
     }
 
     /**
-     * Shows a collection, its fragment or a creation form.
+     * Shows a collection or its results fragment.
      *
      * @param school School identifier, absent for the shared federal catalogue
      * @param filters Filtering
@@ -88,14 +98,7 @@ public class SbsHttp {
      * @return Negotiated representation
      * @throws Exception If lookup or printing fails
      */
-    @GetMapping(
-        value = {"", "/", "/fragment", "/create"},
-        produces = {
-            MediaType.TEXT_HTML_VALUE,
-            "application/vnd.surok.subjects.v1+json",
-            "application/vnd.surok.subjects.v1+xml"
-        }
-    )
+    @GetMapping(produces = {MediaType.TEXT_HTML_VALUE, SbsHttp.JSON, SbsHttp.XML, SbsHttp.FRAGMENT})
     public ResponseEntity<?> selection(
         @PathVariable(required = false) final Long school,
         final Filters filters,
@@ -104,13 +107,13 @@ public class SbsHttp {
         final HttpServletRequest request,
         @AuthenticationPrincipal final User actor
     ) throws Exception {
-        final MediaType type = new AcHttp(request, "subjects.v1").type();
-        if (school == null && request.getRequestURI().endsWith("/create")
-            && !actor.isAdmin()) {
-            throw new ResponseStatusException(
-                HttpStatus.FORBIDDEN, "Federal catalogue is read-only"
-            );
-        }
+        final MediaType type = new AcHttp(
+            request,
+            List.of(
+                MediaType.TEXT_HTML, MediaType.valueOf(SbsHttp.JSON),
+                MediaType.valueOf(SbsHttp.XML), MediaType.valueOf(SbsHttp.FRAGMENT)
+            )
+        ).type();
         final Set<Filter> requested = new LinkedHashSet<>(filters.filters());
         requested.addAll(
             Stream.of("name", "name_ct")
@@ -121,34 +124,58 @@ public class SbsHttp {
         final Subjects selected = this.subjects(school, actor).selection(
             applied, page, sorts
         );
-        return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8)).body(
-            switch (type.toString()) {
-                case MediaType.TEXT_HTML_VALUE -> {
-                    final String view;
-                    if (request.getRequestURI().endsWith("/fragment")) {
-                        view = "list-fragment";
-                    } else if (request.getRequestURI().endsWith("/create")) {
-                        view = "create";
-                    } else {
-                        view = "list";
+        return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8))
+            .varyBy(HttpHeaders.ACCEPT).body(
+                switch (type.toString()) {
+                    case MediaType.TEXT_HTML_VALUE, SbsHttp.FRAGMENT -> {
+                        final String view;
+                        if (MediaType.TEXT_HTML.equals(type)) {
+                            view = "list";
+                        } else {
+                            view = "list-fragment";
+                        }
+                        yield this.web(request, school, view, actor).with(
+                            "subjects", new SbsWeb(selected, applied, sorts)
+                        ).print();
                     }
-                    yield this.web(request, school, view, actor).with(
-                        "subjects", new SbsWeb(selected, applied, sorts)
-                    ).print();
+                    case SbsHttp.JSON -> selected.print(new MdJson()).print();
+                    case SbsHttp.XML -> selected.print(new MdXml("subjects")).print();
+                    case null, default -> throw new ResponseStatusException(
+                        HttpStatus.NOT_ACCEPTABLE, "Unsupported Accept header"
+                    );
                 }
-                case "application/vnd.surok.subjects.v1+json" ->
-                    selected.print(new MdJson()).print();
-                case "application/vnd.surok.subjects.v1+xml" ->
-                    selected.print(new MdXml("subjects")).print();
-                case null, default -> throw new ResponseStatusException(
-                    HttpStatus.NOT_ACCEPTABLE, "Unsupported Accept header"
-                );
-            }
+            );
+    }
+
+    /**
+     * Shows the browser form for creating a subject.
+     *
+     * @param school School identifier, absent for the shared federal catalogue
+     * @param request HTTP request
+     * @param actor Acting user
+     * @return HTML creation form
+     * @throws Exception If lookup or printing fails
+     */
+    @GetMapping(value = "/create", produces = MediaType.TEXT_HTML_VALUE)
+    public ResponseEntity<String> form(
+        @PathVariable(required = false) final Long school,
+        final HttpServletRequest request,
+        @AuthenticationPrincipal final User actor
+    ) throws Exception {
+        final MediaType type = new AcHttp(request, List.of(MediaType.TEXT_HTML)).type();
+        if (school == null && !actor.isAdmin()) {
+            throw new ResponseStatusException(
+                HttpStatus.FORBIDDEN, "Federal catalogue is read-only"
+            );
+        }
+        this.subjects(school, actor);
+        return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8)).body(
+            this.web(request, school, "create", actor).print()
         );
     }
 
     /**
-     * Shows one subject or its editing form.
+     * Shows one subject.
      *
      * @param school School identifier, absent for the shared federal catalogue
      * @param subject Entity identifier
@@ -158,7 +185,7 @@ public class SbsHttp {
      * @throws Exception If lookup or printing fails
      */
     @GetMapping(
-        value = {"/{subject}", "/{subject}/edit"},
+        value = "/{subject}",
         produces = {
             MediaType.TEXT_HTML_VALUE,
             "application/vnd.surok.subject-v1+json",
@@ -176,23 +203,10 @@ public class SbsHttp {
         final Subject selected = origin.subject(subject);
         return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8)).body(
             switch (type.toString()) {
-                case MediaType.TEXT_HTML_VALUE -> {
-                    final String view;
-                    if (request.getRequestURI().endsWith("/edit")) {
-                        if (school == null && !actor.isAdmin()) {
-                            throw new SubjectReadOnlyException(selected.uid());
-                        }
-                        if (school != null && selected.origin() == Subject.Origin.FEDERAL) {
-                            throw new SubjectReadOnlyException(selected.uid());
-                        }
-                        view = "edit";
-                    } else {
-                        view = "details";
-                    }
-                    yield this.web(request, school, view, actor).with(
+                case MediaType.TEXT_HTML_VALUE ->
+                    this.web(request, school, "details", actor).with(
                         "subjects", new SbsSingle(origin, selected)
                     ).print();
-                }
                 case "application/vnd.surok.subject-v1+json" ->
                     new SbV1(selected).print(new MdJson()).print();
                 case "application/vnd.surok.subject-v1+xml" ->
@@ -201,6 +215,37 @@ public class SbsHttp {
                     HttpStatus.NOT_ACCEPTABLE, "Unsupported Accept header"
                 );
             }
+        );
+    }
+
+    /**
+     * Shows the browser form for editing a subject.
+     *
+     * @param school School identifier, absent for the shared federal catalogue
+     * @param subject Entity identifier
+     * @param request HTTP request
+     * @param actor Acting user
+     * @return HTML editing form
+     * @throws Exception If lookup or printing fails
+     */
+    @GetMapping(value = "/{subject}/edit", produces = MediaType.TEXT_HTML_VALUE)
+    public ResponseEntity<String> edit(
+        @PathVariable(required = false) final Long school,
+        @PathVariable final long subject,
+        final HttpServletRequest request,
+        @AuthenticationPrincipal final User actor
+    ) throws Exception {
+        final MediaType type = new AcHttp(request, List.of(MediaType.TEXT_HTML)).type();
+        final Subjects origin = this.subjects(school, actor);
+        final Subject selected = origin.subject(subject);
+        if (school == null && !actor.isAdmin()
+            || school != null && selected.origin() == Subject.Origin.FEDERAL) {
+            throw new SubjectReadOnlyException(selected.uid());
+        }
+        return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8)).body(
+            this.web(request, school, "edit", actor).with(
+                "subjects", new SbsSingle(origin, selected)
+            ).print()
         );
     }
 
@@ -215,7 +260,6 @@ public class SbsHttp {
      * @throws Exception If creation fails
      */
     @PostMapping(
-        value = "/create",
         consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE,
         produces = {
             MediaType.TEXT_HTML_VALUE,
@@ -256,7 +300,6 @@ public class SbsHttp {
      * @throws Exception If creation fails
      */
     @PostMapping(
-        value = {"", "/", "/create"},
         consumes = "application/vnd.surok.subject-v1+json",
         produces = {
             MediaType.TEXT_HTML_VALUE,
@@ -277,48 +320,6 @@ public class SbsHttp {
             SbsHttp.base(school),
             SbsHttp.base(school)
         );
-    }
-
-    /**
-     * Revises a subject from form fields.
-     *
-     * @param school School identifier, absent for the shared federal catalogue
-     * @param subject Entity identifier
-     * @param parameters Form fields
-     * @param request HTTP request
-     * @param actor Acting user
-     * @return Revised representation or redirect
-     * @throws Exception If revision fails
-     */
-    @PostMapping(
-        value = "/{subject}/edit",
-        consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE,
-        produces = {
-            MediaType.TEXT_HTML_VALUE,
-            "application/vnd.surok.subject-v1+json",
-            "application/vnd.surok.subject-v1+xml"
-        }
-    )
-    public ResponseEntity<?> revise(
-        @PathVariable(required = false) final Long school,
-        @PathVariable final long subject,
-        @RequestParam final MultiValueMap<String, String> parameters,
-        final HttpServletRequest request,
-        @AuthenticationPrincipal final User actor
-    ) throws Exception {
-        final MediaType type = new AcHttp(request, "subject-v1").type();
-        ResponseEntity<?> response;
-        try {
-            final Subject revised = this.subjects(school, actor)
-                .revise(subject, new SbInputHttp(parameters));
-            response = SbsHttp.result(
-                type, revised, HttpStatus.OK, SbsHttp.base(school),
-                String.format("%s/%d", SbsHttp.base(school), revised.uid())
-            );
-        } catch (final SubjectInputException | SubjectAlreadyExistsException exception) {
-            response = SbsHttp.rejected(type, request, exception);
-        }
-        return response;
     }
 
     /**
@@ -443,7 +444,7 @@ public class SbsHttp {
             error = "duplicate";
         }
         return ResponseEntity.status(HttpStatus.FOUND).location(
-            URI.create(String.format("%s?error=%s", request.getRequestURI(), error))
+            URI.create(String.format("%s/create?error=%s", request.getRequestURI(), error))
         ).build();
     }
 
