@@ -7,8 +7,8 @@ import com.eshabakhov.surok.Media;
 import com.eshabakhov.surok.User;
 import com.eshabakhov.surok.federal.curriculum.requirement.Requirements;
 import com.eshabakhov.surok.federal.curriculum.requirement.RqsAuthorized;
+import com.eshabakhov.surok.security.right.RtAdmin;
 import java.util.List;
-import org.springframework.security.access.AccessDeniedException;
 
 /**
  * Federal curriculum whose revision requires an administrator.
@@ -48,10 +48,9 @@ public final class CrAuthorized implements Curriculum {
 
     @Override
     public Curriculum revise(final CurriculumInput input) throws Exception {
-        if (!this.actor.isAdmin()) {
-            throw new AccessDeniedException("Only an administrator can revise a curriculum");
-        }
-        return new CrAuthorized(this.origin.revise(input), this.actor);
+        return new CrAuthorized(
+            new RtAdmin(this.actor).permit(this.origin).revise(input), this.actor
+        );
     }
 
     @Override
