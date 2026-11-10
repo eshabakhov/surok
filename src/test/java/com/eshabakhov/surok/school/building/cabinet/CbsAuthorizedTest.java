@@ -5,7 +5,9 @@ package com.eshabakhov.surok.school.building.cabinet;
 
 import com.eshabakhov.surok.School;
 import com.eshabakhov.surok.User;
+import com.eshabakhov.surok.filter.FiltersRequest;
 import com.eshabakhov.surok.media.MdJson;
+import com.eshabakhov.surok.page.PageRequest;
 import com.eshabakhov.surok.school.SlsPostgres;
 import com.eshabakhov.surok.school.building.Building;
 import com.eshabakhov.surok.school.building.cabinet.input.CbInput;
@@ -14,8 +16,11 @@ import com.eshabakhov.surok.school.building.input.BdInput;
 import com.eshabakhov.surok.school.building.input.BdInputName;
 import com.eshabakhov.surok.school.input.SlInput;
 import com.eshabakhov.surok.school.input.SlInputName;
+import com.eshabakhov.surok.sort.SortsRequest;
 import com.eshabakhov.surok.user.Roles;
 import com.eshabakhov.surok.user.UrsPostgres;
+import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
@@ -72,6 +77,94 @@ final class CbsAuthorizedTest {
                 new CbInputName(new CbInput(), "Кабинет химии")
             ).print(new MdJson()).print().path("name").asText(),
             Matchers.is("Кабинет химии")
+        );
+    }
+
+    /**
+     * Allows an administrator to create a cabinet without school membership.
+     *
+     * @param ctx Database context
+     * @throws Exception If setup or creation fails
+     */
+    @Test
+    void createsACabinetForAnAdministrator(@Autowired final DSLContext ctx) throws Exception {
+        final User actor = new UrsPostgres(ctx).register(
+            UUID.randomUUID().toString(), "ValidPassword1!",
+            String.format("%s@example.com", UUID.randomUUID()), false
+        );
+        actor.roles().grant(Roles.RoleEnum.ADMIN);
+        final School school = new SlsPostgres(ctx).create(
+            new SlInputName(new SlInput(), "Чужая школа администратора")
+        );
+        MatcherAssert.assertThat(
+            "An administrator could not create a cabinet without school membership",
+            new CbsAuthorized(
+                school.buildings().create(
+                    new BdInputName(new BdInput(), "Корпус администратора")
+                ).cabinets(), school, actor
+            ).create(
+                new CbInputName(new CbInput(), "Кабинет администратора")
+            ).uid(), Matchers.greaterThan(0L)
+        );
+    }
+
+    /**
+     * Rejects a user from another school when reading a cabinet.
+     *
+     * @param ctx Database context
+     * @throws Exception If setup fails
+     */
+    @Test
+    void deniesCabinetReadingToAnOutsider(@Autowired final DSLContext ctx) throws Exception {
+        final User actor = new UrsPostgres(ctx).register(
+            UUID.randomUUID().toString(), "ValidPassword1!",
+            String.format("%s@example.com", UUID.randomUUID()), false
+        );
+        actor.schools().create(new SlInputName(new SlInput(), "Своя школа"));
+        final School school = new SlsPostgres(ctx).create(
+            new SlInputName(new SlInput(), "Чужая школа")
+        );
+        final Building building = school.buildings().create(
+            new BdInputName(new BdInput(), "Чужой корпус")
+        );
+        final long id = building.cabinets().create(
+            new CbInputName(new CbInput(), "Чужой кабинет")
+        ).uid();
+        Assertions.assertThrows(
+            AccessDeniedException.class,
+            () -> new CbsAuthorized(building.cabinets(), school, actor).cabinet(id),
+            "An outsider read a cabinet in another school"
+        );
+    }
+
+    /**
+     * Checks membership again when a retained selection is iterated.
+     *
+     * @param ctx Database context
+     * @throws Exception If setup fails
+     */
+    @Test
+    void deniesSelectedCabinetsAfterMembershipRemoval(@Autowired final DSLContext ctx)
+        throws Exception {
+        final User actor = new UrsPostgres(ctx).register(
+            UUID.randomUUID().toString(), "ValidPassword1!",
+            String.format("%s@example.com", UUID.randomUUID()), false
+        );
+        final School school = actor.schools().create(
+            new SlInputName(new SlInput(), "Школа с отзывом доступа")
+        );
+        final Cabinets selected = new CbsAuthorized(
+            school.buildings().create(
+                new BdInputName(new BdInput(), "Корпус с отзывом доступа")
+            ).cabinets(), school, actor
+        ).selection(
+            new FiltersRequest(Set.of()), new PageRequest(20, 1),
+            new SortsRequest(List.of())
+        );
+        school.users().remove(actor.uid());
+        Assertions.assertThrows(
+            AccessDeniedException.class, selected::iterate,
+            "A former school member iterated its cabinets"
         );
     }
 
