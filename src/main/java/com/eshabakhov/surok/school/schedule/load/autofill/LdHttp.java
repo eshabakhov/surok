@@ -24,7 +24,9 @@ import com.eshabakhov.surok.school.SlsPostgres;
 import com.eshabakhov.surok.school.schedule.Schedule;
 import com.eshabakhov.surok.school.schedule.SdBrief;
 import com.eshabakhov.surok.security.CsToken;
-import com.eshabakhov.surok.user.Roles;
+import com.eshabakhov.surok.security.right.RtAdmin;
+import com.eshabakhov.surok.security.right.RtDirectorOrDeputy;
+import com.eshabakhov.surok.security.right.RtEither;
 import com.eshabakhov.surok.user.UrBrief;
 import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.servlet.http.HttpServletRequest;
@@ -156,12 +158,10 @@ public class LdHttp {
                                 .with("subjects", source.subjects())
                                 .with("offers", new PrItems("curriculum", offers)).with(
                                     "editable",
-                                    actor.isAdmin()
-                                        || source.users().roles(actor).contains(
-                                            Roles.RoleEnum.DIRECTOR
-                                        ) || source.users().roles(actor).contains(
-                                            Roles.RoleEnum.DEPUTY_DIRECTOR
-                                        )
+                                    new RtEither(
+                                        new RtAdmin(actor),
+                                        new RtDirectorOrDeputy(actor, source)
+                                    ).allows()
                                 )
                         ).print();
                     }

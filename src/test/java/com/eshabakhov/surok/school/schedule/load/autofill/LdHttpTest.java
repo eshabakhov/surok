@@ -3,7 +3,9 @@
  */
 package com.eshabakhov.surok.school.schedule.load.autofill;
 
+import com.eshabakhov.surok.school.SlPostgres;
 import com.eshabakhov.surok.user.AuthUser;
+import com.eshabakhov.surok.user.Roles;
 import com.eshabakhov.surok.user.UrPostgres;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -837,6 +839,51 @@ final class LdHttpTest {
                 Matchers.containsString("data-editable=\"false\""),
                 Matchers.not(Matchers.containsString("id=\"draft-save\"")),
                 Matchers.not(Matchers.containsString("id=\"draft-apply\""))
+            )
+        );
+    }
+
+    @Test
+    void rendersEditablePlanningForAdministratorsFromAnotherSchool(
+        @Autowired final MockMvc mvc, @Autowired final DSLContext ctx
+    ) throws Exception {
+        MatcherAssert.assertThat(
+            "An administrator from another school received a read-only draft",
+            mvc.perform(
+                MockMvcRequestBuilders.get("/schools/1/schedules/101/loads/draft").with(
+                    SecurityMockMvcRequestPostProcessors.user(
+                        new AuthUser(new UrPostgres(ctx, 47L))
+                    )
+                ).accept("text/html")
+            ).andReturn().getResponse().getContentAsString(),
+            Matchers.allOf(
+                Matchers.containsString("data-editable=\"true\""),
+                Matchers.containsString("id=\"draft-save\""),
+                Matchers.containsString("id=\"draft-apply\"")
+            )
+        );
+    }
+
+    @Test
+    void rendersEditablePlanningForDeputyDirectors(
+        @Autowired final MockMvc mvc, @Autowired final DSLContext ctx
+    ) throws Exception {
+        new SlPostgres(ctx, 1L).users().roles(
+            new UrPostgres(ctx, 49L)
+        ).grant(Roles.RoleEnum.DEPUTY_DIRECTOR);
+        MatcherAssert.assertThat(
+            "A deputy director received a read-only draft",
+            mvc.perform(
+                MockMvcRequestBuilders.get("/schools/1/schedules/101/loads/draft").with(
+                    SecurityMockMvcRequestPostProcessors.user(
+                        new AuthUser(new UrPostgres(ctx, 49L))
+                    )
+                ).accept("text/html")
+            ).andReturn().getResponse().getContentAsString(),
+            Matchers.allOf(
+                Matchers.containsString("data-editable=\"true\""),
+                Matchers.containsString("id=\"draft-save\""),
+                Matchers.containsString("id=\"draft-apply\"")
             )
         );
     }
