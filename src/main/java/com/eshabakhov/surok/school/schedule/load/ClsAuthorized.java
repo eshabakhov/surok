@@ -7,8 +7,10 @@ import com.eshabakhov.surok.Media;
 import com.eshabakhov.surok.Page;
 import com.eshabakhov.surok.School;
 import com.eshabakhov.surok.User;
+import com.eshabakhov.surok.security.right.RtAdmin;
+import com.eshabakhov.surok.security.right.RtEither;
+import com.eshabakhov.surok.security.right.RtSchoolMember;
 import java.util.stream.StreamSupport;
-import org.springframework.security.access.AccessDeniedException;
 
 /**
  * Applied teaching loads visible to members of their school.
@@ -42,27 +44,30 @@ public final class ClsAuthorized implements ClassLoads {
 
     @Override
     public ClassLoad load(final long id) throws Exception {
-        if (!this.actor.isAdmin() && !this.school.users().contains(this.actor)) {
-            throw new AccessDeniedException("Only a school member can view a teaching load");
-        }
-        return new ClAuthorized(this.origin.load(id), this.school, this.actor);
+        return new ClAuthorized(
+            new RtEither(
+                new RtAdmin(this.actor), new RtSchoolMember(this.actor, this.school)
+            ).permit(this.origin).load(id),
+            this.school, this.actor
+        );
     }
 
     @Override
     public ClassLoads selection(final Page page) throws Exception {
-        if (!this.actor.isAdmin() && !this.school.users().contains(this.actor)) {
-            throw new AccessDeniedException("Only a school member can view teaching loads");
-        }
-        return new ClsAuthorized(this.origin.selection(page), this.school, this.actor);
+        return new ClsAuthorized(
+            new RtEither(
+                new RtAdmin(this.actor), new RtSchoolMember(this.actor, this.school)
+            ).permit(this.origin).selection(page),
+            this.school, this.actor
+        );
     }
 
     @Override
     public Iterable<ClassLoad> iterate() {
-        if (!this.actor.isAdmin() && !this.school.users().contains(this.actor)) {
-            throw new AccessDeniedException("Only a school member can view teaching loads");
-        }
         return StreamSupport.stream(
-            this.origin.iterate().spliterator(), false
+            new RtEither(
+                new RtAdmin(this.actor), new RtSchoolMember(this.actor, this.school)
+            ).permit(this.origin).iterate().spliterator(), false
         ).<ClassLoad>map(
             load -> new ClAuthorized(load, this.school, this.actor)
         ).toList();
@@ -70,9 +75,8 @@ public final class ClsAuthorized implements ClassLoads {
 
     @Override
     public <T> Media<T> print(final Media<T> media) throws Exception {
-        if (!this.actor.isAdmin() && !this.school.users().contains(this.actor)) {
-            throw new AccessDeniedException("Only a school member can view teaching loads");
-        }
-        return this.origin.print(media);
+        return new RtEither(
+            new RtAdmin(this.actor), new RtSchoolMember(this.actor, this.school)
+        ).permit(this.origin).print(media);
     }
 }

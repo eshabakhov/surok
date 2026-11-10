@@ -7,12 +7,16 @@ import com.eshabakhov.surok.School;
 import com.eshabakhov.surok.User;
 import com.eshabakhov.surok.federal.subject.SbFake;
 import com.eshabakhov.surok.media.MdJson;
+import com.eshabakhov.surok.school.SlsPostgres;
 import com.eshabakhov.surok.school.input.SlInput;
 import com.eshabakhov.surok.school.input.SlInputName;
 import com.eshabakhov.surok.school.schedule.load.hours.WhFixed;
 import com.eshabakhov.surok.school.schoolclass.ScFake;
+import com.eshabakhov.surok.user.Roles;
 import com.eshabakhov.surok.user.UrsPostgres;
 import java.util.UUID;
+import org.hamcrest.MatcherAssert;
+import org.hamcrest.Matchers;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -65,6 +69,31 @@ final class ClAuthorizedTest {
             AccessDeniedException.class,
             () -> load.print(new MdJson()),
             "A former school member printed a retained teaching load"
+        );
+    }
+
+    /**
+     * Allows an administrator to print a load without school membership.
+     *
+     * @param ctx Database context
+     * @throws Exception If setup or printing fails
+     */
+    @Test
+    void printsTeachingLoadForAnAdministrator(@Autowired final DSLContext ctx) throws Exception {
+        final User actor = new UrsPostgres(ctx).register(
+            UUID.randomUUID().toString(), "ValidPassword1!",
+            String.format("%s@example.com", UUID.randomUUID()), false
+        );
+        actor.roles().grant(Roles.RoleEnum.ADMIN);
+        MatcherAssert.assertThat(
+            "An administrator could not print a load without school membership",
+            new ClAuthorized(
+                new ClFake(37L, new ScFake(17L), new SbFake(23L), new WhFixed(5)),
+                new SlsPostgres(ctx).create(
+                    new SlInputName(new SlInput(), "Чужая школа с нагрузкой")
+                ), actor
+            ).print(new MdJson()).print().get("id").asLong(),
+            Matchers.is(37L)
         );
     }
 
