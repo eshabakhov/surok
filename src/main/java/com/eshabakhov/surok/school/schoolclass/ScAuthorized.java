@@ -6,8 +6,10 @@ package com.eshabakhov.surok.school.schoolclass;
 import com.eshabakhov.surok.Media;
 import com.eshabakhov.surok.School;
 import com.eshabakhov.surok.User;
-import com.eshabakhov.surok.user.Roles;
-import org.springframework.security.access.AccessDeniedException;
+import com.eshabakhov.surok.security.right.RtAdmin;
+import com.eshabakhov.surok.security.right.RtDirectorOrDeputy;
+import com.eshabakhov.surok.security.right.RtEither;
+import com.eshabakhov.surok.security.right.RtSchoolMember;
 
 /**
  * School class that checks the acting user's role for each operation.
@@ -46,27 +48,25 @@ public final class ScAuthorized implements SchoolClass {
 
     @Override
     public int grade() throws Exception {
-        if (!this.actor.isAdmin() && !this.school.users().contains(this.actor)) {
-            throw new AccessDeniedException("Only a school member can view a class");
-        }
-        return this.origin.grade();
+        return new RtEither(
+            new RtAdmin(this.actor), new RtSchoolMember(this.actor, this.school)
+        ).permit(this.origin).grade();
     }
 
     @Override
     public SchoolClass revise(final SchoolClassInput input) throws Exception {
-        if (!this.actor.isAdmin() && (!this.school.users().contains(this.actor)
-            || !this.school.users().roles(this.actor).contains(Roles.RoleEnum.DIRECTOR)
-            && !this.school.users().roles(this.actor).contains(Roles.RoleEnum.DEPUTY_DIRECTOR))) {
-            throw new AccessDeniedException("Only a school director or deputy can revise a class");
-        }
-        return new ScAuthorized(this.origin.revise(input), this.school, this.actor);
+        return new ScAuthorized(
+            new RtEither(
+                new RtAdmin(this.actor), new RtDirectorOrDeputy(this.actor, this.school)
+            ).permit(this.origin).revise(input),
+            this.school, this.actor
+        );
     }
 
     @Override
     public <T> Media<T> print(final Media<T> media) throws Exception {
-        if (!this.actor.isAdmin() && !this.school.users().contains(this.actor)) {
-            throw new AccessDeniedException("Only a school member can view a class");
-        }
-        return this.origin.print(media);
+        return new RtEither(
+            new RtAdmin(this.actor), new RtSchoolMember(this.actor, this.school)
+        ).permit(this.origin).print(media);
     }
 }

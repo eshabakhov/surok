@@ -5,13 +5,22 @@ package com.eshabakhov.surok.school.schoolclass;
 
 import com.eshabakhov.surok.School;
 import com.eshabakhov.surok.User;
+import com.eshabakhov.surok.filter.FiltersRequest;
+import com.eshabakhov.surok.page.PageRequest;
+import com.eshabakhov.surok.school.SlsPostgres;
 import com.eshabakhov.surok.school.input.SlInput;
 import com.eshabakhov.surok.school.input.SlInputName;
 import com.eshabakhov.surok.school.schoolclass.input.ScInput;
 import com.eshabakhov.surok.school.schoolclass.input.ScInputGrade;
 import com.eshabakhov.surok.school.schoolclass.input.ScInputLitera;
+import com.eshabakhov.surok.sort.SortsRequest;
+import com.eshabakhov.surok.user.Roles;
 import com.eshabakhov.surok.user.UrsPostgres;
+import java.util.List;
+import java.util.Set;
 import java.util.UUID;
+import org.hamcrest.MatcherAssert;
+import org.hamcrest.Matchers;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -65,6 +74,85 @@ final class ScsAuthorizedTest {
                 new ScInputLitera(new ScInputGrade(new ScInput(), "7"), "Я")
             ),
             "A former director created a school class"
+        );
+    }
+
+    /**
+     * Allows an administrator to create a class without school membership.
+     *
+     * @param ctx Database context
+     * @throws Exception If setup or creation fails
+     */
+    @Test
+    void createsAClassForAnAdministrator(@Autowired final DSLContext ctx) throws Exception {
+        final User actor = new UrsPostgres(ctx).register(
+            UUID.randomUUID().toString(), "ValidPassword1!",
+            String.format("%s@example.com", UUID.randomUUID()), false
+        );
+        actor.roles().grant(Roles.RoleEnum.ADMIN);
+        final School school = new SlsPostgres(ctx).create(
+            new SlInputName(new SlInput(), "Чужая школа администратора")
+        );
+        MatcherAssert.assertThat(
+            "An administrator could not create a class without school membership",
+            new ScsAuthorized(school.schoolClasses(), school, actor).create(
+                new ScInputLitera(new ScInputGrade(new ScInput(), "7"), "Я")
+            ).uid(), Matchers.greaterThan(0L)
+        );
+    }
+
+    /**
+     * Rejects access to a class in another school.
+     *
+     * @param ctx Database context
+     * @throws Exception If setup fails
+     */
+    @Test
+    void deniesClassReadingToAnOutsider(@Autowired final DSLContext ctx) throws Exception {
+        final User actor = new UrsPostgres(ctx).register(
+            UUID.randomUUID().toString(), "ValidPassword1!",
+            String.format("%s@example.com", UUID.randomUUID()), false
+        );
+        actor.schools().create(new SlInputName(new SlInput(), "Своя школа"));
+        final School school = new SlsPostgres(ctx).create(
+            new SlInputName(new SlInput(), "Чужая школа")
+        );
+        final long id = school.schoolClasses().create(
+            new ScInputLitera(new ScInputGrade(new ScInput(), "8"), "Б")
+        ).uid();
+        Assertions.assertThrows(
+            AccessDeniedException.class,
+            () -> new ScsAuthorized(school.schoolClasses(), school, actor).clazz(id),
+            "An outsider read a class in another school"
+        );
+    }
+
+    /**
+     * Checks membership again when a retained selection is iterated.
+     *
+     * @param ctx Database context
+     * @throws Exception If setup fails
+     */
+    @Test
+    void deniesSelectedClassesAfterMembershipRemoval(@Autowired final DSLContext ctx)
+        throws Exception {
+        final User actor = new UrsPostgres(ctx).register(
+            UUID.randomUUID().toString(), "ValidPassword1!",
+            String.format("%s@example.com", UUID.randomUUID()), false
+        );
+        final School school = actor.schools().create(
+            new SlInputName(new SlInput(), "Школа с отзывом доступа")
+        );
+        final SchoolClasses selected = new ScsAuthorized(
+            school.schoolClasses(), school, actor
+        ).selection(
+            new FiltersRequest(Set.of()), new PageRequest(20, 1),
+            new SortsRequest(List.of())
+        );
+        school.users().remove(actor.uid());
+        Assertions.assertThrows(
+            AccessDeniedException.class, selected::iterate,
+            "A former school member iterated its classes"
         );
     }
 

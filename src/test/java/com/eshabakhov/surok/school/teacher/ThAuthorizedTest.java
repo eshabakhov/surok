@@ -5,12 +5,16 @@ package com.eshabakhov.surok.school.teacher;
 
 import com.eshabakhov.surok.School;
 import com.eshabakhov.surok.User;
+import com.eshabakhov.surok.school.SlsPostgres;
 import com.eshabakhov.surok.school.input.SlInput;
 import com.eshabakhov.surok.school.input.SlInputName;
 import com.eshabakhov.surok.school.teacher.input.ThInput;
 import com.eshabakhov.surok.school.teacher.input.ThInputName;
+import com.eshabakhov.surok.user.Roles;
 import com.eshabakhov.surok.user.UrsPostgres;
 import java.util.UUID;
+import org.hamcrest.MatcherAssert;
+import org.hamcrest.Matchers;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -63,6 +67,33 @@ final class ThAuthorizedTest {
             AccessDeniedException.class,
             () -> teacher.revise(new ThInputName(new ThInput(), "Учитель Зоя")),
             "A former director revised a retained teacher"
+        );
+    }
+
+    /**
+     * Allows an administrator to revise a teacher without school membership.
+     *
+     * @param ctx Database context
+     * @throws Exception If setup or revision fails
+     */
+    @Test
+    void revisesATeacherForAnAdministrator(@Autowired final DSLContext ctx) throws Exception {
+        final User actor = new UrsPostgres(ctx).register(
+            UUID.randomUUID().toString(), "ValidPassword1!",
+            String.format("%s@example.com", UUID.randomUUID()), false
+        );
+        actor.roles().grant(Roles.RoleEnum.ADMIN);
+        final School school = new SlsPostgres(ctx).create(
+            new SlInputName(new SlInput(), "Чужая школа администратора")
+        );
+        final Teacher teacher = school.teachers().create(
+            new ThInputName(new ThInput(), "Учитель Яна")
+        );
+        MatcherAssert.assertThat(
+            "An administrator could not revise a teacher without school membership",
+            new ThAuthorized(teacher, school, actor).revise(
+                new ThInputName(new ThInput(), "Учитель Зоя")
+            ).uid(), Matchers.equalTo(teacher.uid())
         );
     }
 

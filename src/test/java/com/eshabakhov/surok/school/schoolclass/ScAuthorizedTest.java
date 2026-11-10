@@ -5,13 +5,17 @@ package com.eshabakhov.surok.school.schoolclass;
 
 import com.eshabakhov.surok.School;
 import com.eshabakhov.surok.User;
+import com.eshabakhov.surok.school.SlsPostgres;
 import com.eshabakhov.surok.school.input.SlInput;
 import com.eshabakhov.surok.school.input.SlInputName;
 import com.eshabakhov.surok.school.schoolclass.input.ScInput;
 import com.eshabakhov.surok.school.schoolclass.input.ScInputGrade;
 import com.eshabakhov.surok.school.schoolclass.input.ScInputLitera;
+import com.eshabakhov.surok.user.Roles;
 import com.eshabakhov.surok.user.UrsPostgres;
 import java.util.UUID;
+import org.hamcrest.MatcherAssert;
+import org.hamcrest.Matchers;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -67,6 +71,60 @@ final class ScAuthorizedTest {
                 new ScInputLitera(new ScInputGrade(new ScInput(), "8"), "Я")
             ),
             "A former director revised a retained school class"
+        );
+    }
+
+    /**
+     * Allows a school viewer to read a class grade.
+     *
+     * @param ctx Database context
+     * @throws Exception If setup or reading fails
+     */
+    @Test
+    void readsTheGradeForAViewer(@Autowired final DSLContext ctx) throws Exception {
+        final User actor = new UrsPostgres(ctx).register(
+            UUID.randomUUID().toString(), "ValidPassword1!",
+            String.format("%s@example.com", UUID.randomUUID()), false
+        );
+        final School school = new SlsPostgres(ctx).create(
+            new SlInputName(new SlInput(), "Школа зрителя")
+        );
+        school.users().add(actor);
+        school.users().roles(actor).grant(Roles.RoleEnum.VIEWER);
+        MatcherAssert.assertThat(
+            "A school viewer could not read a class grade",
+            new ScAuthorized(
+                school.schoolClasses().create(
+                    new ScInputLitera(new ScInputGrade(new ScInput(), "7"), "Я")
+                ), school, actor
+            ).grade(), Matchers.is(7)
+        );
+    }
+
+    /**
+     * Allows an administrator to revise a class without school membership.
+     *
+     * @param ctx Database context
+     * @throws Exception If setup or revision fails
+     */
+    @Test
+    void revisesAClassForAnAdministrator(@Autowired final DSLContext ctx) throws Exception {
+        final User actor = new UrsPostgres(ctx).register(
+            UUID.randomUUID().toString(), "ValidPassword1!",
+            String.format("%s@example.com", UUID.randomUUID()), false
+        );
+        actor.roles().grant(Roles.RoleEnum.ADMIN);
+        final School school = new SlsPostgres(ctx).create(
+            new SlInputName(new SlInput(), "Чужая школа администратора")
+        );
+        final SchoolClass clazz = school.schoolClasses().create(
+            new ScInputLitera(new ScInputGrade(new ScInput(), "7"), "Я")
+        );
+        MatcherAssert.assertThat(
+            "An administrator could not revise a class without school membership",
+            new ScAuthorized(clazz, school, actor).revise(
+                new ScInputLitera(new ScInputGrade(new ScInput(), "8"), "Я")
+            ).uid(), Matchers.equalTo(clazz.uid())
         );
     }
 
