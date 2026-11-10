@@ -5,7 +5,7 @@ package com.eshabakhov.surok.federal.subject;
 
 import com.eshabakhov.surok.Media;
 import com.eshabakhov.surok.User;
-import org.springframework.security.access.AccessDeniedException;
+import com.eshabakhov.surok.security.right.RtAdmin;
 
 /**
  * Federal subject whose revision requires an administrator.
@@ -50,10 +50,9 @@ public final class SbFederalAuthorized implements Subject {
 
     @Override
     public Subject revise(final SubjectInput input) throws Exception {
-        if (!this.actor.isAdmin()) {
-            throw new AccessDeniedException("Only an administrator can revise a federal subject");
-        }
-        return new SbFederalAuthorized(this.subject.revise(input), this.actor);
+        return new SbFederalAuthorized(
+            new RtAdmin(this.actor).permit(this.subject).revise(input), this.actor
+        );
     }
 
     @Override

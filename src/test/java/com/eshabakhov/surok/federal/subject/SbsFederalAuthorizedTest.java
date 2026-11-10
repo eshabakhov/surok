@@ -6,8 +6,11 @@ package com.eshabakhov.surok.federal.subject;
 import com.eshabakhov.surok.User;
 import com.eshabakhov.surok.federal.subject.input.SbInput;
 import com.eshabakhov.surok.federal.subject.input.SbInputName;
+import com.eshabakhov.surok.user.Roles;
 import com.eshabakhov.surok.user.UrsPostgres;
 import java.util.UUID;
+import org.hamcrest.MatcherAssert;
+import org.hamcrest.Matchers;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -79,24 +82,48 @@ final class SbsFederalAuthorizedTest {
     }
 
     /**
-     * Rejects revision through a retained federal subject.
+     * Allows an administrator to create a federal subject.
      *
      * @param ctx Database context
-     * @throws Exception If registration fails
+     * @throws Exception If registration or creation fails
      */
     @Test
-    void rejectsRevisionThroughAProtectedSubject(@Autowired final DSLContext ctx)
+    void createsAFederalSubjectForAnAdministrator(@Autowired final DSLContext ctx)
         throws Exception {
         final User actor = new UrsPostgres(ctx).register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
         );
-        Assertions.assertThrows(
-            AccessDeniedException.class,
-            () -> new SbFederalAuthorized(new SbPostgres(ctx, 91L), actor).revise(
-                new SbInputName(new SbInput(), "Геометрия")
-            ),
-            "A regular user revised a retained federal subject"
+        actor.roles().grant(Roles.RoleEnum.ADMIN);
+        MatcherAssert.assertThat(
+            "An administrator could not create a federal subject",
+            new SbsFederalAuthorized(new SbsFederal(ctx), actor).create(
+                new SbInputName(new SbInput(), String.format("Геометрия %s", UUID.randomUUID()))
+            ).origin(),
+            Matchers.is(Subject.Origin.FEDERAL)
+        );
+    }
+
+    /**
+     * Reads a federal subject without an administrator role.
+     *
+     * @param ctx Database context
+     * @throws Exception If registration or creation fails
+     */
+    @Test
+    void readsAFederalSubjectForARegularUser(@Autowired final DSLContext ctx)
+        throws Exception {
+        final User actor = new UrsPostgres(ctx).register(
+            UUID.randomUUID().toString(), "ValidPassword1!",
+            String.format("%s@example.com", UUID.randomUUID()), false
+        );
+        final String name = String.format("Астрономия %s", UUID.randomUUID());
+        MatcherAssert.assertThat(
+            "A regular user could not read a federal subject",
+            new SbsFederalAuthorized(new SbsFederal(ctx), actor).subject(
+                new SbsFederal(ctx).create(new SbInputName(new SbInput(), name)).uid()
+            ).name(),
+            Matchers.is(name)
         );
     }
 

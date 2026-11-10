@@ -8,8 +8,8 @@ import com.eshabakhov.surok.Media;
 import com.eshabakhov.surok.Page;
 import com.eshabakhov.surok.Sorts;
 import com.eshabakhov.surok.User;
+import com.eshabakhov.surok.security.right.RtAdmin;
 import java.util.stream.StreamSupport;
-import org.springframework.security.access.AccessDeniedException;
 
 /**
  * Federal subject catalogue with administrator-only mutations.
@@ -39,10 +39,9 @@ public final class SbsFederalAuthorized implements Subjects {
 
     @Override
     public Subject create(final SubjectInput input) throws Exception {
-        if (!this.actor.isAdmin()) {
-            throw new AccessDeniedException("Only an administrator can create a federal subject");
-        }
-        return new SbFederalAuthorized(this.origin.create(input), this.actor);
+        return new SbFederalAuthorized(
+            new RtAdmin(this.actor).permit(this.origin).create(input), this.actor
+        );
     }
 
     @Override
@@ -52,10 +51,9 @@ public final class SbsFederalAuthorized implements Subjects {
 
     @Override
     public Subject revise(final long id, final SubjectInput input) throws Exception {
-        if (!this.actor.isAdmin()) {
-            throw new AccessDeniedException("Only an administrator can revise a federal subject");
-        }
-        return new SbFederalAuthorized(this.origin.revise(id, input), this.actor);
+        return new SbFederalAuthorized(
+            new RtAdmin(this.actor).permit(this.origin).revise(id, input), this.actor
+        );
     }
 
     @Override
@@ -73,10 +71,7 @@ public final class SbsFederalAuthorized implements Subjects {
 
     @Override
     public void remove(final long id) throws Exception {
-        if (!this.actor.isAdmin()) {
-            throw new AccessDeniedException("Only an administrator can remove a federal subject");
-        }
-        this.origin.remove(id);
+        new RtAdmin(this.actor).permit(this.origin).remove(id);
     }
 
     @Override
