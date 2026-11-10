@@ -6,7 +6,9 @@ package com.eshabakhov.surok.school.schedule.load;
 import com.eshabakhov.surok.Media;
 import com.eshabakhov.surok.School;
 import com.eshabakhov.surok.User;
-import org.springframework.security.access.AccessDeniedException;
+import com.eshabakhov.surok.security.right.RtAdmin;
+import com.eshabakhov.surok.security.right.RtEither;
+import com.eshabakhov.surok.security.right.RtSchoolMember;
 
 /**
  * Applied teaching load visible to members of its school.
@@ -45,9 +47,8 @@ public final class ClAuthorized implements ClassLoad {
 
     @Override
     public <T> Media<T> print(final Media<T> media) throws Exception {
-        if (!this.actor.isAdmin() && !this.school.users().contains(this.actor)) {
-            throw new AccessDeniedException("Only a school member can view a teaching load");
-        }
-        return this.origin.print(media);
+        return new RtEither(
+            new RtAdmin(this.actor), new RtSchoolMember(this.actor, this.school)
+        ).permit(this.origin).print(media);
     }
 }
