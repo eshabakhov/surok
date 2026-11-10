@@ -7,10 +7,19 @@ import com.eshabakhov.surok.School;
 import com.eshabakhov.surok.User;
 import com.eshabakhov.surok.federal.subject.input.SbInput;
 import com.eshabakhov.surok.federal.subject.input.SbInputName;
+import com.eshabakhov.surok.filter.FiltersRequest;
+import com.eshabakhov.surok.page.PageRequest;
+import com.eshabakhov.surok.school.SlsPostgres;
 import com.eshabakhov.surok.school.input.SlInput;
 import com.eshabakhov.surok.school.input.SlInputName;
+import com.eshabakhov.surok.sort.SortsRequest;
+import com.eshabakhov.surok.user.Roles;
 import com.eshabakhov.surok.user.UrsPostgres;
+import java.util.List;
+import java.util.Set;
 import java.util.UUID;
+import org.hamcrest.MatcherAssert;
+import org.hamcrest.Matchers;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -113,6 +122,57 @@ final class SbsAuthorizedTest {
             AccessDeniedException.class,
             () -> subject.revise(new SbInputName(new SbInput(), "Местная история")),
             "A former director revised a retained school subject"
+        );
+    }
+
+    /**
+     * Allows an administrator to add a subject without school membership.
+     *
+     * @param ctx Database context
+     * @throws Exception If setup or creation fails
+     */
+    @Test
+    void createsASubjectForAnAdministrator(@Autowired final DSLContext ctx) throws Exception {
+        final User actor = new UrsPostgres(ctx).register(
+            UUID.randomUUID().toString(), "ValidPassword1!",
+            String.format("%s@example.com", UUID.randomUUID()), false
+        );
+        actor.roles().grant(Roles.RoleEnum.ADMIN);
+        final School school = new SlsPostgres(ctx).create(
+            new SlInputName(new SlInput(), "Чужая школа администратора")
+        );
+        MatcherAssert.assertThat(
+            "An administrator could not add a subject without school membership",
+            new SbsAuthorized(school.subjects(), school, actor).create(
+                new SbInputName(new SbInput(), "Краеведение")
+            ).uid(), Matchers.greaterThan(0L)
+        );
+    }
+
+    /**
+     * Rechecks membership when a retained selection is iterated.
+     *
+     * @param ctx Database context
+     * @throws Exception If setup fails
+     */
+    @Test
+    void rejectsSelectedSubjectsAfterMembershipRemoval(@Autowired final DSLContext ctx)
+        throws Exception {
+        final User actor = new UrsPostgres(ctx).register(
+            UUID.randomUUID().toString(), "ValidPassword1!",
+            String.format("%s@example.com", UUID.randomUUID()), false
+        );
+        final School school = actor.schools().create(
+            new SlInputName(new SlInput(), "Школа предметов с отзывом доступа")
+        );
+        final Subjects selected = new SbsAuthorized(school.subjects(), school, actor).selection(
+            new FiltersRequest(Set.of()), new PageRequest(17, 1),
+            new SortsRequest(List.of())
+        );
+        school.users().remove(actor.uid());
+        Assertions.assertThrows(
+            AccessDeniedException.class, selected::iterate,
+            "A former school member iterated retained school subjects"
         );
     }
 

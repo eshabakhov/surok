@@ -9,9 +9,11 @@ import com.eshabakhov.surok.Page;
 import com.eshabakhov.surok.School;
 import com.eshabakhov.surok.Sorts;
 import com.eshabakhov.surok.User;
-import com.eshabakhov.surok.user.Roles;
+import com.eshabakhov.surok.security.right.RtAdmin;
+import com.eshabakhov.surok.security.right.RtDirectorOrDeputy;
+import com.eshabakhov.surok.security.right.RtEither;
+import com.eshabakhov.surok.security.right.RtSchoolMember;
 import java.util.stream.StreamSupport;
-import org.springframework.security.access.AccessDeniedException;
 
 /**
  * School subject catalogue protected by the actor's current school role.
@@ -46,74 +48,68 @@ public final class SbsAuthorized implements Subjects {
 
     @Override
     public Subject create(final SubjectInput input) throws Exception {
-        if (!this.actor.isAdmin() && (!this.school.users().contains(this.actor)
-            || !this.school.users().roles(this.actor).contains(Roles.RoleEnum.DIRECTOR)
-            && !this.school.users().roles(this.actor).contains(Roles.RoleEnum.DEPUTY_DIRECTOR))) {
-            throw new AccessDeniedException(
-                "Only a school director or deputy can create a subject"
-            );
-        }
-        return new SbAuthorized(this.origin.create(input), this.school, this.actor);
+        return new SbAuthorized(
+            new RtEither(
+                new RtAdmin(this.actor), new RtDirectorOrDeputy(this.actor, this.school)
+            ).permit(this.origin).create(input),
+            this.school, this.actor
+        );
     }
 
     @Override
     public Subject subject(final long id) throws Exception {
-        if (!this.actor.isAdmin() && !this.school.users().contains(this.actor)) {
-            throw new AccessDeniedException("Only a school member can view a subject");
-        }
-        return new SbAuthorized(this.origin.subject(id), this.school, this.actor);
+        return new SbAuthorized(
+            new RtEither(
+                new RtAdmin(this.actor), new RtSchoolMember(this.actor, this.school)
+            ).permit(this.origin).subject(id),
+            this.school, this.actor
+        );
     }
 
     @Override
     public Subject revise(final long id, final SubjectInput input) throws Exception {
-        if (!this.actor.isAdmin() && (!this.school.users().contains(this.actor)
-            || !this.school.users().roles(this.actor).contains(Roles.RoleEnum.DIRECTOR)
-            && !this.school.users().roles(this.actor).contains(Roles.RoleEnum.DEPUTY_DIRECTOR))) {
-            throw new AccessDeniedException(
-                "Only a school director or deputy can revise a subject"
-            );
-        }
-        return new SbAuthorized(this.origin.revise(id, input), this.school, this.actor);
+        return new SbAuthorized(
+            new RtEither(
+                new RtAdmin(this.actor), new RtDirectorOrDeputy(this.actor, this.school)
+            ).permit(this.origin).revise(id, input),
+            this.school, this.actor
+        );
     }
 
     @Override
     public Subjects selection(
         final Filters filters, final Page page, final Sorts sorts
     ) throws Exception {
-        if (!this.actor.isAdmin() && !this.school.users().contains(this.actor)) {
-            throw new AccessDeniedException("Only a school member can view subjects");
-        }
         return new SbsAuthorized(
-            this.origin.selection(filters, page, sorts), this.school, this.actor
+            new RtEither(
+                new RtAdmin(this.actor), new RtSchoolMember(this.actor, this.school)
+            ).permit(this.origin).selection(filters, page, sorts),
+            this.school, this.actor
         );
     }
 
     @Override
     public Iterable<Subject> iterate() {
-        if (!this.actor.isAdmin() && !this.school.users().contains(this.actor)) {
-            throw new AccessDeniedException("Only a school member can view subjects");
-        }
-        return StreamSupport.stream(this.origin.iterate().spliterator(), false)
-            .<Subject>map(subject -> new SbAuthorized(subject, this.school, this.actor)).toList();
+        return StreamSupport.stream(
+            new RtEither(
+                new RtAdmin(this.actor), new RtSchoolMember(this.actor, this.school)
+            ).permit(this.origin).iterate().spliterator(), false
+        ).<Subject>map(
+            subject -> new SbAuthorized(subject, this.school, this.actor)
+        ).toList();
     }
 
     @Override
     public void remove(final long id) throws Exception {
-        if (!this.actor.isAdmin() && (!this.school.users().contains(this.actor)
-            || !this.school.users().roles(this.actor).contains(Roles.RoleEnum.DIRECTOR)
-            && !this.school.users().roles(this.actor).contains(Roles.RoleEnum.DEPUTY_DIRECTOR))) {
-            throw new AccessDeniedException(
-                "Only a school director or deputy can remove a subject"
-            );
-        }
-        this.origin.remove(id);
+        new RtEither(
+            new RtAdmin(this.actor), new RtDirectorOrDeputy(this.actor, this.school)
+        ).permit(this.origin).remove(id);
     }
 
     @Override
     public <T> Media<T> print(final Media<T> media) throws Exception {
-        if (!this.actor.isAdmin() && !this.school.users().contains(this.actor)) {
-            throw new AccessDeniedException("Only a school member can view subjects");
-        }
-        return this.origin.print(media);
+        return new RtEither(
+            new RtAdmin(this.actor), new RtSchoolMember(this.actor, this.school)
+        ).permit(this.origin).print(media);
     }
 }

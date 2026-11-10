@@ -6,8 +6,10 @@ package com.eshabakhov.surok.federal.subject;
 import com.eshabakhov.surok.Media;
 import com.eshabakhov.surok.School;
 import com.eshabakhov.surok.User;
-import com.eshabakhov.surok.user.Roles;
-import org.springframework.security.access.AccessDeniedException;
+import com.eshabakhov.surok.security.right.RtAdmin;
+import com.eshabakhov.surok.security.right.RtDirectorOrDeputy;
+import com.eshabakhov.surok.security.right.RtEither;
+import com.eshabakhov.surok.security.right.RtSchoolMember;
 
 /**
  * School subject whose revision follows the actor's current school role.
@@ -47,37 +49,32 @@ public final class SbAuthorized implements Subject {
 
     @Override
     public String name() throws Exception {
-        if (!this.actor.isAdmin() && !this.school.users().contains(this.actor)) {
-            throw new AccessDeniedException("Only a school member can view a subject");
-        }
-        return this.subject.name();
+        return new RtEither(
+            new RtAdmin(this.actor), new RtSchoolMember(this.actor, this.school)
+        ).permit(this.subject).name();
     }
 
     @Override
     public Origin origin() throws Exception {
-        if (!this.actor.isAdmin() && !this.school.users().contains(this.actor)) {
-            throw new AccessDeniedException("Only a school member can view a subject");
-        }
-        return this.subject.origin();
+        return new RtEither(
+            new RtAdmin(this.actor), new RtSchoolMember(this.actor, this.school)
+        ).permit(this.subject).origin();
     }
 
     @Override
     public Subject revise(final SubjectInput input) throws Exception {
-        if (!this.actor.isAdmin() && (!this.school.users().contains(this.actor)
-            || !this.school.users().roles(this.actor).contains(Roles.RoleEnum.DIRECTOR)
-            && !this.school.users().roles(this.actor).contains(Roles.RoleEnum.DEPUTY_DIRECTOR))) {
-            throw new AccessDeniedException(
-                "Only a school director or deputy can revise a subject"
-            );
-        }
-        return new SbAuthorized(this.subject.revise(input), this.school, this.actor);
+        return new SbAuthorized(
+            new RtEither(
+                new RtAdmin(this.actor), new RtDirectorOrDeputy(this.actor, this.school)
+            ).permit(this.subject).revise(input),
+            this.school, this.actor
+        );
     }
 
     @Override
     public <T> Media<T> print(final Media<T> media) throws Exception {
-        if (!this.actor.isAdmin() && !this.school.users().contains(this.actor)) {
-            throw new AccessDeniedException("Only a school member can view a subject");
-        }
-        return this.subject.print(media);
+        return new RtEither(
+            new RtAdmin(this.actor), new RtSchoolMember(this.actor, this.school)
+        ).permit(this.subject).print(media);
     }
 }
