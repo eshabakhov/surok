@@ -5,12 +5,21 @@ package com.eshabakhov.surok.school.schedule;
 
 import com.eshabakhov.surok.School;
 import com.eshabakhov.surok.User;
+import com.eshabakhov.surok.filter.FiltersRequest;
+import com.eshabakhov.surok.page.PageRequest;
+import com.eshabakhov.surok.school.SlsPostgres;
 import com.eshabakhov.surok.school.input.SlInput;
 import com.eshabakhov.surok.school.input.SlInputName;
 import com.eshabakhov.surok.school.schedule.input.SdInput;
 import com.eshabakhov.surok.school.schedule.input.SdInputName;
+import com.eshabakhov.surok.sort.SortsRequest;
+import com.eshabakhov.surok.user.Roles;
 import com.eshabakhov.surok.user.UrsPostgres;
+import java.util.List;
+import java.util.Set;
 import java.util.UUID;
+import org.hamcrest.MatcherAssert;
+import org.hamcrest.Matchers;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -60,6 +69,85 @@ final class SdsAuthorizedTest {
             AccessDeniedException.class,
             () -> schedules.create(new SdInputName(new SdInput(), "Учебный год")),
             "A former director created a schedule"
+        );
+    }
+
+    /**
+     * Allows an administrator to create a schedule without school membership.
+     *
+     * @param ctx Database context
+     * @throws Exception If setup or creation fails
+     */
+    @Test
+    void createsAScheduleForAnAdministrator(@Autowired final DSLContext ctx) throws Exception {
+        final User actor = new UrsPostgres(ctx).register(
+            UUID.randomUUID().toString(), "ValidPassword1!",
+            String.format("%s@example.com", UUID.randomUUID()), false
+        );
+        actor.roles().grant(Roles.RoleEnum.ADMIN);
+        final School school = new SlsPostgres(ctx).create(
+            new SlInputName(new SlInput(), "Чужая школа администратора")
+        );
+        MatcherAssert.assertThat(
+            "An administrator could not create a schedule without school membership",
+            new SdsAuthorized(school.schedules(), school, actor).create(
+                new SdInputName(new SdInput(), "Учебный год администратора")
+            ).uid(), Matchers.greaterThan(0L)
+        );
+    }
+
+    /**
+     * Rejects access to a schedule in another school.
+     *
+     * @param ctx Database context
+     * @throws Exception If setup fails
+     */
+    @Test
+    void deniesScheduleReadingToAnOutsider(@Autowired final DSLContext ctx) throws Exception {
+        final User actor = new UrsPostgres(ctx).register(
+            UUID.randomUUID().toString(), "ValidPassword1!",
+            String.format("%s@example.com", UUID.randomUUID()), false
+        );
+        actor.schools().create(new SlInputName(new SlInput(), "Своя школа"));
+        final School school = new SlsPostgres(ctx).create(
+            new SlInputName(new SlInput(), "Чужая школа")
+        );
+        final long id = school.schedules().create(
+            new SdInputName(new SdInput(), "Чужой учебный год")
+        ).uid();
+        Assertions.assertThrows(
+            AccessDeniedException.class,
+            () -> new SdsAuthorized(school.schedules(), school, actor).schedule(id),
+            "An outsider read a schedule in another school"
+        );
+    }
+
+    /**
+     * Checks membership again when a retained selection is iterated.
+     *
+     * @param ctx Database context
+     * @throws Exception If setup fails
+     */
+    @Test
+    void deniesSelectedSchedulesAfterMembershipRemoval(@Autowired final DSLContext ctx)
+        throws Exception {
+        final User actor = new UrsPostgres(ctx).register(
+            UUID.randomUUID().toString(), "ValidPassword1!",
+            String.format("%s@example.com", UUID.randomUUID()), false
+        );
+        final School school = actor.schools().create(
+            new SlInputName(new SlInput(), "Школа с отзывом доступа")
+        );
+        final Schedules selected = new SdsAuthorized(
+            school.schedules(), school, actor
+        ).selection(
+            new FiltersRequest(Set.of()), new PageRequest(20, 1),
+            new SortsRequest(List.of())
+        );
+        school.users().remove(actor.uid());
+        Assertions.assertThrows(
+            AccessDeniedException.class, selected::iterate,
+            "A former school member iterated its schedules"
         );
     }
 
