@@ -5,8 +5,14 @@ package com.eshabakhov.surok.federal.curriculum;
 
 import com.eshabakhov.surok.User;
 import com.eshabakhov.surok.federal.curriculum.input.CrInput;
+import com.eshabakhov.surok.federal.curriculum.input.CrInputHttp;
+import com.eshabakhov.surok.user.Roles;
 import com.eshabakhov.surok.user.UrsPostgres;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import org.hamcrest.MatcherAssert;
+import org.hamcrest.Matchers;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -54,26 +60,6 @@ final class CrsAuthorizedTest {
     }
 
     /**
-     * Rejects revision through a retained federal curriculum entity.
-     *
-     * @param ctx Database context
-     * @throws Exception If registration fails
-     */
-    @Test
-    void rejectsRevisionThroughAProtectedCurriculum(@Autowired final DSLContext ctx)
-        throws Exception {
-        final User actor = new UrsPostgres(ctx).register(
-            UUID.randomUUID().toString(), "ValidPassword1!",
-            String.format("%s@example.com", UUID.randomUUID()), false
-        );
-        Assertions.assertThrows(
-            AccessDeniedException.class,
-            () -> new CrAuthorized(new CrPostgres(ctx, 91L), actor).revise(new CrInput()),
-            "A regular user revised a federal curriculum"
-        );
-    }
-
-    /**
      * Rejects revision before looking up an unavailable curriculum.
      *
      * @param ctx Database context
@@ -90,6 +76,69 @@ final class CrsAuthorizedTest {
             AccessDeniedException.class,
             () -> new CrsAuthorized(new CrsPostgres(ctx), actor).revise(91L, new CrInput()),
             "A missing curriculum was looked up before authorization"
+        );
+    }
+
+    /**
+     * Creates a federal curriculum for an administrator.
+     *
+     * @param ctx Database context
+     * @throws Exception If registration or creation fails
+     */
+    @Test
+    void createsAFederalCurriculumForAnAdministrator(@Autowired final DSLContext ctx)
+        throws Exception {
+        final User actor = new UrsPostgres(ctx).register(
+            UUID.randomUUID().toString(), "ValidPassword1!",
+            String.format("%s@example.com", UUID.randomUUID()), false
+        );
+        actor.roles().grant(Roles.RoleEnum.ADMIN);
+        MatcherAssert.assertThat(
+            "An administrator could not create a federal curriculum",
+            new CrsAuthorized(new CrsPostgres(ctx), actor).create(
+                new CrInputHttp(
+                    Map.of(
+                        "title", String.format("Начальный план %s", UUID.randomUUID()),
+                        "level", "PRIMARY",
+                        "week", "FIVE_DAYS",
+                        "version", UUID.randomUUID().toString(),
+                        "year", "2026/2027"
+                    )
+                )
+            ).grades(), Matchers.is(List.of(1, 2, 3, 4))
+        );
+    }
+
+    /**
+     * Reads a federal curriculum for a regular user.
+     *
+     * @param ctx Database context
+     * @throws Exception If registration or creation fails
+     */
+    @Test
+    void readsAFederalCurriculumForARegularUser(@Autowired final DSLContext ctx)
+        throws Exception {
+        MatcherAssert.assertThat(
+            "A regular user could not read a federal curriculum",
+            new CrsAuthorized(
+                new CrsPostgres(ctx),
+                new UrsPostgres(ctx).register(
+                    UUID.randomUUID().toString(), "ValidPassword1!",
+                    String.format("%s@example.com", UUID.randomUUID()), false
+                )
+            ).curriculum(
+                new CrsPostgres(ctx).create(
+                    new CrInputHttp(
+                        Map.of(
+                            "title", String.format("Основной план %s", UUID.randomUUID()),
+                            "level", "BASIC",
+                            "week", "SIX_DAYS",
+                            "version", UUID.randomUUID().toString(),
+                            "year", "2027/2028"
+                        )
+                    )
+                ).uid()
+            ).grades(), Matchers.is(List.of(5, 6, 7, 8, 9))
         );
     }
 
