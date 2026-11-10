@@ -10,8 +10,10 @@ import com.eshabakhov.surok.school.schedule.load.ClassLoads;
 import com.eshabakhov.surok.school.schedule.load.ClsAuthorized;
 import com.eshabakhov.surok.school.schedule.load.autofill.LdAuthorized;
 import com.eshabakhov.surok.school.schedule.load.autofill.LoadDraft;
-import com.eshabakhov.surok.user.Roles;
-import org.springframework.security.access.AccessDeniedException;
+import com.eshabakhov.surok.security.right.RtAdmin;
+import com.eshabakhov.surok.security.right.RtDirectorOrDeputy;
+import com.eshabakhov.surok.security.right.RtEither;
+import com.eshabakhov.surok.security.right.RtSchoolMember;
 
 /**
  * Schedule that checks the acting user's current school role.
@@ -50,37 +52,38 @@ public final class SdAuthorized implements Schedule {
 
     @Override
     public Schedule revise(final ScheduleInput input) throws Exception {
-        if (!this.actor.isAdmin() && (!this.school.users().contains(this.actor)
-            || !this.school.users().roles(this.actor).contains(Roles.RoleEnum.DIRECTOR)
-            && !this.school.users().roles(this.actor).contains(Roles.RoleEnum.DEPUTY_DIRECTOR))) {
-            throw new AccessDeniedException(
-                "Only a school director or deputy can revise a schedule"
-            );
-        }
-        return new SdAuthorized(this.origin.revise(input), this.school, this.actor);
+        return new SdAuthorized(
+            new RtEither(
+                new RtAdmin(this.actor), new RtDirectorOrDeputy(this.actor, this.school)
+            ).permit(this.origin).revise(input),
+            this.school, this.actor
+        );
     }
 
     @Override
     public ClassLoads loads() {
-        if (!this.actor.isAdmin() && !this.school.users().contains(this.actor)) {
-            throw new AccessDeniedException("Only a school member can view teaching loads");
-        }
-        return new ClsAuthorized(this.origin.loads(), this.school, this.actor);
+        return new ClsAuthorized(
+            new RtEither(
+                new RtAdmin(this.actor), new RtSchoolMember(this.actor, this.school)
+            ).permit(this.origin).loads(),
+            this.school, this.actor
+        );
     }
 
     @Override
     public LoadDraft draft() {
-        if (!this.actor.isAdmin() && !this.school.users().contains(this.actor)) {
-            throw new AccessDeniedException("Only a school member can view the load draft");
-        }
-        return new LdAuthorized(this.origin.draft(), this.school, this.actor);
+        return new LdAuthorized(
+            new RtEither(
+                new RtAdmin(this.actor), new RtSchoolMember(this.actor, this.school)
+            ).permit(this.origin).draft(),
+            this.school, this.actor
+        );
     }
 
     @Override
     public <T> Media<T> print(final Media<T> media) throws Exception {
-        if (!this.actor.isAdmin() && !this.school.users().contains(this.actor)) {
-            throw new AccessDeniedException("Only a school member can view a schedule");
-        }
-        return this.origin.print(media);
+        return new RtEither(
+            new RtAdmin(this.actor), new RtSchoolMember(this.actor, this.school)
+        ).permit(this.origin).print(media);
     }
 }

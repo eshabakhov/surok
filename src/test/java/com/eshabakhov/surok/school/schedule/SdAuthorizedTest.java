@@ -5,12 +5,16 @@ package com.eshabakhov.surok.school.schedule;
 
 import com.eshabakhov.surok.School;
 import com.eshabakhov.surok.User;
+import com.eshabakhov.surok.school.SlsPostgres;
 import com.eshabakhov.surok.school.input.SlInput;
 import com.eshabakhov.surok.school.input.SlInputName;
 import com.eshabakhov.surok.school.schedule.input.SdInput;
 import com.eshabakhov.surok.school.schedule.input.SdInputName;
+import com.eshabakhov.surok.user.Roles;
 import com.eshabakhov.surok.user.UrsPostgres;
 import java.util.UUID;
+import org.hamcrest.MatcherAssert;
+import org.hamcrest.Matchers;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -63,6 +67,87 @@ final class SdAuthorizedTest {
             AccessDeniedException.class,
             () -> schedule.revise(new SdInputName(new SdInput(), "Новый учебный год")),
             "A former director revised a retained schedule"
+        );
+    }
+
+    /**
+     * Allows an administrator to revise a schedule without school membership.
+     *
+     * @param ctx Database context
+     * @throws Exception If setup or revision fails
+     */
+    @Test
+    void revisesAScheduleForAnAdministrator(@Autowired final DSLContext ctx) throws Exception {
+        final User actor = new UrsPostgres(ctx).register(
+            UUID.randomUUID().toString(), "ValidPassword1!",
+            String.format("%s@example.com", UUID.randomUUID()), false
+        );
+        actor.roles().grant(Roles.RoleEnum.ADMIN);
+        final School school = new SlsPostgres(ctx).create(
+            new SlInputName(new SlInput(), "Чужая школа администратора")
+        );
+        final Schedule schedule = school.schedules().create(
+            new SdInputName(new SdInput(), "Исходный год")
+        );
+        MatcherAssert.assertThat(
+            "An administrator could not revise a schedule without school membership",
+            new SdAuthorized(schedule, school, actor).revise(
+                new SdInputName(new SdInput(), "Новый учебный год")
+            ).uid(), Matchers.equalTo(schedule.uid())
+        );
+    }
+
+    /**
+     * Denies access to teaching loads after school membership is removed.
+     *
+     * @param ctx Database context
+     * @throws Exception If setup fails
+     */
+    @Test
+    void deniesTeachingLoadsAfterMembershipRemoval(@Autowired final DSLContext ctx)
+        throws Exception {
+        final User actor = new UrsPostgres(ctx).register(
+            UUID.randomUUID().toString(), "ValidPassword1!",
+            String.format("%s@example.com", UUID.randomUUID()), false
+        );
+        final School school = actor.schools().create(
+            new SlInputName(new SlInput(), "Школа без нагрузки")
+        );
+        final Schedule selected = new SdAuthorized(
+            school.schedules().create(new SdInputName(new SdInput(), "Учебный год")),
+            school, actor
+        );
+        school.users().remove(actor.uid());
+        Assertions.assertThrows(
+            AccessDeniedException.class, selected::loads,
+            "A former school member accessed the schedule loads"
+        );
+    }
+
+    /**
+     * Denies access to a load draft after school membership is removed.
+     *
+     * @param ctx Database context
+     * @throws Exception If setup fails
+     */
+    @Test
+    void deniesTheLoadDraftAfterMembershipRemoval(@Autowired final DSLContext ctx)
+        throws Exception {
+        final User actor = new UrsPostgres(ctx).register(
+            UUID.randomUUID().toString(), "ValidPassword1!",
+            String.format("%s@example.com", UUID.randomUUID()), false
+        );
+        final School school = actor.schools().create(
+            new SlInputName(new SlInput(), "Школа без черновика")
+        );
+        final Schedule selected = new SdAuthorized(
+            school.schedules().create(new SdInputName(new SdInput(), "Учебный год")),
+            school, actor
+        );
+        school.users().remove(actor.uid());
+        Assertions.assertThrows(
+            AccessDeniedException.class, selected::draft,
+            "A former school member accessed the schedule load draft"
         );
     }
 

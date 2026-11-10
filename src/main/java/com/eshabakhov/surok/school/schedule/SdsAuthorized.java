@@ -9,9 +9,11 @@ import com.eshabakhov.surok.Page;
 import com.eshabakhov.surok.School;
 import com.eshabakhov.surok.Sorts;
 import com.eshabakhov.surok.User;
-import com.eshabakhov.surok.user.Roles;
+import com.eshabakhov.surok.security.right.RtAdmin;
+import com.eshabakhov.surok.security.right.RtDirectorOrDeputy;
+import com.eshabakhov.surok.security.right.RtEither;
+import com.eshabakhov.surok.security.right.RtSchoolMember;
 import java.util.stream.StreamSupport;
-import org.springframework.security.access.AccessDeniedException;
 
 /**
  * School schedules protected by the acting user's school role.
@@ -45,43 +47,42 @@ public final class SdsAuthorized implements Schedules {
 
     @Override
     public Schedule create(final ScheduleInput input) throws Exception {
-        if (!this.actor.isAdmin() && (!this.school.users().contains(this.actor)
-            || !this.school.users().roles(this.actor).contains(Roles.RoleEnum.DIRECTOR)
-            && !this.school.users().roles(this.actor).contains(Roles.RoleEnum.DEPUTY_DIRECTOR))) {
-            throw new AccessDeniedException(
-                "Only a school director or deputy can create a schedule"
-            );
-        }
-        return new SdAuthorized(this.origin.create(input), this.school, this.actor);
+        return new SdAuthorized(
+            new RtEither(
+                new RtAdmin(this.actor), new RtDirectorOrDeputy(this.actor, this.school)
+            ).permit(this.origin).create(input),
+            this.school, this.actor
+        );
     }
 
     @Override
     public Schedule schedule(final long id) throws Exception {
-        if (!this.actor.isAdmin() && !this.school.users().contains(this.actor)) {
-            throw new AccessDeniedException("Only a school member can view a schedule");
-        }
-        return new SdAuthorized(this.origin.schedule(id), this.school, this.actor);
+        return new SdAuthorized(
+            new RtEither(
+                new RtAdmin(this.actor), new RtSchoolMember(this.actor, this.school)
+            ).permit(this.origin).schedule(id),
+            this.school, this.actor
+        );
     }
 
     @Override
     public Schedules selection(
         final Filters filters, final Page page, final Sorts sorts
     ) throws Exception {
-        if (!this.actor.isAdmin() && !this.school.users().contains(this.actor)) {
-            throw new AccessDeniedException("Only a school member can view schedules");
-        }
         return new SdsAuthorized(
-            this.origin.selection(filters, page, sorts), this.school, this.actor
+            new RtEither(
+                new RtAdmin(this.actor), new RtSchoolMember(this.actor, this.school)
+            ).permit(this.origin).selection(filters, page, sorts),
+            this.school, this.actor
         );
     }
 
     @Override
     public Iterable<Schedule> iterate() {
-        if (!this.actor.isAdmin() && !this.school.users().contains(this.actor)) {
-            throw new AccessDeniedException("Only a school member can view schedules");
-        }
         return StreamSupport.stream(
-            this.origin.iterate().spliterator(), false
+            new RtEither(
+                new RtAdmin(this.actor), new RtSchoolMember(this.actor, this.school)
+            ).permit(this.origin).iterate().spliterator(), false
         ).<Schedule>map(
             schedule -> new SdAuthorized(schedule, this.school, this.actor)
         ).toList();
@@ -89,21 +90,15 @@ public final class SdsAuthorized implements Schedules {
 
     @Override
     public void remove(final long id) throws Exception {
-        if (!this.actor.isAdmin() && (!this.school.users().contains(this.actor)
-            || !this.school.users().roles(this.actor).contains(Roles.RoleEnum.DIRECTOR)
-            && !this.school.users().roles(this.actor).contains(Roles.RoleEnum.DEPUTY_DIRECTOR))) {
-            throw new AccessDeniedException(
-                "Only a school director or deputy can remove a schedule"
-            );
-        }
-        this.origin.remove(id);
+        new RtEither(
+            new RtAdmin(this.actor), new RtDirectorOrDeputy(this.actor, this.school)
+        ).permit(this.origin).remove(id);
     }
 
     @Override
     public <T> Media<T> print(final Media<T> media) throws Exception {
-        if (!this.actor.isAdmin() && !this.school.users().contains(this.actor)) {
-            throw new AccessDeniedException("Only a school member can view schedules");
-        }
-        return this.origin.print(media);
+        return new RtEither(
+            new RtAdmin(this.actor), new RtSchoolMember(this.actor, this.school)
+        ).permit(this.origin).print(media);
     }
 }
