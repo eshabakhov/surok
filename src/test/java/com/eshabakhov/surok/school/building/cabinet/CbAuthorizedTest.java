@@ -15,6 +15,8 @@ import com.eshabakhov.surok.school.input.SlInputName;
 import com.eshabakhov.surok.user.Roles;
 import com.eshabakhov.surok.user.UrsPostgres;
 import java.util.UUID;
+import org.hamcrest.MatcherAssert;
+import org.hamcrest.Matchers;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -98,6 +100,33 @@ final class CbAuthorizedTest {
                 new CbInputName(new CbInput(), "Другое имя")
             ),
             "A viewer revised a cabinet"
+        );
+    }
+
+    /**
+     * Allows an administrator to revise a cabinet without school membership.
+     *
+     * @param ctx Database context
+     * @throws Exception If setup or revision fails
+     */
+    @Test
+    void revisesACabinetForAnAdministrator(@Autowired final DSLContext ctx) throws Exception {
+        final User actor = new UrsPostgres(ctx).register(
+            UUID.randomUUID().toString(), "ValidPassword1!",
+            String.format("%s@example.com", UUID.randomUUID()), false
+        );
+        actor.roles().grant(Roles.RoleEnum.ADMIN);
+        final School school = new SlsPostgres(ctx).create(
+            new SlInputName(new SlInput(), "Чужая школа администратора")
+        );
+        final Cabinet cabinet = school.buildings().create(
+            new BdInputName(new BdInput(), "Корпус администратора")
+        ).cabinets().create(new CbInputName(new CbInput(), "Первое имя кабинета"));
+        MatcherAssert.assertThat(
+            "An administrator could not revise a cabinet without school membership",
+            new CbAuthorized(cabinet, school, actor).revise(
+                new CbInputName(new CbInput(), "Новое имя кабинета")
+            ).uid(), Matchers.equalTo(cabinet.uid())
         );
     }
 
