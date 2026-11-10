@@ -8,8 +8,8 @@ import com.eshabakhov.surok.Media;
 import com.eshabakhov.surok.Page;
 import com.eshabakhov.surok.Sorts;
 import com.eshabakhov.surok.User;
+import com.eshabakhov.surok.security.right.RtAdmin;
 import java.util.stream.StreamSupport;
-import org.springframework.security.access.AccessDeniedException;
 
 /**
  * Federal requirements whose mutations require an administrator.
@@ -50,10 +50,9 @@ public final class RqsAuthorized implements Requirements {
 
     @Override
     public Requirement create(final RequirementInput input) throws Exception {
-        if (!this.actor.isAdmin()) {
-            throw new AccessDeniedException("Only an administrator can create a requirement");
-        }
-        return new RqAuthorized(this.origin.create(input), this.actor);
+        return new RqAuthorized(
+            new RtAdmin(this.actor).permit(this.origin).create(input), this.actor
+        );
     }
 
     @Override
@@ -63,10 +62,9 @@ public final class RqsAuthorized implements Requirements {
 
     @Override
     public Requirement revise(final long id, final RequirementInput input) throws Exception {
-        if (!this.actor.isAdmin()) {
-            throw new AccessDeniedException("Only an administrator can revise a requirement");
-        }
-        return new RqAuthorized(this.origin.revise(id, input), this.actor);
+        return new RqAuthorized(
+            new RtAdmin(this.actor).permit(this.origin).revise(id, input), this.actor
+        );
     }
 
     @Override
@@ -84,10 +82,7 @@ public final class RqsAuthorized implements Requirements {
 
     @Override
     public void remove(final long id) throws Exception {
-        if (!this.actor.isAdmin()) {
-            throw new AccessDeniedException("Only an administrator can remove a requirement");
-        }
-        this.origin.remove(id);
+        new RtAdmin(this.actor).permit(this.origin).remove(id);
     }
 
     @Override

@@ -5,7 +5,7 @@ package com.eshabakhov.surok.federal.curriculum.requirement;
 
 import com.eshabakhov.surok.Media;
 import com.eshabakhov.surok.User;
-import org.springframework.security.access.AccessDeniedException;
+import com.eshabakhov.surok.security.right.RtAdmin;
 
 /**
  * Federal requirement whose revision requires an administrator.
@@ -40,10 +40,9 @@ public final class RqAuthorized implements Requirement {
 
     @Override
     public Requirement revise(final RequirementInput input) throws Exception {
-        if (!this.actor.isAdmin()) {
-            throw new AccessDeniedException("Only an administrator can revise a requirement");
-        }
-        return new RqAuthorized(this.origin.revise(input), this.actor);
+        return new RqAuthorized(
+            new RtAdmin(this.actor).permit(this.origin).revise(input), this.actor
+        );
     }
 
     @Override
