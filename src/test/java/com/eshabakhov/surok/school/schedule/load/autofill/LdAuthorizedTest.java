@@ -5,13 +5,17 @@ package com.eshabakhov.surok.school.schedule.load.autofill;
 
 import com.eshabakhov.surok.School;
 import com.eshabakhov.surok.User;
+import com.eshabakhov.surok.federal.curriculum.CrPostgres;
 import com.eshabakhov.surok.media.MdJson;
 import com.eshabakhov.surok.school.SlAuthorized;
+import com.eshabakhov.surok.school.SlsPostgres;
 import com.eshabakhov.surok.school.input.SlInput;
 import com.eshabakhov.surok.school.input.SlInputName;
 import com.eshabakhov.surok.school.schedule.input.SdInput;
 import com.eshabakhov.surok.school.schedule.input.SdInputName;
+import com.eshabakhov.surok.user.Roles;
 import com.eshabakhov.surok.user.UrsPostgres;
+import java.util.Map;
 import java.util.UUID;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.Assertions;
@@ -91,6 +95,61 @@ final class LdAuthorizedTest {
             AccessDeniedException.class,
             () -> draft.print(new MdJson()),
             "A former school member read a retained load draft"
+        );
+    }
+
+    /**
+     * Denies saving a retained draft after the director becomes a viewer.
+     *
+     * @param ctx Database context
+     * @throws Exception If setup fails
+     */
+    @Test
+    void deniesSavingAfterDirectorBecomesViewer(@Autowired final DSLContext ctx)
+        throws Exception {
+        final User actor = new UrsPostgres(ctx).register(
+            UUID.randomUUID().toString(), "ValidPassword1!",
+            String.format("%s@example.com", UUID.randomUUID()), false
+        );
+        final School school = actor.schools().create(
+            new SlInputName(new SlInput(), "Школа черновиков для просмотра")
+        );
+        final LoadDraft draft = new SlAuthorized(school, actor).schedules().create(
+            new SdInputName(new SdInput(), "Учебный год")
+        ).draft();
+        school.users().roles(actor).revoke(school.users().roles(actor).list().getFirst().uid());
+        school.users().roles(actor).grant(Roles.RoleEnum.VIEWER);
+        Assertions.assertThrows(
+            AccessDeniedException.class,
+            () -> draft.save(new CrPostgres(ctx, 61L), Map.of()),
+            "A viewer saved a retained load draft"
+        );
+    }
+
+    /**
+     * Lets an administrator reach a draft without membership in its school.
+     *
+     * @param ctx Database context
+     * @throws Exception If setup or reading fails
+     */
+    @Test
+    void readsAnAbsentDraftForAnAdministrator(@Autowired final DSLContext ctx) throws Exception {
+        final User actor = new UrsPostgres(ctx).register(
+            UUID.randomUUID().toString(), "ValidPassword1!",
+            String.format("%s@example.com", UUID.randomUUID()), false
+        );
+        actor.roles().grant(Roles.RoleEnum.ADMIN);
+        final School school = new SlsPostgres(ctx).create(
+            new SlInputName(new SlInput(), "Чужая школа администратора")
+        );
+        Assertions.assertThrows(
+            LoadDraftNotFoundException.class,
+            () -> new LdAuthorized(
+                school.schedules().create(
+                    new SdInputName(new SdInput(), "Учебный год без черновика")
+                ).draft(), school, actor
+            ).curriculum(),
+            "An administrator could not inspect a draft outside their schools"
         );
     }
 
