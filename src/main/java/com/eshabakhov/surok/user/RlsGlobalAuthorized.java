@@ -4,8 +4,8 @@
 package com.eshabakhov.surok.user;
 
 import com.eshabakhov.surok.User;
+import com.eshabakhov.surok.security.right.RtAdmin;
 import java.util.List;
-import org.springframework.security.access.AccessDeniedException;
 
 /**
  * Global role assignments protected by the actor's current administrator role.
@@ -35,33 +35,21 @@ public final class RlsGlobalAuthorized implements Roles {
 
     @Override
     public boolean contains(final RoleEnum role) {
-        if (!this.actor.isAdmin()) {
-            throw new AccessDeniedException("Only an administrator can inspect global roles");
-        }
-        return this.origin.contains(role);
+        return new RtAdmin(this.actor).permit(this.origin).contains(role);
     }
 
     @Override
     public Role grant(final RoleEnum role) throws Exception {
-        if (!this.actor.isAdmin()) {
-            throw new AccessDeniedException("Only an administrator can assign global roles");
-        }
-        return this.origin.grant(role);
+        return new RtAdmin(this.actor).permit(this.origin).grant(role);
     }
 
     @Override
     public List<Role> list() {
-        if (!this.actor.isAdmin()) {
-            throw new AccessDeniedException("Only an administrator can list global roles");
-        }
-        return this.origin.list();
+        return new RtAdmin(this.actor).permit(this.origin).list();
     }
 
     @Override
     public void revoke(final long identity) throws Exception {
-        if (!this.actor.isAdmin()) {
-            throw new AccessDeniedException("Only an administrator can revoke global roles");
-        }
-        this.origin.revoke(identity);
+        new RtAdmin(this.actor).permit(this.origin).revoke(identity);
     }
 }
