@@ -6,6 +6,8 @@ package com.eshabakhov.surok.user;
 import com.eshabakhov.surok.User;
 import com.eshabakhov.surok.Users;
 import java.util.UUID;
+import org.hamcrest.MatcherAssert;
+import org.hamcrest.Matchers;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -96,6 +98,30 @@ final class UrsGlobalAuthorizedTest {
             AccessDeniedException.class,
             () -> new UrsGlobalAuthorized(new UrsPostgres(ctx), actor).identification(97L),
             "A regular user looked up a global account"
+        );
+    }
+
+    /**
+     * Registers a global user for an administrator and protects the returned user.
+     *
+     * @param ctx Database context
+     * @throws Exception If registration or role assignment fails
+     */
+    @Test
+    void registersAGlobalUserForAnAdministrator(@Autowired final DSLContext ctx)
+        throws Exception {
+        final User actor = new UrsPostgres(ctx).register(
+            UUID.randomUUID().toString(), "ValidPassword1!",
+            String.format("%s@example.com", UUID.randomUUID()), false
+        );
+        actor.roles().grant(Roles.RoleEnum.ADMIN);
+        final String name = String.format("новый-%s", UUID.randomUUID());
+        MatcherAssert.assertThat(
+            "An administrator could not register a global user",
+            new UrsGlobalAuthorized(new UrsPostgres(ctx), actor).register(
+                name, "ValidPassword1!",
+                String.format("%s@example.com", UUID.randomUUID()), false
+            ).credentials().username(), Matchers.is(name)
         );
     }
 

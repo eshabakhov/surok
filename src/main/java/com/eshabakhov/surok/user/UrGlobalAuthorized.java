@@ -7,7 +7,7 @@ import com.eshabakhov.surok.Media;
 import com.eshabakhov.surok.Schools;
 import com.eshabakhov.surok.User;
 import com.eshabakhov.surok.school.SlsAuthorized;
-import org.springframework.security.access.AccessDeniedException;
+import com.eshabakhov.surok.security.right.RtAdmin;
 
 /**
  * Global user whose account data is available to the current administrator.
@@ -42,49 +42,35 @@ public final class UrGlobalAuthorized implements User {
 
     @Override
     public Credentials credentials() {
-        if (!this.actor.isAdmin()) {
-            throw new AccessDeniedException("Only an administrator can view user credentials");
-        }
-        return this.origin.credentials();
+        return new RtAdmin(this.actor).permit(this.origin).credentials();
     }
 
     @Override
     public Roles roles() {
-        if (!this.actor.isAdmin()) {
-            throw new AccessDeniedException("Only an administrator can view global roles");
-        }
-        return new RlsGlobalAuthorized(this.origin.roles(), this.actor);
+        return new RlsGlobalAuthorized(
+            new RtAdmin(this.actor).permit(this.origin).roles(), this.actor
+        );
     }
 
     @Override
     public Schools schools() {
-        if (!this.actor.isAdmin()) {
-            throw new AccessDeniedException("Only an administrator can view user schools");
-        }
-        return new SlsAuthorized(this.origin.schools(), this.actor);
+        return new SlsAuthorized(
+            new RtAdmin(this.actor).permit(this.origin).schools(), this.actor
+        );
     }
 
     @Override
     public ReferenceInformation info() {
-        if (!this.actor.isAdmin()) {
-            throw new AccessDeniedException("Only an administrator can view user information");
-        }
-        return this.origin.info();
+        return new RtAdmin(this.actor).permit(this.origin).info();
     }
 
     @Override
     public boolean isAdmin() {
-        if (!this.actor.isAdmin()) {
-            throw new AccessDeniedException("Only an administrator can view user roles");
-        }
-        return this.origin.isAdmin();
+        return new RtAdmin(this.actor).permit(this.origin).isAdmin();
     }
 
     @Override
     public <T> Media<T> print(final Media<T> media) throws Exception {
-        if (!this.actor.isAdmin()) {
-            throw new AccessDeniedException("Only an administrator can view a global user");
-        }
-        return this.origin.print(media);
+        return new RtAdmin(this.actor).permit(this.origin).print(media);
     }
 }
