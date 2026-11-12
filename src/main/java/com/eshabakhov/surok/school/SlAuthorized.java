@@ -69,7 +69,7 @@ public final class SlAuthorized implements School {
         return new UrsAuthorized(
             new RtEither(
                 new RtAdmin(this.actor), new RtSchoolMember(this.actor, this.origin)
-            ).permit(this.origin).users(), this.actor
+            ).permit(this.origin).users(), this.origin, this.actor
         );
     }
 
