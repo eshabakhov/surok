@@ -5,7 +5,7 @@ package com.eshabakhov.surok.security.permission;
 
 import com.eshabakhov.surok.Media;
 import com.eshabakhov.surok.User;
-import org.springframework.security.access.AccessDeniedException;
+import com.eshabakhov.surok.security.right.RtAdmin;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.RequestMethod;
 
@@ -39,17 +39,11 @@ public final class PsAuthorized implements Permissions {
     public boolean allows(
         final String path, final RequestMethod method, final Authentication caller
     ) {
-        if (!this.actor.isAdmin()) {
-            throw new AccessDeniedException("Only an administrator can inspect permissions");
-        }
-        return this.origin.allows(path, method, caller);
+        return new RtAdmin(this.actor).permit(this.origin).allows(path, method, caller);
     }
 
     @Override
     public <T> Media<T> print(final Media<T> media) throws Exception {
-        if (!this.actor.isAdmin()) {
-            throw new AccessDeniedException("Only an administrator can view permissions");
-        }
-        return this.origin.print(media);
+        return new RtAdmin(this.actor).permit(this.origin).print(media);
     }
 }
