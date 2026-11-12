@@ -19,6 +19,7 @@ import com.eshabakhov.surok.media.XsClasspath;
 import com.eshabakhov.surok.school.SlsBrief;
 import com.eshabakhov.surok.school.SlsPostgres;
 import com.eshabakhov.surok.security.CsToken;
+import com.eshabakhov.surok.security.right.RtAdmin;
 import com.eshabakhov.surok.user.UrBrief;
 import jakarta.servlet.http.HttpServletRequest;
 import java.net.URI;
@@ -209,12 +210,9 @@ public class CrsHttp {
         @AuthenticationPrincipal final User actor
     ) throws Exception {
         final MediaType type = new AcHttp(request, List.of(MediaType.TEXT_HTML)).type();
-        if (!actor.isAdmin()) {
-            throw new ResponseStatusException(
-                HttpStatus.FORBIDDEN, "Only administrators can change curricula"
-            );
-        }
-        final Curriculums curriculums = new CrsAuthorized(this.origin, actor);
+        final Curriculums curriculums = new CrsAuthorized(
+            new RtAdmin(actor).permit(this.origin), actor
+        );
         return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8)).body(
             this.web(request, "xslt/federal-curriculum.xsl", "edit").with(
                 "curriculums", new CrsSingle(curriculums, curriculums.curriculum(curriculum))
@@ -339,14 +337,14 @@ public class CrsHttp {
         final HttpServletRequest request,
         @AuthenticationPrincipal final User actor
     ) throws Exception {
-        final MediaType type = new AcHttp(request, List.of(MediaType.TEXT_HTML)).type();
-        if (!actor.isAdmin()) {
-            throw new ResponseStatusException(
-                HttpStatus.FORBIDDEN, "Only administrators can change curricula"
-            );
-        }
-        return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8)).body(
-            this.web(request, "xslt/federal-curriculums.xsl", "create").print()
+        return ResponseEntity.ok().contentType(
+            new MediaType(
+                new AcHttp(request, List.of(MediaType.TEXT_HTML)).type(), StandardCharsets.UTF_8
+            )
+        ).body(
+            new RtAdmin(actor).permit(
+                this.web(request, "xslt/federal-curriculums.xsl", "create")
+            ).print()
         );
     }
 
