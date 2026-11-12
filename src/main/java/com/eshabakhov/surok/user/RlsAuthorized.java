@@ -3,10 +3,13 @@
  */
 package com.eshabakhov.surok.user;
 
+import com.eshabakhov.surok.School;
 import com.eshabakhov.surok.User;
-import com.eshabakhov.surok.Users;
+import com.eshabakhov.surok.security.right.RtAdmin;
+import com.eshabakhov.surok.security.right.RtEither;
+import com.eshabakhov.surok.security.right.RtSchoolDirector;
+import com.eshabakhov.surok.security.right.RtSchoolMember;
 import java.util.List;
-import org.springframework.security.access.AccessDeniedException;
 
 /**
  * School role assignments that check current membership on each operation.
@@ -19,8 +22,8 @@ public final class RlsAuthorized implements Roles {
     /** Underlying assigned roles. */
     private final Roles origin;
 
-    /** Underlying school users. */
-    private final Users members;
+    /** School whose roles are assigned. */
+    private final School school;
 
     /** Acting user. */
     private final User actor;
@@ -29,46 +32,40 @@ public final class RlsAuthorized implements Roles {
      * New protected school role assignments.
      *
      * @param origin Underlying roles
-     * @param members Underlying school users
+     * @param school School whose roles are assigned
      * @param actor Acting user
      */
-    public RlsAuthorized(final Roles origin, final Users members, final User actor) {
+    public RlsAuthorized(final Roles origin, final School school, final User actor) {
         this.origin = origin;
-        this.members = members;
+        this.school = school;
         this.actor = actor;
     }
 
     @Override
     public boolean contains(final RoleEnum role) {
-        if (!this.actor.isAdmin() && !this.members.contains(this.actor)) {
-            throw new AccessDeniedException("Only a school member can view school roles");
-        }
-        return this.origin.contains(role);
+        return new RtEither(
+            new RtAdmin(this.actor), new RtSchoolMember(this.actor, this.school)
+        ).permit(this.origin).contains(role);
     }
 
     @Override
     public Role grant(final RoleEnum role) throws Exception {
-        if (!this.actor.isAdmin() && (!this.members.contains(this.actor)
-            || !this.members.roles(this.actor).contains(RoleEnum.DIRECTOR))) {
-            throw new AccessDeniedException("Only a school director can manage roles");
-        }
-        return this.origin.grant(role);
+        return new RtEither(
+            new RtAdmin(this.actor), new RtSchoolDirector(this.actor, this.school)
+        ).permit(this.origin).grant(role);
     }
 
     @Override
     public List<Role> list() {
-        if (!this.actor.isAdmin() && !this.members.contains(this.actor)) {
-            throw new AccessDeniedException("Only a school member can view school roles");
-        }
-        return this.origin.list();
+        return new RtEither(
+            new RtAdmin(this.actor), new RtSchoolMember(this.actor, this.school)
+        ).permit(this.origin).list();
     }
 
     @Override
     public void revoke(final long identity) throws Exception {
-        if (!this.actor.isAdmin() && (!this.members.contains(this.actor)
-            || !this.members.roles(this.actor).contains(RoleEnum.DIRECTOR))) {
-            throw new AccessDeniedException("Only a school director can manage roles");
-        }
-        this.origin.revoke(identity);
+        new RtEither(
+            new RtAdmin(this.actor), new RtSchoolDirector(this.actor, this.school)
+        ).permit(this.origin).revoke(identity);
     }
 }

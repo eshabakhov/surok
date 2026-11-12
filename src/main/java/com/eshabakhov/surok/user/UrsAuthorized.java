@@ -3,9 +3,13 @@
  */
 package com.eshabakhov.surok.user;
 
+import com.eshabakhov.surok.School;
 import com.eshabakhov.surok.User;
 import com.eshabakhov.surok.Users;
-import org.springframework.security.access.AccessDeniedException;
+import com.eshabakhov.surok.security.right.RtAdmin;
+import com.eshabakhov.surok.security.right.RtEither;
+import com.eshabakhov.surok.security.right.RtSchoolDirector;
+import com.eshabakhov.surok.security.right.RtSchoolMember;
 
 /**
  * School users whose operations check the acting user's current membership.
@@ -18,6 +22,9 @@ public final class UrsAuthorized implements Users {
     /** Underlying school users. */
     private final Users origin;
 
+    /** School whose users are protected. */
+    private final School school;
+
     /** Acting user. */
     private final User actor;
 
@@ -25,44 +32,43 @@ public final class UrsAuthorized implements Users {
      * New protected school users.
      *
      * @param origin Underlying school users
+     * @param school School whose users are protected
      * @param actor Acting user
      */
-    public UrsAuthorized(final Users origin, final User actor) {
+    public UrsAuthorized(final Users origin, final School school, final User actor) {
         this.origin = origin;
+        this.school = school;
         this.actor = actor;
     }
 
     @Override
     public boolean contains(final User user) {
-        if (!this.actor.isAdmin() && !this.origin.contains(this.actor)) {
-            throw new AccessDeniedException("Only a school member can view school users");
-        }
-        return this.origin.contains(user);
+        return new RtEither(
+            new RtAdmin(this.actor), new RtSchoolMember(this.actor, this.school)
+        ).permit(this.origin).contains(user);
     }
 
     @Override
     public User add(final User user) throws Exception {
-        if (!this.actor.isAdmin() && (!this.origin.contains(this.actor)
-            || !this.origin.roles(this.actor).contains(Roles.RoleEnum.DIRECTOR))) {
-            throw new AccessDeniedException("Only a school director can manage members");
-        }
-        return this.origin.add(user);
+        return new RtEither(
+            new RtAdmin(this.actor), new RtSchoolDirector(this.actor, this.school)
+        ).permit(this.origin).add(user);
     }
 
     @Override
     public Roles roles(final User user) {
-        if (!this.actor.isAdmin() && !this.origin.contains(this.actor)) {
-            throw new AccessDeniedException("Only a school member can view school roles");
-        }
-        return new RlsAuthorized(this.origin.roles(user), this.origin, this.actor);
+        return new RlsAuthorized(
+            new RtEither(
+                new RtAdmin(this.actor), new RtSchoolMember(this.actor, this.school)
+            ).permit(this.origin).roles(user), this.school, this.actor
+        );
     }
 
     @Override
     public Iterable<User> iterate() {
-        if (!this.actor.isAdmin() && !this.origin.contains(this.actor)) {
-            throw new AccessDeniedException("Only a school member can view school users");
-        }
-        return this.origin.iterate();
+        return new RtEither(
+            new RtAdmin(this.actor), new RtSchoolMember(this.actor, this.school)
+        ).permit(this.origin).iterate();
     }
 
     @Override
@@ -70,43 +76,36 @@ public final class UrsAuthorized implements Users {
         final String username, final String password, final String email,
         final Boolean corporate
     ) throws Exception {
-        if (!this.actor.isAdmin() && (!this.origin.contains(this.actor)
-            || !this.origin.roles(this.actor).contains(Roles.RoleEnum.DIRECTOR))) {
-            throw new AccessDeniedException("Only a school director can manage members");
-        }
-        return this.origin.register(username, password, email, corporate);
+        return new RtEither(
+            new RtAdmin(this.actor), new RtSchoolDirector(this.actor, this.school)
+        ).permit(this.origin).register(username, password, email, corporate);
     }
 
     @Override
     public User identification(final String login) throws Exception {
-        if (!this.actor.isAdmin() && !this.origin.contains(this.actor)) {
-            throw new AccessDeniedException("Only a school member can view school users");
-        }
-        return this.origin.identification(login);
+        return new RtEither(
+            new RtAdmin(this.actor), new RtSchoolMember(this.actor, this.school)
+        ).permit(this.origin).identification(login);
     }
 
     @Override
     public User identification(final Long id) throws Exception {
-        if (!this.actor.isAdmin() && !this.origin.contains(this.actor)) {
-            throw new AccessDeniedException("Only a school member can view school users");
-        }
-        return this.origin.identification(id);
+        return new RtEither(
+            new RtAdmin(this.actor), new RtSchoolMember(this.actor, this.school)
+        ).permit(this.origin).identification(id);
     }
 
     @Override
     public User authentication(final String login) throws Exception {
-        if (!this.actor.isAdmin() && !this.origin.contains(this.actor)) {
-            throw new AccessDeniedException("Only a school member can view school users");
-        }
-        return this.origin.authentication(login);
+        return new RtEither(
+            new RtAdmin(this.actor), new RtSchoolMember(this.actor, this.school)
+        ).permit(this.origin).authentication(login);
     }
 
     @Override
     public void remove(final Long id) throws Exception {
-        if (!this.actor.isAdmin() && (!this.origin.contains(this.actor)
-            || !this.origin.roles(this.actor).contains(Roles.RoleEnum.DIRECTOR))) {
-            throw new AccessDeniedException("Only a school director can manage members");
-        }
-        this.origin.remove(id);
+        new RtEither(
+            new RtAdmin(this.actor), new RtSchoolDirector(this.actor, this.school)
+        ).permit(this.origin).remove(id);
     }
 }
