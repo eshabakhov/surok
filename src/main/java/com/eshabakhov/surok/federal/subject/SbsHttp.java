@@ -24,7 +24,8 @@ import com.eshabakhov.surok.school.SlsAuthorized;
 import com.eshabakhov.surok.school.SlsBrief;
 import com.eshabakhov.surok.school.SlsPostgres;
 import com.eshabakhov.surok.security.CsToken;
-import com.eshabakhov.surok.user.Roles;
+import com.eshabakhov.surok.security.right.RtAdmin;
+import com.eshabakhov.surok.security.right.RtDirectorOrDeputy;
 import com.eshabakhov.surok.user.UrBrief;
 import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.servlet.http.HttpServletRequest;
@@ -163,7 +164,7 @@ public class SbsHttp {
         @AuthenticationPrincipal final User actor
     ) throws Exception {
         final MediaType type = new AcHttp(request, List.of(MediaType.TEXT_HTML)).type();
-        if (school == null && !actor.isAdmin()) {
+        if (school == null && !new RtAdmin(actor).allows()) {
             throw new ResponseStatusException(
                 HttpStatus.FORBIDDEN, "Federal catalogue is read-only"
             );
@@ -238,7 +239,7 @@ public class SbsHttp {
         final MediaType type = new AcHttp(request, List.of(MediaType.TEXT_HTML)).type();
         final Subjects origin = this.subjects(school, actor);
         final Subject selected = origin.subject(subject);
-        if (school == null && !actor.isAdmin()
+        if (school == null && !new RtAdmin(actor).allows()
             || school != null && selected.origin() == Subject.Origin.FEDERAL) {
             throw new SubjectReadOnlyException(selected.uid());
         }
@@ -454,13 +455,11 @@ public class SbsHttp {
         final String view,
         final User actor
     ) throws Exception {
-        boolean editable = actor.isAdmin();
+        boolean editable = new RtAdmin(actor).allows();
         if (school != null && !editable) {
-            final Roles roles = new SlsAuthorized(
-                new SlsPostgres(this.ctx), actor
-            ).school(school).users().roles(actor);
-            editable = roles.contains(Roles.RoleEnum.DIRECTOR)
-                || roles.contains(Roles.RoleEnum.DEPUTY_DIRECTOR);
+            editable = new RtDirectorOrDeputy(
+                actor, new SlsAuthorized(new SlsPostgres(this.ctx), actor).school(school)
+            ).allows();
         }
         Media<String> media = new SrWeb(
             new UrBrief(actor),
