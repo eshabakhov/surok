@@ -3,8 +3,7 @@
  */
 package com.eshabakhov.surok;
 
-import com.eshabakhov.surok.user.Credentials;
-import com.eshabakhov.surok.user.ReferenceInformation;
+import com.eshabakhov.surok.user.Account;
 import com.eshabakhov.surok.user.Roles;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -24,12 +23,11 @@ public interface User extends Printable {
     long uid();
 
     /**
-     * User credentials.
+     * User account details and authentication state.
      *
-     * @return Credentials
+     * @return Account
      */
-    @JsonProperty
-    Credentials credentials();
+    Account account();
 
     /**
      * User roles.
@@ -45,19 +43,4 @@ public interface User extends Printable {
      * @return User's schools
      */
     Schools schools();
-
-    /**
-     * Reference information.
-     *
-     * @return Reference information
-     */
-    @JsonProperty
-    ReferenceInformation info();
-
-    /**
-     * Administrative access marker.
-     *
-     * @return Administrative access marker
-     */
-    boolean isAdmin();
 }

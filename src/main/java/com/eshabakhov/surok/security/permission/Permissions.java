@@ -4,7 +4,7 @@
 package com.eshabakhov.surok.security.permission;
 
 import com.eshabakhov.surok.Printable;
-import org.springframework.security.core.Authentication;
+import com.eshabakhov.surok.User;
 import org.springframework.web.bind.annotation.RequestMethod;
 
 /**
@@ -23,5 +23,5 @@ public interface Permissions extends Printable {
      * @param actor Current account
      * @return Whether a matching handler grants access
      */
-    boolean allows(String path, RequestMethod method, Authentication actor);
+    boolean allows(String path, RequestMethod method, User actor);
 }

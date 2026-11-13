@@ -9,6 +9,7 @@ import com.eshabakhov.surok.school.SlsPostgres;
 import com.eshabakhov.surok.school.input.SlInput;
 import com.eshabakhov.surok.school.input.SlInputName;
 import com.eshabakhov.surok.user.Roles;
+import com.eshabakhov.surok.user.UrAnonymous;
 import com.eshabakhov.surok.user.UrsPostgres;
 import java.util.UUID;
 import org.hamcrest.MatcherAssert;
@@ -105,6 +106,25 @@ final class RtDirectorOrDeputyTest {
                     new SlInputName(new SlInput(), "Школа администратора")
                 )
             ).allows(), Matchers.is(false)
+        );
+    }
+
+    /**
+     * Rejects anonymous access before querying an absent account identifier.
+     *
+     * @param ctx Database context
+     * @throws Exception If the school cannot be created
+     */
+    @Test
+    void deniesAnAnonymousVisitor(@Autowired final DSLContext ctx) throws Exception {
+        MatcherAssert.assertThat(
+            "An anonymous visitor reached a school modification operation",
+            new RtDirectorOrDeputy(
+                new UrAnonymous(), new SlsPostgres(ctx).create(
+                    new SlInputName(new SlInput(), "Школа без анонимного доступа")
+                )
+            ).allows(),
+            Matchers.is(false)
         );
     }
 

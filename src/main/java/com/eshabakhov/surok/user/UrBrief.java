@@ -6,6 +6,7 @@ package com.eshabakhov.surok.user;
 import com.eshabakhov.surok.Media;
 import com.eshabakhov.surok.Schools;
 import com.eshabakhov.surok.User;
+import com.eshabakhov.surok.security.right.RtAdmin;
 
 /**
  * Brief user representation for shared browser controls.
@@ -32,8 +33,8 @@ public final class UrBrief implements User {
     }
 
     @Override
-    public Credentials credentials() {
-        return this.origin.credentials();
+    public Account account() {
+        return this.origin.account();
     }
 
     @Override
@@ -47,19 +48,9 @@ public final class UrBrief implements User {
     }
 
     @Override
-    public ReferenceInformation info() {
-        return this.origin.info();
-    }
-
-    @Override
-    public boolean isAdmin() {
-        return this.origin.isAdmin();
-    }
-
-    @Override
     public <T> Media<T> print(final Media<T> media) {
-        return media.with("username", this.credentials().username())
-            .with("admin", this.isAdmin())
-            .with("subscription", !this.info().corporate() && !this.isAdmin());
+        return media.with("username", this.account().username())
+            .with("admin", new RtAdmin(this).allows())
+            .with("subscription", !this.account().corporate() && !new RtAdmin(this).allows());
     }
 }

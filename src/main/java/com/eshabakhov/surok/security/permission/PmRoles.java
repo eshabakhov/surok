@@ -5,11 +5,12 @@ package com.eshabakhov.surok.security.permission;
 
 import com.eshabakhov.surok.Media;
 import com.eshabakhov.surok.PrItems;
-import com.eshabakhov.surok.Printable;
+import com.eshabakhov.surok.User;
 import com.eshabakhov.surok.user.Roles;
-import jakarta.servlet.http.HttpServletRequest;
+import com.eshabakhov.surok.user.UrAnonymous;
+import com.eshabakhov.surok.user.UrRole;
 import java.util.Arrays;
-import java.util.stream.Stream;
+import java.util.Locale;
 import org.springframework.web.bind.annotation.RequestMethod;
 
 /**
@@ -18,7 +19,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
  *
  * @since 0.0.1
  */
-public final class PmRoles implements Printable {
+public final class PmRoles implements Permission {
 
     /** Controller permission. */
     private final Permission origin;
@@ -26,32 +27,63 @@ public final class PmRoles implements Printable {
     /** HTTP method. */
     private final RequestMethod method;
 
-    /** Current request. */
-    private final HttpServletRequest request;
+    /** Role access entries. */
+    private final Iterable<Grant> grants;
 
     /**
      * New matrix row.
      *
      * @param origin Controller permission
      * @param method HTTP method
-     * @param request Current request
+     * @param locale Locale for role titles
      */
     public PmRoles(
-        final Permission origin, final RequestMethod method, final HttpServletRequest request
+        final Permission origin, final RequestMethod method, final Locale locale
+    ) {
+        this(
+            origin,
+            method,
+            Arrays.stream(Roles.RoleEnum.values()).<Grant>map(
+                role -> {
+                    final User actor;
+                    if (role == Roles.RoleEnum.ANONYMOUS) {
+                        actor = new UrAnonymous();
+                    } else {
+                        actor = new UrRole(role);
+                    }
+                    return new GrRole(origin, actor, role, locale);
+                }
+            ).toList()
+        );
+    }
+
+    /**
+     * New matrix row with assembled access entries.
+     *
+     * @param origin Controller permission
+     * @param method HTTP method
+     * @param grants Role access entries
+     */
+    private PmRoles(
+        final Permission origin,
+        final RequestMethod method,
+        final Iterable<Grant> grants
     ) {
         this.origin = origin;
         this.method = method;
-        this.request = request;
+        this.grants = grants;
+    }
+
+    @Override
+    public boolean allows(final User actor, final boolean own) {
+        return this.origin.allows(actor, own);
     }
 
     @Override
     public <T> Media<T> print(final Media<T> media) throws Exception {
-        return this.origin.print(media).with("method", this.method.name()).with(
-            "access", new PrItems(
-                "grant", Stream.concat(
-                    Arrays.stream(Roles.RoleEnum.values()).map(Enum::name), Stream.of("ANONYMOUS")
-                ).map(role -> new PaRole(this.origin, role, this.request)).toList()
-            )
+        return this.origin.print(media)
+            .with("method", this.method.name()).with(
+            "access", new PrItems("grant", this.grants)
         );
     }
 }

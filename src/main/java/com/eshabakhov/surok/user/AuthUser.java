@@ -6,6 +6,7 @@ package com.eshabakhov.surok.user;
 import com.eshabakhov.surok.Media;
 import com.eshabakhov.surok.Schools;
 import com.eshabakhov.surok.User;
+import com.eshabakhov.surok.security.right.RtAdmin;
 import java.util.Collection;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -50,7 +51,7 @@ public final class AuthUser implements UserDetails, OAuth2User, User {
         final Stream<SimpleGrantedAuthority> account = this.user.roles().list().stream()
             .map(role -> new SimpleGrantedAuthority(String.format("ROLE_%s", role.name())));
         final Collection<? extends GrantedAuthority> granted;
-        if (this.user.isAdmin()) {
+        if (new RtAdmin(this.user).allows()) {
             granted = account.toList();
         } else {
             granted = Stream.concat(
@@ -69,22 +70,22 @@ public final class AuthUser implements UserDetails, OAuth2User, User {
 
     @Override
     public String getPassword() {
-        return this.user.credentials().password();
+        return this.user.account().password();
     }
 
     @Override
     public String getUsername() {
-        return this.user.credentials().username();
+        return this.user.account().username();
     }
 
     @Override
     public boolean isEnabled() {
-        return this.user.info().alive();
+        return this.user.account().alive();
     }
 
     @Override
     public String getName() {
-        return this.user.credentials().username();
+        return this.user.account().username();
     }
 
     @Override
@@ -98,8 +99,8 @@ public final class AuthUser implements UserDetails, OAuth2User, User {
     }
 
     @Override
-    public Credentials credentials() {
-        return this.user.credentials();
+    public Account account() {
+        return this.user.account();
     }
 
     @Override
@@ -110,16 +111,6 @@ public final class AuthUser implements UserDetails, OAuth2User, User {
     @Override
     public Schools schools() {
         return this.user.schools();
-    }
-
-    @Override
-    public ReferenceInformation info() {
-        return this.user.info();
-    }
-
-    @Override
-    public boolean isAdmin() {
-        return this.user.isAdmin();
     }
 
     @Override

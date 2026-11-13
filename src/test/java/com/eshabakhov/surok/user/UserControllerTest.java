@@ -4,6 +4,7 @@
 package com.eshabakhov.surok.user;
 
 import com.eshabakhov.surok.User;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import java.util.UUID;
 import org.hamcrest.MatcherAssert;
@@ -45,10 +46,13 @@ final class UserControllerTest {
      * Creates an account through the canonical collection path.
      *
      * @param mvc HTTP client
+     * @param ctx Database context
      * @throws Exception If registration fails
      */
     @Test
-    void registersAccountWithoutAnApiPrefix(@Autowired final MockMvc mvc) throws Exception {
+    void registersAccountWithoutAnApiPrefix(
+        @Autowired final MockMvc mvc, @Autowired final DSLContext ctx
+    ) throws Exception {
         final String name = UUID.randomUUID().toString();
         final MvcResult result = mvc.perform(
             MockMvcRequestBuilders.post("/users").contentType(MediaType.APPLICATION_JSON)
@@ -62,15 +66,29 @@ final class UserControllerTest {
                     )
                 ).with(SecurityMockMvcRequestPostProcessors.csrf())
         ).andReturn();
+        final User created = new UrsPostgres(ctx).identification(name);
         MatcherAssert.assertThat(
             "Registration did not create an account at the canonical user URI",
             List.of(
                 String.valueOf(result.getResponse().getStatus()),
-                result.getResponse().getHeader("Location")
+                result.getResponse().getHeader("Location"),
+                new ObjectMapper().readTree(result.getResponse().getContentAsString())
             ),
             Matchers.contains(
                 Matchers.is(String.valueOf(HttpStatus.CREATED.value())),
-                Matchers.matchesPattern("/users/[0-9]+")
+                Matchers.is(String.format("/users/%d", created.uid())),
+                Matchers.is(
+                    new ObjectMapper().readTree(
+                        String.format(
+                            """
+                            {"uid":%d,"credentials":{"username":"%s"},
+                            "roles":{"list":[{"uid":%d,"name":"BASIC_MAKER"}]},
+                            "info":{"corporate":false,"alive":true},"admin":false}
+                            """,
+                            created.uid(), name, created.roles().list().getFirst().uid()
+                        )
+                    )
+                )
             )
         );
     }

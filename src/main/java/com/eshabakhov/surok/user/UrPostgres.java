@@ -7,6 +7,7 @@ import com.eshabakhov.surok.Media;
 import com.eshabakhov.surok.Schools;
 import com.eshabakhov.surok.User;
 import com.eshabakhov.surok.school.SlsPostgres;
+import com.eshabakhov.surok.security.right.RtAdmin;
 import org.jooq.DSLContext;
 
 /**
@@ -39,8 +40,8 @@ public final class UrPostgres implements User {
     }
 
     @Override
-    public Credentials credentials() {
-        return new Credentials.CdPostgres(this.ctx, this.id);
+    public Account account() {
+        return new AcPostgres(this.ctx, this.id);
     }
 
     @Override
@@ -54,23 +55,10 @@ public final class UrPostgres implements User {
     }
 
     @Override
-    public ReferenceInformation info() {
-        return new ReferenceInformation.RefInfoPostgres(this.ctx, this.id);
-    }
-
-    @Override
-    public boolean isAdmin() {
-        return new Roles.RlsPostgres(this.ctx, this.id)
-            .list()
-            .stream()
-            .anyMatch(role -> "ADMIN".equalsIgnoreCase(role.name()));
-    }
-
-    @Override
     public <T> Media<T> print(final Media<T> media) {
         return media
             .with("id", this.uid())
-            .with("username", this.credentials().username())
-            .with("admin", this.isAdmin());
+            .with("username", this.account().username())
+            .with("admin", new RtAdmin(this).allows());
     }
 }

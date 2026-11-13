@@ -4,18 +4,17 @@
 package com.eshabakhov.surok.security.permission;
 
 import com.eshabakhov.surok.Media;
-import com.eshabakhov.surok.School;
 import com.eshabakhov.surok.User;
-import jakarta.servlet.http.HttpServletRequest;
+import com.eshabakhov.surok.security.right.Right;
+import com.eshabakhov.surok.security.right.RtAdmin;
+import com.eshabakhov.surok.security.right.RtDirectorOrDeputy;
+import com.eshabakhov.surok.security.right.RtEither;
+import com.eshabakhov.surok.security.right.RtSchoolDirector;
+import com.eshabakhov.surok.security.right.RtSchoolMember;
+import com.eshabakhov.surok.security.right.RtSchools;
 import java.util.Locale;
 import java.util.ResourceBundle;
 import org.springframework.core.annotation.AnnotatedElementUtils;
-import org.springframework.expression.EvaluationContext;
-import org.springframework.expression.EvaluationException;
-import org.springframework.expression.spel.standard.SpelExpressionParser;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.web.access.expression.DefaultHttpSecurityExpressionHandler;
-import org.springframework.security.web.access.intercept.RequestAuthorizationContext;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.method.HandlerMethod;
 
@@ -50,22 +49,9 @@ public final class PmMethod implements Permission {
     }
 
     @Override
-    public boolean allows(
-        final Authentication actor, final HttpServletRequest request, final boolean own
-    ) {
-        boolean allowed;
-        try {
-            final EvaluationContext context = this.context(actor, request, own);
-            final SpelExpressionParser parser = new SpelExpressionParser();
-            allowed = (this.anonymous || Boolean.TRUE.equals(
-                parser.parseExpression("isAuthenticated()").getValue(context, Boolean.class)
-            )) && Boolean.TRUE.equals(
-                parser.parseExpression(this.rule()).getValue(context, Boolean.class)
-            );
-        } catch (final EvaluationException exception) {
-            allowed = false;
-        }
-        return allowed;
+    public boolean allows(final User actor, final boolean own) {
+        return (this.anonymous || actor.account().authenticated())
+            && this.rule(actor, own).allows();
     }
 
     @Override
@@ -105,60 +91,45 @@ public final class PmMethod implements Permission {
             .with("consumes", consumes).with("condition", condition);
     }
 
-    private EvaluationContext context(
-        final Authentication actor, final HttpServletRequest request, final boolean own
-    ) {
-        final DefaultHttpSecurityExpressionHandler expressions =
-            new DefaultHttpSecurityExpressionHandler();
-        final EvaluationContext context = expressions.createEvaluationContext(
-            () -> actor, new RequestAuthorizationContext(request)
+    /*
+     * Select the domain right corresponding to this controller operation.
+     */
+    private Right rule(final User actor, final boolean own) {
+        final Right admin = new RtAdmin(actor);
+        final Right member = new RtEither(
+            admin, new RtSchools(actor, own, school -> new RtSchoolMember(actor, school))
         );
-        if (this.path.contains("{school}")) {
-            long school = -1L;
-            if (actor.getPrincipal() instanceof User user) {
-                for (final School available : user.schools().iterate()) {
-                    school = available.uid();
-                }
-            } else {
-                school = 1L;
-            }
-            if (!own) {
-                school = -2L;
-            }
-            context.setVariable("school", school);
-        }
-        return context;
-    }
-
-    private String rule() {
+        final Right director = new RtEither(
+            admin, new RtSchools(actor, own, school -> new RtSchoolDirector(actor, school))
+        );
+        final Right editor = new RtEither(
+            admin, new RtSchools(actor, own, school -> new RtDirectorOrDeputy(actor, school))
+        );
         return switch (this.handler.getBeanType().getSimpleName()) {
-            case "SlsHttp" -> this.schools();
+            case "SlsHttp" -> this.schools(admin, member, director);
             case "BdsHttp", "CbsHttp", "ScsHttp", "ThsHttp", "SdsHttp", "ClsHttp", "LdHttp" ->
-                this.resources();
-            case "CrsHttp" -> this.curriculums();
-            case "RqsHttp" -> this.requirements();
-            case "SbsHttp" -> this.subjects();
-            case "UrsHttp" -> this.users();
-            case "PsHttp" -> "hasRole('ADMIN')";
-            case null, default -> "true";
+                this.resources(member, editor);
+            case "CrsHttp" -> this.curriculums(admin);
+            case "RqsHttp" -> this.requirements(admin);
+            case "SbsHttp" -> this.subjects(admin, member, editor);
+            case "UrsHttp" -> this.users(admin, member, director);
+            case "PsHttp" -> admin;
+            case null, default -> () -> true;
         };
     }
 
-    private String users() {
+    /*
+     * User operations with global or school permissions.
+     */
+    private Right users(final Right admin, final Right member, final Right director) {
         return switch (this.handler.getMethod().getName()) {
             case "authenticationPage", "registerForm", "register", "profile", "subscription",
-                "checkout", "cancel" -> "true";
-            case "remove", "assignRole", "listRoles", "removeRole" -> "hasRole('ADMIN')";
-            case "schoolUsers", "schoolRoles" ->
-                "hasRole('ADMIN') or authentication.principal.schools().contains(#school)";
+                "checkout", "cancel" -> () -> true;
+            case "remove", "assignRole", "listRoles", "removeRole" -> admin;
+            case "schoolUsers", "schoolRoles" -> member;
             case "addSchoolUser", "attachSchoolUser", "removeSchoolUser", "grantSchoolRole",
-                "revokeSchoolRole" -> """
-                    hasRole('ADMIN') or (
-                        authentication.principal.schools().contains(#school) and
-                        hasAuthority('SCHOOL_' + #school + '_DIRECTOR')
-                    )
-                    """;
-            case null, default -> "false";
+                "revokeSchoolRole" -> director;
+            case null, default -> () -> false;
         };
     }
 
@@ -173,78 +144,71 @@ public final class PmMethod implements Permission {
         };
     }
 
-    private String subjects() {
-        final String rule;
+    /*
+     * Federal and school subject operations.
+     */
+    private Right subjects(final Right admin, final Right member, final Right editor) {
+        final Right rule;
         if (this.path.startsWith("/federal/")) {
             rule = switch (this.handler.getMethod().getName()) {
-                case "create", "revise", "remove", "form", "edit" -> "hasRole('ADMIN')";
-                case "selection", "subject" -> "true";
-                case null, default -> "false";
+                case "create", "revise", "remove", "form", "edit" -> admin;
+                case "selection", "subject" -> () -> true;
+                case null, default -> () -> false;
             };
         } else {
             rule = switch (this.handler.getMethod().getName()) {
-                case "selection", "subject", "form", "edit" ->
-                    "hasRole('ADMIN') or authentication.principal.schools().contains(#school)";
-                case "create", "revise", "remove" -> """
-                    hasRole('ADMIN') or (
-                        authentication.principal.schools().contains(#school) and (
-                            hasAuthority('SCHOOL_' + #school + '_DIRECTOR') or
-                            hasAuthority('SCHOOL_' + #school + '_DEPUTY_DIRECTOR')
-                        )
-                    )
-                    """;
-                case null, default -> "false";
+                case "selection", "subject", "form", "edit" -> member;
+                case "create", "revise", "remove" -> editor;
+                case null, default -> () -> false;
             };
         }
         return rule;
     }
 
-    private String curriculums() {
+    /*
+     * Federal curriculum operations.
+     */
+    private Right curriculums(final Right admin) {
         return switch (this.handler.getMethod().getName()) {
-            case "create", "revise", "remove", "form", "edit" -> "hasRole('ADMIN')";
-            case "curriculum", "selection" -> "true";
-            case null, default -> "false";
+            case "create", "revise", "remove", "form", "edit" -> admin;
+            case "curriculum", "selection" -> () -> true;
+            case null, default -> () -> false;
         };
     }
 
-    private String requirements() {
+    /*
+     * Federal curriculum requirement operations.
+     */
+    private Right requirements(final Right admin) {
         return switch (this.handler.getMethod().getName()) {
-            case "selection", "requirement" -> "true";
-            case "create", "add", "update", "remove" -> "hasRole('ADMIN')";
-            case null, default -> "false";
+            case "selection", "requirement" -> () -> true;
+            case "create", "add", "update", "remove" -> admin;
+            case null, default -> () -> false;
         };
     }
 
-    private String schools() {
+    /*
+     * School collection and entity operations.
+     */
+    private Right schools(final Right admin, final Right member, final Right director) {
         return switch (this.handler.getMethod().getName()) {
-            case "selection", "create", "form" -> "true";
-            case "school" ->
-                "hasRole('ADMIN') or authentication.principal.schools().contains(#school)";
-            case "revise" -> """
-                hasRole('ADMIN') or (
-                    authentication.principal.schools().contains(#school) and
-                    hasAuthority('SCHOOL_' + #school + '_DIRECTOR')
-                )
-                """;
-            case "remove" -> "hasRole('ADMIN')";
-            case null, default -> "false";
+            case "selection", "create", "form" -> () -> true;
+            case "school" -> member;
+            case "revise" -> director;
+            case "remove" -> admin;
+            case null, default -> () -> false;
         };
     }
 
-    private String resources() {
+    /*
+     * Resources owned by a school.
+     */
+    private Right resources(final Right member, final Right editor) {
         return switch (this.handler.getMethod().getName()) {
             case "selection", "building", "cabinet", "clazz", "teacher", "schedule", "load",
-                "read", "form" ->
-                "hasRole('ADMIN') or authentication.principal.schools().contains(#school)";
-            case "create", "revise", "remove", "save", "apply" -> """
-                hasRole('ADMIN') or (
-                    authentication.principal.schools().contains(#school) and (
-                        hasAuthority('SCHOOL_' + #school + '_DIRECTOR') or
-                        hasAuthority('SCHOOL_' + #school + '_DEPUTY_DIRECTOR')
-                    )
-                )
-                """;
-            case null, default -> "false";
+                "read", "form" -> member;
+            case "create", "revise", "remove", "save", "apply" -> editor;
+            case null, default -> () -> false;
         };
     }
 }

@@ -33,6 +33,6 @@ public final class RtSchoolMember implements Right {
 
     @Override
     public boolean allows() {
-        return this.school.users().contains(this.actor);
+        return this.actor.account().authenticated() && this.school.users().contains(this.actor);
     }
 }

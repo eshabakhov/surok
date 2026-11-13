@@ -82,7 +82,10 @@ public interface Roles {
         PRO_MAKER,
 
         /** Viewer. */
-        VIEWER
+        VIEWER,
+
+        /** Visitor without an authenticated account. */
+        ANONYMOUS
     }
 
     /**
@@ -118,11 +121,11 @@ public interface Roles {
 
         @Override
         public Role grant(final RoleEnum role) throws Exception {
-            if (List.of(
-                RoleEnum.DIRECTOR, RoleEnum.DEPUTY_DIRECTOR,
-                RoleEnum.TEACHER, RoleEnum.STUDENT, RoleEnum.VIEWER
+            if (!List.of(
+                RoleEnum.ADMIN, RoleEnum.BASIC_MAKER,
+                RoleEnum.ADVANCED_MAKER, RoleEnum.PRO_MAKER
             ).contains(role)) {
-                throw new RoleGrantException("School role must be assigned within a school");
+                throw new RoleGrantException("Only account roles can be assigned globally");
             }
             final Record selected = this.ctx.resultQuery(
                 new ClasspathSql("role/find-by-name-grant.sql").text(),

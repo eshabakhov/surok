@@ -47,9 +47,11 @@ public final class RlsSchool implements Roles {
 
     @Override
     public Role grant(final RoleEnum role) throws Exception {
-        if (role == RoleEnum.ADMIN || role == RoleEnum.BASIC_MAKER
-            || role == RoleEnum.ADVANCED_MAKER || role == RoleEnum.PRO_MAKER) {
-            throw new RoleGrantException("Account role cannot be assigned to a school");
+        if (!List.of(
+            RoleEnum.DIRECTOR, RoleEnum.DEPUTY_DIRECTOR,
+            RoleEnum.TEACHER, RoleEnum.STUDENT, RoleEnum.VIEWER
+        ).contains(role)) {
+            throw new RoleGrantException("Only school roles can be assigned within a school");
         }
         final Record created = this.ctx.resultQuery(
             new ClasspathSql("school-user/role/create.sql").text(),

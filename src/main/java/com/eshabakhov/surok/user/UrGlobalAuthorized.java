@@ -41,8 +41,8 @@ public final class UrGlobalAuthorized implements User {
     }
 
     @Override
-    public Credentials credentials() {
-        return new RtAdmin(this.actor).permit(this.origin).credentials();
+    public Account account() {
+        return new RtAdmin(this.actor).permit(this.origin).account();
     }
 
     @Override
@@ -57,16 +57,6 @@ public final class UrGlobalAuthorized implements User {
         return new SlsAuthorized(
             new RtAdmin(this.actor).permit(this.origin).schools(), this.actor
         );
-    }
-
-    @Override
-    public ReferenceInformation info() {
-        return new RtAdmin(this.actor).permit(this.origin).info();
-    }
-
-    @Override
-    public boolean isAdmin() {
-        return new RtAdmin(this.actor).permit(this.origin).isAdmin();
     }
 
     @Override

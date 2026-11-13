@@ -3,6 +3,7 @@
  */
 package com.eshabakhov.surok.user.subscription;
 
+import com.eshabakhov.surok.security.right.RtAdmin;
 import com.eshabakhov.surok.sql.ClasspathSql;
 import com.eshabakhov.surok.user.AuthUser;
 import com.eshabakhov.surok.user.Subscription;
@@ -50,7 +51,7 @@ public final class PgSubscriptions implements Subscriptions {
 
     @Override
     public Subscription subscription() throws Exception {
-        if (this.user.info().corporate() || this.user.isAdmin()) {
+        if (this.user.account().corporate() || new RtAdmin(this.user).allows()) {
             throw new PersonalOnlyException(this.user.uid());
         }
         final Record selected = this.ctx.resultQuery(
@@ -69,7 +70,7 @@ public final class PgSubscriptions implements Subscriptions {
 
     @Override
     public void subscription(final Subscription.Plan plan) throws Exception {
-        if (this.user.info().corporate() || this.user.isAdmin()) {
+        if (this.user.account().corporate() || new RtAdmin(this.user).allows()) {
             throw new PersonalOnlyException(this.user.uid());
         }
         final OffsetDateTime expires;

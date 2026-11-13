@@ -173,7 +173,7 @@ final class AuthHttpTest {
             MockMvcResultMatchers.redirectedUrl("/schools")
         );
         MatcherAssert.assertThat(
-            Map.of("corporate", created.info().corporate(), "schools", this.schools()),
+            Map.of("corporate", created.account().corporate(), "schools", this.schools()),
             Matchers.equalTo(Map.of("corporate", false, "schools", 0))
         );
     }

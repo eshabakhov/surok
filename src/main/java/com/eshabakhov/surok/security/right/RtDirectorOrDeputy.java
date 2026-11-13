@@ -18,7 +18,7 @@ public final class RtDirectorOrDeputy implements Right {
     /** Acting user. */
     private final User actor;
 
-    /** School whose buildings may be changed. */
+    /** School whose resources may be changed. */
     private final School school;
 
     /**

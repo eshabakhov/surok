@@ -5,14 +5,13 @@ package com.eshabakhov.surok.security.permission;
 
 import com.eshabakhov.surok.Media;
 import com.eshabakhov.surok.PrItems;
-import com.eshabakhov.surok.Printable;
+import com.eshabakhov.surok.User;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 import org.springframework.util.AntPathMatcher;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -47,7 +46,8 @@ public final class PsSpring implements Permissions {
      */
     public PsSpring(
         @Qualifier("requestMappingHandlerMapping") final RequestMappingHandlerMapping mappings,
-        final HttpServletRequest request, @Qualifier("publicPaths") final List<String> anonymous
+        final HttpServletRequest request,
+        @Qualifier("publicPaths") final List<String> anonymous
     ) {
         this.mappings = mappings;
         this.request = request;
@@ -55,9 +55,7 @@ public final class PsSpring implements Permissions {
     }
 
     @Override
-    public boolean allows(
-        final String path, final RequestMethod method, final Authentication actor
-    ) {
+    public boolean allows(final String path, final RequestMethod method, final User actor) {
         return this.mappings.getHandlerMethods().entrySet().stream().filter(
             entry -> entry.getKey().getPatternValues().contains(path)
                 && (entry.getKey().getMethodsCondition().getMethods().isEmpty()
@@ -68,13 +66,13 @@ public final class PsSpring implements Permissions {
                 this.anonymous.stream().anyMatch(
                     pattern -> new AntPathMatcher().match(pattern, path)
                 )
-            ).allows(actor, this.request, true)
+            ).allows(actor, true)
         );
     }
 
     @Override
     public <T> Media<T> print(final Media<T> media) throws Exception {
-        final List<Printable> operations = new ArrayList<>(
+        final List<Permission> operations = new ArrayList<>(
             this.mappings.getHandlerMethods().size()
         );
         for (final Map.Entry<RequestMappingInfo, HandlerMethod> entry
@@ -95,7 +93,9 @@ public final class PsSpring implements Permissions {
                                 entry.getValue(), path, this.anonymous.stream().anyMatch(
                                     pattern -> new AntPathMatcher().match(pattern, path)
                                 )
-                            ), method, this.request
+                            ),
+                            method,
+                            this.request.getLocale()
                         )
                     ).toList()
                 );

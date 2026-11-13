@@ -83,7 +83,7 @@ public final class YandexOAuth2UserService extends DefaultOAuth2UserService {
         final UrsPostgres urs = new UrsPostgres(this.ctx);
         String username;
         try {
-            username = urs.identification(email).credentials().username();
+            username = urs.identification(email).account().username();
         } catch (final UserNotFoundException ignored) {
             username = urs.register(
                 String.format(
@@ -97,7 +97,7 @@ public final class YandexOAuth2UserService extends DefaultOAuth2UserService {
                 ),
                 email,
                 false
-                ).credentials()
+                ).account()
                 .username();
         }
         return (AuthUser) this.userdetails.loadUserByUsername(username);

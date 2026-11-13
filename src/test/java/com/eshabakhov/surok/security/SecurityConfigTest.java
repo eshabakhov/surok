@@ -3,6 +3,7 @@
  */
 package com.eshabakhov.surok.security;
 
+import com.eshabakhov.surok.School;
 import com.eshabakhov.surok.User;
 import com.eshabakhov.surok.school.SlsPostgres;
 import com.eshabakhov.surok.school.input.SlInput;
@@ -111,7 +112,7 @@ final class SecurityConfigTest {
                     mvc.perform(
                         MockMvcRequestBuilders.get("/api-docs").with(
                             SecurityMockMvcRequestPostProcessors.httpBasic(
-                                SecurityConfigTest.administrator(ctx).credentials().username(),
+                                SecurityConfigTest.administrator(ctx).account().username(),
                                 "ValidPassword1!"
                             )
                         )
@@ -171,7 +172,7 @@ final class SecurityConfigTest {
             mvc.perform(
                 MockMvcRequestBuilders.get("/api-docs").with(
                     SecurityMockMvcRequestPostProcessors.httpBasic(
-                        user.credentials().username(), "SchoolPassword1!"
+                        user.account().username(), "SchoolPassword1!"
                     )
                 )
             ).andReturn().getResponse().getContentAsString()
@@ -187,6 +188,83 @@ final class SecurityConfigTest {
             Matchers.contains(
                 true, role == Roles.RoleEnum.DIRECTOR, false, role == Roles.RoleEnum.DIRECTOR
             )
+        );
+    }
+
+    /**
+     * Shows school mutations granted by any current membership.
+     *
+     * @param role Role in the first school
+     * @param mvc HTTP client
+     * @param ctx Database context
+     * @throws Exception If account creation or documentation fails
+     */
+    @ParameterizedTest
+    @EnumSource(value = Roles.RoleEnum.class, names = {"DIRECTOR", "DEPUTY_DIRECTOR"})
+    void showsOperationsGrantedInAnySchool(
+        final Roles.RoleEnum role, @Autowired final MockMvc mvc, @Autowired final DSLContext ctx
+    ) throws Exception {
+        final User user = new UrsPostgres(ctx).register(
+            UUID.randomUUID().toString(), "SchoolPassword1!",
+            String.format("%s@example.org", UUID.randomUUID()), true
+        );
+        final School managed = new SlsPostgres(ctx).create(
+            new SlInputName(new SlInput(), "Гимназия руководителя")
+        );
+        managed.users().add(user);
+        managed.users().roles(user).grant(role);
+        final School viewed = new SlsPostgres(ctx).create(
+            new SlInputName(new SlInput(), "Лицей наблюдателя")
+        );
+        viewed.users().add(user);
+        viewed.users().roles(user).grant(Roles.RoleEnum.VIEWER);
+        MatcherAssert.assertThat(
+            "Swagger ignored modification rights in an earlier school",
+            new ObjectMapper().readTree(
+                mvc.perform(
+                    MockMvcRequestBuilders.get("/api-docs").with(
+                        SecurityMockMvcRequestPostProcessors.httpBasic(
+                            user.account().username(), "SchoolPassword1!"
+                        )
+                    )
+                ).andReturn().getResponse().getContentAsString()
+            ).path("paths").path("/schools/{school}/buildings").has("post"),
+            Matchers.is(true)
+        );
+    }
+
+    /**
+     * Reads current administrator rights instead of cached authentication authorities.
+     *
+     * @param mvc HTTP client
+     * @param ctx Database context
+     * @throws Exception If registration or documentation fails
+     */
+    @Test
+    void hidesAdministratorOperationsAfterRoleRevocation(
+        @Autowired final MockMvc mvc, @Autowired final DSLContext ctx
+    ) throws Exception {
+        final User user = new UrsPostgres(ctx).register(
+            UUID.randomUUID().toString(), "SchoolPassword1!",
+            String.format("%s@example.org", UUID.randomUUID()), true
+        );
+        final long role = user.roles().grant(Roles.RoleEnum.ADMIN).uid();
+        final AuthUser principal = new AuthUser(user);
+        final UsernamePasswordAuthenticationToken token =
+            UsernamePasswordAuthenticationToken.authenticated(
+                principal, "", principal.getAuthorities()
+            );
+        user.roles().revoke(role);
+        MatcherAssert.assertThat(
+            "Swagger retained administrator operations after role revocation",
+            new ObjectMapper().readTree(
+                mvc.perform(
+                    MockMvcRequestBuilders.get("/api-docs").with(
+                        SecurityMockMvcRequestPostProcessors.authentication(token)
+                    )
+                ).andReturn().getResponse().getContentAsString()
+            ).path("paths").path("/federal/curriculums").has("post"),
+            Matchers.is(false)
         );
     }
 
@@ -221,7 +299,7 @@ final class SecurityConfigTest {
             mvc.perform(
                 MockMvcRequestBuilders.get("/api-docs").with(
                     SecurityMockMvcRequestPostProcessors.httpBasic(
-                        SecurityConfigTest.administrator(ctx).credentials().username(),
+                        SecurityConfigTest.administrator(ctx).account().username(),
                         "Incorrect1!"
                     )
                 ).header("X-Requested-With", "XMLHttpRequest")
@@ -240,7 +318,7 @@ final class SecurityConfigTest {
                 MockMvcRequestBuilders.get("/api-docs")
                     .header("X-Requested-With", "XMLHttpRequest").with(
                         SecurityMockMvcRequestPostProcessors.httpBasic(
-                            SecurityConfigTest.administrator(ctx).credentials().username(),
+                            SecurityConfigTest.administrator(ctx).account().username(),
                             "Incorrect1!"
                         )
                     )
@@ -289,7 +367,7 @@ final class SecurityConfigTest {
                         .accept("application/vnd.surok.subject-v1+json")
                         .content(String.format("{\"name\":\"%s\"}", name)).with(
                             SecurityMockMvcRequestPostProcessors.httpBasic(
-                                SecurityConfigTest.administrator(ctx).credentials().username(),
+                                SecurityConfigTest.administrator(ctx).account().username(),
                                 "ValidPassword1!"
                             )
                         )
@@ -312,7 +390,7 @@ final class SecurityConfigTest {
                     .accept("application/vnd.surok.subject-v1+json")
                     .content("{\"name\":\"Астрономия\"}").with(
                         SecurityMockMvcRequestPostProcessors.httpBasic(
-                            SecurityConfigTest.administrator(ctx).credentials().username(),
+                            SecurityConfigTest.administrator(ctx).account().username(),
                             "ValidPassword1!"
                         )
                     )
@@ -335,7 +413,7 @@ final class SecurityConfigTest {
             "/schools",
             mvc.perform(
                 SecurityMockMvcRequestBuilders.formLogin()
-                    .user(SecurityConfigTest.administrator(ctx).credentials().username())
+                    .user(SecurityConfigTest.administrator(ctx).account().username())
                     .password("ValidPassword1!")
             ).andReturn().getResponse().getRedirectedUrl(),
             "Valid credentials did not reach the login success handler"
@@ -356,7 +434,7 @@ final class SecurityConfigTest {
             "/users/login?error=bad_credentials",
             mvc.perform(
                 SecurityMockMvcRequestBuilders.formLogin()
-                    .user(SecurityConfigTest.administrator(ctx).credentials().username())
+                    .user(SecurityConfigTest.administrator(ctx).account().username())
                     .password("WrongPassword1!")
             ).andReturn().getResponse().getRedirectedUrl(),
             "Wrong password did not reach the login failure handler"
@@ -401,7 +479,7 @@ final class SecurityConfigTest {
                     ).uid()
                 ).accept("application/vnd.surok.schedules.v1+json").with(
                     SecurityMockMvcRequestPostProcessors.httpBasic(
-                        SecurityConfigTest.administrator(ctx).credentials().username(),
+                        SecurityConfigTest.administrator(ctx).account().username(),
                         "ValidPassword1!"
                     )
                 )
@@ -426,7 +504,7 @@ final class SecurityConfigTest {
                 MockMvcRequestBuilders.get("/schools/1/schedules")
                     .accept("application/vnd.surok.schedules.v1+json").with(
                     SecurityMockMvcRequestPostProcessors.httpBasic(
-                        SecurityConfigTest.administrator(ctx).credentials().username(),
+                        SecurityConfigTest.administrator(ctx).account().username(),
                         "WrongPassword1!"
                     )
                 )
@@ -504,7 +582,7 @@ final class SecurityConfigTest {
                     .contentType("application/vnd.surok.schedule-v1+json")
                     .content("{\"name\":\"Year\"}").with(
                         SecurityMockMvcRequestPostProcessors.httpBasic(
-                            SecurityConfigTest.administrator(ctx).credentials().username(),
+                            SecurityConfigTest.administrator(ctx).account().username(),
                             "ValidPassword1!"
                         )
                     )

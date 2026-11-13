@@ -16,6 +16,7 @@ import com.eshabakhov.surok.school.SlsAuthorized;
 import com.eshabakhov.surok.school.SlsBrief;
 import com.eshabakhov.surok.school.SlsPostgres;
 import com.eshabakhov.surok.security.CsToken;
+import com.eshabakhov.surok.security.right.RtAdmin;
 import com.eshabakhov.surok.user.subscription.PgSubscriptions;
 import com.eshabakhov.surok.user.subscription.SpWeb;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -23,6 +24,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.StreamSupport;
 import org.jooq.DSLContext;
 import org.springframework.http.HttpStatus;
@@ -134,7 +136,7 @@ public final class UrsHttp {
         consumes = MediaType.APPLICATION_JSON_VALUE,
         produces = MediaType.APPLICATION_JSON_VALUE
     )
-    public ResponseEntity<User> register(
+    public ResponseEntity<Map<String, Object>> register(
         @RequestBody final JsonNode request
     ) throws Exception {
         final JsonNode username = request.get("username");
@@ -155,9 +157,17 @@ public final class UrsHttp {
         final User created = new UrsPostgres(this.ctx).register(
             username.asText(), password.asText(), email.asText(), false
         );
-        return ResponseEntity
-            .created(URI.create(String.format("/users/%s", created.uid())))
-            .body(created);
+        final Account account = created.account();
+        return ResponseEntity.created(
+            URI.create(String.format("/users/%s", created.uid()))
+        ).body(
+            Map.of(
+                "uid", created.uid(), "credentials", Map.of("username", account.username()),
+                "roles", created.roles(),
+                "info", Map.of("corporate", account.corporate(), "alive", account.alive()),
+                "admin", new RtAdmin(created).allows()
+            )
+        );
     }
 
     /**
@@ -310,7 +320,7 @@ public final class UrsHttp {
     ) throws Exception {
         final MediaType type = new AcHttp(request).type();
         final ResponseEntity<String> response;
-        if (user.info().corporate() || user.isAdmin()) {
+        if (user.account().corporate() || new RtAdmin(user).allows()) {
             response = ResponseEntity.status(HttpStatus.FOUND)
                 .location(URI.create("/users/profile")).build();
         } else {
@@ -356,7 +366,7 @@ public final class UrsHttp {
     ) throws Exception {
         new AcHttp(request).type();
         String target = "/users/profile";
-        if (!user.info().corporate() && !user.isAdmin()) {
+        if (!user.account().corporate() && !new RtAdmin(user).allows()) {
             final Subscription.Plan selected;
             try {
                 selected = Subscription.Plan.valueOf(plan);
@@ -393,7 +403,7 @@ public final class UrsHttp {
     ) throws Exception {
         new AcHttp(request).type();
         String target = "/users/profile";
-        if (!user.info().corporate() && !user.isAdmin()) {
+        if (!user.account().corporate() && !new RtAdmin(user).allows()) {
             new PgSubscriptions(this.ctx, user).subscription(Subscription.Plan.BASIC);
             target = "/users/subscription?cancelled";
         }
