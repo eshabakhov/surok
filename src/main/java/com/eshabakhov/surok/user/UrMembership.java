@@ -7,7 +7,7 @@ import com.eshabakhov.surok.Media;
 import com.eshabakhov.surok.PrItems;
 import com.eshabakhov.surok.Printable;
 import com.eshabakhov.surok.School;
-import com.eshabakhov.surok.User;
+import com.eshabakhov.surok.UrAccount;
 
 /**
  * One school and the user's roles in it for a profile representation.
@@ -20,7 +20,7 @@ public final class UrMembership implements Printable {
     private final School school;
 
     /** User. */
-    private final User user;
+    private final UrAccount user;
 
     /**
      * New membership.
@@ -28,7 +28,7 @@ public final class UrMembership implements Printable {
      * @param school School
      * @param user User
      */
-    public UrMembership(final School school, final User user) {
+    public UrMembership(final School school, final UrAccount user) {
         this.school = school;
         this.user = user;
     }

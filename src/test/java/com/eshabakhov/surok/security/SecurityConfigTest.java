@@ -3,7 +3,7 @@
  */
 package com.eshabakhov.surok.security;
 
-import com.eshabakhov.surok.User;
+import com.eshabakhov.surok.UrAccount;
 import com.eshabakhov.surok.school.SlsPostgres;
 import com.eshabakhov.surok.school.input.SlInput;
 import com.eshabakhov.surok.school.input.SlInputName;
@@ -157,7 +157,7 @@ final class SecurityConfigTest {
     void distinguishesSchoolAndFederalPermissions(
         final Roles.RoleEnum role, @Autowired final MockMvc mvc, @Autowired final DSLContext ctx
     ) throws Exception {
-        final User user = new UrsPostgres(ctx).register(
+        final UrAccount user = new UrsPostgres(ctx).register(
             UUID.randomUUID().toString(), "SchoolPassword1!",
             String.format("%s@example.org", UUID.randomUUID()), true
         );
@@ -573,9 +573,9 @@ final class SecurityConfigTest {
         registry.add("spring.liquibase.enabled", () -> true);
     }
 
-    private static User administrator(final DSLContext ctx) throws Exception {
+    private static UrAccount administrator(final DSLContext ctx) throws Exception {
         final String name = UUID.randomUUID().toString();
-        final User user = new UrsPostgres(ctx).register(
+        final UrAccount user = new UrsPostgres(ctx).register(
             name, "ValidPassword1!", String.format("%s@example.com", name), false
         );
         user.roles().grant(Roles.RoleEnum.ADMIN);

@@ -4,6 +4,7 @@
 package com.eshabakhov.surok.user;
 
 import com.eshabakhov.surok.PrItems;
+import com.eshabakhov.surok.UrAccount;
 import com.eshabakhov.surok.User;
 import com.eshabakhov.surok.Users;
 import com.eshabakhov.surok.media.AcHttp;
@@ -154,7 +155,7 @@ public final class UrsHttp {
         if (request.has("school")) {
             throw new RegistrationException("School membership is managed separately");
         }
-        final User created = new UrsPostgres(this.ctx).register(
+        final UrAccount created = new UrsPostgres(this.ctx).register(
             username.asText(), password.asText(), email.asText(), false
         );
         final Account account = created.account();
@@ -180,7 +181,7 @@ public final class UrsHttp {
      */
     @DeleteMapping("/users/{user}")
     public ResponseEntity<Void> remove(
-        @PathVariable final long user, @AuthenticationPrincipal final User actor
+        @PathVariable final long user, @AuthenticationPrincipal final UrAccount actor
     ) throws Exception {
         new UrsGlobalAuthorized(new UrsPostgres(this.ctx), actor).remove(user);
         return ResponseEntity.noContent().build();
@@ -199,9 +200,9 @@ public final class UrsHttp {
     public ResponseEntity<JsonNode> assignRole(
         @PathVariable final long user,
         @RequestBody final JsonNode request,
-        @AuthenticationPrincipal final User actor
+        @AuthenticationPrincipal final UrAccount actor
     ) throws Exception {
-        final User target = new UrsGlobalAuthorized(
+        final UrAccount target = new UrsGlobalAuthorized(
             new UrsPostgres(this.ctx), actor
         ).identification(user);
         final JsonNode rolenode = request.get("role");
@@ -239,7 +240,7 @@ public final class UrsHttp {
      */
     @GetMapping("/users/{user}/roles")
     public ResponseEntity<JsonNode> listRoles(
-        @PathVariable final long user, @AuthenticationPrincipal final User actor
+        @PathVariable final long user, @AuthenticationPrincipal final UrAccount actor
     ) throws Exception {
         return ResponseEntity.ok(
             new UrsGlobalAuthorized(new UrsPostgres(this.ctx), actor)
@@ -262,7 +263,7 @@ public final class UrsHttp {
     public ResponseEntity<Void> removeRole(
         @PathVariable final long user,
         @PathVariable final long role,
-        @AuthenticationPrincipal final User actor
+        @AuthenticationPrincipal final UrAccount actor
     ) throws Exception {
         new UrsGlobalAuthorized(new UrsPostgres(this.ctx), actor)
             .identification(user)
@@ -428,7 +429,7 @@ public final class UrsHttp {
     )
     public ResponseEntity<?> schoolUsers(
         @PathVariable final long school, final HttpServletRequest request,
-        @AuthenticationPrincipal final User actor
+        @AuthenticationPrincipal final UrAccount actor
     ) throws Exception {
         final MediaType type = new AcHttp(
             request, List.of(
@@ -471,7 +472,7 @@ public final class UrsHttp {
     )
     public ResponseEntity<?> addSchoolUser(
         @PathVariable final long school, @PathVariable final long user,
-        final HttpServletRequest request, @AuthenticationPrincipal final User actor
+        final HttpServletRequest request, @AuthenticationPrincipal final UrAccount actor
     ) throws Exception {
         final MediaType type = new AcHttp(
             request, List.of(
@@ -480,7 +481,7 @@ public final class UrsHttp {
             )
         ).type();
         final Users members = this.members(actor, school);
-        final User selected = new UrsPostgres(this.ctx).identification(user);
+        final UrAccount selected = new UrsPostgres(this.ctx).identification(user);
         final HttpStatus status;
         if (members.contains(selected)) {
             status = HttpStatus.OK;
@@ -524,7 +525,7 @@ public final class UrsHttp {
     )
     public ResponseEntity<?> attachSchoolUser(
         @PathVariable final long school, @RequestBody final JsonNode document,
-        final HttpServletRequest request, @AuthenticationPrincipal final User actor
+        final HttpServletRequest request, @AuthenticationPrincipal final UrAccount actor
     ) throws Exception {
         final JsonNode login = document.get("login");
         if (login == null || login.asText().isBlank()) {
@@ -548,7 +549,7 @@ public final class UrsHttp {
     @DeleteMapping("/schools/{school}/users/{user}")
     public ResponseEntity<Void> removeSchoolUser(
         @PathVariable final long school, @PathVariable final long user,
-        @AuthenticationPrincipal final User actor
+        @AuthenticationPrincipal final UrAccount actor
     ) throws Exception {
         this.members(actor, school).remove(user);
         return ResponseEntity.noContent().build();
@@ -569,7 +570,7 @@ public final class UrsHttp {
     )
     public ResponseEntity<JsonNode> schoolRoles(
         @PathVariable final long school, @PathVariable final long user,
-        @AuthenticationPrincipal final User actor
+        @AuthenticationPrincipal final UrAccount actor
     ) throws Exception {
         final Users members = this.members(actor, school);
         return ResponseEntity.ok(
@@ -594,7 +595,7 @@ public final class UrsHttp {
     )
     public ResponseEntity<JsonNode> grantSchoolRole(
         @PathVariable final long school, @PathVariable final long user,
-        @RequestBody final JsonNode document, @AuthenticationPrincipal final User actor
+        @RequestBody final JsonNode document, @AuthenticationPrincipal final UrAccount actor
     ) throws Exception {
         final JsonNode name = document.get("role");
         if (name == null || name.asText().isBlank()) {
@@ -629,7 +630,7 @@ public final class UrsHttp {
     @DeleteMapping("/schools/{school}/users/{user}/roles/{role}")
     public ResponseEntity<Void> revokeSchoolRole(
         @PathVariable final long school, @PathVariable final long user,
-        @PathVariable final long role, @AuthenticationPrincipal final User actor
+        @PathVariable final long role, @AuthenticationPrincipal final UrAccount actor
     ) throws Exception {
         final Users members = this.members(actor, school);
         members.roles(members.identification(user)).revoke(role);
@@ -649,7 +650,7 @@ public final class UrsHttp {
             .with("registered", request.getParameterMap().containsKey("registered"));
     }
 
-    private Users members(final User actor, final long id) throws Exception {
+    private Users members(final UrAccount actor, final long id) throws Exception {
         return new SlsAuthorized(new SlsPostgres(this.ctx), actor).school(id).users();
     }
 }

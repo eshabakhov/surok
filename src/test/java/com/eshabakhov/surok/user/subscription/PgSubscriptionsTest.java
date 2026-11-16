@@ -3,7 +3,7 @@
  */
 package com.eshabakhov.surok.user.subscription;
 
-import com.eshabakhov.surok.User;
+import com.eshabakhov.surok.UrAccount;
 import com.eshabakhov.surok.school.input.SlInput;
 import com.eshabakhov.surok.school.input.SlInputName;
 import com.eshabakhov.surok.user.ExpiryReset;
@@ -52,7 +52,7 @@ final class PgSubscriptionsTest {
      */
     @Test
     void preservesSchoolRolesWhenUpgrading(@Autowired final DSLContext ctx) throws Exception {
-        final User user = new UrsPostgres(ctx).register(
+        final UrAccount user = new UrsPostgres(ctx).register(
             String.format("Ученик O'Brien %s", UUID.randomUUID()),
             "ValidPassword1!",
             String.format("upgrade-%s@example.com", UUID.randomUUID()),
@@ -140,7 +140,7 @@ final class PgSubscriptionsTest {
     void restoresBasicRolesAfterSubscriptionExpiry(
         @Autowired final DSLContext ctx
     ) throws Exception {
-        final User user = new UrsPostgres(ctx).register(
+        final UrAccount user = new UrsPostgres(ctx).register(
             String.format("Просмотрщик %s", UUID.randomUUID()),
             "ValidPassword1!",
             String.format("expired-%s@example.com", UUID.randomUUID()),

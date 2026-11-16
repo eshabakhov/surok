@@ -3,7 +3,7 @@
  */
 package com.eshabakhov.surok.security;
 
-import com.eshabakhov.surok.User;
+import com.eshabakhov.surok.UrAccount;
 import com.eshabakhov.surok.sql.ClasspathSql;
 import com.eshabakhov.surok.user.Roles;
 import com.eshabakhov.surok.user.UrsPostgres;
@@ -57,7 +57,7 @@ public final class BootstrapAdmin implements ApplicationRunner {
             } else {
                 this.validateConfig();
                 final UrsPostgres users = new UrsPostgres(this.ctx);
-                final User admin = users.register(
+                final UrAccount admin = users.register(
                     this.username(),
                     this.password(),
                     this.email(),

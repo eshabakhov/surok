@@ -6,7 +6,6 @@ package com.eshabakhov.surok.user;
 import com.eshabakhov.surok.Media;
 import com.eshabakhov.surok.Schools;
 import com.eshabakhov.surok.UrAccount;
-import com.eshabakhov.surok.User;
 import com.eshabakhov.surok.security.right.RtAdmin;
 import java.util.Collection;
 import java.util.Map;
@@ -36,14 +35,14 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 public final class UrAcAuth implements UserDetails, OAuth2User, UrAccount {
 
     /** User. */
-    private final User user;
+    private final UrAccount user;
 
     /**
-     * New authenticated user.
+     * New Spring principal backed by a registered account.
      *
      * @param user User
      */
-    public UrAcAuth(final User user) {
+    public UrAcAuth(final UrAccount user) {
         this.user = user;
     }
 
