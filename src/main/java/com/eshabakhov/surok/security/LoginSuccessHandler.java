@@ -3,7 +3,7 @@
  */
 package com.eshabakhov.surok.security;
 
-import com.eshabakhov.surok.User;
+import com.eshabakhov.surok.UrAccount;
 import com.eshabakhov.surok.sql.ClasspathSql;
 import com.eshabakhov.surok.user.UrsPostgres;
 import jakarta.servlet.http.HttpServletRequest;
@@ -38,7 +38,7 @@ public final class LoginSuccessHandler implements AuthenticationSuccessHandler {
         final HttpServletResponse response,
         final Authentication authentication
     ) throws IOException {
-        final User user;
+        final UrAccount user;
         try {
             user = new UrsPostgres(this.ctx).identification(authentication.getName());
         // @checkstyle IllegalCatchCheck (1 line)

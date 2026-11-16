@@ -6,7 +6,6 @@ package com.eshabakhov.surok.user;
 import com.eshabakhov.surok.Media;
 import com.eshabakhov.surok.Schools;
 import com.eshabakhov.surok.UrAccount;
-import com.eshabakhov.surok.User;
 import com.eshabakhov.surok.security.right.RtAdmin;
 
 /**
@@ -17,14 +16,14 @@ import com.eshabakhov.surok.security.right.RtAdmin;
 public final class UrAcBrief implements UrAccount {
 
     /** Origin user. */
-    private final User origin;
+    private final UrAccount origin;
 
     /**
      * New brief representation.
      *
      * @param origin Origin user
      */
-    public UrAcBrief(final User origin) {
+    public UrAcBrief(final UrAccount origin) {
         this.origin = origin;
     }
 

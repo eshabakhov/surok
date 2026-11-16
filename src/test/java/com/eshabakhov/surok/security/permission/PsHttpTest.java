@@ -3,7 +3,7 @@
  */
 package com.eshabakhov.surok.security.permission;
 
-import com.eshabakhov.surok.User;
+import com.eshabakhov.surok.UrAccount;
 import com.eshabakhov.surok.user.Roles;
 import com.eshabakhov.surok.user.UrAcAuth;
 import com.eshabakhov.surok.user.UrAcPostgres;
@@ -356,7 +356,7 @@ final class PsHttpTest {
         final Roles.RoleEnum role, @Autowired final MockMvc mvc,
         @Autowired final DSLContext ctx
     ) throws Exception {
-        final User actor = new UrAcPostgres(ctx, 53);
+        final UrAccount actor = new UrAcPostgres(ctx, 53);
         actor.roles().grant(role);
         MatcherAssert.assertThat(
             "A subscription role opened the permission page",

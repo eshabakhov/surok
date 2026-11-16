@@ -6,7 +6,7 @@ package com.eshabakhov.surok.user;
 import com.eshabakhov.surok.Media;
 import com.eshabakhov.surok.PrItems;
 import com.eshabakhov.surok.Printable;
-import com.eshabakhov.surok.User;
+import com.eshabakhov.surok.UrAccount;
 import java.util.Locale;
 
 /**
@@ -17,14 +17,14 @@ import java.util.Locale;
 public final class UrProfile implements Printable {
 
     /** Current user. */
-    private final User origin;
+    private final UrAccount origin;
 
     /**
      * New profile representation.
      *
      * @param origin Current user
      */
-    public UrProfile(final User origin) {
+    public UrProfile(final UrAccount origin) {
         this.origin = origin;
     }
 

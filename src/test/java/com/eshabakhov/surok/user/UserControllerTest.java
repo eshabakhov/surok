@@ -4,7 +4,7 @@
 package com.eshabakhov.surok.user;
 
 import com.eshabakhov.surok.School;
-import com.eshabakhov.surok.User;
+import com.eshabakhov.surok.UrAccount;
 import com.eshabakhov.surok.school.input.SlInput;
 import com.eshabakhov.surok.school.input.SlInputName;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -71,7 +71,7 @@ final class UserControllerTest {
                     )
                 ).with(SecurityMockMvcRequestPostProcessors.csrf())
         ).andReturn();
-        final User created = new UrsPostgres(ctx).identification(name);
+        final UrAccount created = new UrsPostgres(ctx).identification(name);
         MatcherAssert.assertThat(
             "Registration did not create an account at the canonical user URI",
             List.of(
@@ -109,7 +109,7 @@ final class UserControllerTest {
     void rejectsRoleListingByARegularUser(
         @Autowired final MockMvc mvc, @Autowired final DSLContext ctx
     ) throws Exception {
-        final User actor = new UrsPostgres(ctx).register(
+        final UrAccount actor = new UrsPostgres(ctx).register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
         );
@@ -135,7 +135,7 @@ final class UserControllerTest {
     void rejectsRoleAssignmentByARegularUser(
         @Autowired final MockMvc mvc, @Autowired final DSLContext ctx
     ) throws Exception {
-        final User actor = new UrsPostgres(ctx).register(
+        final UrAccount actor = new UrsPostgres(ctx).register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
         );
@@ -164,11 +164,11 @@ final class UserControllerTest {
     void assignsGlobalRoleForAnAdministrator(
         @Autowired final MockMvc mvc, @Autowired final DSLContext ctx
     ) throws Exception {
-        final User actor = new UrsPostgres(ctx).register(
+        final UrAccount actor = new UrsPostgres(ctx).register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
         );
-        final User target = new UrsPostgres(ctx).register(
+        final UrAccount target = new UrsPostgres(ctx).register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
         );
@@ -199,12 +199,12 @@ final class UserControllerTest {
     void printsGrantedAndListedRolesWithoutReflectiveSerialization(
         final boolean scoped, @Autowired final MockMvc mvc, @Autowired final DSLContext ctx
     ) throws Exception {
-        final User actor = new UrsPostgres(ctx).register(
+        final UrAccount actor = new UrsPostgres(ctx).register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
         );
         actor.roles().grant(Roles.RoleEnum.ADMIN);
-        final User target = new UrsPostgres(ctx).register(
+        final UrAccount target = new UrsPostgres(ctx).register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
         );

@@ -3,7 +3,7 @@
  */
 package com.eshabakhov.surok.security;
 
-import com.eshabakhov.surok.User;
+import com.eshabakhov.surok.UrAccount;
 import com.eshabakhov.surok.sql.ClasspathSql;
 import com.eshabakhov.surok.user.UrsPostgres;
 import jakarta.servlet.http.HttpServletRequest;
@@ -46,7 +46,7 @@ public final class LoginFailureHandler implements AuthenticationFailureHandler {
             UsernameNotFoundException.class, "user_not_found"
         ).getOrDefault(exception.getClass(), "unknown");
         if ("bad_credentials".equals(error)) {
-            final User user;
+            final UrAccount user;
             try {
                 user = new UrsPostgres(this.ctx)
                     .identification(exception.getAuthenticationRequest().getPrincipal().toString());

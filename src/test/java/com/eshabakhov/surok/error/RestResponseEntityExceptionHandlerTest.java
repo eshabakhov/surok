@@ -3,7 +3,7 @@
  */
 package com.eshabakhov.surok.error;
 
-import com.eshabakhov.surok.User;
+import com.eshabakhov.surok.UrAccount;
 import com.eshabakhov.surok.user.Roles;
 import com.eshabakhov.surok.user.UrAcAuth;
 import com.eshabakhov.surok.user.UrsPostgres;
@@ -174,7 +174,7 @@ final class RestResponseEntityExceptionHandlerTest {
 
     @Test
     void rendersAuthorizationErrors() throws Exception {
-        final User actor = new UrsPostgres(this.ctx).register(
+        final UrAccount actor = new UrsPostgres(this.ctx).register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
         );
@@ -299,7 +299,7 @@ final class RestResponseEntityExceptionHandlerTest {
 
     private UrAcAuth administrator() throws Exception {
         final String username = UUID.randomUUID().toString();
-        final User user = new UrsPostgres(this.ctx).register(
+        final UrAccount user = new UrsPostgres(this.ctx).register(
             username, "ValidPassword1!", String.format("%s@example.com", username), false
         );
         user.roles().grant(Roles.RoleEnum.ADMIN);

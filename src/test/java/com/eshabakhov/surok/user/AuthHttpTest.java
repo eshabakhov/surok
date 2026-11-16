@@ -3,7 +3,7 @@
  */
 package com.eshabakhov.surok.user;
 
-import com.eshabakhov.surok.User;
+import com.eshabakhov.surok.UrAccount;
 import com.eshabakhov.surok.school.SlsPostgres;
 import com.eshabakhov.surok.school.input.SlInput;
 import com.eshabakhov.surok.school.input.SlInputName;
@@ -133,7 +133,7 @@ final class AuthHttpTest {
                 new SlInputName(new SlInput(), "Школа")
             ).uid();
         }
-        final User user = new UrsPostgres(this.ctx, identifier)
+        final UrAccount user = new UrsPostgres(this.ctx, identifier)
             .register("visitor", "ValidPassword1!", "visitor@example.com", false);
         if (school) {
             new UrsPostgres(this.ctx, identifier).roles(user).grant(role);
@@ -166,7 +166,7 @@ final class AuthHttpTest {
             .andExpect(MockMvcResultMatchers.status().isFound()).andExpect(
                 MockMvcResultMatchers.redirectedUrl("/users/login?registered")
             );
-        final User created = new UrsPostgres(this.ctx).identification("visitor");
+        final UrAccount created = new UrsPostgres(this.ctx).identification("visitor");
         this.mvc.perform(
             SecurityMockMvcRequestBuilders.formLogin().user("visitor").password("ValidPassword1!")
         ).andExpect(MockMvcResultMatchers.status().isFound()).andExpect(
@@ -180,7 +180,7 @@ final class AuthHttpTest {
 
     @Test
     void keepsTheSignedInUserWhenOldBasicCredentialsRemain() throws Exception {
-        final User admin = new UrsPostgres(this.ctx).register(
+        final UrAccount admin = new UrsPostgres(this.ctx).register(
             "administrator", "ValidPassword1!", "administrator@example.com", false
         );
         admin.roles().grant(Roles.RoleEnum.ADMIN);
