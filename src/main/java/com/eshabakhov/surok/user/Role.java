@@ -3,8 +3,9 @@
  */
 package com.eshabakhov.surok.user;
 
+import com.eshabakhov.surok.Media;
+import com.eshabakhov.surok.Printable;
 import com.eshabakhov.surok.sql.ClasspathSql;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import org.jooq.DSLContext;
 
 /**
@@ -12,14 +13,18 @@ import org.jooq.DSLContext;
  *
  * @since 0.0.1
  */
-public interface Role {
+public interface Role extends Printable {
+
+    @Override
+    default <T> Media<T> print(final Media<T> media) {
+        return media.with("uid", this.uid()).with("name", this.name());
+    }
 
     /**
      * User role assignment unique identifier.
      *
      * @return UserRole ID
      */
-    @JsonProperty
     long uid();
 
     /**
@@ -27,7 +32,6 @@ public interface Role {
      *
      * @return Role name
      */
-    @JsonProperty
     String name();
 
     /**

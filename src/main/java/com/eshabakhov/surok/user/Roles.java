@@ -3,8 +3,10 @@
  */
 package com.eshabakhov.surok.user;
 
+import com.eshabakhov.surok.Media;
+import com.eshabakhov.surok.PrItems;
+import com.eshabakhov.surok.Printable;
 import com.eshabakhov.surok.sql.ClasspathSql;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.jooq.DSLContext;
@@ -15,7 +17,12 @@ import org.jooq.Record;
  *
  * @since 0.0.1
  */
-public interface Roles {
+public interface Roles extends Printable {
+
+    @Override
+    default <T> Media<T> print(final Media<T> media) throws Exception {
+        return media.with("list", new PrItems("role", this.list()));
+    }
 
     /**
      * Whether this collection contains the named role.
@@ -39,7 +46,6 @@ public interface Roles {
      *
      * @return List of user roles
      */
-    @JsonProperty
     List<Role> list();
 
     /**
