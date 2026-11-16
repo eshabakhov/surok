@@ -4,7 +4,7 @@
 package com.eshabakhov.surok.school.building.cabinet;
 
 import com.eshabakhov.surok.School;
-import com.eshabakhov.surok.User;
+import com.eshabakhov.surok.UrAccount;
 import com.eshabakhov.surok.school.SlsPostgres;
 import com.eshabakhov.surok.school.building.cabinet.input.CbInput;
 import com.eshabakhov.surok.school.building.cabinet.input.CbInputName;
@@ -53,7 +53,7 @@ final class CbAuthorizedTest {
     @Test
     void deniesRevisionAfterDirectorRoleRevocation(@Autowired final DSLContext ctx)
         throws Exception {
-        final User actor = new UrsPostgres(ctx).register(
+        final UrAccount actor = new UrsPostgres(ctx).register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
         );
@@ -82,7 +82,7 @@ final class CbAuthorizedTest {
      */
     @Test
     void deniesRevisionByAViewer(@Autowired final DSLContext ctx) throws Exception {
-        final User actor = new UrsPostgres(ctx).register(
+        final UrAccount actor = new UrsPostgres(ctx).register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
         );
@@ -111,7 +111,7 @@ final class CbAuthorizedTest {
      */
     @Test
     void revisesACabinetForAnAdministrator(@Autowired final DSLContext ctx) throws Exception {
-        final User actor = new UrsPostgres(ctx).register(
+        final UrAccount actor = new UrsPostgres(ctx).register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
         );

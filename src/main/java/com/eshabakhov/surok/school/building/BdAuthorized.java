@@ -5,7 +5,7 @@ package com.eshabakhov.surok.school.building;
 
 import com.eshabakhov.surok.Media;
 import com.eshabakhov.surok.School;
-import com.eshabakhov.surok.User;
+import com.eshabakhov.surok.UrAccount;
 import com.eshabakhov.surok.school.building.cabinet.Cabinets;
 import com.eshabakhov.surok.school.building.cabinet.CbsAuthorized;
 import com.eshabakhov.surok.security.right.RtAdmin;
@@ -29,7 +29,7 @@ public final class BdAuthorized implements Building {
     private final School school;
 
     /** Acting user. */
-    private final User actor;
+    private final UrAccount actor;
 
     /**
      * New protected building.
@@ -38,7 +38,7 @@ public final class BdAuthorized implements Building {
      * @param school School that owns it
      * @param actor Acting user
      */
-    public BdAuthorized(final Building origin, final School school, final User actor) {
+    public BdAuthorized(final Building origin, final School school, final UrAccount actor) {
         this.origin = origin;
         this.school = school;
         this.actor = actor;

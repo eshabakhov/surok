@@ -8,7 +8,7 @@ import com.eshabakhov.surok.Media;
 import com.eshabakhov.surok.Page;
 import com.eshabakhov.surok.School;
 import com.eshabakhov.surok.Sorts;
-import com.eshabakhov.surok.User;
+import com.eshabakhov.surok.UrAccount;
 import com.eshabakhov.surok.security.right.RtAdmin;
 import com.eshabakhov.surok.security.right.RtDirectorOrDeputy;
 import com.eshabakhov.surok.security.right.RtEither;
@@ -31,7 +31,7 @@ public final class CbsAuthorized implements Cabinets {
     private final School school;
 
     /** Acting user. */
-    private final User actor;
+    private final UrAccount actor;
 
     /**
      * New protected cabinet collection.
@@ -40,7 +40,7 @@ public final class CbsAuthorized implements Cabinets {
      * @param school School that owns them
      * @param actor Acting user
      */
-    public CbsAuthorized(final Cabinets origin, final School school, final User actor) {
+    public CbsAuthorized(final Cabinets origin, final School school, final UrAccount actor) {
         this.origin = origin;
         this.school = school;
         this.actor = actor;
