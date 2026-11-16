@@ -16,6 +16,7 @@ import com.eshabakhov.surok.school.SlsAuthorized;
 import com.eshabakhov.surok.school.SlsBrief;
 import com.eshabakhov.surok.school.SlsPostgres;
 import com.eshabakhov.surok.security.CsToken;
+import com.eshabakhov.surok.security.right.RtAdmin;
 import com.eshabakhov.surok.user.subscription.PgSubscriptions;
 import com.eshabakhov.surok.user.subscription.SpWeb;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -166,7 +167,7 @@ public final class UrsHttp {
                 "info", Map.of(
                     "corporate", created.info().corporate(), "alive", created.info().alive()
                 ),
-                "admin", created.isAdmin()
+                "admin", new RtAdmin(created).allows()
             )
         );
     }
@@ -321,7 +322,7 @@ public final class UrsHttp {
     ) throws Exception {
         final MediaType type = new AcHttp(request).type();
         final ResponseEntity<String> response;
-        if (user.info().corporate() || user.isAdmin()) {
+        if (user.info().corporate() || new RtAdmin(user).allows()) {
             response = ResponseEntity.status(HttpStatus.FOUND)
                 .location(URI.create("/users/profile")).build();
         } else {
@@ -367,7 +368,7 @@ public final class UrsHttp {
     ) throws Exception {
         new AcHttp(request).type();
         String target = "/users/profile";
-        if (!user.info().corporate() && !user.isAdmin()) {
+        if (!user.info().corporate() && !new RtAdmin(user).allows()) {
             final Subscription.Plan selected;
             try {
                 selected = Subscription.Plan.valueOf(plan);
@@ -404,7 +405,7 @@ public final class UrsHttp {
     ) throws Exception {
         new AcHttp(request).type();
         String target = "/users/profile";
-        if (!user.info().corporate() && !user.isAdmin()) {
+        if (!user.info().corporate() && !new RtAdmin(user).allows()) {
             new PgSubscriptions(this.ctx, user).subscription(Subscription.Plan.BASIC);
             target = "/users/subscription?cancelled";
         }

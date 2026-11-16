@@ -65,11 +65,6 @@ public final class UrGlobalAuthorized implements User {
     }
 
     @Override
-    public boolean isAdmin() {
-        return new RtAdmin(this.actor).permit(this.origin).isAdmin();
-    }
-
-    @Override
     public <T> Media<T> print(final Media<T> media) throws Exception {
         return new RtAdmin(this.actor).permit(this.origin).print(media);
     }

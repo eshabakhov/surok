@@ -53,11 +53,4 @@ public interface User extends Printable {
      */
     @JsonProperty
     ReferenceInformation info();
-
-    /**
-     * Administrative access marker.
-     *
-     * @return Administrative access marker
-     */
-    boolean isAdmin();
 }
