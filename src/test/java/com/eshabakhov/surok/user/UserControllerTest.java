@@ -117,7 +117,7 @@ final class UserControllerTest {
             "A regular user listed global roles",
             mvc.perform(
                 MockMvcRequestBuilders.get("/users/{user}/roles", actor.uid()).with(
-                    SecurityMockMvcRequestPostProcessors.user(new AuthUser(actor))
+                    SecurityMockMvcRequestPostProcessors.user(new UrAcAuth(actor))
                 )
             ).andReturn().getResponse().getStatus(),
             Matchers.is(HttpStatus.FORBIDDEN.value())
@@ -146,7 +146,7 @@ final class UserControllerTest {
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("{\"role\":\"PRO_MAKER\"}")
                     .with(SecurityMockMvcRequestPostProcessors.csrf()).with(
-                        SecurityMockMvcRequestPostProcessors.user(new AuthUser(actor))
+                        SecurityMockMvcRequestPostProcessors.user(new UrAcAuth(actor))
                     )
             ).andReturn().getResponse().getStatus(),
             Matchers.is(HttpStatus.FORBIDDEN.value())
@@ -178,7 +178,7 @@ final class UserControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"role\":\"PRO_MAKER\"}")
                 .with(SecurityMockMvcRequestPostProcessors.csrf()).with(
-                    SecurityMockMvcRequestPostProcessors.user(new AuthUser(actor))
+                    SecurityMockMvcRequestPostProcessors.user(new UrAcAuth(actor))
                 )
         ).andReturn();
         MatcherAssert.assertThat(
@@ -234,7 +234,7 @@ final class UserControllerTest {
             MockMvcRequestBuilders.post(path).contentType(type)
                 .content(String.format("{\"role\":\"%s\"}", name))
                 .with(SecurityMockMvcRequestPostProcessors.csrf()).with(
-                    SecurityMockMvcRequestPostProcessors.user(new AuthUser(actor))
+                    SecurityMockMvcRequestPostProcessors.user(new UrAcAuth(actor))
                 )
         ).andReturn();
         final String expected = String.format(
@@ -247,7 +247,7 @@ final class UserControllerTest {
                 new ObjectMapper().readTree(
                     mvc.perform(
                         MockMvcRequestBuilders.get(path).with(
-                            SecurityMockMvcRequestPostProcessors.user(new AuthUser(actor))
+                            SecurityMockMvcRequestPostProcessors.user(new UrAcAuth(actor))
                         )
                     ).andReturn().getResponse().getContentAsString()
                 )

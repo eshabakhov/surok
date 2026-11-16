@@ -7,8 +7,8 @@ import com.eshabakhov.surok.User;
 import com.eshabakhov.surok.federal.curriculum.requirement.Requirement;
 import com.eshabakhov.surok.federal.curriculum.requirement.RqsPostgres;
 import com.eshabakhov.surok.federal.curriculum.requirement.input.RqInputHttp;
-import com.eshabakhov.surok.user.AuthUser;
 import com.eshabakhov.surok.user.Roles;
+import com.eshabakhov.surok.user.UrAcAuth;
 import com.eshabakhov.surok.user.UrAcPostgres;
 import java.util.List;
 import java.util.Map;
@@ -330,7 +330,7 @@ final class RqsHttpTest {
         if (role != Roles.RoleEnum.VIEWER) {
             user.roles().grant(role);
         }
-        final AuthUser principal = new AuthUser(user);
+        final UrAcAuth principal = new UrAcAuth(user);
         final MockHttpSession session = new MockHttpSession();
         session.setAttribute(
             HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY,

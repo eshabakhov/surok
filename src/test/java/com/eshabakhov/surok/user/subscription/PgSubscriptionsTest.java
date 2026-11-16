@@ -6,11 +6,11 @@ package com.eshabakhov.surok.user.subscription;
 import com.eshabakhov.surok.User;
 import com.eshabakhov.surok.school.input.SlInput;
 import com.eshabakhov.surok.school.input.SlInputName;
-import com.eshabakhov.surok.user.AuthUser;
 import com.eshabakhov.surok.user.ExpiryReset;
 import com.eshabakhov.surok.user.Role;
 import com.eshabakhov.surok.user.Roles;
 import com.eshabakhov.surok.user.Subscription;
+import com.eshabakhov.surok.user.UrAcAuth;
 import com.eshabakhov.surok.user.UrsPostgres;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -62,7 +62,7 @@ final class PgSubscriptionsTest {
             new SlInputName(new SlInput(), "Школа подписчика")
         ).uid();
         user.schools().school(school).users().roles(user).grant(Roles.RoleEnum.TEACHER);
-        new PgSubscriptions(ctx, new AuthUser(user))
+        new PgSubscriptions(ctx, new UrAcAuth(user))
             .subscription(Subscription.Plan.PRO);
         MatcherAssert.assertThat(
             "Upgraded subscription lost a role or retained an incorrect role",
@@ -87,7 +87,7 @@ final class PgSubscriptionsTest {
     void retainsPaidSubscriptionExpiry(@Autowired final DSLContext ctx) throws Exception {
         final PgSubscriptions plans = new PgSubscriptions(
             ctx,
-            new AuthUser(
+            new UrAcAuth(
                 new UrsPostgres(ctx).register(
                     String.format("План %s", UUID.randomUUID()),
                     "ValidPassword1!",
@@ -113,7 +113,7 @@ final class PgSubscriptionsTest {
     void makesDowngradedSubscriptionsPerpetual(@Autowired final DSLContext ctx) throws Exception {
         final PgSubscriptions plans = new PgSubscriptions(
             ctx,
-            new AuthUser(
+            new UrAcAuth(
                 new UrsPostgres(ctx).register(
                     String.format("Лицей %s", UUID.randomUUID()),
                     "ValidPassword1!",
@@ -146,7 +146,7 @@ final class PgSubscriptionsTest {
             String.format("expired-%s@example.com", UUID.randomUUID()),
             false
         );
-        new PgSubscriptions(ctx, new AuthUser(user))
+        new PgSubscriptions(ctx, new UrAcAuth(user))
             .subscription(Subscription.Plan.VIEWER);
         final List<String> before = user.roles().list().stream().map(Role::name).toList();
         ctx.execute(

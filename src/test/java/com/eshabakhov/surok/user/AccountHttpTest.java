@@ -127,7 +127,7 @@ final class AccountHttpTest {
     @ParameterizedTest
     @ValueSource(booleans = {false, true})
     void printsProfileWithoutSchool(final boolean admin) throws Exception {
-        final AuthUser user = this.user(false, null);
+        final UrAcAuth user = this.user(false, null);
         if (admin) {
             user.roles().grant(Roles.RoleEnum.ADMIN);
         }
@@ -148,7 +148,7 @@ final class AccountHttpTest {
 
     @Test
     void printsEmptyRoles() throws Exception {
-        final AuthUser user = this.user(false, 1L);
+        final UrAcAuth user = this.user(false, 1L);
         this.ctx.execute("DELETE FROM public.user_role WHERE user_id = ?", user.uid());
         this.mvc.perform(
             MockMvcRequestBuilders.get("/users/profile").accept(MediaType.TEXT_HTML).with(
@@ -162,7 +162,7 @@ final class AccountHttpTest {
     @ParameterizedTest
     @ValueSource(booleans = {false, true})
     void protectsLogout(final boolean protectedform) throws Exception {
-        final AuthUser user = this.user(false, 1L);
+        final UrAcAuth user = this.user(false, 1L);
         final MockHttpServletRequestBuilder request;
         if (protectedform) {
             request = this.form("/logout", user).accept(MediaType.TEXT_HTML);
@@ -202,7 +202,7 @@ final class AccountHttpTest {
     @ParameterizedTest
     @ValueSource(strings = {"ADVANCED", "PRO", "VIEWER"})
     void rendersPaidPlanAndExpiry(final Subscription.Plan plan) throws Exception {
-        final AuthUser user = this.user(false, 1L);
+        final UrAcAuth user = this.user(false, 1L);
         new PgSubscriptions(this.ctx, user).subscription(plan);
         final OffsetDateTime expiry = OffsetDateTime.now(ZoneOffset.UTC).plusDays(10);
         this.ctx.execute(
@@ -230,7 +230,7 @@ final class AccountHttpTest {
 
     @Test
     void rendersExpiredSubscription() throws Exception {
-        final AuthUser user = this.user(false, 1L);
+        final UrAcAuth user = this.user(false, 1L);
         new PgSubscriptions(this.ctx, user).subscription(Subscription.Plan.PRO);
         this.ctx.execute(
             """
@@ -275,7 +275,7 @@ final class AccountHttpTest {
     void redirectsRestrictedAccountsWithoutChangingData(
         final boolean corporate, final boolean admin
     ) throws Exception {
-        final AuthUser user = this.user(corporate, 1L);
+        final UrAcAuth user = this.user(corporate, 1L);
         if (admin) {
             user.roles().grant(Roles.RoleEnum.ADMIN);
         }
@@ -307,7 +307,7 @@ final class AccountHttpTest {
     @ParameterizedTest
     @ValueSource(strings = {"application/json", "application/xml", "*/*;q=0", "invalid"})
     void rejectsUnsupportedAcceptBeforeSubscriptionChanges(final String accept) throws Exception {
-        final AuthUser user = this.user(false, 1L);
+        final UrAcAuth user = this.user(false, 1L);
         for (final String path : List.of("/users/profile", "/users/subscription")) {
             this.mvc.perform(
                 MockMvcRequestBuilders.get(path).header("Accept", accept)
@@ -357,7 +357,7 @@ final class AccountHttpTest {
     @ParameterizedTest
     @ValueSource(strings = {"ADVANCED", "PRO", "VIEWER"})
     void activatesPaidPlanAndUpdatesRoles(final Subscription.Plan plan) throws Exception {
-        final AuthUser user = this.user(false, 1L);
+        final UrAcAuth user = this.user(false, 1L);
         user.schools().school(1L).users().roles(user).grant(Roles.RoleEnum.TEACHER);
         this.mvc.perform(
             this.form("/users/subscription/checkout", user).param("plan", plan.name())
@@ -381,7 +381,7 @@ final class AccountHttpTest {
 
     @Test
     void cancelsPlanAndPreservesSchoolRoles() throws Exception {
-        final AuthUser user = this.user(false, 1L);
+        final UrAcAuth user = this.user(false, 1L);
         user.schools().school(1L).users().roles(user).grant(Roles.RoleEnum.TEACHER);
         final PgSubscriptions plans = new PgSubscriptions(this.ctx, user);
         plans.subscription(Subscription.Plan.PRO);
@@ -407,7 +407,7 @@ final class AccountHttpTest {
 
     @Test
     void keepsBasicCheckoutAsNoOp() throws Exception {
-        final AuthUser user = this.user(false, 1L);
+        final UrAcAuth user = this.user(false, 1L);
         final PgSubscriptions plans = new PgSubscriptions(this.ctx, user);
         plans.subscription(Subscription.Plan.PRO);
         this.mvc.perform(this.form("/users/subscription/checkout", user).param("plan", "BASIC"))
@@ -426,16 +426,16 @@ final class AccountHttpTest {
         registry.add("spring.liquibase.enabled", () -> true);
     }
 
-    private AuthUser user(final boolean corporate, final Long school) throws Exception {
+    private UrAcAuth user(final boolean corporate, final Long school) throws Exception {
         final String name = UUID.randomUUID().toString();
-        return new AuthUser(
+        return new UrAcAuth(
             new UrsPostgres(this.ctx, school).register(
                 name, "ValidPassword1!", String.format("%s@example.com", name), corporate
             )
         );
     }
 
-    private MockHttpServletRequestBuilder form(final String path, final AuthUser user)
+    private MockHttpServletRequestBuilder form(final String path, final UrAcAuth user)
         throws Exception {
         final MvcResult page = this.mvc.perform(
             MockMvcRequestBuilders.get("/users/profile").accept(MediaType.TEXT_HTML)

@@ -3,7 +3,7 @@
  */
 package com.eshabakhov.surok.security;
 
-import com.eshabakhov.surok.user.AuthUser;
+import com.eshabakhov.surok.user.UrAcAuth;
 import com.eshabakhov.surok.user.UrsPostgres;
 import org.jooq.DSLContext;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -32,7 +32,7 @@ public final class DatabaseUserDetailsService implements UserDetailsService {
     @Override
     public UserDetails loadUserByUsername(final String username) throws UsernameNotFoundException {
         try {
-            return new AuthUser(new UrsPostgres(this.ctx).authentication(username));
+            return new UrAcAuth(new UrsPostgres(this.ctx).authentication(username));
             //@checkstyle IllegalCatch (1 line)
         } catch (final Exception ex) {
             throw new UsernameNotFoundException(String.format("User '%s' not found", username), ex);

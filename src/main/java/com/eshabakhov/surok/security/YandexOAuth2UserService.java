@@ -3,7 +3,7 @@
  */
 package com.eshabakhov.surok.security;
 
-import com.eshabakhov.surok.user.AuthUser;
+import com.eshabakhov.surok.user.UrAcAuth;
 import com.eshabakhov.surok.user.UrsPostgres;
 import com.eshabakhov.surok.user.UserNotFoundException;
 import java.util.UUID;
@@ -20,10 +20,10 @@ import org.springframework.stereotype.Service;
  *
  * <p>After the standard token exchange, fetches the Yandex user-info response,
  * then looks up (or creates) a matching user in the database and returns an
- * {@link AuthUser} as the principal. Because {@link AuthUser} implements both
+ * {@link UrAcAuth} as the principal. Because {@link UrAcAuth} implements both
  * {@link org.springframework.security.core.userdetails.UserDetails} and
  * {@link OAuth2User}, controllers can declare
- * {@code @AuthenticationPrincipal AuthUser} without any casting or special
+ * {@code @AuthenticationPrincipal UrAcAuth} without any casting or special
  * handling - it works identically for form-login and OAuth2 sessions.</p>
  * Usage example:
  * <pre>
@@ -43,7 +43,7 @@ public final class YandexOAuth2UserService extends DefaultOAuth2UserService {
     /** Database context. */
     private final DSLContext ctx;
 
-    /** User details service to load AuthUser by username. */
+    /** User details service to load UrAcAuth by username. */
     private final DatabaseUserDetailsService userdetails;
 
     YandexOAuth2UserService(
@@ -79,7 +79,7 @@ public final class YandexOAuth2UserService extends DefaultOAuth2UserService {
         }
     }
 
-    private AuthUser resolve(final String email) throws Exception {
+    private UrAcAuth resolve(final String email) throws Exception {
         final UrsPostgres urs = new UrsPostgres(this.ctx);
         String username;
         try {
@@ -100,6 +100,6 @@ public final class YandexOAuth2UserService extends DefaultOAuth2UserService {
                 ).account()
                 .username();
         }
-        return (AuthUser) this.userdetails.loadUserByUsername(username);
+        return (UrAcAuth) this.userdetails.loadUserByUsername(username);
     }
 }

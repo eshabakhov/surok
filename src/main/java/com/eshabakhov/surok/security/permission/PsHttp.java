@@ -12,7 +12,7 @@ import com.eshabakhov.surok.media.XsClasspath;
 import com.eshabakhov.surok.school.SlsBrief;
 import com.eshabakhov.surok.school.SlsPostgres;
 import com.eshabakhov.surok.security.CsToken;
-import com.eshabakhov.surok.user.AuthUser;
+import com.eshabakhov.surok.user.UrAcAuth;
 import com.eshabakhov.surok.user.UrAcBrief;
 import jakarta.servlet.http.HttpServletRequest;
 import java.nio.charset.StandardCharsets;
@@ -70,7 +70,7 @@ public class PsHttp {
         }
     )
     public ResponseEntity<?> page(
-        @AuthenticationPrincipal final AuthUser user, final HttpServletRequest request
+        @AuthenticationPrincipal final UrAcAuth user, final HttpServletRequest request
     ) throws Exception {
         final MediaType type = new AcHttp(request, "permissions.v1").type();
         final Permissions permissions = new PsAuthorized(this.origin, user);

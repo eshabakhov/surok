@@ -8,7 +8,7 @@ import java.util.Set;
 
 /**
  * Representative account used only to inspect a role's school scope.
- * Its public shape supports the same school membership expressions as AuthUser.
+ * Its public shape supports the same school membership expressions as UrAcAuth.
  *
  * @since 0.0.1
  */

@@ -4,8 +4,8 @@
 package com.eshabakhov.surok.error;
 
 import com.eshabakhov.surok.User;
-import com.eshabakhov.surok.user.AuthUser;
 import com.eshabakhov.surok.user.Roles;
+import com.eshabakhov.surok.user.UrAcAuth;
 import com.eshabakhov.surok.user.UrsPostgres;
 import java.util.UUID;
 import org.hamcrest.MatcherAssert;
@@ -181,7 +181,7 @@ final class RestResponseEntityExceptionHandlerTest {
         this.mvc.perform(
             MockMvcRequestBuilders.get("/users/{user}/roles", actor.uid())
                 .accept(MediaType.TEXT_HTML).with(
-                    SecurityMockMvcRequestPostProcessors.user(new AuthUser(actor))
+                    SecurityMockMvcRequestPostProcessors.user(new UrAcAuth(actor))
                 )
         ).andExpect(MockMvcResultMatchers.status().isForbidden())
             .andExpect(RestResponseEntityExceptionHandlerTest.page(403));
@@ -297,12 +297,12 @@ final class RestResponseEntityExceptionHandlerTest {
         );
     }
 
-    private AuthUser administrator() throws Exception {
+    private UrAcAuth administrator() throws Exception {
         final String username = UUID.randomUUID().toString();
         final User user = new UrsPostgres(this.ctx).register(
             username, "ValidPassword1!", String.format("%s@example.com", username), false
         );
         user.roles().grant(Roles.RoleEnum.ADMIN);
-        return new AuthUser(user);
+        return new UrAcAuth(user);
     }
 }

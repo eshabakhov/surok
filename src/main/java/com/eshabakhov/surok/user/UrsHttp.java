@@ -281,7 +281,7 @@ public final class UrsHttp {
      */
     @GetMapping(value = "/users/profile", produces = MediaType.TEXT_HTML_VALUE)
     public ResponseEntity<String> profile(
-        @AuthenticationPrincipal final AuthUser user,
+        @AuthenticationPrincipal final UrAcAuth user,
         final HttpServletRequest request
     ) throws Exception {
         return ResponseEntity.ok().contentType(
@@ -315,7 +315,7 @@ public final class UrsHttp {
      */
     @GetMapping(value = "/users/subscription", produces = MediaType.TEXT_HTML_VALUE)
     public ResponseEntity<String> subscription(
-        @AuthenticationPrincipal final AuthUser user,
+        @AuthenticationPrincipal final UrAcAuth user,
         final HttpServletRequest request
     ) throws Exception {
         final MediaType type = new AcHttp(request).type();
@@ -360,7 +360,7 @@ public final class UrsHttp {
         produces = MediaType.TEXT_HTML_VALUE
     )
     public ResponseEntity<Void> checkout(
-        @AuthenticationPrincipal final AuthUser user,
+        @AuthenticationPrincipal final UrAcAuth user,
         @RequestParam final String plan,
         final HttpServletRequest request
     ) throws Exception {
@@ -398,7 +398,7 @@ public final class UrsHttp {
         produces = MediaType.TEXT_HTML_VALUE
     )
     public ResponseEntity<Void> cancel(
-        @AuthenticationPrincipal final AuthUser user,
+        @AuthenticationPrincipal final UrAcAuth user,
         final HttpServletRequest request
     ) throws Exception {
         new AcHttp(request).type();

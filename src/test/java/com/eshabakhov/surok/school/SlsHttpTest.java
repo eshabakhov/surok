@@ -6,8 +6,8 @@ package com.eshabakhov.surok.school;
 import com.eshabakhov.surok.User;
 import com.eshabakhov.surok.school.input.SlInput;
 import com.eshabakhov.surok.school.input.SlInputName;
-import com.eshabakhov.surok.user.AuthUser;
 import com.eshabakhov.surok.user.Roles;
+import com.eshabakhov.surok.user.UrAcAuth;
 import com.eshabakhov.surok.user.UrAcPostgres;
 import com.eshabakhov.surok.user.UrsPostgres;
 import java.util.UUID;
@@ -415,7 +415,7 @@ final class SlsHttpTest {
     @Test
     void deniesSchoolRevisionToSubscribedViewer() throws Exception {
         this.prepare();
-        final AuthUser viewer = this.principal(Roles.RoleEnum.VIEWER);
+        final UrAcAuth viewer = this.principal(Roles.RoleEnum.VIEWER);
         viewer.roles().grant(Roles.RoleEnum.BASIC_MAKER);
         this.mvc.perform(
             MockMvcRequestBuilders.put("/schools/3")
@@ -462,7 +462,7 @@ final class SlsHttpTest {
     @Test
     void managesExistingSchoolMembers() throws Exception {
         this.prepare();
-        final AuthUser director = this.principal(Roles.RoleEnum.DIRECTOR);
+        final UrAcAuth director = this.principal(Roles.RoleEnum.DIRECTOR);
         final User member = new UrsPostgres(this.ctx).register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.org", UUID.randomUUID()), false
@@ -527,7 +527,7 @@ final class SlsHttpTest {
     @Test
     void deniesMemberManagementToNonDirectors() throws Exception {
         this.prepare();
-        final AuthUser viewer = this.principal(Roles.RoleEnum.VIEWER);
+        final UrAcAuth viewer = this.principal(Roles.RoleEnum.VIEWER);
         final User target = new UrsPostgres(this.ctx).register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.org", UUID.randomUUID()), false
@@ -564,7 +564,7 @@ final class SlsHttpTest {
     @Test
     void deniesRoleGrantToSubscribedViewer() throws Exception {
         this.prepare();
-        final AuthUser viewer = this.principal(Roles.RoleEnum.VIEWER);
+        final UrAcAuth viewer = this.principal(Roles.RoleEnum.VIEWER);
         viewer.roles().grant(Roles.RoleEnum.BASIC_MAKER);
         this.mvc.perform(
             MockMvcRequestBuilders.post(
@@ -599,7 +599,7 @@ final class SlsHttpTest {
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.org", UUID.randomUUID()), false
         );
-        final AuthUser principal = new AuthUser(creator);
+        final UrAcAuth principal = new UrAcAuth(creator);
         final UsernamePasswordAuthenticationToken session =
             new UsernamePasswordAuthenticationToken(
                 principal, null, principal.getAuthorities()
@@ -677,7 +677,7 @@ final class SlsHttpTest {
      * @return School principal
      * @throws Exception If role creation fails
      */
-    private AuthUser principal(final Roles.RoleEnum role) throws Exception {
+    private UrAcAuth principal(final Roles.RoleEnum role) throws Exception {
         final User user = new UrAcPostgres(
             this.ctx,
             this.ctx.resultQuery(
@@ -695,7 +695,7 @@ final class SlsHttpTest {
         } else {
             new UrsPostgres(this.ctx, 3L).roles(user).grant(role);
         }
-        return new AuthUser(user);
+        return new UrAcAuth(user);
     }
 
     /**

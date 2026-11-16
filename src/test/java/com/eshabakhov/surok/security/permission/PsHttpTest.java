@@ -4,8 +4,8 @@
 package com.eshabakhov.surok.security.permission;
 
 import com.eshabakhov.surok.User;
-import com.eshabakhov.surok.user.AuthUser;
 import com.eshabakhov.surok.user.Roles;
+import com.eshabakhov.surok.user.UrAcAuth;
 import com.eshabakhov.surok.user.UrAcPostgres;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -77,7 +77,7 @@ final class PsHttpTest {
             mvc.perform(
                 MockMvcRequestBuilders.get("/permissions").accept(MediaType.TEXT_HTML).with(
                     SecurityMockMvcRequestPostProcessors.user(
-                        new AuthUser(new UrAcPostgres(ctx, 47))
+                        new UrAcAuth(new UrAcPostgres(ctx, 47))
                     )
                 )
             ).andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8),
@@ -115,7 +115,7 @@ final class PsHttpTest {
                 MockMvcRequestBuilders.get("/permissions").accept(type)
                     .header("X-Surok-Swagger", "true").with(
                         SecurityMockMvcRequestPostProcessors.user(
-                            new AuthUser(new UrAcPostgres(ctx, 53))
+                            new UrAcAuth(new UrAcPostgres(ctx, 53))
                         )
                     )
             ).andReturn().getResponse().getStatus(),
@@ -152,7 +152,7 @@ final class PsHttpTest {
                 MockMvcRequestBuilders.get("/permissions")
                     .accept("application/vnd.surok.permissions.v1+xml").with(
                         SecurityMockMvcRequestPostProcessors.user(
-                            new AuthUser(new UrAcPostgres(ctx, 47))
+                            new UrAcAuth(new UrAcPostgres(ctx, 47))
                         )
                     )
             ).andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8),
@@ -174,7 +174,7 @@ final class PsHttpTest {
             mvc.perform(
                 MockMvcRequestBuilders.get("/api-docs").with(
                     SecurityMockMvcRequestPostProcessors.user(
-                        new AuthUser(new UrAcPostgres(ctx, 47))
+                        new UrAcAuth(new UrAcPostgres(ctx, 47))
                     )
                 )
             ).andReturn().getResponse().getContentAsString()
@@ -201,7 +201,7 @@ final class PsHttpTest {
             mvc.perform(
                 MockMvcRequestBuilders.get("/api-docs").with(
                     SecurityMockMvcRequestPostProcessors.user(
-                        new AuthUser(new UrAcPostgres(ctx, 47))
+                        new UrAcAuth(new UrAcPostgres(ctx, 47))
                     )
                 )
             ).andReturn().getResponse().getContentAsString()
@@ -229,7 +229,7 @@ final class PsHttpTest {
                 mvc.perform(
                     MockMvcRequestBuilders.get("/api-docs").with(
                         SecurityMockMvcRequestPostProcessors.user(
-                            new AuthUser(new UrAcPostgres(ctx, 53))
+                            new UrAcAuth(new UrAcPostgres(ctx, 53))
                         )
                     )
                 ).andReturn().getResponse().getContentAsString()
@@ -301,7 +301,7 @@ final class PsHttpTest {
                 MockMvcRequestBuilders.get("/permissions")
                     .accept("application/vnd.surok.permissions.v1+json").with(
                         SecurityMockMvcRequestPostProcessors.user(
-                            new AuthUser(new UrAcPostgres(ctx, 47))
+                            new UrAcAuth(new UrAcPostgres(ctx, 47))
                         )
                     )
             ).andReturn().getResponse().getContentAsString()
@@ -334,14 +334,14 @@ final class PsHttpTest {
                 mvc.perform(
                     MockMvcRequestBuilders.get("/users/profile").with(
                         SecurityMockMvcRequestPostProcessors.user(
-                            new AuthUser(new UrAcPostgres(ctx, 47))
+                            new UrAcAuth(new UrAcPostgres(ctx, 47))
                         )
                     )
                 ).andReturn().getResponse().getContentAsString().contains("href=\"/permissions\""),
                 mvc.perform(
                     MockMvcRequestBuilders.get("/users/profile").with(
                         SecurityMockMvcRequestPostProcessors.user(
-                            new AuthUser(new UrAcPostgres(ctx, 53))
+                            new UrAcAuth(new UrAcPostgres(ctx, 53))
                         )
                     )
                 ).andReturn().getResponse().getContentAsString().contains("href=\"/permissions\"")
@@ -362,7 +362,7 @@ final class PsHttpTest {
             "A subscription role opened the permission page",
             mvc.perform(
                 MockMvcRequestBuilders.get("/permissions").accept(MediaType.TEXT_HTML).with(
-                    SecurityMockMvcRequestPostProcessors.user(new AuthUser(actor))
+                    SecurityMockMvcRequestPostProcessors.user(new UrAcAuth(actor))
                 )
             ).andReturn().getResponse().getStatus(),
             Matchers.is(HttpStatus.FORBIDDEN.value())
@@ -378,7 +378,7 @@ final class PsHttpTest {
             mvc.perform(
                 MockMvcRequestBuilders.get("/permissions").accept(MediaType.APPLICATION_JSON).with(
                     SecurityMockMvcRequestPostProcessors.user(
-                        new AuthUser(new UrAcPostgres(ctx, 47))
+                        new UrAcAuth(new UrAcPostgres(ctx, 47))
                     )
                 )
             ).andReturn().getResponse().getStatus(),
