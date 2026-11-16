@@ -3,6 +3,9 @@
  */
 package com.eshabakhov.surok.security;
 
+import com.eshabakhov.surok.user.Roles;
+import com.eshabakhov.surok.user.UrAcAuth;
+import com.eshabakhov.surok.user.UrAcRole;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.swagger.v3.core.util.Json;
 import io.swagger.v3.core.util.Yaml;
@@ -18,9 +21,13 @@ import org.springframework.boot.info.BuildProperties;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpStatusCode;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 /**
  * Exercises the packaged specification without connecting to the database.
@@ -107,7 +114,7 @@ final class OaHttpTest {
         final JsonNode allowed = Yaml.mapper().readTree(
             mvc.perform(
                 MockMvcRequestBuilders.get("/api-docs.yaml").with(
-                    SecurityMockMvcRequestPostProcessors.user("администратор").roles("ADMIN")
+                    OaHttpTest.actor("ADMIN")
                 )
             ).andReturn().getResponse().getContentAsByteArray()
         ).path("paths");
@@ -126,6 +133,59 @@ final class OaHttpTest {
     }
 
     /**
+     * Rejects a typed principal whose authentication has not completed.
+     *
+     * @param mvc HTTP client
+     * @throws Exception If the description cannot be read
+     */
+    @Test
+    void hidesProtectedOperationsFromAnUnauthenticatedPrincipal(@Autowired final MockMvc mvc)
+        throws Exception {
+        MatcherAssert.assertThat(
+            "An unauthenticated principal exposed administrator operations",
+            Json.mapper().readTree(
+                mvc.perform(
+                    MockMvcRequestBuilders.get("/api-docs").with(
+                        SecurityMockMvcRequestPostProcessors.authentication(
+                            UsernamePasswordAuthenticationToken.unauthenticated(
+                                new UrAcRole(Roles.RoleEnum.ADMIN), ""
+                            )
+                        )
+                    )
+                ).andReturn().getResponse().getContentAsByteArray()
+            ).path("paths").has("/permissions"),
+            Matchers.is(false)
+        );
+    }
+
+    /**
+     * Rejects a typed principal carried by an anonymous authentication token.
+     *
+     * @param mvc HTTP client
+     * @throws Exception If the description cannot be read
+     */
+    @Test
+    void hidesProtectedOperationsFromAnAnonymousPrincipal(@Autowired final MockMvc mvc)
+        throws Exception {
+        MatcherAssert.assertThat(
+            "An anonymous principal exposed administrator operations",
+            Json.mapper().readTree(
+                mvc.perform(
+                    MockMvcRequestBuilders.get("/api-docs").with(
+                        SecurityMockMvcRequestPostProcessors.authentication(
+                            new AnonymousAuthenticationToken(
+                                "анонимный", new UrAcRole(Roles.RoleEnum.ADMIN),
+                                List.of(new SimpleGrantedAuthority("ROLE_ANONYMOUS"))
+                            )
+                        )
+                    )
+                ).andReturn().getResponse().getContentAsByteArray()
+            ).path("paths").has("/permissions"),
+            Matchers.is(false)
+        );
+    }
+
+    /**
      * Groups account and school membership operations under one Swagger tag.
      *
      * @param mvc HTTP client
@@ -137,7 +197,7 @@ final class OaHttpTest {
         final JsonNode paths = Json.mapper().readTree(
             mvc.perform(
                 MockMvcRequestBuilders.get("/api-docs").with(
-                    SecurityMockMvcRequestPostProcessors.user("администратор").roles("ADMIN")
+                    OaHttpTest.actor("ADMIN")
                 )
             ).andReturn().getResponse().getContentAsByteArray()
         ).path("paths");
@@ -199,7 +259,7 @@ final class OaHttpTest {
         final JsonNode document = Yaml.mapper().readTree(
             mvc.perform(
                 MockMvcRequestBuilders.get("/api-docs.yaml").with(
-                    SecurityMockMvcRequestPostProcessors.user("читатель").roles("VIEWER")
+                    OaHttpTest.actor("VIEWER")
                 )
             ).andReturn().getResponse().getContentAsByteArray()
         );
@@ -227,7 +287,7 @@ final class OaHttpTest {
         final JsonNode paths = Json.mapper().readTree(
             mvc.perform(
                 MockMvcRequestBuilders.get("/api-docs").with(
-                    SecurityMockMvcRequestPostProcessors.user("администратор").roles("ADMIN")
+                    OaHttpTest.actor("ADMIN")
                 )
             ).andReturn().getResponse().getContentAsByteArray()
         ).path("paths");
@@ -258,7 +318,7 @@ final class OaHttpTest {
         final JsonNode paths = Json.mapper().readTree(
             mvc.perform(
                 MockMvcRequestBuilders.get("/api-docs").with(
-                    SecurityMockMvcRequestPostProcessors.user("администратор").roles("ADMIN")
+                    OaHttpTest.actor("ADMIN")
                 )
             ).andReturn().getResponse().getContentAsByteArray()
         ).path("paths");
@@ -301,7 +361,7 @@ final class OaHttpTest {
         final JsonNode paths = Json.mapper().readTree(
             mvc.perform(
                 MockMvcRequestBuilders.get("/api-docs").with(
-                    SecurityMockMvcRequestPostProcessors.user("администратор").roles("ADMIN")
+                    OaHttpTest.actor("ADMIN")
                 )
             ).andReturn().getResponse().getContentAsByteArray()
         ).path("paths");
@@ -352,7 +412,7 @@ final class OaHttpTest {
         final JsonNode paths = Json.mapper().readTree(
             mvc.perform(
                 MockMvcRequestBuilders.get("/api-docs").with(
-                    SecurityMockMvcRequestPostProcessors.user("администратор").roles("ADMIN")
+                    OaHttpTest.actor("ADMIN")
                 )
             ).andReturn().getResponse().getContentAsByteArray()
         ).path("paths");
@@ -383,7 +443,7 @@ final class OaHttpTest {
         final JsonNode paths = Json.mapper().readTree(
             mvc.perform(
                 MockMvcRequestBuilders.get("/api-docs").with(
-                    SecurityMockMvcRequestPostProcessors.user("администратор").roles("ADMIN")
+                    OaHttpTest.actor("ADMIN")
                 )
             ).andReturn().getResponse().getContentAsByteArray()
         ).path("paths");
@@ -412,7 +472,7 @@ final class OaHttpTest {
         final JsonNode paths = Json.mapper().readTree(
             mvc.perform(
                 MockMvcRequestBuilders.get("/api-docs").with(
-                    SecurityMockMvcRequestPostProcessors.user("читатель").roles("VIEWER")
+                    OaHttpTest.actor("VIEWER")
                 )
             ).andReturn().getResponse().getContentAsByteArray()
         ).path("paths");
@@ -438,7 +498,7 @@ final class OaHttpTest {
         final JsonNode paths = Json.mapper().readTree(
             mvc.perform(
                 MockMvcRequestBuilders.get("/api-docs").with(
-                    SecurityMockMvcRequestPostProcessors.user("администратор").roles("ADMIN")
+                    OaHttpTest.actor("ADMIN")
                 )
             ).andReturn().getResponse().getContentAsByteArray()
         ).path("paths");
@@ -484,7 +544,7 @@ final class OaHttpTest {
         final JsonNode paths = Json.mapper().readTree(
             mvc.perform(
                 MockMvcRequestBuilders.get("/api-docs").with(
-                    SecurityMockMvcRequestPostProcessors.user("читатель").roles("VIEWER")
+                    OaHttpTest.actor("VIEWER")
                 )
             ).andReturn().getResponse().getContentAsByteArray()
         ).path("paths");
@@ -514,7 +574,7 @@ final class OaHttpTest {
         final JsonNode paths = Json.mapper().readTree(
             mvc.perform(
                 MockMvcRequestBuilders.get("/api-docs").with(
-                    SecurityMockMvcRequestPostProcessors.user("администратор").roles("ADMIN")
+                    OaHttpTest.actor("ADMIN")
                 )
             ).andReturn().getResponse().getContentAsByteArray()
         ).path("paths");
@@ -570,11 +630,23 @@ final class OaHttpTest {
             HttpStatusCode.valueOf(
                 mvc.perform(
                     MockMvcRequestBuilders.get("/openapi.yml").with(
-                        SecurityMockMvcRequestPostProcessors.user("администратор").roles("ADMIN")
+                        OaHttpTest.actor("ADMIN")
                     )
                 ).andReturn().getResponse().getStatus()
             ).is2xxSuccessful(),
             Matchers.is(false)
+        );
+    }
+
+    /*
+     * Authenticate a representative role without a database account.
+     */
+    private static RequestPostProcessor actor(final String role) {
+        final UrAcRole actor = new UrAcRole(Roles.RoleEnum.valueOf(role));
+        return SecurityMockMvcRequestPostProcessors.authentication(
+            UsernamePasswordAuthenticationToken.authenticated(
+                actor, "", new UrAcAuth(actor).getAuthorities()
+            )
         );
     }
 }
