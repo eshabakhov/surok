@@ -6,7 +6,7 @@ package com.eshabakhov.surok.federal.curriculum;
 import com.eshabakhov.surok.User;
 import com.eshabakhov.surok.user.AuthUser;
 import com.eshabakhov.surok.user.Roles;
-import com.eshabakhov.surok.user.UrPostgres;
+import com.eshabakhov.surok.user.UrAcPostgres;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -733,7 +733,7 @@ final class CrsHttpTest {
     }
 
     private MockHttpSession session(final Roles.RoleEnum role) throws Exception {
-        final User user = new UrPostgres(
+        final User user = new UrAcPostgres(
             this.ctx,
             this.ctx.resultQuery(
                 """

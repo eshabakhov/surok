@@ -100,7 +100,7 @@ public final class UrsPostgres implements Users {
             args = new Object[]{this.sid};
         }
         return this.ctx.resultQuery(new ClasspathSql(sql).text(), args).fetch(
-            row -> new UrPostgres(this.ctx, row.get("id", Long.class))
+            row -> new UrAcPostgres(this.ctx, row.get("id", Long.class))
         );
     }
 
@@ -124,7 +124,7 @@ public final class UrsPostgres implements Users {
                 if (inserted == null) {
                     throw new UserCreationException("Failed to create user");
                 }
-                final User user = new UrPostgres(ttx, inserted.get("id", Long.class));
+                final User user = new UrAcPostgres(ttx, inserted.get("id", Long.class));
                 user.roles().grant(Roles.RoleEnum.BASIC_MAKER);
                 if (this.sid != null) {
                     final Users members = new UrsPostgres(ttx, this.sid);
@@ -146,7 +146,7 @@ public final class UrsPostgres implements Users {
         if (selected == null) {
             throw new UserNotFoundException(String.format("User with login '%s' not found", login));
         }
-        final User found = new UrPostgres(this.ctx, selected.get("id", Long.class));
+        final User found = new UrAcPostgres(this.ctx, selected.get("id", Long.class));
         if (this.sid != null && !this.contains(found)) {
             throw new UserNotFoundException(String.format("User with login '%s' not found", login));
         }
@@ -162,7 +162,7 @@ public final class UrsPostgres implements Users {
         if (selected == null) {
             throw new UserNotFoundException(String.format("User with id '%s' not found", uid));
         }
-        final User found = new UrPostgres(this.ctx, selected.get("id", Long.class));
+        final User found = new UrAcPostgres(this.ctx, selected.get("id", Long.class));
         if (this.sid != null && !this.contains(found)) {
             throw new UserNotFoundException(String.format("User with id '%s' not found", uid));
         }
