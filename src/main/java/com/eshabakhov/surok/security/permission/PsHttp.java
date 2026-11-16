@@ -86,7 +86,7 @@ public class PsHttp {
     ) throws Exception {
         final MediaType type = new AcHttp(request, "permissions.v1").type();
         final Permissions permissions = new PsAuthorized(
-            new PsSpring(this.mappings, request, this.anonymous), user
+            new PsSpring(this.mappings, this.anonymous, request.getLocale()), user
         );
         return ResponseEntity.ok().cacheControl(CacheControl.noStore())
             .contentType(new MediaType(type, StandardCharsets.UTF_8)).body(

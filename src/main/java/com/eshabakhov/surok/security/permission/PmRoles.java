@@ -5,17 +5,12 @@ package com.eshabakhov.surok.security.permission;
 
 import com.eshabakhov.surok.Media;
 import com.eshabakhov.surok.PrItems;
+import com.eshabakhov.surok.Schools;
+import com.eshabakhov.surok.UrAccount;
 import com.eshabakhov.surok.user.Roles;
-import com.eshabakhov.surok.user.UrAcAuth;
 import com.eshabakhov.surok.user.UrAcRole;
-import com.eshabakhov.surok.user.UrAnonymous;
-import jakarta.servlet.http.HttpServletRequest;
 import java.util.Arrays;
-import java.util.List;
-import org.springframework.security.authentication.AnonymousAuthenticationToken;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import java.util.Locale;
 import org.springframework.web.bind.annotation.RequestMethod;
 
 /**
@@ -40,34 +35,27 @@ public final class PmRoles implements Permission {
      *
      * @param origin Controller permission
      * @param method HTTP method
-     * @param request Current request
+     * @param locale Locale for role titles
      */
-    public PmRoles(
-        final Permission origin, final RequestMethod method, final HttpServletRequest request
-    ) {
+    public PmRoles(final Permission origin, final RequestMethod method, final Locale locale) {
         this(
             origin,
             method,
-            Arrays.stream(Roles.RoleEnum.values()).<Grant>map(
+            Arrays.stream(Roles.RoleEnum.values()).map(
                 role -> {
-                    final Authentication actor;
+                    final Grant grant;
                     if (role == Roles.RoleEnum.ANONYMOUS) {
-                        actor = new AnonymousAuthenticationToken(
-                            "permissions", new UrAnonymous(),
-                            List.of(new SimpleGrantedAuthority("ROLE_ANONYMOUS"))
-                        );
+                        grant = new GrRole(origin::allows, origin::allows, role, locale);
                     } else {
-                        final UrAcAuth user = new UrAcAuth(new UrAcRole(role));
-                        actor = UsernamePasswordAuthenticationToken.authenticated(
-                            user, "", user.getAuthorities()
+                        final UrAccount actor = new UrAcRole(1L, role);
+                        grant = new GrRole(
+                            () -> origin.allows(actor, actor.schools()),
+                            () -> origin.allows(actor, new UrAcRole(2L, role).schools()),
+                            role,
+                            locale
                         );
                     }
-                    return new GrRole(
-                        () -> origin.allows(actor, request, true),
-                        () -> origin.allows(actor, request, false),
-                        role,
-                        request.getLocale()
-                    );
+                    return grant;
                 }
             ).toList()
         );
@@ -91,10 +79,13 @@ public final class PmRoles implements Permission {
     }
 
     @Override
-    public boolean allows(
-        final Authentication actor, final HttpServletRequest context, final boolean own
-    ) {
-        return this.origin.allows(actor, context, own);
+    public boolean allows() {
+        return this.origin.allows();
+    }
+
+    @Override
+    public boolean allows(final UrAccount actor, final Schools schools) {
+        return this.origin.allows(actor, schools);
     }
 
     @Override

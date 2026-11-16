@@ -7,8 +7,8 @@ import com.eshabakhov.surok.UrAccount;
 import com.eshabakhov.surok.media.MdJson;
 import com.eshabakhov.surok.school.building.BdsHttp;
 import com.eshabakhov.surok.user.Roles;
-import com.eshabakhov.surok.user.UrAcAuth;
 import com.eshabakhov.surok.user.UrAcRole;
+import java.util.Locale;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.jooq.SQLDialect;
@@ -16,8 +16,6 @@ import org.jooq.impl.DSL;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.springframework.mock.web.MockHttpServletRequest;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.method.HandlerMethod;
 
@@ -41,7 +39,7 @@ final class PmRolesTest {
                     ),
                     "/schools/{school}/buildings/{building}", false
                 ),
-                RequestMethod.DELETE, new MockHttpServletRequest()
+                RequestMethod.DELETE, Locale.forLanguageTag("ru")
             ).print(new MdJson()).print().path("access").findValuesAsText("role"),
             Matchers.contains(
                 "ADMIN", "DIRECTOR", "DEPUTY_DIRECTOR", "TEACHER", "STUDENT",
@@ -59,7 +57,6 @@ final class PmRolesTest {
     void preservesTheOriginalRuleForEachSchoolScope(
         final Roles.RoleEnum role, final long member, final boolean expected
     ) throws Exception {
-        final UrAcAuth actor = new UrAcAuth(new UrAcRole(17L, role));
         MatcherAssert.assertThat(
             "The matrix decorator changed the original building removal rule",
             new PmRoles(
@@ -70,13 +67,8 @@ final class PmRolesTest {
                     ),
                     "/schools/{school}/buildings/{building}", false
                 ),
-                RequestMethod.DELETE, new MockHttpServletRequest()
-            ).allows(
-                UsernamePasswordAuthenticationToken.authenticated(
-                    actor, "", actor.getAuthorities()
-                ),
-                new MockHttpServletRequest(), member == 17L
-            ),
+                RequestMethod.DELETE, Locale.forLanguageTag("ru")
+            ).allows(new UrAcRole(17L, role), new UrAcRole(member, role).schools()),
             Matchers.is(expected)
         );
     }

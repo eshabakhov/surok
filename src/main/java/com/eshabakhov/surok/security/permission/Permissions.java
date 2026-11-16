@@ -4,7 +4,7 @@
 package com.eshabakhov.surok.security.permission;
 
 import com.eshabakhov.surok.Printable;
-import org.springframework.security.core.Authentication;
+import com.eshabakhov.surok.UrAccount;
 import org.springframework.web.bind.annotation.RequestMethod;
 
 /**
@@ -16,12 +16,19 @@ import org.springframework.web.bind.annotation.RequestMethod;
 public interface Permissions extends Printable {
 
     /**
-     * Evaluate a documented operation in the caller's own school.
+     * Evaluate a documented operation for this catalog's audience.
      *
      * @param path Route pattern
      * @param method HTTP method
-     * @param actor Current account
      * @return Whether a matching handler grants access
      */
-    boolean allows(String path, RequestMethod method, Authentication actor);
+    boolean allows(String path, RequestMethod method);
+
+    /**
+     * Select permissions for an identified account user.
+     *
+     * @param actor Current account user
+     * @return Account-specific permission catalog
+     */
+    Permissions selection(UrAccount actor);
 }
