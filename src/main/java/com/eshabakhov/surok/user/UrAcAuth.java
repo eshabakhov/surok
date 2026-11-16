@@ -20,11 +20,11 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
  * Custom UserDetails and OAuth2User principal.
  *
  * <p>Implements both {@link UserDetails} and {@link OAuth2User} so that
- * {@code @AuthenticationPrincipal AuthUser} resolves correctly regardless
+ * {@code @AuthenticationPrincipal UrAcAuth} resolves correctly regardless
  * of whether the user signed in via form-login or Yandex OAuth2.</p>
  * Usage example:
  * <pre>
- * final AuthUser user = new AuthUser(dbUser);
+ * final UrAcAuth user = new UrAcAuth(dbUser);
  * user.uid();           // always available
  * user.getUsername();   // from UserDetails
  * user.getName();       // from OAuth2User - same as username
@@ -32,7 +32,7 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
  *
  * @since 0.0.1
  */
-public final class AuthUser implements UserDetails, OAuth2User, User {
+public final class UrAcAuth implements UserDetails, OAuth2User, User {
 
     /** User. */
     private final User user;
@@ -42,7 +42,7 @@ public final class AuthUser implements UserDetails, OAuth2User, User {
      *
      * @param user User
      */
-    public AuthUser(final User user) {
+    public UrAcAuth(final User user) {
         this.user = user;
     }
 

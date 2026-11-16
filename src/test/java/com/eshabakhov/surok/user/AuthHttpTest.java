@@ -142,7 +142,7 @@ final class AuthHttpTest {
         }
         this.mvc.perform(
             MockMvcRequestBuilders.get("/").accept(MediaType.TEXT_HTML).with(
-                SecurityMockMvcRequestPostProcessors.user(new AuthUser(user))
+                SecurityMockMvcRequestPostProcessors.user(new UrAcAuth(user))
             )
         ).andExpect(MockMvcResultMatchers.status().isOk()).andExpect(
             MockMvcResultMatchers.content().string(

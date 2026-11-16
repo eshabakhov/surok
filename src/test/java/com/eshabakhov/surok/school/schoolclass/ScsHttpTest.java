@@ -6,8 +6,8 @@ package com.eshabakhov.surok.school.schoolclass;
 import com.eshabakhov.surok.User;
 import com.eshabakhov.surok.media.MdJson;
 import com.eshabakhov.surok.school.schedule.load.ClassLoadPostgres;
-import com.eshabakhov.surok.user.AuthUser;
 import com.eshabakhov.surok.user.Roles;
+import com.eshabakhov.surok.user.UrAcAuth;
 import com.eshabakhov.surok.user.UrAcPostgres;
 import com.eshabakhov.surok.user.UrsPostgres;
 import java.util.List;
@@ -630,7 +630,7 @@ final class ScsHttpTest {
         } else {
             user.roles().grant(role);
         }
-        final AuthUser principal = new AuthUser(user);
+        final UrAcAuth principal = new UrAcAuth(user);
         final MockHttpSession session = new MockHttpSession();
         session.setAttribute(
             HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY,

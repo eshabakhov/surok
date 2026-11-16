@@ -4,8 +4,8 @@
 package com.eshabakhov.surok.federal.curriculum;
 
 import com.eshabakhov.surok.User;
-import com.eshabakhov.surok.user.AuthUser;
 import com.eshabakhov.surok.user.Roles;
+import com.eshabakhov.surok.user.UrAcAuth;
 import com.eshabakhov.surok.user.UrAcPostgres;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -747,7 +747,7 @@ final class CrsHttpTest {
         if (role != Roles.RoleEnum.VIEWER) {
             user.roles().grant(role);
         }
-        final AuthUser principal = new AuthUser(user);
+        final UrAcAuth principal = new UrAcAuth(user);
         final MockHttpSession session = new MockHttpSession();
         session.setAttribute(
             HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY,

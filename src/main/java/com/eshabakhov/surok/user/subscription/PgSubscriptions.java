@@ -5,9 +5,9 @@ package com.eshabakhov.surok.user.subscription;
 
 import com.eshabakhov.surok.security.right.RtAdmin;
 import com.eshabakhov.surok.sql.ClasspathSql;
-import com.eshabakhov.surok.user.AuthUser;
 import com.eshabakhov.surok.user.Subscription;
 import com.eshabakhov.surok.user.Subscriptions;
+import com.eshabakhov.surok.user.UrAcAuth;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -36,7 +36,7 @@ public final class PgSubscriptions implements Subscriptions {
     private final DSLContext ctx;
 
     /** Authenticated user. */
-    private final AuthUser user;
+    private final UrAcAuth user;
 
     /**
      * New subscriptions collection.
@@ -44,7 +44,7 @@ public final class PgSubscriptions implements Subscriptions {
      * @param ctx Database context
      * @param user Authenticated user
      */
-    public PgSubscriptions(final DSLContext ctx, final AuthUser user) {
+    public PgSubscriptions(final DSLContext ctx, final UrAcAuth user) {
         this.ctx = ctx;
         this.user = user;
     }

@@ -223,7 +223,7 @@ final class UrsPostgresTest {
         );
         new UrsPostgres(ctx).remove(user.uid());
         Assertions.assertFalse(
-            new AuthUser(user).isEnabled(), "A deleted account remained enabled for authentication"
+            new UrAcAuth(user).isEnabled(), "A deleted account remained enabled for authentication"
         );
     }
 

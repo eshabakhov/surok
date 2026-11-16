@@ -71,7 +71,7 @@ public class SecurityConfig {
     /** OAuth2 login success handler. */
     private final OAuthSuccessHandler oauthhandler;
 
-    /** OAuth2 user service that resolves Yandex principal to AuthUser. */
+    /** OAuth2 user service that resolves Yandex principal to UrAcAuth. */
     private final YandexOAuth2UserService oauthservice;
 
     /** Whether API docs are enabled. */

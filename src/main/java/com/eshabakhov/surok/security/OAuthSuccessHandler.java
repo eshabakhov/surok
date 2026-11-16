@@ -3,7 +3,7 @@
  */
 package com.eshabakhov.surok.security;
 
-import com.eshabakhov.surok.user.AuthUser;
+import com.eshabakhov.surok.user.UrAcAuth;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -15,7 +15,7 @@ import org.springframework.stereotype.Component;
  * OAuth2 login success handler for Yandex.
  *
  * <p>At this point {@link YandexOAuth2UserService} has already resolved the
- * principal to an {@link AuthUser}, so this handler applies the same redirect
+ * principal to an {@link UrAcAuth}, so this handler applies the same redirect
  * rule as {@link LoginSuccessHandler}: everyone goes to /schools.</p>
  * Usage example:
  * <pre>

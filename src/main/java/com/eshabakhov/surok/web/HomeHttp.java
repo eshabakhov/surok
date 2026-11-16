@@ -7,7 +7,7 @@ import com.eshabakhov.surok.media.AcHttp;
 import com.eshabakhov.surok.media.MdXml;
 import com.eshabakhov.surok.media.MdXslt;
 import com.eshabakhov.surok.media.XsClasspath;
-import com.eshabakhov.surok.user.AuthUser;
+import com.eshabakhov.surok.user.UrAcAuth;
 import jakarta.servlet.http.HttpServletRequest;
 import java.nio.charset.StandardCharsets;
 import org.springframework.http.MediaType;
@@ -39,7 +39,7 @@ public final class HomeHttp {
      */
     @GetMapping(value = "/", produces = MediaType.TEXT_HTML_VALUE)
     public ResponseEntity<String> page(
-        @AuthenticationPrincipal final AuthUser user,
+        @AuthenticationPrincipal final UrAcAuth user,
         final HttpServletRequest request
     ) {
         final MediaType type = new AcHttp(request).type();

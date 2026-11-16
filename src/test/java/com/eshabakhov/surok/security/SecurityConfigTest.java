@@ -7,8 +7,8 @@ import com.eshabakhov.surok.User;
 import com.eshabakhov.surok.school.SlsPostgres;
 import com.eshabakhov.surok.school.input.SlInput;
 import com.eshabakhov.surok.school.input.SlInputName;
-import com.eshabakhov.surok.user.AuthUser;
 import com.eshabakhov.surok.user.Roles;
+import com.eshabakhov.surok.user.UrAcAuth;
 import com.eshabakhov.surok.user.UrsPostgres;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -194,7 +194,7 @@ final class SecurityConfigTest {
     void ignoresWebsiteSessionsInDocumentation(
         @Autowired final MockMvc mvc, @Autowired final DSLContext ctx
     ) throws Exception {
-        final AuthUser user = new AuthUser(SecurityConfigTest.administrator(ctx));
+        final UrAcAuth user = new UrAcAuth(SecurityConfigTest.administrator(ctx));
         final MockHttpSession session = new MockHttpSession();
         session.setAttribute(
             HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY,
@@ -547,7 +547,7 @@ final class SecurityConfigTest {
             mvc.perform(
                 MockMvcRequestBuilders.get(path).accept(MediaType.TEXT_HTML).with(
                     SecurityMockMvcRequestPostProcessors.user(
-                        new AuthUser(SecurityConfigTest.administrator(ctx))
+                        new UrAcAuth(SecurityConfigTest.administrator(ctx))
                     )
                 )
             ).andExpect(MockMvcResultMatchers.status().isOk())
