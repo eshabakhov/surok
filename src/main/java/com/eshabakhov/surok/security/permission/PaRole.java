@@ -5,6 +5,9 @@ package com.eshabakhov.surok.security.permission;
 
 import com.eshabakhov.surok.Media;
 import com.eshabakhov.surok.Printable;
+import com.eshabakhov.surok.user.Roles;
+import com.eshabakhov.surok.user.UrAcRole;
+import com.eshabakhov.surok.user.UrAnonymous;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.ResourceBundle;
@@ -62,11 +65,11 @@ public final class PaRole implements Printable {
         final Authentication actor;
         if ("ANONYMOUS".equals(this.role)) {
             actor = new AnonymousAuthenticationToken(
-                "permissions", new RiRole(this.role), authorities
+                "permissions", new UrAnonymous(), authorities
             );
         } else {
             actor = UsernamePasswordAuthenticationToken.authenticated(
-                new RiRole(this.role), "", authorities
+                new UrAcRole(Roles.RoleEnum.valueOf(this.role)), "", authorities
             );
         }
         final String scope;
