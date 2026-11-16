@@ -9,7 +9,7 @@ import com.eshabakhov.surok.Media;
 import com.eshabakhov.surok.Page;
 import com.eshabakhov.surok.School;
 import com.eshabakhov.surok.Sorts;
-import com.eshabakhov.surok.User;
+import com.eshabakhov.surok.UrAccount;
 import com.eshabakhov.surok.filter.FilterRequest;
 import com.eshabakhov.surok.filter.FiltersRequest;
 import com.eshabakhov.surok.media.AcHttp;
@@ -109,7 +109,7 @@ public class CbsHttp {
         final Page page,
         final Sorts sorts,
         final HttpServletRequest request,
-        @AuthenticationPrincipal final User user
+        @AuthenticationPrincipal final UrAccount user
     ) throws Exception {
         final MediaType type = new AcHttp(
             request,
@@ -168,7 +168,7 @@ public class CbsHttp {
     @GetMapping(value = "/create", produces = MediaType.TEXT_HTML_VALUE)
     public ResponseEntity<String> form(
         @PathVariable final long school, @PathVariable final long building,
-        final HttpServletRequest request, @AuthenticationPrincipal final User user
+        final HttpServletRequest request, @AuthenticationPrincipal final UrAccount user
     ) throws Exception {
         final MediaType type = new AcHttp(request, List.of(MediaType.TEXT_HTML)).type();
         final School sch = new SlsAuthorized(new SlsPostgres(this.ctx), user).school(school);
@@ -202,7 +202,7 @@ public class CbsHttp {
         @PathVariable final long building,
         @PathVariable final long cabinet,
         final HttpServletRequest request,
-        @AuthenticationPrincipal final User user
+        @AuthenticationPrincipal final UrAccount user
     ) throws Exception {
         final MediaType type = new AcHttp(request, "cabinet-v1").type();
         final School sch = new SlsAuthorized(
@@ -259,7 +259,7 @@ public class CbsHttp {
         @PathVariable final long building,
         @RequestParam final MultiValueMap<String, String> parameters,
         final HttpServletRequest request,
-        @AuthenticationPrincipal final User user
+        @AuthenticationPrincipal final UrAccount user
     ) throws Exception {
         final MediaType type = new AcHttp(request, "cabinet-v1").type();
         ResponseEntity<?> response;
@@ -300,7 +300,7 @@ public class CbsHttp {
         @PathVariable final long building,
         @RequestBody final JsonNode json,
         final HttpServletRequest request,
-        @AuthenticationPrincipal final User user
+        @AuthenticationPrincipal final UrAccount user
     ) throws Exception {
         return this.create(
             new AcHttp(request, "cabinet-v1").type(), school, building, new CbInputHttp(json), user
@@ -334,7 +334,7 @@ public class CbsHttp {
         @PathVariable final long cabinet,
         @RequestBody final JsonNode json,
         final HttpServletRequest request,
-        @AuthenticationPrincipal final User user
+        @AuthenticationPrincipal final UrAccount user
     ) throws Exception {
         final MediaType type = new AcHttp(request, "cabinet-v1").type();
         final Cabinet revised = new SlsAuthorized(new SlsPostgres(this.ctx), user)
@@ -362,7 +362,7 @@ public class CbsHttp {
         @PathVariable final long school,
         @PathVariable final long building,
         @PathVariable final long cabinet,
-        @AuthenticationPrincipal final User user
+        @AuthenticationPrincipal final UrAccount user
     ) throws Exception {
         new SlsAuthorized(new SlsPostgres(this.ctx), user)
             .school(school).buildings().building(building).cabinets().remove(cabinet);
@@ -371,7 +371,7 @@ public class CbsHttp {
 
     private ResponseEntity<?> create(
         final MediaType type, final long school, final long building,
-        final CabinetInput input, final User user
+        final CabinetInput input, final UrAccount user
     ) throws Exception {
         final String base = String.format("/schools/%d/buildings/%d/cabinets", school, building);
         return CbsHttp.result(
@@ -416,7 +416,7 @@ public class CbsHttp {
     ) throws Exception {
         return new SrWeb(
             new UrAcBrief(
-                (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal()
+                (UrAccount) SecurityContextHolder.getContext().getAuthentication().getPrincipal()
             ),
             new SlsBrief(new SlsPostgres(this.ctx)),
             new CsToken((CsrfToken) request.getAttribute(CsrfToken.class.getName()))

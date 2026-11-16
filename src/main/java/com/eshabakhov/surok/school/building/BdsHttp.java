@@ -9,7 +9,7 @@ import com.eshabakhov.surok.Media;
 import com.eshabakhov.surok.Page;
 import com.eshabakhov.surok.School;
 import com.eshabakhov.surok.Sorts;
-import com.eshabakhov.surok.User;
+import com.eshabakhov.surok.UrAccount;
 import com.eshabakhov.surok.filter.FilterRequest;
 import com.eshabakhov.surok.filter.FiltersRequest;
 import com.eshabakhov.surok.media.AcHttp;
@@ -106,7 +106,7 @@ public class BdsHttp {
         final Page page,
         final Sorts sorts,
         final HttpServletRequest request,
-        @AuthenticationPrincipal final User user
+        @AuthenticationPrincipal final UrAccount user
     ) throws Exception {
         final MediaType type = new AcHttp(
             request,
@@ -163,7 +163,7 @@ public class BdsHttp {
     @GetMapping(value = "/create", produces = MediaType.TEXT_HTML_VALUE)
     public ResponseEntity<String> form(
         @PathVariable final long school, final HttpServletRequest request,
-        @AuthenticationPrincipal final User user
+        @AuthenticationPrincipal final UrAccount user
     ) throws Exception {
         return ResponseEntity.ok().contentType(
             new MediaType(
@@ -199,7 +199,7 @@ public class BdsHttp {
         @PathVariable final long school,
         @PathVariable final long building,
         final HttpServletRequest request,
-        @AuthenticationPrincipal final User user
+        @AuthenticationPrincipal final UrAccount user
     ) throws Exception {
         final MediaType type = new AcHttp(request, "building-v1").type();
         final School sch = new SlsAuthorized(
@@ -253,7 +253,7 @@ public class BdsHttp {
         @PathVariable final long school,
         @RequestParam final MultiValueMap<String, String> parameters,
         final HttpServletRequest request,
-        @AuthenticationPrincipal final User user
+        @AuthenticationPrincipal final UrAccount user
     ) throws Exception {
         final MediaType type = new AcHttp(request, "building-v1").type();
         ResponseEntity<?> response;
@@ -292,7 +292,7 @@ public class BdsHttp {
         @PathVariable final long school,
         @RequestBody final JsonNode json,
         final HttpServletRequest request,
-        @AuthenticationPrincipal final User user
+        @AuthenticationPrincipal final UrAccount user
     ) throws Exception {
         return this.create(
             new AcHttp(request, "building-v1").type(), school, new BdInputHttp(json), user
@@ -324,7 +324,7 @@ public class BdsHttp {
         @PathVariable final long building,
         @RequestBody final JsonNode json,
         final HttpServletRequest request,
-        @AuthenticationPrincipal final User user
+        @AuthenticationPrincipal final UrAccount user
     ) throws Exception {
         final MediaType type = new AcHttp(request, "building-v1").type();
         final Building revised = new SlsAuthorized(
@@ -350,7 +350,7 @@ public class BdsHttp {
     public ResponseEntity<Void> remove(
         @PathVariable final long school,
         @PathVariable final long building,
-        @AuthenticationPrincipal final User user
+        @AuthenticationPrincipal final UrAccount user
     ) throws Exception {
         new SlsAuthorized(new SlsPostgres(this.ctx), user)
             .school(school).buildings().remove(building);
@@ -358,7 +358,7 @@ public class BdsHttp {
     }
 
     private ResponseEntity<?> create(
-        final MediaType type, final long school, final BuildingInput input, final User user
+        final MediaType type, final long school, final BuildingInput input, final UrAccount user
     ) throws Exception {
         final String base = String.format("/schools/%d/buildings", school);
         return BdsHttp.result(
@@ -402,7 +402,7 @@ public class BdsHttp {
     ) throws Exception {
         return new SrWeb(
             new UrAcBrief(
-                (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal()
+                (UrAccount) SecurityContextHolder.getContext().getAuthentication().getPrincipal()
             ),
             new SlsBrief(new SlsPostgres(this.ctx)),
             new CsToken((CsrfToken) request.getAttribute(CsrfToken.class.getName()))

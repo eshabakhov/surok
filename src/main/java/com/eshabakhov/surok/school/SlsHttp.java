@@ -9,7 +9,7 @@ import com.eshabakhov.surok.Page;
 import com.eshabakhov.surok.School;
 import com.eshabakhov.surok.Schools;
 import com.eshabakhov.surok.Sorts;
-import com.eshabakhov.surok.User;
+import com.eshabakhov.surok.UrAccount;
 import com.eshabakhov.surok.media.AcHttp;
 import com.eshabakhov.surok.media.MdJson;
 import com.eshabakhov.surok.media.MdXml;
@@ -94,7 +94,7 @@ public class SlsHttp {
     public ResponseEntity<?> selection(
         final Filters filters, final Page page, final Sorts sorts,
         final HttpServletRequest request,
-        @AuthenticationPrincipal final User user
+        @AuthenticationPrincipal final UrAccount user
     ) throws Exception {
         final MediaType type = new AcHttp(
             request,
@@ -166,7 +166,7 @@ public class SlsHttp {
     )
     public ResponseEntity<?> school(
         @PathVariable final long school, final HttpServletRequest request,
-        @AuthenticationPrincipal final User user
+        @AuthenticationPrincipal final UrAccount user
     ) throws Exception {
         final MediaType type = new AcHttp(request, "school-v1").type();
         final Schools origin = new SlsAuthorized(new SlsPostgres(this.ctx), user);
@@ -208,7 +208,7 @@ public class SlsHttp {
     public ResponseEntity<?> create(
         @RequestParam final MultiValueMap<String, String> parameters,
         final HttpServletRequest request,
-        @AuthenticationPrincipal final User user
+        @AuthenticationPrincipal final UrAccount user
     ) throws Exception {
         return this.save(request, new SlInputHttp(parameters), 0L, true, user);
     }
@@ -227,7 +227,7 @@ public class SlsHttp {
     )
     public ResponseEntity<?> create(
         @RequestBody final JsonNode json, final HttpServletRequest request,
-        @AuthenticationPrincipal final User user
+        @AuthenticationPrincipal final UrAccount user
     ) throws Exception {
         return this.save(request, new SlInputHttp(json), 0L, true, user);
     }
@@ -249,7 +249,7 @@ public class SlsHttp {
     public ResponseEntity<?> revise(
         @PathVariable final long school, @RequestBody final JsonNode json,
         final HttpServletRequest request,
-        @AuthenticationPrincipal final User user
+        @AuthenticationPrincipal final UrAccount user
     ) throws Exception {
         return this.save(request, new SlInputHttp(json), school, false, user);
     }
@@ -265,7 +265,7 @@ public class SlsHttp {
     @DeleteMapping("/{school}")
     public ResponseEntity<Void> remove(
         @PathVariable final long school,
-        @AuthenticationPrincipal final User user
+        @AuthenticationPrincipal final UrAccount user
     ) throws Exception {
         new SlsAuthorized(new SlsPostgres(this.ctx), user).remove(school);
         return ResponseEntity.noContent().build();
@@ -284,7 +284,7 @@ public class SlsHttp {
      */
     private ResponseEntity<?> save(
         final HttpServletRequest request, final SchoolInput input,
-        final long id, final boolean creation, final User user
+        final long id, final boolean creation, final UrAccount user
     ) throws Exception {
         final MediaType type = new AcHttp(request, "school-v1").type();
         ResponseEntity<?> response;
@@ -349,7 +349,7 @@ public class SlsHttp {
     ) throws Exception {
         return new SrWeb(
             new UrAcBrief(
-                (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal()
+                (UrAccount) SecurityContextHolder.getContext().getAuthentication().getPrincipal()
             ), schools,
             new CsToken((CsrfToken) request.getAttribute(CsrfToken.class.getName()))
         ).print(

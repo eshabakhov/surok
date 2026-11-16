@@ -6,7 +6,7 @@ package com.eshabakhov.surok.school.schedule.load;
 import com.eshabakhov.surok.Media;
 import com.eshabakhov.surok.Page;
 import com.eshabakhov.surok.School;
-import com.eshabakhov.surok.User;
+import com.eshabakhov.surok.UrAccount;
 import com.eshabakhov.surok.media.AcHttp;
 import com.eshabakhov.surok.media.MdJson;
 import com.eshabakhov.surok.media.MdXml;
@@ -84,7 +84,7 @@ public class ClsHttp {
         @PathVariable final long schedule,
         final Page page,
         final HttpServletRequest request,
-        @AuthenticationPrincipal final User actor
+        @AuthenticationPrincipal final UrAccount actor
     ) throws Exception {
         final MediaType type = new AcHttp(request, "class-loads.v1").type();
         final School sch = new SlsAuthorized(new SlsPostgres(this.ctx), actor).school(school);
@@ -136,7 +136,7 @@ public class ClsHttp {
         @PathVariable final long schedule,
         @PathVariable final long load,
         final HttpServletRequest request,
-        @AuthenticationPrincipal final User actor
+        @AuthenticationPrincipal final UrAccount actor
     ) throws Exception {
         final MediaType type = new AcHttp(request, "class-load-v1").type();
         final School sch = new SlsAuthorized(new SlsPostgres(this.ctx), actor).school(school);
@@ -167,7 +167,7 @@ public class ClsHttp {
     ) throws Exception {
         return new SrWeb(
             new UrAcBrief(
-                (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal()
+                (UrAccount) SecurityContextHolder.getContext().getAuthentication().getPrincipal()
             ),
             new SlsBrief(new SlsPostgres(this.ctx)),
             new CsToken((CsrfToken) request.getAttribute(CsrfToken.class.getName()))

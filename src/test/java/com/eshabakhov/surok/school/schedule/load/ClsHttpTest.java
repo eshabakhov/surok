@@ -3,7 +3,7 @@
  */
 package com.eshabakhov.surok.school.schedule.load;
 
-import com.eshabakhov.surok.User;
+import com.eshabakhov.surok.UrAccount;
 import com.eshabakhov.surok.user.Roles;
 import com.eshabakhov.surok.user.UrAcAuth;
 import com.eshabakhov.surok.user.UrAcPostgres;
@@ -297,7 +297,7 @@ final class ClsHttpTest {
 
     private MockHttpSession session(final Roles.RoleEnum role, final Long school)
         throws Exception {
-        final User user = new UrAcPostgres(
+        final UrAccount user = new UrAcPostgres(
             this.ctx,
             this.ctx.resultQuery(
                 """

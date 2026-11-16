@@ -3,7 +3,7 @@
  */
 package com.eshabakhov.surok.school;
 
-import com.eshabakhov.surok.User;
+import com.eshabakhov.surok.UrAccount;
 import com.eshabakhov.surok.school.input.SlInput;
 import com.eshabakhov.surok.school.input.SlInputName;
 import com.eshabakhov.surok.user.Roles;
@@ -463,7 +463,7 @@ final class SlsHttpTest {
     void managesExistingSchoolMembers() throws Exception {
         this.prepare();
         final UrAcAuth director = this.principal(Roles.RoleEnum.DIRECTOR);
-        final User member = new UrsPostgres(this.ctx).register(
+        final UrAccount member = new UrsPostgres(this.ctx).register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.org", UUID.randomUUID()), false
         );
@@ -504,7 +504,7 @@ final class SlsHttpTest {
     void attachesExistingAccountByLogin() throws Exception {
         this.prepare();
         final String login = UUID.randomUUID().toString();
-        final User member = new UrsPostgres(this.ctx).register(
+        final UrAccount member = new UrsPostgres(this.ctx).register(
             login, "ValidPassword1!",
             String.format("%s@example.org", UUID.randomUUID()), false
         );
@@ -528,7 +528,7 @@ final class SlsHttpTest {
     void deniesMemberManagementToNonDirectors() throws Exception {
         this.prepare();
         final UrAcAuth viewer = this.principal(Roles.RoleEnum.VIEWER);
-        final User target = new UrsPostgres(this.ctx).register(
+        final UrAccount target = new UrsPostgres(this.ctx).register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.org", UUID.randomUUID()), false
         );
@@ -595,7 +595,7 @@ final class SlsHttpTest {
     @Test
     void recognizesNewDirectorWithinAnExistingSession() throws Exception {
         this.prepare();
-        final User creator = new UrsPostgres(this.ctx).register(
+        final UrAccount creator = new UrsPostgres(this.ctx).register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.org", UUID.randomUUID()), false
         );
@@ -678,7 +678,7 @@ final class SlsHttpTest {
      * @throws Exception If role creation fails
      */
     private UrAcAuth principal(final Roles.RoleEnum role) throws Exception {
-        final User user = new UrAcPostgres(
+        final UrAccount user = new UrAcPostgres(
             this.ctx,
             this.ctx.resultQuery(
                 """

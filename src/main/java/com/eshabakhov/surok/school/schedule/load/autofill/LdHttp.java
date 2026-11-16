@@ -5,7 +5,7 @@ package com.eshabakhov.surok.school.schedule.load.autofill;
 
 import com.eshabakhov.surok.PrItems;
 import com.eshabakhov.surok.School;
-import com.eshabakhov.surok.User;
+import com.eshabakhov.surok.UrAccount;
 import com.eshabakhov.surok.federal.curriculum.CrOffered;
 import com.eshabakhov.surok.federal.curriculum.CrsPostgres;
 import com.eshabakhov.surok.federal.curriculum.Curriculum;
@@ -103,7 +103,7 @@ public class LdHttp {
         @PathVariable("school") final long school,
         @PathVariable("schedule") final long schedule,
         final HttpServletRequest request,
-        @AuthenticationPrincipal final User actor
+        @AuthenticationPrincipal final UrAccount actor
     ) throws Exception {
         final MediaType type = new AcHttp(
             request,
@@ -200,7 +200,7 @@ public class LdHttp {
         @PathVariable("schedule") final long schedule,
         final HttpServletRequest request,
         @RequestBody final JsonNode document,
-        @AuthenticationPrincipal final User actor
+        @AuthenticationPrincipal final UrAccount actor
     ) throws Exception {
         final MediaType type = new AcHttp(request, List.of(this.types)).type();
         final LoadDraft draft = new SlsAuthorized(
@@ -259,7 +259,7 @@ public class LdHttp {
         @PathVariable("schedule") final long schedule,
         final HttpServletRequest request,
         @RequestBody final JsonNode document,
-        @AuthenticationPrincipal final User actor
+        @AuthenticationPrincipal final UrAccount actor
     ) throws Exception {
         final MediaType type = new AcHttp(request, List.of(this.types)).type();
         final LoadDraft draft = new SlsAuthorized(
@@ -302,7 +302,7 @@ public class LdHttp {
         @PathVariable("school") final long school,
         @PathVariable("schedule") final long schedule,
         final HttpServletRequest request,
-        @AuthenticationPrincipal final User actor
+        @AuthenticationPrincipal final UrAccount actor
     ) throws Exception {
         final MediaType type = new AcHttp(request, List.of(this.types)).type();
         final LoadDraft draft = new SlsAuthorized(

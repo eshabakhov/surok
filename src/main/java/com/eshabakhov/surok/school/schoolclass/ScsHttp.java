@@ -9,7 +9,7 @@ import com.eshabakhov.surok.Media;
 import com.eshabakhov.surok.Page;
 import com.eshabakhov.surok.School;
 import com.eshabakhov.surok.Sorts;
-import com.eshabakhov.surok.User;
+import com.eshabakhov.surok.UrAccount;
 import com.eshabakhov.surok.filter.FilterRequest;
 import com.eshabakhov.surok.filter.FiltersRequest;
 import com.eshabakhov.surok.media.AcHttp;
@@ -106,7 +106,7 @@ public class ScsHttp {
         final Page page,
         final Sorts sorts,
         final HttpServletRequest request,
-        @AuthenticationPrincipal final User actor
+        @AuthenticationPrincipal final UrAccount actor
     ) throws Exception {
         final MediaType type = new AcHttp(
             request,
@@ -163,7 +163,7 @@ public class ScsHttp {
     @GetMapping(value = "/create", produces = MediaType.TEXT_HTML_VALUE)
     public ResponseEntity<String> form(
         @PathVariable final long school, final HttpServletRequest request,
-        @AuthenticationPrincipal final User actor
+        @AuthenticationPrincipal final UrAccount actor
     ) throws Exception {
         return ResponseEntity.ok().contentType(
             new MediaType(
@@ -199,7 +199,7 @@ public class ScsHttp {
         @PathVariable final long school,
         @PathVariable final long clazz,
         final HttpServletRequest request,
-        @AuthenticationPrincipal final User actor
+        @AuthenticationPrincipal final UrAccount actor
     ) throws Exception {
         final MediaType type = new AcHttp(request, "school-class-v1").type();
         final School sch = new SlsAuthorized(new SlsPostgres(this.ctx), actor).school(school);
@@ -251,7 +251,7 @@ public class ScsHttp {
         @PathVariable final long school,
         @RequestParam final MultiValueMap<String, String> parameters,
         final HttpServletRequest request,
-        @AuthenticationPrincipal final User actor
+        @AuthenticationPrincipal final UrAccount actor
     ) throws Exception {
         final MediaType type = new AcHttp(request, "school-class-v1").type();
         ResponseEntity<?> response;
@@ -290,7 +290,7 @@ public class ScsHttp {
         @PathVariable final long school,
         @RequestBody final JsonNode json,
         final HttpServletRequest request,
-        @AuthenticationPrincipal final User actor
+        @AuthenticationPrincipal final UrAccount actor
     ) throws Exception {
         return this.create(
             new AcHttp(request, "school-class-v1").type(), school, new ScInputHttp(json), actor
@@ -322,7 +322,7 @@ public class ScsHttp {
         @PathVariable final long clazz,
         @RequestBody final JsonNode json,
         final HttpServletRequest request,
-        @AuthenticationPrincipal final User actor
+        @AuthenticationPrincipal final UrAccount actor
     ) throws Exception {
         final MediaType type = new AcHttp(request, "school-class-v1").type();
         final SchoolClass revised = new SlsAuthorized(
@@ -347,7 +347,7 @@ public class ScsHttp {
     public ResponseEntity<Void> remove(
         @PathVariable final long school,
         @PathVariable final long clazz,
-        @AuthenticationPrincipal final User actor
+        @AuthenticationPrincipal final UrAccount actor
     ) throws Exception {
         new SlsAuthorized(new SlsPostgres(this.ctx), actor)
             .school(school).schoolClasses().remove(clazz);
@@ -355,7 +355,7 @@ public class ScsHttp {
     }
 
     private ResponseEntity<?> create(
-        final MediaType type, final long school, final SchoolClassInput input, final User actor
+        final MediaType type, final long school, final SchoolClassInput input, final UrAccount actor
     ) throws Exception {
         final String base = String.format("/schools/%d/classes", school);
         return ScsHttp.result(
@@ -399,7 +399,7 @@ public class ScsHttp {
     ) throws Exception {
         return new SrWeb(
             new UrAcBrief(
-                (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal()
+                (UrAccount) SecurityContextHolder.getContext().getAuthentication().getPrincipal()
             ),
             new SlsBrief(new SlsPostgres(this.ctx)),
             new CsToken((CsrfToken) request.getAttribute(CsrfToken.class.getName()))
