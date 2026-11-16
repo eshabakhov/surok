@@ -6,7 +6,6 @@ package com.eshabakhov.surok.user;
 import com.eshabakhov.surok.Media;
 import com.eshabakhov.surok.Schools;
 import com.eshabakhov.surok.UrAccount;
-import com.eshabakhov.surok.User;
 import com.eshabakhov.surok.school.SlsAuthorized;
 import com.eshabakhov.surok.security.right.RtAdmin;
 
@@ -20,7 +19,7 @@ import com.eshabakhov.surok.security.right.RtAdmin;
 public final class UrAcGlobalAuthorized implements UrAccount {
 
     /** Underlying user. */
-    private final User origin;
+    private final UrAccount origin;
 
     /** Acting user. */
     private final UrAccount actor;
@@ -31,7 +30,7 @@ public final class UrAcGlobalAuthorized implements UrAccount {
      * @param origin Underlying user
      * @param actor Acting user
      */
-    public UrAcGlobalAuthorized(final User origin, final UrAccount actor) {
+    public UrAcGlobalAuthorized(final UrAccount origin, final UrAccount actor) {
         this.origin = origin;
         this.actor = actor;
     }

@@ -4,7 +4,7 @@
 package com.eshabakhov.surok.school.schedule.load;
 
 import com.eshabakhov.surok.School;
-import com.eshabakhov.surok.User;
+import com.eshabakhov.surok.UrAccount;
 import com.eshabakhov.surok.media.MdJson;
 import com.eshabakhov.surok.page.PageRequest;
 import com.eshabakhov.surok.school.SlsPostgres;
@@ -51,7 +51,7 @@ final class ClsAuthorizedTest {
     @Test
     void deniesPrintingAfterMembershipIsRemoved(@Autowired final DSLContext ctx)
         throws Exception {
-        final User actor = new UrsPostgres(ctx).register(
+        final UrAccount actor = new UrsPostgres(ctx).register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
         );
@@ -77,7 +77,7 @@ final class ClsAuthorizedTest {
      */
     @Test
     void listsTeachingLoadsForAnAdministrator(@Autowired final DSLContext ctx) throws Exception {
-        final User actor = new UrsPostgres(ctx).register(
+        final UrAccount actor = new UrsPostgres(ctx).register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
         );
@@ -103,7 +103,7 @@ final class ClsAuthorizedTest {
     @Test
     void deniesSelectedLoadsAfterMembershipRemoval(@Autowired final DSLContext ctx)
         throws Exception {
-        final User actor = new UrsPostgres(ctx).register(
+        final UrAccount actor = new UrsPostgres(ctx).register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
         );

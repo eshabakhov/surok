@@ -4,7 +4,7 @@
 package com.eshabakhov.surok.security.right;
 
 import com.eshabakhov.surok.School;
-import com.eshabakhov.surok.User;
+import com.eshabakhov.surok.UrAccount;
 
 /**
  * Right of a current school member.
@@ -15,7 +15,7 @@ import com.eshabakhov.surok.User;
 public final class RtSchoolMember implements Right {
 
     /** Acting user. */
-    private final User actor;
+    private final UrAccount actor;
 
     /** School whose membership is checked. */
     private final School school;
@@ -26,7 +26,7 @@ public final class RtSchoolMember implements Right {
      * @param actor Acting user
      * @param school School to inspect
      */
-    public RtSchoolMember(final User actor, final School school) {
+    public RtSchoolMember(final UrAccount actor, final School school) {
         this.actor = actor;
         this.school = school;
     }

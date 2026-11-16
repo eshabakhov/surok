@@ -4,7 +4,6 @@
 package com.eshabakhov.surok.user;
 
 import com.eshabakhov.surok.UrAccount;
-import com.eshabakhov.surok.User;
 import com.eshabakhov.surok.Users;
 import com.eshabakhov.surok.security.right.RtAdmin;
 import java.util.stream.StreamSupport;
@@ -36,19 +35,19 @@ public final class UrsGlobalAuthorized implements Users {
     }
 
     @Override
-    public boolean contains(final User user) {
+    public boolean contains(final UrAccount user) {
         return new RtAdmin(this.actor).permit(this.origin).contains(user);
     }
 
     @Override
-    public User add(final User user) throws Exception {
+    public UrAccount add(final UrAccount user) throws Exception {
         return new UrAcGlobalAuthorized(
             new RtAdmin(this.actor).permit(this.origin).add(user), this.actor
         );
     }
 
     @Override
-    public Roles roles(final User user) {
+    public Roles roles(final UrAccount user) {
         return new RlsGlobalAuthorized(
             new RtAdmin(this.actor).permit(this.origin).roles(user), this.actor
         );

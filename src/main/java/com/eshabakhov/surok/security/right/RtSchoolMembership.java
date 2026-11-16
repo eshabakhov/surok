@@ -3,7 +3,7 @@
  */
 package com.eshabakhov.surok.security.right;
 
-import com.eshabakhov.surok.User;
+import com.eshabakhov.surok.UrAccount;
 
 /**
  * Right to address a school by its identifier before loading it.
@@ -14,7 +14,7 @@ import com.eshabakhov.surok.User;
 public final class RtSchoolMembership implements Right {
 
     /** Acting user. */
-    private final User actor;
+    private final UrAccount actor;
 
     /** Requested school identifier. */
     private final long school;
@@ -25,7 +25,7 @@ public final class RtSchoolMembership implements Right {
      * @param actor Acting user
      * @param school Requested school identifier
      */
-    public RtSchoolMembership(final User actor, final long school) {
+    public RtSchoolMembership(final UrAccount actor, final long school) {
         this.actor = actor;
         this.school = school;
     }
