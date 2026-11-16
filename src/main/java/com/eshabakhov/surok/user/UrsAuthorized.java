@@ -27,7 +27,7 @@ public final class UrsAuthorized implements Users {
     private final School school;
 
     /** Acting user. */
-    private final User actor;
+    private final UrAccount actor;
 
     /**
      * New protected school users.
@@ -36,7 +36,7 @@ public final class UrsAuthorized implements Users {
      * @param school School whose users are protected
      * @param actor Acting user
      */
-    public UrsAuthorized(final Users origin, final School school, final User actor) {
+    public UrsAuthorized(final Users origin, final School school, final UrAccount actor) {
         this.origin = origin;
         this.school = school;
         this.actor = actor;

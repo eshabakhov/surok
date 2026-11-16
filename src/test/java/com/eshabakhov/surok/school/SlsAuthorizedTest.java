@@ -4,7 +4,7 @@
 package com.eshabakhov.surok.school;
 
 import com.eshabakhov.surok.Schools;
-import com.eshabakhov.surok.User;
+import com.eshabakhov.surok.UrAccount;
 import com.eshabakhov.surok.filter.FiltersRequest;
 import com.eshabakhov.surok.media.MdJson;
 import com.eshabakhov.surok.page.PageRequest;
@@ -53,7 +53,7 @@ final class SlsAuthorizedTest {
      */
     @Test
     void selectsOnlySchoolsOfTheActingUser(@Autowired final DSLContext ctx) throws Exception {
-        final User actor = new UrsPostgres(ctx).register(
+        final UrAccount actor = new UrsPostgres(ctx).register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
         );
@@ -77,7 +77,7 @@ final class SlsAuthorizedTest {
      */
     @Test
     void appointsTheCreatorAsDirector(@Autowired final DSLContext ctx) throws Exception {
-        final User actor = new UrsPostgres(ctx).register(
+        final UrAccount actor = new UrsPostgres(ctx).register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
         );
@@ -98,7 +98,7 @@ final class SlsAuthorizedTest {
      */
     @Test
     void deniesRemovalByASchoolDirector(@Autowired final DSLContext ctx) throws Exception {
-        final User actor = new UrsPostgres(ctx).register(
+        final UrAccount actor = new UrsPostgres(ctx).register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
         );
@@ -120,7 +120,7 @@ final class SlsAuthorizedTest {
      */
     @Test
     void deniesDirectLookupOfAnotherSchool(@Autowired final DSLContext ctx) throws Exception {
-        final User actor = new UrsPostgres(ctx).register(
+        final UrAccount actor = new UrsPostgres(ctx).register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
         );
@@ -142,7 +142,7 @@ final class SlsAuthorizedTest {
      */
     @Test
     void allowsAnAdministratorToRemoveASchool(@Autowired final DSLContext ctx) throws Exception {
-        final User actor = new UrsPostgres(ctx).register(
+        final UrAccount actor = new UrsPostgres(ctx).register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
         );
@@ -166,7 +166,7 @@ final class SlsAuthorizedTest {
     @Test
     void narrowsSelectionAfterAdministratorRoleIsRevoked(@Autowired final DSLContext ctx)
         throws Exception {
-        final User actor = new UrsPostgres(ctx).register(
+        final UrAccount actor = new UrsPostgres(ctx).register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
         );
@@ -194,7 +194,7 @@ final class SlsAuthorizedTest {
     @Test
     void deniesPrintingSchoolsAfterMembershipRemoval(@Autowired final DSLContext ctx)
         throws Exception {
-        final User actor = new UrsPostgres(ctx).register(
+        final UrAccount actor = new UrsPostgres(ctx).register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
         );

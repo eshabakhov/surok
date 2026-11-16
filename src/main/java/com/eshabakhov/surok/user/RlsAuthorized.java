@@ -4,7 +4,7 @@
 package com.eshabakhov.surok.user;
 
 import com.eshabakhov.surok.School;
-import com.eshabakhov.surok.User;
+import com.eshabakhov.surok.UrAccount;
 import com.eshabakhov.surok.security.right.RtAdmin;
 import com.eshabakhov.surok.security.right.RtEither;
 import com.eshabakhov.surok.security.right.RtSchoolDirector;
@@ -26,7 +26,7 @@ public final class RlsAuthorized implements Roles {
     private final School school;
 
     /** Acting user. */
-    private final User actor;
+    private final UrAccount actor;
 
     /**
      * New protected school role assignments.
@@ -35,7 +35,7 @@ public final class RlsAuthorized implements Roles {
      * @param school School whose roles are assigned
      * @param actor Acting user
      */
-    public RlsAuthorized(final Roles origin, final School school, final User actor) {
+    public RlsAuthorized(final Roles origin, final School school, final UrAccount actor) {
         this.origin = origin;
         this.school = school;
         this.actor = actor;

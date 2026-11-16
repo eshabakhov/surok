@@ -5,7 +5,7 @@ package com.eshabakhov.surok.school;
 
 import com.eshabakhov.surok.Media;
 import com.eshabakhov.surok.School;
-import com.eshabakhov.surok.User;
+import com.eshabakhov.surok.UrAccount;
 import com.eshabakhov.surok.Users;
 import com.eshabakhov.surok.federal.subject.SbsAuthorized;
 import com.eshabakhov.surok.federal.subject.Subjects;
@@ -36,7 +36,7 @@ public final class SlAuthorized implements School {
     private final School origin;
 
     /** Acting user. */
-    private final User actor;
+    private final UrAccount actor;
 
     /**
      * New authorized school.
@@ -44,7 +44,7 @@ public final class SlAuthorized implements School {
      * @param origin Underlying school
      * @param actor Acting user
      */
-    public SlAuthorized(final School origin, final User actor) {
+    public SlAuthorized(final School origin, final UrAccount actor) {
         this.origin = origin;
         this.actor = actor;
     }
