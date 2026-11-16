@@ -8,7 +8,7 @@ import com.eshabakhov.surok.Media;
 import com.eshabakhov.surok.Page;
 import com.eshabakhov.surok.PrItems;
 import com.eshabakhov.surok.Sorts;
-import com.eshabakhov.surok.User;
+import com.eshabakhov.surok.UrAccount;
 import com.eshabakhov.surok.federal.curriculum.input.CrInputHttp;
 import com.eshabakhov.surok.media.AcHttp;
 import com.eshabakhov.surok.media.MdJson;
@@ -99,7 +99,7 @@ public class CrsHttp {
     public ResponseEntity<?> create(
         @RequestParam final MultiValueMap<String, String> parameters,
         final HttpServletRequest request,
-        @AuthenticationPrincipal final User actor
+        @AuthenticationPrincipal final UrAccount actor
     ) throws Exception {
         return CrsHttp.result(
             new AcHttp(
@@ -135,7 +135,7 @@ public class CrsHttp {
     public ResponseEntity<?> create(
         @RequestBody final Map<String, String> fields,
         final HttpServletRequest request,
-        @AuthenticationPrincipal final User actor
+        @AuthenticationPrincipal final UrAccount actor
     ) throws Exception {
         return CrsHttp.result(
             new AcHttp(request, "federal-curriculum-v1", "federal-curriculum-v2").type(),
@@ -166,7 +166,7 @@ public class CrsHttp {
     public ResponseEntity<?> curriculum(
         @PathVariable final long curriculum,
         final HttpServletRequest request,
-        @AuthenticationPrincipal final User actor
+        @AuthenticationPrincipal final UrAccount actor
     ) throws Exception {
         final MediaType type = new AcHttp(
             request, "federal-curriculum-v1", "federal-curriculum-v2"
@@ -207,7 +207,7 @@ public class CrsHttp {
     public ResponseEntity<String> edit(
         @PathVariable final long curriculum,
         final HttpServletRequest request,
-        @AuthenticationPrincipal final User actor
+        @AuthenticationPrincipal final UrAccount actor
     ) throws Exception {
         final MediaType type = new AcHttp(request, List.of(MediaType.TEXT_HTML)).type();
         final Curriculums curriculums = new CrsAuthorized(
@@ -248,7 +248,7 @@ public class CrsHttp {
         @PathVariable final long curriculum,
         @RequestBody final Map<String, String> fields,
         final HttpServletRequest request,
-        @AuthenticationPrincipal final User actor
+        @AuthenticationPrincipal final UrAccount actor
     ) throws Exception {
         return CrsHttp.result(
             new AcHttp(
@@ -285,7 +285,7 @@ public class CrsHttp {
         final Page page,
         final Sorts sorts,
         final HttpServletRequest request,
-        @AuthenticationPrincipal final User actor
+        @AuthenticationPrincipal final UrAccount actor
     ) throws Exception {
         final MediaType type = new AcHttp(
             request,
@@ -335,7 +335,7 @@ public class CrsHttp {
     @GetMapping(value = "/create", produces = MediaType.TEXT_HTML_VALUE)
     public ResponseEntity<String> form(
         final HttpServletRequest request,
-        @AuthenticationPrincipal final User actor
+        @AuthenticationPrincipal final UrAccount actor
     ) throws Exception {
         return ResponseEntity.ok().contentType(
             new MediaType(
@@ -359,7 +359,7 @@ public class CrsHttp {
     @DeleteMapping("/{curriculum}")
     public ResponseEntity<Void> remove(
         @PathVariable(name = "curriculum") final long id,
-        @AuthenticationPrincipal final User actor
+        @AuthenticationPrincipal final UrAccount actor
     ) throws Exception {
         new CrsAuthorized(this.origin, actor).remove(id);
         return ResponseEntity.noContent().build();
@@ -398,7 +398,7 @@ public class CrsHttp {
     ) throws Exception {
         return new SrWeb(
             new UrAcBrief(
-                (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal()
+                (UrAccount) SecurityContextHolder.getContext().getAuthentication().getPrincipal()
             ),
             new SlsBrief(new SlsPostgres(this.ctx)),
             new CsToken((CsrfToken) request.getAttribute(CsrfToken.class.getName()))

@@ -7,7 +7,7 @@ import com.eshabakhov.surok.Filters;
 import com.eshabakhov.surok.Media;
 import com.eshabakhov.surok.Page;
 import com.eshabakhov.surok.Sorts;
-import com.eshabakhov.surok.User;
+import com.eshabakhov.surok.UrAccount;
 import com.eshabakhov.surok.security.right.RtAdmin;
 import java.util.stream.StreamSupport;
 
@@ -24,7 +24,7 @@ public final class CrsAuthorized implements Curriculums {
     private final Curriculums origin;
 
     /** Acting user. */
-    private final User actor;
+    private final UrAccount actor;
 
     /**
      * New protected federal curriculum collection.
@@ -32,7 +32,7 @@ public final class CrsAuthorized implements Curriculums {
      * @param origin Underlying curriculums
      * @param actor Acting user
      */
-    public CrsAuthorized(final Curriculums origin, final User actor) {
+    public CrsAuthorized(final Curriculums origin, final UrAccount actor) {
         this.origin = origin;
         this.actor = actor;
     }

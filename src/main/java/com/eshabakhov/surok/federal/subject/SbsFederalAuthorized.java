@@ -7,7 +7,7 @@ import com.eshabakhov.surok.Filters;
 import com.eshabakhov.surok.Media;
 import com.eshabakhov.surok.Page;
 import com.eshabakhov.surok.Sorts;
-import com.eshabakhov.surok.User;
+import com.eshabakhov.surok.UrAccount;
 import com.eshabakhov.surok.security.right.RtAdmin;
 import java.util.stream.StreamSupport;
 
@@ -24,7 +24,7 @@ public final class SbsFederalAuthorized implements Subjects {
     private final Subjects origin;
 
     /** Acting user. */
-    private final User actor;
+    private final UrAccount actor;
 
     /**
      * New protected federal catalogue.
@@ -32,7 +32,7 @@ public final class SbsFederalAuthorized implements Subjects {
      * @param origin Underlying federal catalogue
      * @param actor Acting user
      */
-    public SbsFederalAuthorized(final Subjects origin, final User actor) {
+    public SbsFederalAuthorized(final Subjects origin, final UrAccount actor) {
         this.origin = origin;
         this.actor = actor;
     }

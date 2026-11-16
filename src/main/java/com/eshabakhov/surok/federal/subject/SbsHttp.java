@@ -8,7 +8,7 @@ import com.eshabakhov.surok.Filters;
 import com.eshabakhov.surok.Media;
 import com.eshabakhov.surok.Page;
 import com.eshabakhov.surok.Sorts;
-import com.eshabakhov.surok.User;
+import com.eshabakhov.surok.UrAccount;
 import com.eshabakhov.surok.federal.subject.input.SbInputHttp;
 import com.eshabakhov.surok.federal.subject.input.SubjectInputException;
 import com.eshabakhov.surok.filter.FilterRequest;
@@ -106,7 +106,7 @@ public class SbsHttp {
         final Page page,
         final Sorts sorts,
         final HttpServletRequest request,
-        @AuthenticationPrincipal final User actor
+        @AuthenticationPrincipal final UrAccount actor
     ) throws Exception {
         final MediaType type = new AcHttp(
             request,
@@ -161,7 +161,7 @@ public class SbsHttp {
     public ResponseEntity<String> form(
         @PathVariable(required = false) final Long school,
         final HttpServletRequest request,
-        @AuthenticationPrincipal final User actor
+        @AuthenticationPrincipal final UrAccount actor
     ) throws Exception {
         final MediaType type = new AcHttp(request, List.of(MediaType.TEXT_HTML)).type();
         if (school == null && !new RtAdmin(actor).allows()) {
@@ -197,7 +197,7 @@ public class SbsHttp {
         @PathVariable(required = false) final Long school,
         @PathVariable final long subject,
         final HttpServletRequest request,
-        @AuthenticationPrincipal final User actor
+        @AuthenticationPrincipal final UrAccount actor
     ) throws Exception {
         final MediaType type = new AcHttp(request, "subject-v1").type();
         final Subjects origin = this.subjects(school, actor);
@@ -234,7 +234,7 @@ public class SbsHttp {
         @PathVariable(required = false) final Long school,
         @PathVariable final long subject,
         final HttpServletRequest request,
-        @AuthenticationPrincipal final User actor
+        @AuthenticationPrincipal final UrAccount actor
     ) throws Exception {
         final MediaType type = new AcHttp(request, List.of(MediaType.TEXT_HTML)).type();
         final Subjects origin = this.subjects(school, actor);
@@ -272,7 +272,7 @@ public class SbsHttp {
         @PathVariable(required = false) final Long school,
         @RequestParam final MultiValueMap<String, String> parameters,
         final HttpServletRequest request,
-        @AuthenticationPrincipal final User actor
+        @AuthenticationPrincipal final UrAccount actor
     ) throws Exception {
         final MediaType type = new AcHttp(request, "subject-v1").type();
         ResponseEntity<?> response;
@@ -312,7 +312,7 @@ public class SbsHttp {
         @PathVariable(required = false) final Long school,
         @RequestBody final JsonNode json,
         final HttpServletRequest request,
-        @AuthenticationPrincipal final User actor
+        @AuthenticationPrincipal final UrAccount actor
     ) throws Exception {
         return SbsHttp.result(
             new AcHttp(request, "subject-v1").type(),
@@ -348,7 +348,7 @@ public class SbsHttp {
         @PathVariable final long subject,
         @RequestBody final JsonNode json,
         final HttpServletRequest request,
-        @AuthenticationPrincipal final User actor
+        @AuthenticationPrincipal final UrAccount actor
     ) throws Exception {
         final MediaType type = new AcHttp(request, "subject-v1").type();
         final Subject revised = this.subjects(school, actor)
@@ -378,14 +378,14 @@ public class SbsHttp {
     public ResponseEntity<Void> remove(
         @PathVariable(required = false) final Long school,
         @PathVariable final long subject, final HttpServletRequest request,
-        @AuthenticationPrincipal final User actor
+        @AuthenticationPrincipal final UrAccount actor
     ) throws Exception {
         new AcHttp(request, "subject-v1").type();
         this.subjects(school, actor).remove(subject);
         return ResponseEntity.noContent().build();
     }
 
-    private Subjects subjects(final Long school, final User actor) throws Exception {
+    private Subjects subjects(final Long school, final UrAccount actor) throws Exception {
         final Subjects subjects;
         if (school == null) {
             subjects = new SbsFederalAuthorized(new SbsFederal(this.ctx), actor);
@@ -453,7 +453,7 @@ public class SbsHttp {
         final HttpServletRequest request,
         final Long school,
         final String view,
-        final User actor
+        final UrAccount actor
     ) throws Exception {
         boolean editable = new RtAdmin(actor).allows();
         if (school != null && !editable) {

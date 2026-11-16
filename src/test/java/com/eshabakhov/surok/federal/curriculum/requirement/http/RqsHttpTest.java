@@ -3,7 +3,7 @@
  */
 package com.eshabakhov.surok.federal.curriculum.requirement.http;
 
-import com.eshabakhov.surok.User;
+import com.eshabakhov.surok.UrAccount;
 import com.eshabakhov.surok.federal.curriculum.requirement.Requirement;
 import com.eshabakhov.surok.federal.curriculum.requirement.RqsPostgres;
 import com.eshabakhov.surok.federal.curriculum.requirement.input.RqInputHttp;
@@ -316,7 +316,7 @@ final class RqsHttpTest {
     }
 
     private MockHttpSession session(final Roles.RoleEnum role) throws Exception {
-        final User user = new UrAcPostgres(
+        final UrAccount user = new UrAcPostgres(
             this.ctx,
             this.ctx.resultQuery(
                 """

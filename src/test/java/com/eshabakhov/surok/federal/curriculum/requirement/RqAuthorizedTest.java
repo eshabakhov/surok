@@ -3,7 +3,7 @@
  */
 package com.eshabakhov.surok.federal.curriculum.requirement;
 
-import com.eshabakhov.surok.User;
+import com.eshabakhov.surok.UrAccount;
 import com.eshabakhov.surok.federal.curriculum.CrsPostgres;
 import com.eshabakhov.surok.federal.curriculum.input.CrInputHttp;
 import com.eshabakhov.surok.federal.curriculum.requirement.input.MdRqInput;
@@ -51,7 +51,7 @@ final class RqAuthorizedTest {
     @Test
     void rejectsRevisionThroughAProtectedRequirement(@Autowired final DSLContext ctx)
         throws Exception {
-        final User actor = new UrsPostgres(ctx).register(
+        final UrAccount actor = new UrsPostgres(ctx).register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
         );
@@ -72,7 +72,7 @@ final class RqAuthorizedTest {
     void revisesARetainedRequirementAfterGrantingTheAdministratorRole(
         @Autowired final DSLContext ctx
     ) throws Exception {
-        final User actor = new UrsPostgres(ctx).register(
+        final UrAccount actor = new UrsPostgres(ctx).register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
         );

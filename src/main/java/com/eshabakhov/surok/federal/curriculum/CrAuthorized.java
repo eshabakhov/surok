@@ -4,7 +4,7 @@
 package com.eshabakhov.surok.federal.curriculum;
 
 import com.eshabakhov.surok.Media;
-import com.eshabakhov.surok.User;
+import com.eshabakhov.surok.UrAccount;
 import com.eshabakhov.surok.federal.curriculum.requirement.Requirements;
 import com.eshabakhov.surok.federal.curriculum.requirement.RqsAuthorized;
 import com.eshabakhov.surok.security.right.RtAdmin;
@@ -23,7 +23,7 @@ public final class CrAuthorized implements Curriculum {
     private final Curriculum origin;
 
     /** Acting user. */
-    private final User actor;
+    private final UrAccount actor;
 
     /**
      * New protected federal curriculum.
@@ -31,7 +31,7 @@ public final class CrAuthorized implements Curriculum {
      * @param origin Underlying curriculum
      * @param actor Acting user
      */
-    public CrAuthorized(final Curriculum origin, final User actor) {
+    public CrAuthorized(final Curriculum origin, final UrAccount actor) {
         this.origin = origin;
         this.actor = actor;
     }
