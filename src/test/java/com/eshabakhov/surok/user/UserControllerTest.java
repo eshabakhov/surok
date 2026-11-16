@@ -3,13 +3,19 @@
  */
 package com.eshabakhov.surok.user;
 
+import com.eshabakhov.surok.School;
 import com.eshabakhov.surok.User;
+import com.eshabakhov.surok.school.input.SlInput;
+import com.eshabakhov.surok.school.input.SlInputName;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import java.util.UUID;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -45,10 +51,13 @@ final class UserControllerTest {
      * Creates an account through the canonical collection path.
      *
      * @param mvc HTTP client
+     * @param ctx Database context
      * @throws Exception If registration fails
      */
     @Test
-    void registersAccountWithoutAnApiPrefix(@Autowired final MockMvc mvc) throws Exception {
+    void registersAccountWithoutAnApiPrefix(
+        @Autowired final MockMvc mvc, @Autowired final DSLContext ctx
+    ) throws Exception {
         final String name = UUID.randomUUID().toString();
         final MvcResult result = mvc.perform(
             MockMvcRequestBuilders.post("/users").contentType(MediaType.APPLICATION_JSON)
@@ -62,15 +71,29 @@ final class UserControllerTest {
                     )
                 ).with(SecurityMockMvcRequestPostProcessors.csrf())
         ).andReturn();
+        final User created = new UrsPostgres(ctx).identification(name);
         MatcherAssert.assertThat(
             "Registration did not create an account at the canonical user URI",
             List.of(
                 String.valueOf(result.getResponse().getStatus()),
-                result.getResponse().getHeader("Location")
+                result.getResponse().getHeader("Location"),
+                new ObjectMapper().readTree(result.getResponse().getContentAsString())
             ),
             Matchers.contains(
                 Matchers.is(String.valueOf(HttpStatus.CREATED.value())),
-                Matchers.matchesPattern("/users/[0-9]+")
+                Matchers.is(String.format("/users/%d", created.uid())),
+                Matchers.is(
+                    new ObjectMapper().readTree(
+                        String.format(
+                            """
+                            {"uid":%d,"credentials":{"username":"%s"},
+                            "roles":{"list":[{"uid":%d,"name":"BASIC_MAKER"}]},
+                            "info":{"corporate":false,"alive":true},"admin":false}
+                            """,
+                            created.uid(), name, created.roles().list().getFirst().uid()
+                        )
+                    )
+                )
             )
         );
     }
@@ -167,6 +190,71 @@ final class UserControllerTest {
             Matchers.contains(
                 Matchers.is(String.valueOf(HttpStatus.CREATED.value())),
                 Matchers.startsWith(String.format("/users/%d/roles/", target.uid()))
+            )
+        );
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void printsGrantedAndListedRolesWithoutReflectiveSerialization(
+        final boolean scoped, @Autowired final MockMvc mvc, @Autowired final DSLContext ctx
+    ) throws Exception {
+        final User actor = new UrsPostgres(ctx).register(
+            UUID.randomUUID().toString(), "ValidPassword1!",
+            String.format("%s@example.com", UUID.randomUUID()), false
+        );
+        actor.roles().grant(Roles.RoleEnum.ADMIN);
+        final User target = new UrsPostgres(ctx).register(
+            UUID.randomUUID().toString(), "ValidPassword1!",
+            String.format("%s@example.com", UUID.randomUUID()), false
+        );
+        for (final Role role : target.roles().list()) {
+            target.roles().revoke(role.uid());
+        }
+        final School school = actor.schools().create(
+            new SlInputName(new SlInput(), "Школа для проверки ролей")
+        );
+        school.users().add(target);
+        final String path;
+        final String name;
+        final String type;
+        final Roles roles;
+        if (scoped) {
+            path = String.format("/schools/%d/users/%d/roles", school.uid(), target.uid());
+            name = "VIEWER";
+            type = "application/vnd.surok.school-role.v1+json";
+            roles = school.users().roles(target);
+        } else {
+            path = String.format("/users/%d/roles", target.uid());
+            name = "PRO_MAKER";
+            type = MediaType.APPLICATION_JSON_VALUE;
+            roles = target.roles();
+        }
+        final MvcResult granted = mvc.perform(
+            MockMvcRequestBuilders.post(path).contentType(type)
+                .content(String.format("{\"role\":\"%s\"}", name))
+                .with(SecurityMockMvcRequestPostProcessors.csrf()).with(
+                    SecurityMockMvcRequestPostProcessors.user(new AuthUser(actor))
+                )
+        ).andReturn();
+        final String expected = String.format(
+            "{\"uid\":%d,\"name\":\"%s\"}", roles.list().getFirst().uid(), name
+        );
+        MatcherAssert.assertThat(
+            "Role endpoints lost the assignment identifier, name or array representation",
+            List.of(
+                new ObjectMapper().readTree(granted.getResponse().getContentAsString()),
+                new ObjectMapper().readTree(
+                    mvc.perform(
+                        MockMvcRequestBuilders.get(path).with(
+                            SecurityMockMvcRequestPostProcessors.user(new AuthUser(actor))
+                        )
+                    ).andReturn().getResponse().getContentAsString()
+                )
+            ),
+            Matchers.contains(
+                new ObjectMapper().readTree(expected),
+                new ObjectMapper().readTree(String.format("[%s]", expected))
             )
         );
     }

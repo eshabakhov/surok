@@ -23,6 +23,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.StreamSupport;
 import org.jooq.DSLContext;
 import org.springframework.http.HttpStatus;
@@ -134,7 +135,7 @@ public final class UrsHttp {
         consumes = MediaType.APPLICATION_JSON_VALUE,
         produces = MediaType.APPLICATION_JSON_VALUE
     )
-    public ResponseEntity<User> register(
+    public ResponseEntity<Map<String, Object>> register(
         @RequestBody final JsonNode request
     ) throws Exception {
         final JsonNode username = request.get("username");
@@ -155,9 +156,19 @@ public final class UrsHttp {
         final User created = new UrsPostgres(this.ctx).register(
             username.asText(), password.asText(), email.asText(), false
         );
-        return ResponseEntity
-            .created(URI.create(String.format("/users/%s", created.uid())))
-            .body(created);
+        return ResponseEntity.created(
+            URI.create(String.format("/users/%s", created.uid()))
+        ).body(
+            Map.of(
+                "uid", created.uid(),
+                "credentials", Map.of("username", created.credentials().username()),
+                "roles", created.roles().print(new MdJson()).print(),
+                "info", Map.of(
+                    "corporate", created.info().corporate(), "alive", created.info().alive()
+                ),
+                "admin", created.isAdmin()
+            )
+        );
     }
 
     /**
@@ -186,7 +197,7 @@ public final class UrsHttp {
      * @throws Exception if assign fails
      */
     @PostMapping("/users/{user}/roles")
-    public ResponseEntity<Role> assignRole(
+    public ResponseEntity<JsonNode> assignRole(
         @PathVariable final long user,
         @RequestBody final JsonNode request,
         @AuthenticationPrincipal final User actor
@@ -217,7 +228,7 @@ public final class UrsHttp {
                     assigned.uid()
                 )
             )
-        ).body(assigned);
+        ).body(assigned.print(new MdJson()).print());
     }
 
     /**
@@ -228,14 +239,14 @@ public final class UrsHttp {
      * @return ResponseEntity with list of {@link Role}
      */
     @GetMapping("/users/{user}/roles")
-    public ResponseEntity<List<Role>> listRoles(
+    public ResponseEntity<JsonNode> listRoles(
         @PathVariable final long user, @AuthenticationPrincipal final User actor
     ) throws Exception {
         return ResponseEntity.ok(
             new UrsGlobalAuthorized(new UrsPostgres(this.ctx), actor)
                 .identification(user)
                 .roles()
-                .list()
+                .print(new MdJson()).print().path("list")
         );
     }
 
@@ -557,12 +568,14 @@ public final class UrsHttp {
         value = "/schools/{school}/users/{user}/roles",
         produces = "application/vnd.surok.school-roles.v1+json"
     )
-    public ResponseEntity<List<Role>> schoolRoles(
+    public ResponseEntity<JsonNode> schoolRoles(
         @PathVariable final long school, @PathVariable final long user,
         @AuthenticationPrincipal final User actor
     ) throws Exception {
         final Users members = this.members(actor, school);
-        return ResponseEntity.ok(members.roles(members.identification(user)).list());
+        return ResponseEntity.ok(
+            members.roles(members.identification(user)).print(new MdJson()).print().path("list")
+        );
     }
 
     /**
@@ -580,7 +593,7 @@ public final class UrsHttp {
         consumes = "application/vnd.surok.school-role.v1+json",
         produces = "application/vnd.surok.school-role.v1+json"
     )
-    public ResponseEntity<Role> grantSchoolRole(
+    public ResponseEntity<JsonNode> grantSchoolRole(
         @PathVariable final long school, @PathVariable final long user,
         @RequestBody final JsonNode document, @AuthenticationPrincipal final User actor
     ) throws Exception {
@@ -601,7 +614,7 @@ public final class UrsHttp {
         );
         return ResponseEntity.created(
             URI.create(String.format("/schools/%d/users/%d/roles/%d", school, user, granted.uid()))
-        ).body(granted);
+        ).body(granted.print(new MdJson()).print());
     }
 
     /**
