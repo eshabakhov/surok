@@ -19,12 +19,12 @@ import com.eshabakhov.surok.media.MdXslt;
 import com.eshabakhov.surok.media.SrWeb;
 import com.eshabakhov.surok.media.XsClasspath;
 import com.eshabakhov.surok.school.SlBrief;
-import com.eshabakhov.surok.school.SlsAuthorized;
 import com.eshabakhov.surok.school.SlsBrief;
 import com.eshabakhov.surok.school.SlsPostgres;
 import com.eshabakhov.surok.school.schoolclass.input.ScInputHttp;
 import com.eshabakhov.surok.school.schoolclass.input.SchoolClassInputException;
 import com.eshabakhov.surok.security.CsToken;
+import com.eshabakhov.surok.user.UrAcAuthorized;
 import com.eshabakhov.surok.user.UrAcBrief;
 import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.servlet.http.HttpServletRequest;
@@ -117,7 +117,9 @@ public class ScsHttp {
                 MediaType.valueOf(ScsHttp.FRAGMENT)
             )
         ).type();
-        final School sch = new SlsAuthorized(new SlsPostgres(this.ctx), actor).school(school);
+        final School sch = new UrAcAuthorized(
+            actor, new SlsPostgres(this.ctx)
+        ).schools().school(school);
         final Set<Filter> requested = new LinkedHashSet<>(filters.filters());
         requested.addAll(
             Stream.of("name", "name_ct")
@@ -171,7 +173,9 @@ public class ScsHttp {
             )
         ).body(
             this.web(
-                request, new SlsAuthorized(new SlsPostgres(this.ctx), actor).school(school),
+                request, new UrAcAuthorized(
+                    actor, new SlsPostgres(this.ctx)
+                ).schools().school(school),
                 "create"
             ).print()
         );
@@ -202,7 +206,9 @@ public class ScsHttp {
         @AuthenticationPrincipal final UrAccount actor
     ) throws Exception {
         final MediaType type = new AcHttp(request, "school-class-v1").type();
-        final School sch = new SlsAuthorized(new SlsPostgres(this.ctx), actor).school(school);
+        final School sch = new UrAcAuthorized(
+            actor, new SlsPostgres(this.ctx)
+        ).schools().school(school);
         final SchoolClasses origin = sch.schoolClasses();
         final SchoolClass selected = origin.clazz(clazz);
         return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8)).body(
@@ -325,9 +331,9 @@ public class ScsHttp {
         @AuthenticationPrincipal final UrAccount actor
     ) throws Exception {
         final MediaType type = new AcHttp(request, "school-class-v1").type();
-        final SchoolClass revised = new SlsAuthorized(
-            new SlsPostgres(this.ctx), actor
-        ).school(school).schoolClasses().revise(clazz, new ScInputHttp(json));
+        final SchoolClass revised = new UrAcAuthorized(
+            actor, new SlsPostgres(this.ctx)
+        ).schools().school(school).schoolClasses().revise(clazz, new ScInputHttp(json));
         return ScsHttp.result(
             type, revised, HttpStatus.OK, String.format("/schools/%d/classes", school),
             String.format("/schools/%d/classes/%d", school, revised.uid())
@@ -349,18 +355,21 @@ public class ScsHttp {
         @PathVariable final long clazz,
         @AuthenticationPrincipal final UrAccount actor
     ) throws Exception {
-        new SlsAuthorized(new SlsPostgres(this.ctx), actor)
+        new UrAcAuthorized(actor, new SlsPostgres(this.ctx)).schools()
             .school(school).schoolClasses().remove(clazz);
         return ResponseEntity.noContent().build();
     }
 
     private ResponseEntity<?> create(
-        final MediaType type, final long school, final SchoolClassInput input, final UrAccount actor
+        final MediaType type, final long school,
+        final SchoolClassInput input, final UrAccount actor
     ) throws Exception {
         final String base = String.format("/schools/%d/classes", school);
         return ScsHttp.result(
             type,
-            new SlsAuthorized(new SlsPostgres(this.ctx), actor).school(school).schoolClasses()
+            new UrAcAuthorized(
+                actor, new SlsPostgres(this.ctx)
+            ).schools().school(school).schoolClasses()
                 .create(input),
             HttpStatus.CREATED, base, base
         );

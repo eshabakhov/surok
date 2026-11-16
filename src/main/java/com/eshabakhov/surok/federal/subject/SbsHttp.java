@@ -20,12 +20,12 @@ import com.eshabakhov.surok.media.MdXslt;
 import com.eshabakhov.surok.media.SrWeb;
 import com.eshabakhov.surok.media.XsClasspath;
 import com.eshabakhov.surok.school.SlBrief;
-import com.eshabakhov.surok.school.SlsAuthorized;
 import com.eshabakhov.surok.school.SlsBrief;
 import com.eshabakhov.surok.school.SlsPostgres;
 import com.eshabakhov.surok.security.CsToken;
 import com.eshabakhov.surok.security.right.RtAdmin;
 import com.eshabakhov.surok.security.right.RtDirectorOrDeputy;
+import com.eshabakhov.surok.user.UrAcAuthorized;
 import com.eshabakhov.surok.user.UrAcBrief;
 import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.servlet.http.HttpServletRequest;
@@ -390,7 +390,7 @@ public class SbsHttp {
         if (school == null) {
             subjects = new SbsFederalAuthorized(new SbsFederal(this.ctx), actor);
         } else {
-            subjects = new SlsAuthorized(new SlsPostgres(this.ctx), actor)
+            subjects = new UrAcAuthorized(actor, new SlsPostgres(this.ctx)).schools()
                 .school(school).subjects();
         }
         return subjects;
@@ -458,7 +458,7 @@ public class SbsHttp {
         boolean editable = new RtAdmin(actor).allows();
         if (school != null && !editable) {
             editable = new RtDirectorOrDeputy(
-                actor, new SlsAuthorized(new SlsPostgres(this.ctx), actor).school(school)
+                actor, new UrAcAuthorized(actor, new SlsPostgres(this.ctx)).schools().school(school)
             ).allows();
         }
         Media<String> media = new SrWeb(
@@ -475,7 +475,7 @@ public class SbsHttp {
         if (school != null) {
             media = media.with(
                 "school", new SlBrief(
-                    new SlsAuthorized(new SlsPostgres(this.ctx), actor).school(school)
+                    new UrAcAuthorized(actor, new SlsPostgres(this.ctx)).schools().school(school)
                 )
             );
         }
