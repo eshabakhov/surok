@@ -5,7 +5,7 @@ package com.eshabakhov.surok.security.permission;
 
 import com.eshabakhov.surok.Media;
 import com.eshabakhov.surok.School;
-import com.eshabakhov.surok.User;
+import com.eshabakhov.surok.UrAccount;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.Locale;
 import java.util.ResourceBundle;
@@ -115,7 +115,7 @@ public final class PmMethod implements Permission {
         );
         if (this.path.contains("{school}")) {
             long school = -1L;
-            if (actor.getPrincipal() instanceof User user) {
+            if (actor.getPrincipal() instanceof UrAccount user) {
                 for (final School available : user.schools().iterate()) {
                     school = available.uid();
                 }

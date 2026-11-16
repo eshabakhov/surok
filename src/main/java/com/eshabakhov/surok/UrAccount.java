@@ -13,12 +13,24 @@ import com.eshabakhov.surok.user.Account;
  */
 public interface UrAccount extends User {
 
-    @Override
+    /**
+     * Registered user identifier.
+     *
+     * @return User identifier
+     */
     long uid();
 
-    @Override
+    /**
+     * Account details.
+     *
+     * @return Registered account
+     */
     Account account();
 
-    @Override
+    /**
+     * Schools available to this user.
+     *
+     * @return User's schools
+     */
     Schools schools();
 }
