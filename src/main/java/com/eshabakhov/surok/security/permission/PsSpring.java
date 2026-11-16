@@ -5,7 +5,6 @@ package com.eshabakhov.surok.security.permission;
 
 import com.eshabakhov.surok.Media;
 import com.eshabakhov.surok.PrItems;
-import com.eshabakhov.surok.Printable;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -71,7 +70,7 @@ public final class PsSpring implements Permissions {
 
     @Override
     public <T> Media<T> print(final Media<T> media) throws Exception {
-        final List<Printable> operations = new ArrayList<>(
+        final List<Permission> operations = new ArrayList<>(
             this.mappings.getHandlerMethods().size()
         );
         for (final Map.Entry<RequestMappingInfo, HandlerMethod> entry
