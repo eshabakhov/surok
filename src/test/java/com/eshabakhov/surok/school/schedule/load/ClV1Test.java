@@ -5,7 +5,7 @@ package com.eshabakhov.surok.school.schedule.load;
 
 import com.eshabakhov.surok.federal.subject.SbFake;
 import com.eshabakhov.surok.media.MdJson;
-import com.eshabakhov.surok.school.schedule.load.hours.WhFixed;
+import com.eshabakhov.surok.school.schedule.load.hours.WhFake;
 import com.eshabakhov.surok.school.schoolclass.ScFake;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import java.util.Map;
@@ -26,7 +26,7 @@ final class ClV1Test {
         MatcherAssert.assertThat(
             "The versioned load changed its class, subject, or current hours",
             new ClV1(
-                new ClFake(41L, new ScFake(17L), new SbFake(29L), new WhFixed(7))
+                new ClFake(41L, new ScFake(17L), new SbFake(29L), new WhFake(7))
             ).print(new MdJson()).print(),
             Matchers.equalTo(
                 JsonNodeFactory.instance.objectNode().put("id", 41L).put("hours", 7).setAll(

@@ -6,7 +6,7 @@ package com.eshabakhov.surok.school.schedule.load.autofill;
 import com.eshabakhov.surok.federal.curriculum.CrPostgres;
 import com.eshabakhov.surok.federal.subject.SbFake;
 import com.eshabakhov.surok.school.schedule.SdPostgres;
-import com.eshabakhov.surok.school.schedule.load.hours.WhFixed;
+import com.eshabakhov.surok.school.schedule.load.hours.WhFake;
 import java.util.List;
 import java.util.Map;
 import org.hamcrest.MatcherAssert;
@@ -91,8 +91,8 @@ final class AdsPostgresTest {
     void savesDifferentSubjectsForEachGrade(@Autowired final DSLContext ctx) throws Exception {
         new AdsPostgres(ctx, new SdPostgres(ctx, 107L), new CrPostgres(ctx, 67L)).save(
             Map.of(
-                5, Map.of(new SbFake(37L), new WhFixed(1)),
-                6, Map.of(new SbFake(39L), new WhFixed(2))
+                5, Map.of(new SbFake(37L), new WhFake(1)),
+                6, Map.of(new SbFake(39L), new WhFake(2))
             )
         );
         MatcherAssert.assertThat(
@@ -109,7 +109,7 @@ final class AdsPostgresTest {
         final Additions additions = new AdsPostgres(
             ctx, new SdPostgres(ctx, 107L), new CrPostgres(ctx, 67L)
         );
-        additions.save(Map.of(5, Map.of(new SbFake(37L), new WhFixed(1))));
+        additions.save(Map.of(5, Map.of(new SbFake(37L), new WhFake(1))));
         ctx.execute("UPDATE school_class SET is_deleted = true WHERE grade = 5");
         additions.save(Map.of());
         MatcherAssert.assertThat(
@@ -125,7 +125,7 @@ final class AdsPostgresTest {
             LoadInputException.class,
             () -> new AdsPostgres(
                 ctx, new SdPostgres(ctx, 107L), new CrPostgres(ctx, 67L)
-            ).save(Map.of(3, Map.of(new SbFake(37L), new WhFixed(1)))),
+            ).save(Map.of(3, Map.of(new SbFake(37L), new WhFake(1)))),
             "An inapplicable grade was accepted into the additions"
         );
     }

@@ -3,7 +3,7 @@
  */
 package com.eshabakhov.surok.school.schedule.load.autofill;
 
-import com.eshabakhov.surok.school.schedule.load.hours.WhFixed;
+import com.eshabakhov.surok.school.schedule.load.hours.WhFake;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
@@ -124,7 +124,7 @@ final class LdiJsonTest {
                     """
                 )
             ).additions().get(5).values(),
-            Matchers.contains(new WhFixed(2))
+            Matchers.contains(new WhFake(2))
         );
     }
 }

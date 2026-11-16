@@ -5,7 +5,7 @@ package com.eshabakhov.surok.school.schedule.load.autofill;
 
 import com.eshabakhov.surok.federal.subject.SbFake;
 import com.eshabakhov.surok.media.MdJson;
-import com.eshabakhov.surok.school.schedule.load.hours.WhFixed;
+import com.eshabakhov.surok.school.schedule.load.hours.WhFake;
 import com.eshabakhov.surok.school.schoolclass.ScFake;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -32,16 +32,16 @@ final class PlDecidedTest {
             new PlInitial(
                 new ScFake(17L),
                 new SbFake(29L),
-                new WhFixed(3),
-                new WhFixed(3)
-            ).with(new WhFixed(3)),
+                new WhFake(3),
+                new WhFake(3)
+            ).with(new WhFake(3)),
             Matchers.not(
                 Matchers.is(
                     new PlInitial(
                         new ScFake(17L),
                         new SbFake(29L),
-                        new WhFixed(3),
-                        new WhFixed(3)
+                        new WhFake(3),
+                        new WhFake(3)
                     ).accept()
                 )
             )
@@ -55,16 +55,16 @@ final class PlDecidedTest {
             new PlInitial(
                 new ScFake(17L),
                 new SbFake(29L),
-                new WhFixed(5),
-                new WhFixed(3)
+                new WhFake(5),
+                new WhFake(3)
             ).accept(),
             Matchers.not(
                 Matchers.is(
                     new PlInitial(
                         new ScFake(17L),
                         new SbFake(29L),
-                        new WhFixed(7),
-                        new WhFixed(3)
+                        new WhFake(7),
+                        new WhFake(3)
                     ).accept()
                 )
             )
@@ -79,10 +79,10 @@ final class PlDecidedTest {
                 new PlInitial(
                     new ScFake(17L),
                     new SbFake(29L),
-                    new WhFixed(5),
-                    new WhFixed(3)
+                    new WhFake(5),
+                    new WhFake(3)
                 ),
-                new WhFixed(7),
+                new WhFake(7),
                 "manual"
             ).print(new MdJson())
                 .print(),
@@ -108,14 +108,14 @@ final class PlDecidedTest {
     void writesTheExplicitHoursIncludingRemoval(final int value) throws Exception {
         final List<List<Object>> written = new ArrayList<>(0);
         new PlInitial(
-            new ScFake(17L), new SbFake(29L), new WhFixed(5), new WhFixed(3)
-        ).with(new WhFixed(value)).apply(
+            new ScFake(17L), new SbFake(29L), new WhFake(5), new WhFake(3)
+        ).with(new WhFake(value)).apply(
             (clazz, subject, hours) -> written.add(List.of(clazz, subject, hours))
         );
         MatcherAssert.assertThat(
             "An explicit decision wrote the wrong pair or hour value",
             written,
-            Matchers.contains(List.of(new ScFake(17L), new SbFake(29L), new WhFixed(value)))
+            Matchers.contains(List.of(new ScFake(17L), new SbFake(29L), new WhFake(value)))
         );
     }
 }

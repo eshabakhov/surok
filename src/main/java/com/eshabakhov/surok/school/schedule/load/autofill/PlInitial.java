@@ -6,7 +6,7 @@ package com.eshabakhov.surok.school.schedule.load.autofill;
 import com.eshabakhov.surok.Media;
 import com.eshabakhov.surok.federal.subject.Subject;
 import com.eshabakhov.surok.school.schedule.load.hours.WeeklyHours;
-import com.eshabakhov.surok.school.schedule.load.hours.WhFixed;
+import com.eshabakhov.surok.school.schedule.load.hours.WhFake;
 import com.eshabakhov.surok.school.schedule.load.hours.WhProposed;
 import com.eshabakhov.surok.school.schoolclass.SchoolClass;
 import lombok.EqualsAndHashCode;
@@ -74,7 +74,7 @@ public final class PlInitial implements PlannedLoad {
     public PlannedLoad with(final WeeklyHours hours) {
         final PlannedLoad changed;
         if (hours.value() == 0) {
-            changed = new PlDecided(this, new WhFixed(0), "removed");
+            changed = new PlDecided(this, new WhFake(0), "removed");
         } else {
             changed = new PlDecided(this, hours, "manual");
         }

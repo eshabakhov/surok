@@ -26,7 +26,7 @@ final class WhProposedTest {
     ) {
         MatcherAssert.assertThat(
             "The initial hours replaced an existing load or lost the proposal",
-            new WhProposed(new WhFixed(current), new WhFixed(proposed)).value(),
+            new WhProposed(new WhFake(current), new WhFake(proposed)).value(),
             Matchers.is(expected)
         );
     }
@@ -43,7 +43,7 @@ final class WhProposedTest {
         }
         MatcherAssert.assertThat(
             "The initial hours lost their context or printed a nonexistent proposal",
-            new WhProposed(new WhFixed(current), new WhFixed(proposed)).print(new MdJson()).print(),
+            new WhProposed(new WhFake(current), new WhFake(proposed)).print(new MdJson()).print(),
             Matchers.equalTo(expected)
         );
     }

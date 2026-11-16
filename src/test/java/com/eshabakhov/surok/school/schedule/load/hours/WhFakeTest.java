@@ -18,7 +18,7 @@ import org.junit.jupiter.params.provider.ValueSource;
  *
  * @since 0.0.1
  */
-final class WhFixedTest {
+final class WhFakeTest {
 
     @ParameterizedTest
     @ValueSource(ints = {0, 7})
@@ -26,8 +26,8 @@ final class WhFixedTest {
         MatcherAssert.assertThat(
             "Fixed hours introduced a planning state or changed their numeric representation",
             List.of(
-                new WhFixed(hours).print(new MdJson()).print(),
-                new WhFixed(hours).print(new MdXml("load")).print()
+                new WhFake(hours).print(new MdJson()).print(),
+                new WhFake(hours).print(new MdXml("load")).print()
             ),
             Matchers.contains(
                 JsonNodeFactory.instance.objectNode().put("hours", hours),
@@ -41,7 +41,7 @@ final class WhFixedTest {
     void evaluatesNonnegativeHours(final int hours) {
         MatcherAssert.assertThat(
             "Evaluating weekly hours changed the supplied number",
-            new WhFixed(hours).value(),
+            new WhFake(hours).value(),
             Matchers.is(hours)
         );
     }
@@ -51,7 +51,7 @@ final class WhFixedTest {
     void rejectsNegativeHoursWhenEvaluated(final int hours) {
         Assertions.assertThrows(
             IllegalArgumentException.class,
-            () -> new WhFixed(hours).value(),
+            () -> new WhFake(hours).value(),
             "Negative weekly hours were accepted"
         );
     }

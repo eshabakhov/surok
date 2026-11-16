@@ -8,7 +8,7 @@ import com.eshabakhov.surok.federal.curriculum.Curriculum;
 import com.eshabakhov.surok.federal.subject.SbPostgres;
 import com.eshabakhov.surok.federal.subject.Subject;
 import com.eshabakhov.surok.school.schedule.load.hours.WeeklyHours;
-import com.eshabakhov.surok.school.schedule.load.hours.WhFixed;
+import com.eshabakhov.surok.school.schedule.load.hours.WhFake;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -72,7 +72,7 @@ public final class LdiJson implements LoadDraftInput {
                         )
                     );
                 }
-                hours.put(selected, new WhFixed(input.child("hours").number()));
+                hours.put(selected, new WhFake(input.child("hours").number()));
             }
             if (additions.putIfAbsent(grade, Map.copyOf(hours)) != null) {
                 throw new LoadInputException(String.format("Duplicate additional grade %d", grade));

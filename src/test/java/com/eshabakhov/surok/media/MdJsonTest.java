@@ -5,7 +5,7 @@ package com.eshabakhov.surok.media;
 
 import com.eshabakhov.surok.federal.subject.SbFake;
 import com.eshabakhov.surok.school.schedule.load.ClFake;
-import com.eshabakhov.surok.school.schedule.load.hours.WhFixed;
+import com.eshabakhov.surok.school.schedule.load.hours.WhFake;
 import com.eshabakhov.surok.school.schoolclass.ScFake;
 import java.util.List;
 import org.hamcrest.MatcherAssert;
@@ -24,7 +24,7 @@ final class MdJsonTest {
 
     @Test
     void keepsNestedObjectsInsideNamedValuesAndCollectionItems() throws Exception {
-        final ClFake load = new ClFake(41L, new ScFake(17L), new SbFake(29L), new WhFixed(7));
+        final ClFake load = new ClFake(41L, new ScFake(17L), new SbFake(29L), new WhFake(7));
         MatcherAssert.assertThat(
             "Nested load objects were flattened or converted to arrays",
             List.of(

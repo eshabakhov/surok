@@ -12,7 +12,7 @@ import com.eshabakhov.surok.federal.subject.SbPostgres;
 import com.eshabakhov.surok.federal.subject.Subject;
 import com.eshabakhov.surok.school.schedule.Schedule;
 import com.eshabakhov.surok.school.schedule.load.hours.WeeklyHours;
-import com.eshabakhov.surok.school.schedule.load.hours.WhFixed;
+import com.eshabakhov.surok.school.schedule.load.hours.WhFake;
 import com.eshabakhov.surok.school.schedule.load.hours.WhPlanned;
 import com.eshabakhov.surok.school.schedule.load.hours.WhProposed;
 import com.eshabakhov.surok.school.schoolclass.ScPostgres;
@@ -86,9 +86,9 @@ public final class AdPostgres implements Addition {
                         Map.of(), Map.of(
                             "hours", new WhPlanned(
                                 new WhProposed(
-                                    new WhFixed(row.get("current", Integer.class)), new WhFixed(0)
+                                    new WhFake(row.get("current", Integer.class)), new WhFake(0)
                                 ),
-                                new WhFixed(row.get("planned", Integer.class))
+                                new WhFake(row.get("planned", Integer.class))
                             )
                         )
                     )

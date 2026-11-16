@@ -5,7 +5,7 @@ package com.eshabakhov.surok.school.schedule.load.autofill;
 
 import com.eshabakhov.surok.federal.subject.SbFake;
 import com.eshabakhov.surok.media.MdJson;
-import com.eshabakhov.surok.school.schedule.load.hours.WhFixed;
+import com.eshabakhov.surok.school.schedule.load.hours.WhFake;
 import com.eshabakhov.surok.school.schoolclass.ScFake;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -41,8 +41,8 @@ final class PlInitialTest {
             new PlInitial(
                 new ScFake(11L),
                 new SbFake(22L),
-                new WhFixed(current),
-                new WhFixed(proposed)
+                new WhFake(current),
+                new WhFake(proposed)
             ).print(new MdJson())
                 .print(),
             Matchers.equalTo(
@@ -64,8 +64,8 @@ final class PlInitialTest {
         final PlannedLoad origin = new PlInitial(
             new ScFake(11L),
             new SbFake(22L),
-            new WhFixed(5),
-            new WhFixed(3)
+            new WhFake(5),
+            new WhFake(3)
         );
         MatcherAssert.assertThat(
             "Accepting the proposal altered the original load",
@@ -78,17 +78,17 @@ final class PlInitialTest {
                     new PlInitial(
                         new ScFake(11L),
                         new SbFake(22L),
-                        new WhFixed(5),
-                        new WhFixed(3)
+                        new WhFake(5),
+                        new WhFake(3)
                     ),
-                    new WhFixed(3),
+                    new WhFake(3),
                     "plan"
                 ),
                 new PlInitial(
                     new ScFake(11L),
                     new SbFake(22L),
-                    new WhFixed(5),
-                    new WhFixed(3)
+                    new WhFake(5),
+                    new WhFake(3)
                 )
             )
         );
@@ -101,18 +101,18 @@ final class PlInitialTest {
             new PlInitial(
                 new ScFake(11L),
                 new SbFake(22L),
-                new WhFixed(5),
-                new WhFixed(3)
-            ).accept().with(new WhFixed(7)),
+                new WhFake(5),
+                new WhFake(3)
+            ).accept().with(new WhFake(7)),
             Matchers.is(
                 new PlDecided(
                     new PlInitial(
                         new ScFake(11L),
                         new SbFake(22L),
-                        new WhFixed(5),
-                        new WhFixed(3)
+                        new WhFake(5),
+                        new WhFake(3)
                     ),
-                    new WhFixed(7),
+                    new WhFake(7),
                     "manual"
                 )
             )
@@ -126,18 +126,18 @@ final class PlInitialTest {
             new PlInitial(
                 new ScFake(11L),
                 new SbFake(22L),
-                new WhFixed(5),
-                new WhFixed(3)
-            ).accept().with(new WhFixed(0)),
+                new WhFake(5),
+                new WhFake(3)
+            ).accept().with(new WhFake(0)),
             Matchers.is(
                 new PlDecided(
                     new PlInitial(
                         new ScFake(11L),
                         new SbFake(22L),
-                        new WhFixed(5),
-                        new WhFixed(3)
+                        new WhFake(5),
+                        new WhFake(3)
                     ),
-                    new WhFixed(0),
+                    new WhFake(0),
                     "removed"
                 )
             )
@@ -151,18 +151,18 @@ final class PlInitialTest {
             new PlInitial(
                 new ScFake(11L),
                 new SbFake(22L),
-                new WhFixed(5),
-                new WhFixed(3)
-            ).with(new WhFixed(0)),
+                new WhFake(5),
+                new WhFake(3)
+            ).with(new WhFake(0)),
             Matchers.is(
                 new PlDecided(
                     new PlInitial(
                         new ScFake(11L),
                         new SbFake(22L),
-                        new WhFixed(5),
-                        new WhFixed(3)
+                        new WhFake(5),
+                        new WhFake(3)
                     ),
-                    new WhFixed(0),
+                    new WhFake(0),
                     "removed"
                 )
             )
@@ -176,18 +176,18 @@ final class PlInitialTest {
             new PlInitial(
                 new ScFake(11L),
                 new SbFake(22L),
-                new WhFixed(5),
-                new WhFixed(3)
-            ).with(new WhFixed(0)).accept(),
+                new WhFake(5),
+                new WhFake(3)
+            ).with(new WhFake(0)).accept(),
             Matchers.is(
                 new PlDecided(
                     new PlInitial(
                         new ScFake(11L),
                         new SbFake(22L),
-                        new WhFixed(5),
-                        new WhFixed(3)
+                        new WhFake(5),
+                        new WhFake(3)
                     ),
-                    new WhFixed(3),
+                    new WhFake(3),
                     "plan"
                 )
             )
@@ -201,18 +201,18 @@ final class PlInitialTest {
             new PlInitial(
                 new ScFake(11L),
                 new SbFake(22L),
-                new WhFixed(5),
-                new WhFixed(0)
-            ).with(new WhFixed(7)),
+                new WhFake(5),
+                new WhFake(0)
+            ).with(new WhFake(7)),
             Matchers.is(
                 new PlDecided(
                     new PlInitial(
                         new ScFake(11L),
                         new SbFake(22L),
-                        new WhFixed(5),
-                        new WhFixed(0)
+                        new WhFake(5),
+                        new WhFake(0)
                     ),
-                    new WhFixed(7),
+                    new WhFake(7),
                     "manual"
                 )
             )
@@ -227,8 +227,8 @@ final class PlInitialTest {
             () -> new PlInitial(
                 new ScFake(11L),
                 new SbFake(22L),
-                new WhFixed(current),
-                new WhFixed(0)
+                new WhFake(current),
+                new WhFake(0)
             ).accept(),
             "A curriculum decision was accepted without a proposal"
         );
@@ -241,9 +241,9 @@ final class PlInitialTest {
             () -> new PlInitial(
                 new ScFake(11L),
                 new SbFake(22L),
-                new WhFixed(5),
-                new WhFixed(3)
-            ).with(new WhFixed(-1)),
+                new WhFake(5),
+                new WhFake(3)
+            ).with(new WhFake(-1)),
             "Negative manual hours were accepted"
         );
     }
@@ -252,14 +252,14 @@ final class PlInitialTest {
     void writesAnAbsentLoadWithProposedHours() throws Exception {
         final List<List<Object>> written = new ArrayList<>(0);
         new PlInitial(
-            new ScFake(17L), new SbFake(29L), new WhFixed(0), new WhFixed(3)
+            new ScFake(17L), new SbFake(29L), new WhFake(0), new WhFake(3)
         ).apply(
             (clazz, subject, hours) -> written.add(List.of(clazz, subject, hours))
         );
         MatcherAssert.assertThat(
             "An absent load was not written with the proposed hours and original identities",
             written,
-            Matchers.contains(List.of(new ScFake(17L), new SbFake(29L), new WhFixed(3)))
+            Matchers.contains(List.of(new ScFake(17L), new SbFake(29L), new WhFake(3)))
         );
     }
 
@@ -269,7 +269,7 @@ final class PlInitialTest {
         throws Exception {
         final List<List<Object>> written = new ArrayList<>(0);
         new PlInitial(
-            new ScFake(17L), new SbFake(29L), new WhFixed(current), new WhFixed(proposed)
+            new ScFake(17L), new SbFake(29L), new WhFake(current), new WhFake(proposed)
         ).apply(
             (clazz, subject, hours) -> written.add(List.of(clazz, subject, hours))
         );

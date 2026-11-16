@@ -10,7 +10,7 @@ import com.eshabakhov.surok.media.MdJson;
 import com.eshabakhov.surok.school.SlsPostgres;
 import com.eshabakhov.surok.school.input.SlInput;
 import com.eshabakhov.surok.school.input.SlInputName;
-import com.eshabakhov.surok.school.schedule.load.hours.WhFixed;
+import com.eshabakhov.surok.school.schedule.load.hours.WhFake;
 import com.eshabakhov.surok.school.schoolclass.ScFake;
 import com.eshabakhov.surok.user.Roles;
 import com.eshabakhov.surok.user.UrsPostgres;
@@ -61,7 +61,7 @@ final class ClAuthorizedTest {
             new SlInputName(new SlInput(), "Школа учебной нагрузки")
         );
         final ClassLoad load = new ClAuthorized(
-            new ClFake(31L, new ScFake(17L), new SbFake(23L), new WhFixed(5)),
+            new ClFake(31L, new ScFake(17L), new SbFake(23L), new WhFake(5)),
             school, actor
         );
         school.users().remove(actor.uid());
@@ -88,7 +88,7 @@ final class ClAuthorizedTest {
         MatcherAssert.assertThat(
             "An administrator could not print a load without school membership",
             new ClAuthorized(
-                new ClFake(37L, new ScFake(17L), new SbFake(23L), new WhFixed(5)),
+                new ClFake(37L, new ScFake(17L), new SbFake(23L), new WhFake(5)),
                 new SlsPostgres(ctx).create(
                     new SlInputName(new SlInput(), "Чужая школа с нагрузкой")
                 ), actor
