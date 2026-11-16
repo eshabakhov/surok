@@ -7,7 +7,7 @@ import com.eshabakhov.surok.Filters;
 import com.eshabakhov.surok.Media;
 import com.eshabakhov.surok.Page;
 import com.eshabakhov.surok.Sorts;
-import com.eshabakhov.surok.User;
+import com.eshabakhov.surok.UrAccount;
 import com.eshabakhov.surok.security.right.RtAdmin;
 import java.util.stream.StreamSupport;
 
@@ -24,7 +24,7 @@ public final class RqsAuthorized implements Requirements {
     private final Requirements origin;
 
     /** Acting user. */
-    private final User actor;
+    private final UrAccount actor;
 
     /**
      * New protected requirements.
@@ -32,7 +32,7 @@ public final class RqsAuthorized implements Requirements {
      * @param origin Underlying requirements
      * @param actor Acting user
      */
-    public RqsAuthorized(final Requirements origin, final User actor) {
+    public RqsAuthorized(final Requirements origin, final UrAccount actor) {
         this.origin = origin;
         this.actor = actor;
     }

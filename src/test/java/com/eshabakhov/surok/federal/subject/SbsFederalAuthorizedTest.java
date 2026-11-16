@@ -3,7 +3,7 @@
  */
 package com.eshabakhov.surok.federal.subject;
 
-import com.eshabakhov.surok.User;
+import com.eshabakhov.surok.UrAccount;
 import com.eshabakhov.surok.federal.subject.input.SbInput;
 import com.eshabakhov.surok.federal.subject.input.SbInputName;
 import com.eshabakhov.surok.user.Roles;
@@ -46,7 +46,7 @@ final class SbsFederalAuthorizedTest {
      */
     @Test
     void rejectsCreationByARegularUser(@Autowired final DSLContext ctx) throws Exception {
-        final User actor = new UrsPostgres(ctx).register(
+        final UrAccount actor = new UrsPostgres(ctx).register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
         );
@@ -68,7 +68,7 @@ final class SbsFederalAuthorizedTest {
     @Test
     void rejectsRevisionBeforeLookingUpTheSubject(@Autowired final DSLContext ctx)
         throws Exception {
-        final User actor = new UrsPostgres(ctx).register(
+        final UrAccount actor = new UrsPostgres(ctx).register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
         );
@@ -90,7 +90,7 @@ final class SbsFederalAuthorizedTest {
     @Test
     void createsAFederalSubjectForAnAdministrator(@Autowired final DSLContext ctx)
         throws Exception {
-        final User actor = new UrsPostgres(ctx).register(
+        final UrAccount actor = new UrsPostgres(ctx).register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
         );
@@ -113,7 +113,7 @@ final class SbsFederalAuthorizedTest {
     @Test
     void readsAFederalSubjectForARegularUser(@Autowired final DSLContext ctx)
         throws Exception {
-        final User actor = new UrsPostgres(ctx).register(
+        final UrAccount actor = new UrsPostgres(ctx).register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
         );

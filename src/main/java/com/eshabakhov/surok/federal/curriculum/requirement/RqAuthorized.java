@@ -4,7 +4,7 @@
 package com.eshabakhov.surok.federal.curriculum.requirement;
 
 import com.eshabakhov.surok.Media;
-import com.eshabakhov.surok.User;
+import com.eshabakhov.surok.UrAccount;
 import com.eshabakhov.surok.security.right.RtAdmin;
 
 /**
@@ -20,7 +20,7 @@ public final class RqAuthorized implements Requirement {
     private final Requirement origin;
 
     /** Acting user. */
-    private final User actor;
+    private final UrAccount actor;
 
     /**
      * New protected requirement.
@@ -28,7 +28,7 @@ public final class RqAuthorized implements Requirement {
      * @param origin Underlying requirement
      * @param actor Acting user
      */
-    public RqAuthorized(final Requirement origin, final User actor) {
+    public RqAuthorized(final Requirement origin, final UrAccount actor) {
         this.origin = origin;
         this.actor = actor;
     }

@@ -5,7 +5,7 @@ package com.eshabakhov.surok.federal.curriculum.requirement;
 
 import com.eshabakhov.surok.Filter;
 import com.eshabakhov.surok.Sort;
-import com.eshabakhov.surok.User;
+import com.eshabakhov.surok.UrAccount;
 import com.eshabakhov.surok.filter.FiltersRequest;
 import com.eshabakhov.surok.page.PageRequest;
 import com.eshabakhov.surok.sort.SortsRequest;
@@ -81,7 +81,7 @@ final class RqsHttpTest {
     private final DSLContext ctx;
 
     /** Authenticated administrator. */
-    private User actor;
+    private UrAccount actor;
 
     @Autowired
     RqsHttpTest(final DSLContext ctx) {
@@ -156,7 +156,7 @@ final class RqsHttpTest {
             request.addHeader(HttpHeaders.ACCEPT, accept);
         }
         request.setRequestURI("/federal/curriculums/1/requirements");
-        final User user = new UrAcPostgres(
+        final UrAccount user = new UrAcPostgres(
             this.ctx,
             this.ctx.resultQuery(
                 """
@@ -203,7 +203,7 @@ final class RqsHttpTest {
         request.setRequestURI(
             "/federal/curriculums/1/requirements"
         );
-        final User user = new UrAcPostgres(
+        final UrAccount user = new UrAcPostgres(
             this.ctx,
             this.ctx.resultQuery(
                 """
@@ -244,7 +244,7 @@ final class RqsHttpTest {
         final MockHttpServletRequest request = new MockHttpServletRequest();
         request.addHeader(HttpHeaders.ACCEPT, "text/html");
         request.setRequestURI(null);
-        final User user = new UrAcPostgres(
+        final UrAccount user = new UrAcPostgres(
             this.ctx,
             this.ctx.resultQuery(
                 """

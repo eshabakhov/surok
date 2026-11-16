@@ -7,7 +7,7 @@ import com.eshabakhov.surok.Filters;
 import com.eshabakhov.surok.Media;
 import com.eshabakhov.surok.Page;
 import com.eshabakhov.surok.Sorts;
-import com.eshabakhov.surok.User;
+import com.eshabakhov.surok.UrAccount;
 import com.eshabakhov.surok.federal.curriculum.CrWithRequirements;
 import com.eshabakhov.surok.federal.curriculum.CrsAuthorized;
 import com.eshabakhov.surok.federal.curriculum.CrsPostgres;
@@ -106,7 +106,7 @@ public class RqsHttp {
         final Page page,
         final Sorts sorts,
         final HttpServletRequest request,
-        @AuthenticationPrincipal final User actor
+        @AuthenticationPrincipal final UrAccount actor
     ) throws Exception {
         final MediaType type = new AcHttp(
             request,
@@ -182,7 +182,7 @@ public class RqsHttp {
         @PathVariable("curriculum") final long current,
         @PathVariable final long requirement,
         final HttpServletRequest request,
-        @AuthenticationPrincipal final User actor
+        @AuthenticationPrincipal final UrAccount actor
     ) throws Exception {
         final MediaType type = new AcHttp(
             request,
@@ -233,7 +233,7 @@ public class RqsHttp {
         @PathVariable("curriculum") final long current,
         @RequestParam final MultiValueMap<String, String> parameters,
         final HttpServletRequest request,
-        @AuthenticationPrincipal final User actor
+        @AuthenticationPrincipal final UrAccount actor
     ) throws Exception {
         return RqsHttp.result(
             new AcHttp(request, "federal-curriculum-requirement-v1").type(),
@@ -266,7 +266,7 @@ public class RqsHttp {
         @PathVariable("curriculum") final long current,
         @RequestBody final Map<String, String> fields,
         final HttpServletRequest request,
-        @AuthenticationPrincipal final User actor
+        @AuthenticationPrincipal final UrAccount actor
     ) throws Exception {
         return RqsHttp.result(
             new AcHttp(request, "federal-curriculum-requirement-v1").type(),
@@ -302,7 +302,7 @@ public class RqsHttp {
         @PathVariable final long requirement,
         @RequestBody final Map<String, String> fields,
         final HttpServletRequest request,
-        @AuthenticationPrincipal final User actor
+        @AuthenticationPrincipal final UrAccount actor
     ) throws Exception {
         return RqsHttp.result(
             new AcHttp(request, "federal-curriculum-requirement-v1").type(),
@@ -328,7 +328,7 @@ public class RqsHttp {
         @PathVariable("curriculum") final long current,
         @PathVariable final long requirement,
         final HttpServletRequest request,
-        @AuthenticationPrincipal final User actor
+        @AuthenticationPrincipal final UrAccount actor
     ) throws Exception {
         new AcHttp(request, "federal-curriculum-requirement-v1").type();
         new RqsAuthorized(new RqsPostgres(this.ctx, current), actor).remove(requirement);
@@ -364,7 +364,7 @@ public class RqsHttp {
         throws Exception {
         return new SrWeb(
             new UrAcBrief(
-                (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal()
+                (UrAccount) SecurityContextHolder.getContext().getAuthentication().getPrincipal()
             ),
             new SlsBrief(new SlsPostgres(this.ctx)),
             new CsToken((CsrfToken) request.getAttribute(CsrfToken.class.getName()))

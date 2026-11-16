@@ -4,7 +4,7 @@
 package com.eshabakhov.surok.federal.subject;
 
 import com.eshabakhov.surok.Media;
-import com.eshabakhov.surok.User;
+import com.eshabakhov.surok.UrAccount;
 import com.eshabakhov.surok.security.right.RtAdmin;
 
 /**
@@ -20,7 +20,7 @@ public final class SbFederalAuthorized implements Subject {
     private final Subject subject;
 
     /** Acting user. */
-    private final User actor;
+    private final UrAccount actor;
 
     /**
      * New protected federal subject.
@@ -28,7 +28,7 @@ public final class SbFederalAuthorized implements Subject {
      * @param subject Underlying federal subject
      * @param actor Acting user
      */
-    public SbFederalAuthorized(final Subject subject, final User actor) {
+    public SbFederalAuthorized(final Subject subject, final UrAccount actor) {
         this.subject = subject;
         this.actor = actor;
     }

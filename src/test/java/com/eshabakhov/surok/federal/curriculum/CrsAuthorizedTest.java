@@ -3,7 +3,7 @@
  */
 package com.eshabakhov.surok.federal.curriculum;
 
-import com.eshabakhov.surok.User;
+import com.eshabakhov.surok.UrAccount;
 import com.eshabakhov.surok.federal.curriculum.input.CrInput;
 import com.eshabakhov.surok.federal.curriculum.input.CrInputHttp;
 import com.eshabakhov.surok.user.Roles;
@@ -48,7 +48,7 @@ final class CrsAuthorizedTest {
      */
     @Test
     void rejectsCreationByARegularUser(@Autowired final DSLContext ctx) throws Exception {
-        final User actor = new UrsPostgres(ctx).register(
+        final UrAccount actor = new UrsPostgres(ctx).register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
         );
@@ -68,7 +68,7 @@ final class CrsAuthorizedTest {
     @Test
     void rejectsRevisionBeforeLookingUpTheCurriculum(@Autowired final DSLContext ctx)
         throws Exception {
-        final User actor = new UrsPostgres(ctx).register(
+        final UrAccount actor = new UrsPostgres(ctx).register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
         );
@@ -88,7 +88,7 @@ final class CrsAuthorizedTest {
     @Test
     void createsAFederalCurriculumForAnAdministrator(@Autowired final DSLContext ctx)
         throws Exception {
-        final User actor = new UrsPostgres(ctx).register(
+        final UrAccount actor = new UrsPostgres(ctx).register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
         );
