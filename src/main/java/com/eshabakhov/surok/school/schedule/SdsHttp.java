@@ -19,12 +19,12 @@ import com.eshabakhov.surok.media.MdXslt;
 import com.eshabakhov.surok.media.SrWeb;
 import com.eshabakhov.surok.media.XsClasspath;
 import com.eshabakhov.surok.school.SlBrief;
-import com.eshabakhov.surok.school.SlsAuthorized;
 import com.eshabakhov.surok.school.SlsBrief;
 import com.eshabakhov.surok.school.SlsPostgres;
 import com.eshabakhov.surok.school.schedule.input.ScheduleInputException;
 import com.eshabakhov.surok.school.schedule.input.SdInputHttp;
 import com.eshabakhov.surok.security.CsToken;
+import com.eshabakhov.surok.user.UrAcAuthorized;
 import com.eshabakhov.surok.user.UrAcBrief;
 import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.servlet.http.HttpServletRequest;
@@ -117,7 +117,9 @@ public class SdsHttp {
                 MediaType.valueOf(SdsHttp.FRAGMENT)
             )
         ).type();
-        final School sch = new SlsAuthorized(new SlsPostgres(this.ctx), actor).school(school);
+        final School sch = new UrAcAuthorized(
+            actor, new SlsPostgres(this.ctx)
+        ).schools().school(school);
         final Set<Filter> requested = new LinkedHashSet<>(filters.filters());
         requested.addAll(
             Stream.of("name", "name_ct")
@@ -169,7 +171,9 @@ public class SdsHttp {
             new MediaType(MediaType.TEXT_HTML, StandardCharsets.UTF_8)
         ).body(
             this.web(
-                request, new SlsAuthorized(new SlsPostgres(this.ctx), actor).school(school),
+                request, new UrAcAuthorized(
+                    actor, new SlsPostgres(this.ctx)
+                ).schools().school(school),
                 "create"
             ).print()
         );
@@ -200,7 +204,9 @@ public class SdsHttp {
         @AuthenticationPrincipal final UrAccount actor
     ) throws Exception {
         final MediaType type = new AcHttp(request, "schedule-v1").type();
-        final School sch = new SlsAuthorized(new SlsPostgres(this.ctx), actor).school(school);
+        final School sch = new UrAcAuthorized(
+            actor, new SlsPostgres(this.ctx)
+        ).schools().school(school);
         final Schedules origin = sch.schedules();
         final Schedule selected = origin.schedule(schedule);
         return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8)).body(
@@ -320,9 +326,9 @@ public class SdsHttp {
         @AuthenticationPrincipal final UrAccount actor
     ) throws Exception {
         final MediaType type = new AcHttp(request, "schedule-v1").type();
-        final Schedule revised = new SlsAuthorized(
-            new SlsPostgres(this.ctx), actor
-        ).school(school).schedules()
+        final Schedule revised = new UrAcAuthorized(
+            actor, new SlsPostgres(this.ctx)
+        ).schools().school(school).schedules()
             .revise(schedule, new SdInputHttp(json));
         return SdsHttp.result(
             type, revised, HttpStatus.OK, String.format("/schools/%d/schedules", school),
@@ -345,7 +351,7 @@ public class SdsHttp {
         @PathVariable final long schedule,
         @AuthenticationPrincipal final UrAccount actor
     ) throws Exception {
-        new SlsAuthorized(new SlsPostgres(this.ctx), actor).school(school)
+        new UrAcAuthorized(actor, new SlsPostgres(this.ctx)).schools().school(school)
             .schedules().remove(schedule);
         return ResponseEntity.noContent().build();
     }
@@ -356,8 +362,8 @@ public class SdsHttp {
         final String base = String.format("/schools/%d/schedules", school);
         return SdsHttp.result(
             type,
-            new SlsAuthorized(new SlsPostgres(this.ctx), actor).school(school).schedules()
-                .create(input),
+            new UrAcAuthorized(actor, new SlsPostgres(this.ctx)).schools().school(school)
+                .schedules().create(input),
             HttpStatus.CREATED, base, base
         );
     }

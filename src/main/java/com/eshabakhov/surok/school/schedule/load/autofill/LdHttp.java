@@ -18,7 +18,6 @@ import com.eshabakhov.surok.media.MdXslt;
 import com.eshabakhov.surok.media.SrWeb;
 import com.eshabakhov.surok.media.XsClasspath;
 import com.eshabakhov.surok.school.SlBrief;
-import com.eshabakhov.surok.school.SlsAuthorized;
 import com.eshabakhov.surok.school.SlsBrief;
 import com.eshabakhov.surok.school.SlsPostgres;
 import com.eshabakhov.surok.school.schedule.Schedule;
@@ -27,6 +26,7 @@ import com.eshabakhov.surok.security.CsToken;
 import com.eshabakhov.surok.security.right.RtAdmin;
 import com.eshabakhov.surok.security.right.RtDirectorOrDeputy;
 import com.eshabakhov.surok.security.right.RtEither;
+import com.eshabakhov.surok.user.UrAcAuthorized;
 import com.eshabakhov.surok.user.UrAcBrief;
 import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.servlet.http.HttpServletRequest;
@@ -109,9 +109,9 @@ public class LdHttp {
             request,
             List.of(this.types[0], this.types[1], MediaType.TEXT_HTML)
         ).type();
-        final School source = new SlsAuthorized(
-            new SlsPostgres(this.ctx), actor
-        ).school(school);
+        final School source = new UrAcAuthorized(
+            actor, new SlsPostgres(this.ctx)
+        ).schools().school(school);
         final Schedule selected = source.schedules().schedule(schedule);
         final LoadDraft draft = selected.draft();
         return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8))
@@ -203,9 +203,9 @@ public class LdHttp {
         @AuthenticationPrincipal final UrAccount actor
     ) throws Exception {
         final MediaType type = new AcHttp(request, List.of(this.types)).type();
-        final LoadDraft draft = new SlsAuthorized(
-            new SlsPostgres(this.ctx), actor
-        ).school(school).schedules().schedule(schedule).draft();
+        final LoadDraft draft = new UrAcAuthorized(
+            actor, new SlsPostgres(this.ctx)
+        ).schools().school(school).schedules().schedule(schedule).draft();
         HttpStatus status;
         try {
             draft.curriculum();
@@ -262,9 +262,9 @@ public class LdHttp {
         @AuthenticationPrincipal final UrAccount actor
     ) throws Exception {
         final MediaType type = new AcHttp(request, List.of(this.types)).type();
-        final LoadDraft draft = new SlsAuthorized(
-            new SlsPostgres(this.ctx), actor
-        ).school(school).schedules().schedule(schedule).draft();
+        final LoadDraft draft = new UrAcAuthorized(
+            actor, new SlsPostgres(this.ctx)
+        ).schools().school(school).schedules().schedule(schedule).draft();
         draft.revise(new LdiJson(this.ctx, document));
         return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8))
             .varyBy(HttpHeaders.ACCEPT).body(
@@ -305,9 +305,9 @@ public class LdHttp {
         @AuthenticationPrincipal final UrAccount actor
     ) throws Exception {
         final MediaType type = new AcHttp(request, List.of(this.types)).type();
-        final LoadDraft draft = new SlsAuthorized(
-            new SlsPostgres(this.ctx), actor
-        ).school(school).schedules().schedule(schedule).draft();
+        final LoadDraft draft = new UrAcAuthorized(
+            actor, new SlsPostgres(this.ctx)
+        ).schools().school(school).schedules().schedule(schedule).draft();
         draft.apply();
         return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8))
             .varyBy(HttpHeaders.ACCEPT).body(

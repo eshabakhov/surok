@@ -19,13 +19,13 @@ import com.eshabakhov.surok.media.MdXslt;
 import com.eshabakhov.surok.media.SrWeb;
 import com.eshabakhov.surok.media.XsClasspath;
 import com.eshabakhov.surok.school.SlBrief;
-import com.eshabakhov.surok.school.SlsAuthorized;
 import com.eshabakhov.surok.school.SlsBrief;
 import com.eshabakhov.surok.school.SlsPostgres;
 import com.eshabakhov.surok.school.building.Building;
 import com.eshabakhov.surok.school.building.cabinet.input.CabinetInputException;
 import com.eshabakhov.surok.school.building.cabinet.input.CbInputHttp;
 import com.eshabakhov.surok.security.CsToken;
+import com.eshabakhov.surok.user.UrAcAuthorized;
 import com.eshabakhov.surok.user.UrAcBrief;
 import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.servlet.http.HttpServletRequest;
@@ -120,7 +120,9 @@ public class CbsHttp {
                 MediaType.valueOf(CbsHttp.FRAGMENT)
             )
         ).type();
-        final School sch = new SlsAuthorized(new SlsPostgres(this.ctx), user).school(school);
+        final School sch = new UrAcAuthorized(
+            user, new SlsPostgres(this.ctx)
+        ).schools().school(school);
         final Building build = sch.buildings().building(building);
         final Set<Filter> requested = new LinkedHashSet<>(filters.filters());
         requested.addAll(
@@ -171,7 +173,9 @@ public class CbsHttp {
         final HttpServletRequest request, @AuthenticationPrincipal final UrAccount user
     ) throws Exception {
         final MediaType type = new AcHttp(request, List.of(MediaType.TEXT_HTML)).type();
-        final School sch = new SlsAuthorized(new SlsPostgres(this.ctx), user).school(school);
+        final School sch = new UrAcAuthorized(
+            user, new SlsPostgres(this.ctx)
+        ).schools().school(school);
         return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8)).body(
             this.web(request, sch, "create")
                 .with("building", sch.buildings().building(building)).print()
@@ -205,9 +209,9 @@ public class CbsHttp {
         @AuthenticationPrincipal final UrAccount user
     ) throws Exception {
         final MediaType type = new AcHttp(request, "cabinet-v1").type();
-        final School sch = new SlsAuthorized(
-            new SlsPostgres(this.ctx), user
-        ).school(school);
+        final School sch = new UrAcAuthorized(
+            user, new SlsPostgres(this.ctx)
+        ).schools().school(school);
         final Building build = sch.buildings().building(building);
         final Cabinets origin = build.cabinets();
         final Cabinet selected = origin.cabinet(cabinet);
@@ -337,7 +341,7 @@ public class CbsHttp {
         @AuthenticationPrincipal final UrAccount user
     ) throws Exception {
         final MediaType type = new AcHttp(request, "cabinet-v1").type();
-        final Cabinet revised = new SlsAuthorized(new SlsPostgres(this.ctx), user)
+        final Cabinet revised = new UrAcAuthorized(user, new SlsPostgres(this.ctx)).schools()
             .school(school).buildings().building(building).cabinets()
             .revise(cabinet, new CbInputHttp(json));
         return CbsHttp.result(
@@ -364,7 +368,7 @@ public class CbsHttp {
         @PathVariable final long cabinet,
         @AuthenticationPrincipal final UrAccount user
     ) throws Exception {
-        new SlsAuthorized(new SlsPostgres(this.ctx), user)
+        new UrAcAuthorized(user, new SlsPostgres(this.ctx)).schools()
             .school(school).buildings().building(building).cabinets().remove(cabinet);
         return ResponseEntity.noContent().build();
     }
@@ -376,7 +380,7 @@ public class CbsHttp {
         final String base = String.format("/schools/%d/buildings/%d/cabinets", school, building);
         return CbsHttp.result(
             type,
-            new SlsAuthorized(new SlsPostgres(this.ctx), user)
+            new UrAcAuthorized(user, new SlsPostgres(this.ctx)).schools()
                 .school(school).buildings().building(building).cabinets()
                 .create(input),
             HttpStatus.CREATED, base, base
