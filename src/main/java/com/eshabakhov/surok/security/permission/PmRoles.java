@@ -5,10 +5,10 @@ package com.eshabakhov.surok.security.permission;
 
 import com.eshabakhov.surok.Media;
 import com.eshabakhov.surok.PrItems;
-import com.eshabakhov.surok.Printable;
 import com.eshabakhov.surok.user.Roles;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.Arrays;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.RequestMethod;
 
 /**
@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
  *
  * @since 0.0.1
  */
-public final class PmRoles implements Printable {
+public final class PmRoles implements Permission {
 
     /** Controller permission. */
     private final Permission origin;
@@ -41,6 +41,13 @@ public final class PmRoles implements Printable {
         this.origin = origin;
         this.method = method;
         this.request = request;
+    }
+
+    @Override
+    public boolean allows(
+        final Authentication actor, final HttpServletRequest context, final boolean own
+    ) {
+        return this.origin.allows(actor, context, own);
     }
 
     @Override

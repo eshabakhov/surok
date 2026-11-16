@@ -1,0 +1,83 @@
+/*
+ * © 2025-2026 Eset Shabakhov. Surok
+ */
+package com.eshabakhov.surok.security.permission;
+
+import com.eshabakhov.surok.UrAccount;
+import com.eshabakhov.surok.media.MdJson;
+import com.eshabakhov.surok.school.building.BdsHttp;
+import com.eshabakhov.surok.user.Roles;
+import com.eshabakhov.surok.user.UrAcAuth;
+import com.eshabakhov.surok.user.UrAcRole;
+import org.hamcrest.MatcherAssert;
+import org.hamcrest.Matchers;
+import org.jooq.SQLDialect;
+import org.jooq.impl.DSL;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.method.HandlerMethod;
+
+/**
+ * Permission decoration preserves the underlying authorization rule.
+ * For example, adding matrix columns cannot grant a viewer building removal access.
+ *
+ * @since 0.0.1
+ */
+final class PmRolesTest {
+
+    @Test
+    void printsEveryRoleExactlyOnce() throws Exception {
+        MatcherAssert.assertThat(
+            "The matrix omitted or duplicated a role column",
+            new PmRoles(
+                new PmMethod(
+                    new HandlerMethod(
+                        new BdsHttp(DSL.using(SQLDialect.POSTGRES)),
+                        "remove", long.class, long.class, UrAccount.class
+                    ),
+                    "/schools/{school}/buildings/{building}", false
+                ),
+                RequestMethod.DELETE, new MockHttpServletRequest()
+            ).print(new MdJson()).print().path("access").findValuesAsText("role"),
+            Matchers.contains(
+                "ADMIN", "DIRECTOR", "DEPUTY_DIRECTOR", "TEACHER", "STUDENT",
+                "BASIC_MAKER", "ADVANCED_MAKER", "PRO_MAKER", "VIEWER", "ANONYMOUS"
+            )
+        );
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "DIRECTOR, 17, true", "DIRECTOR, 29, false", "DEPUTY_DIRECTOR, 17, true",
+        "DEPUTY_DIRECTOR, 29, false", "VIEWER, 17, false", "VIEWER, 29, false",
+        "ADMIN, 17, true", "ADMIN, 29, true"
+    })
+    void preservesTheOriginalRuleForEachSchoolScope(
+        final Roles.RoleEnum role, final long member, final boolean expected
+    ) throws Exception {
+        final UrAcAuth actor = new UrAcAuth(new UrAcRole(17L, role));
+        MatcherAssert.assertThat(
+            "The matrix decorator changed the original building removal rule",
+            new PmRoles(
+                new PmMethod(
+                    new HandlerMethod(
+                        new BdsHttp(DSL.using(SQLDialect.POSTGRES)),
+                        "remove", long.class, long.class, UrAccount.class
+                    ),
+                    "/schools/{school}/buildings/{building}", false
+                ),
+                RequestMethod.DELETE, new MockHttpServletRequest()
+            ).allows(
+                UsernamePasswordAuthenticationToken.authenticated(
+                    actor, "", actor.getAuthorities()
+                ),
+                new MockHttpServletRequest(), member == 17L
+            ),
+            Matchers.is(expected)
+        );
+    }
+}
