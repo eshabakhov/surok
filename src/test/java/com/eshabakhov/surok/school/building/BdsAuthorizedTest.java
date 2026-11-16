@@ -4,7 +4,7 @@
 package com.eshabakhov.surok.school.building;
 
 import com.eshabakhov.surok.School;
-import com.eshabakhov.surok.User;
+import com.eshabakhov.surok.UrAccount;
 import com.eshabakhov.surok.filter.FiltersRequest;
 import com.eshabakhov.surok.media.MdJson;
 import com.eshabakhov.surok.page.PageRequest;
@@ -56,7 +56,7 @@ final class BdsAuthorizedTest {
      */
     @Test
     void createsABuildingForTheDirector(@Autowired final DSLContext ctx) throws Exception {
-        final User actor = new UrsPostgres(ctx).register(
+        final UrAccount actor = new UrsPostgres(ctx).register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
         );
@@ -80,7 +80,7 @@ final class BdsAuthorizedTest {
      */
     @Test
     void createsABuildingForTheDeputyDirector(@Autowired final DSLContext ctx) throws Exception {
-        final User actor = new UrsPostgres(ctx).register(
+        final UrAccount actor = new UrsPostgres(ctx).register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
         );
@@ -105,7 +105,7 @@ final class BdsAuthorizedTest {
      */
     @Test
     void createsABuildingForAnAdministrator(@Autowired final DSLContext ctx) throws Exception {
-        final User actor = new UrsPostgres(ctx).register(
+        final UrAccount actor = new UrsPostgres(ctx).register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
         );
@@ -129,7 +129,7 @@ final class BdsAuthorizedTest {
      */
     @Test
     void deniesBuildingCreationToAViewer(@Autowired final DSLContext ctx) throws Exception {
-        final User actor = new UrsPostgres(ctx).register(
+        final UrAccount actor = new UrsPostgres(ctx).register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
         );
@@ -156,7 +156,7 @@ final class BdsAuthorizedTest {
     @Test
     void deniesSelectedBuildingsAfterMembershipRemoval(@Autowired final DSLContext ctx)
         throws Exception {
-        final User actor = new UrsPostgres(ctx).register(
+        final UrAccount actor = new UrsPostgres(ctx).register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
         );

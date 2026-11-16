@@ -4,7 +4,7 @@
 package com.eshabakhov.surok.federal.subject;
 
 import com.eshabakhov.surok.School;
-import com.eshabakhov.surok.User;
+import com.eshabakhov.surok.UrAccount;
 import com.eshabakhov.surok.federal.subject.input.SbInput;
 import com.eshabakhov.surok.federal.subject.input.SbInputName;
 import com.eshabakhov.surok.school.SlsPostgres;
@@ -48,7 +48,7 @@ final class SbAuthorizedTest {
      */
     @Test
     void readsASubjectForAnAdministrator(@Autowired final DSLContext ctx) throws Exception {
-        final User actor = new UrsPostgres(ctx).register(
+        final UrAccount actor = new UrsPostgres(ctx).register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
         );
@@ -72,7 +72,7 @@ final class SbAuthorizedTest {
      */
     @Test
     void revisesASubjectForADeputyDirector(@Autowired final DSLContext ctx) throws Exception {
-        final User actor = new UrsPostgres(ctx).register(
+        final UrAccount actor = new UrsPostgres(ctx).register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
         );

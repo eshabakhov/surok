@@ -4,7 +4,7 @@
 package com.eshabakhov.surok.school.teacher;
 
 import com.eshabakhov.surok.School;
-import com.eshabakhov.surok.User;
+import com.eshabakhov.surok.UrAccount;
 import com.eshabakhov.surok.filter.FiltersRequest;
 import com.eshabakhov.surok.page.PageRequest;
 import com.eshabakhov.surok.school.SlsPostgres;
@@ -56,7 +56,7 @@ final class ThsAuthorizedTest {
     @Test
     void deniesCreationAfterDirectorRoleIsRevoked(@Autowired final DSLContext ctx)
         throws Exception {
-        final User actor = new UrsPostgres(ctx).register(
+        final UrAccount actor = new UrsPostgres(ctx).register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
         );
@@ -80,7 +80,7 @@ final class ThsAuthorizedTest {
      */
     @Test
     void createsATeacherForAnAdministrator(@Autowired final DSLContext ctx) throws Exception {
-        final User actor = new UrsPostgres(ctx).register(
+        final UrAccount actor = new UrsPostgres(ctx).register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
         );
@@ -104,7 +104,7 @@ final class ThsAuthorizedTest {
      */
     @Test
     void deniesTeacherReadingToAnOutsider(@Autowired final DSLContext ctx) throws Exception {
-        final User actor = new UrsPostgres(ctx).register(
+        final UrAccount actor = new UrsPostgres(ctx).register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
         );
@@ -131,7 +131,7 @@ final class ThsAuthorizedTest {
     @Test
     void deniesSelectedTeachersAfterMembershipRemoval(@Autowired final DSLContext ctx)
         throws Exception {
-        final User actor = new UrsPostgres(ctx).register(
+        final UrAccount actor = new UrsPostgres(ctx).register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
         );

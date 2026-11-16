@@ -5,7 +5,7 @@ package com.eshabakhov.surok.school.building.cabinet;
 
 import com.eshabakhov.surok.Media;
 import com.eshabakhov.surok.School;
-import com.eshabakhov.surok.User;
+import com.eshabakhov.surok.UrAccount;
 import com.eshabakhov.surok.security.right.RtAdmin;
 import com.eshabakhov.surok.security.right.RtDirectorOrDeputy;
 import com.eshabakhov.surok.security.right.RtEither;
@@ -27,7 +27,7 @@ public final class CbAuthorized implements Cabinet {
     private final School school;
 
     /** Acting user. */
-    private final User actor;
+    private final UrAccount actor;
 
     /**
      * New protected cabinet.
@@ -36,7 +36,7 @@ public final class CbAuthorized implements Cabinet {
      * @param school School that owns it
      * @param actor Acting user
      */
-    public CbAuthorized(final Cabinet origin, final School school, final User actor) {
+    public CbAuthorized(final Cabinet origin, final School school, final UrAccount actor) {
         this.origin = origin;
         this.school = school;
         this.actor = actor;

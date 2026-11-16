@@ -5,7 +5,7 @@ package com.eshabakhov.surok.school.teacher;
 
 import com.eshabakhov.surok.Media;
 import com.eshabakhov.surok.School;
-import com.eshabakhov.surok.User;
+import com.eshabakhov.surok.UrAccount;
 import com.eshabakhov.surok.security.right.RtAdmin;
 import com.eshabakhov.surok.security.right.RtDirectorOrDeputy;
 import com.eshabakhov.surok.security.right.RtEither;
@@ -26,7 +26,7 @@ public final class ThAuthorized implements Teacher {
     private final School school;
 
     /** Acting user. */
-    private final User actor;
+    private final UrAccount actor;
 
     /**
      * New protected school teacher.
@@ -35,7 +35,7 @@ public final class ThAuthorized implements Teacher {
      * @param school School that owns it
      * @param actor Acting user
      */
-    public ThAuthorized(final Teacher origin, final School school, final User actor) {
+    public ThAuthorized(final Teacher origin, final School school, final UrAccount actor) {
         this.origin = origin;
         this.school = school;
         this.actor = actor;
