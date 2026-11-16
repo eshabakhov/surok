@@ -3,6 +3,7 @@
  */
 package com.eshabakhov.surok.security;
 
+import com.eshabakhov.surok.user.UrAnonymous;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
@@ -36,7 +37,6 @@ import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestHeaderRequestMatcher;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 /**
  * Spring security config.
@@ -153,6 +153,8 @@ public class SecurityConfig {
             context -> context.securityContextRepository(
                 new RequestAttributeSecurityContextRepository()
             )
+        ).anonymous(
+            access -> access.principal(new UrAnonymous())
         ).requestCache(AbstractHttpConfigurer::disable).csrf(
             csrf -> csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
         ).authorizeHttpRequests(
@@ -221,6 +223,7 @@ public class SecurityConfig {
         data.setIgnoredMediaTypes(Set.of(MediaType.ALL));
         return http
             .httpBasic(AbstractHttpConfigurer::disable)
+            .anonymous(access -> access.principal(new UrAnonymous()))
             .addFilterAt(basic, BasicAuthenticationFilter.class)
             .cors(Customizer.withDefaults()).csrf(
                 csrf -> csrf
@@ -296,9 +299,7 @@ public class SecurityConfig {
             config.setAllowedOrigins(allowed);
         }
         config.setAllowCredentials(!allowed.isEmpty());
-        final UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", config);
-        return source;
+        return request -> config;
     }
 
     /**
