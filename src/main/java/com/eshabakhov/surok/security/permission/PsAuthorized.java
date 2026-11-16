@@ -4,7 +4,7 @@
 package com.eshabakhov.surok.security.permission;
 
 import com.eshabakhov.surok.Media;
-import com.eshabakhov.surok.User;
+import com.eshabakhov.surok.UrAccount;
 import com.eshabakhov.surok.security.right.RtAdmin;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -22,7 +22,7 @@ public final class PsAuthorized implements Permissions {
     private final Permissions origin;
 
     /** Acting user. */
-    private final User actor;
+    private final UrAccount actor;
 
     /**
      * New protected permission matrix.
@@ -30,7 +30,7 @@ public final class PsAuthorized implements Permissions {
      * @param origin Underlying permission matrix
      * @param actor Acting user
      */
-    public PsAuthorized(final Permissions origin, final User actor) {
+    public PsAuthorized(final Permissions origin, final UrAccount actor) {
         this.origin = origin;
         this.actor = actor;
     }
