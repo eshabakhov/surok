@@ -5,6 +5,7 @@ package com.eshabakhov.surok.user;
 
 import com.eshabakhov.surok.Media;
 import com.eshabakhov.surok.Schools;
+import com.eshabakhov.surok.UrAccount;
 import com.eshabakhov.surok.User;
 import com.eshabakhov.surok.security.right.RtAdmin;
 import java.util.Collection;
@@ -32,7 +33,7 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
  *
  * @since 0.0.1
  */
-public final class UrAcAuth implements UserDetails, OAuth2User, User {
+public final class UrAcAuth implements UserDetails, OAuth2User, UrAccount {
 
     /** User. */
     private final User user;

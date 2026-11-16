@@ -3,7 +3,7 @@
  */
 package com.eshabakhov.surok.user;
 
-import com.eshabakhov.surok.User;
+import com.eshabakhov.surok.UrAccount;
 import com.eshabakhov.surok.school.SlsPostgres;
 import com.eshabakhov.surok.school.input.SlInput;
 import com.eshabakhov.surok.school.input.SlInputName;
@@ -64,7 +64,7 @@ final class UrsPostgresTest {
      */
     @Test
     void rejectsUsersWithRecentFailedAttempts(@Autowired final DSLContext ctx) throws Exception {
-        final User user = new UrsPostgres(ctx).register(
+        final UrAccount user = new UrsPostgres(ctx).register(
             String.format("Блокировка %s", UUID.randomUUID()),
             "ValidPassword1!", String.format("%s@example.com", UUID.randomUUID()), false
         );
@@ -89,7 +89,7 @@ final class UrsPostgresTest {
      */
     @Test
     void acceptsUsersWithExpiredFailedAttempts(@Autowired final DSLContext ctx) throws Exception {
-        final User user = new UrsPostgres(ctx).register(
+        final UrAccount user = new UrsPostgres(ctx).register(
             String.format("История %s", UUID.randomUUID()),
             "ValidPassword1!", String.format("%s@example.com", UUID.randomUUID()), false
         );
@@ -115,7 +115,7 @@ final class UrsPostgresTest {
      */
     @Test
     void excludesRemovedUsersFromIdentification(@Autowired final DSLContext ctx) throws Exception {
-        final User user = new UrsPostgres(ctx).register(
+        final UrAccount user = new UrsPostgres(ctx).register(
             String.format("Удаление %s", UUID.randomUUID()),
             "ValidPassword1!", String.format("%s@example.com", UUID.randomUUID()), false
         );
@@ -137,7 +137,7 @@ final class UrsPostgresTest {
     @SuppressWarnings("PMD.UnitTestContainsTooManyAsserts")
     void keepsMembershipsAndSchoolRolesIndependent(@Autowired final DSLContext ctx)
         throws Exception {
-        final User user = new UrsPostgres(ctx).register(
+        final UrAccount user = new UrsPostgres(ctx).register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
         );
@@ -177,7 +177,7 @@ final class UrsPostgresTest {
      */
     @Test
     void appointsSchoolCreatorAsDirector(@Autowired final DSLContext ctx) throws Exception {
-        final User creator = new UrsPostgres(ctx).register(
+        final UrAccount creator = new UrsPostgres(ctx).register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
         );
@@ -199,7 +199,7 @@ final class UrsPostgresTest {
      */
     @Test
     void rejectsGlobalViewerRole(@Autowired final DSLContext ctx) throws Exception {
-        final User user = new UrsPostgres(ctx).register(
+        final UrAccount user = new UrsPostgres(ctx).register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
         );
@@ -217,7 +217,7 @@ final class UrsPostgresTest {
     @Test
     void disablesADeletedAccountInTheSecurityAdapter(@Autowired final DSLContext ctx)
         throws Exception {
-        final User user = new UrsPostgres(ctx).register(
+        final UrAccount user = new UrsPostgres(ctx).register(
             String.format("Удалённый-%s", UUID.randomUUID()), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
         );

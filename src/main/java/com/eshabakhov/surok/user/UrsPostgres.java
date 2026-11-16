@@ -3,6 +3,7 @@
  */
 package com.eshabakhov.surok.user;
 
+import com.eshabakhov.surok.UrAccount;
 import com.eshabakhov.surok.User;
 import com.eshabakhov.surok.Users;
 import com.eshabakhov.surok.sql.ClasspathSql;
@@ -89,7 +90,7 @@ public final class UrsPostgres implements Users {
     }
 
     @Override
-    public Iterable<User> iterate() {
+    public Iterable<UrAccount> iterate() {
         final String sql;
         final Object[] args;
         if (this.sid == null) {
@@ -105,7 +106,7 @@ public final class UrsPostgres implements Users {
     }
 
     @Override
-    public User register(
+    public UrAccount register(
         final String username,
         final String password,
         final String email,
@@ -124,7 +125,7 @@ public final class UrsPostgres implements Users {
                 if (inserted == null) {
                     throw new UserCreationException("Failed to create user");
                 }
-                final User user = new UrAcPostgres(ttx, inserted.get("id", Long.class));
+                final UrAccount user = new UrAcPostgres(ttx, inserted.get("id", Long.class));
                 user.roles().grant(Roles.RoleEnum.BASIC_MAKER);
                 if (this.sid != null) {
                     final Users members = new UrsPostgres(ttx, this.sid);
@@ -137,7 +138,7 @@ public final class UrsPostgres implements Users {
     }
 
     @Override
-    public User identification(final String login) throws Exception {
+    public UrAccount identification(final String login) throws Exception {
         final Record selected = this.ctx.resultQuery(
             new ClasspathSql("user/find-by-login.sql").text(),
             login,
@@ -146,7 +147,7 @@ public final class UrsPostgres implements Users {
         if (selected == null) {
             throw new UserNotFoundException(String.format("User with login '%s' not found", login));
         }
-        final User found = new UrAcPostgres(this.ctx, selected.get("id", Long.class));
+        final UrAccount found = new UrAcPostgres(this.ctx, selected.get("id", Long.class));
         if (this.sid != null && !this.contains(found)) {
             throw new UserNotFoundException(String.format("User with login '%s' not found", login));
         }
@@ -154,7 +155,7 @@ public final class UrsPostgres implements Users {
     }
 
     @Override
-    public User identification(final Long uid) throws Exception {
+    public UrAccount identification(final Long uid) throws Exception {
         final Record selected = this.ctx.resultQuery(
             new ClasspathSql("user/find-by-id.sql").text(),
             uid
@@ -162,7 +163,7 @@ public final class UrsPostgres implements Users {
         if (selected == null) {
             throw new UserNotFoundException(String.format("User with id '%s' not found", uid));
         }
-        final User found = new UrAcPostgres(this.ctx, selected.get("id", Long.class));
+        final UrAccount found = new UrAcPostgres(this.ctx, selected.get("id", Long.class));
         if (this.sid != null && !this.contains(found)) {
             throw new UserNotFoundException(String.format("User with id '%s' not found", uid));
         }
@@ -170,8 +171,8 @@ public final class UrsPostgres implements Users {
     }
 
     @Override
-    public User authentication(final String login) throws Exception {
-        final User user = this.identification(login);
+    public UrAccount authentication(final String login) throws Exception {
+        final UrAccount user = this.identification(login);
         final OffsetDateTime time = Instant.now().atOffset(ZoneOffset.UTC);
         final Result<Record> selected = this.ctx.resultQuery(
             new ClasspathSql("login-attempt/find-recent-failures.sql").text(),
