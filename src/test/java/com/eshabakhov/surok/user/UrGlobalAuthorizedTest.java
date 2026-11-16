@@ -56,7 +56,7 @@ final class UrGlobalAuthorizedTest {
                     name, "ValidPassword1!",
                     String.format("%s@example.com", UUID.randomUUID()), false
                 ), actor
-            ).credentials().username(), Matchers.is(name)
+            ).account().username(), Matchers.is(name)
         );
     }
 
@@ -82,7 +82,7 @@ final class UrGlobalAuthorizedTest {
         actor.roles().revoke(actor.roles().grant(Roles.RoleEnum.ADMIN).uid());
         Assertions.assertThrows(
             AccessDeniedException.class,
-            target::credentials,
+            target::account,
             "A former administrator accessed a retained global user"
         );
     }

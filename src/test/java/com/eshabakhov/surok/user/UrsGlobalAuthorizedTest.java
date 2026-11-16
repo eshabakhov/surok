@@ -121,7 +121,7 @@ final class UrsGlobalAuthorizedTest {
             new UrsGlobalAuthorized(new UrsPostgres(ctx), actor).register(
                 name, "ValidPassword1!",
                 String.format("%s@example.com", UUID.randomUUID()), false
-            ).credentials().username(), Matchers.is(name)
+            ).account().username(), Matchers.is(name)
         );
     }
 
