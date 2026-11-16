@@ -3,29 +3,15 @@
  */
 package com.eshabakhov.surok;
 
-import com.eshabakhov.surok.user.Account;
 import com.eshabakhov.surok.user.Roles;
 
 /**
- * User abstraction.
+ * Application visitor, with or without a registered account.
+ * For example, an anonymous visitor has the ANONYMOUS role.
  *
  * @since 0.0.1
  */
 public interface User extends Printable {
-
-    /**
-     * User unique identifier.
-     *
-     * @return User ID
-     */
-    long uid();
-
-    /**
-     * Account details.
-     *
-     * @return Registered account
-     */
-    Account account();
 
     /**
      * User roles.
@@ -33,11 +19,4 @@ public interface User extends Printable {
      * @return Roles
      */
     Roles roles();
-
-    /**
-     * Schools available to this user.
-     *
-     * @return User's schools
-     */
-    Schools schools();
 }
