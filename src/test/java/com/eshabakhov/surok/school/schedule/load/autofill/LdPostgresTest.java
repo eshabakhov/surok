@@ -9,7 +9,7 @@ import com.eshabakhov.surok.federal.subject.Subject;
 import com.eshabakhov.surok.media.MdJson;
 import com.eshabakhov.surok.school.schedule.SdPostgres;
 import com.eshabakhov.surok.school.schedule.load.hours.WeeklyHours;
-import com.eshabakhov.surok.school.schedule.load.hours.WhFixed;
+import com.eshabakhov.surok.school.schedule.load.hours.WhFake;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.LinkedHashMap;
@@ -136,7 +136,7 @@ final class LdPostgresTest {
     @Test
     void leavesActualLoadsUntouchedWhenSaving(@Autowired final DSLContext ctx) throws Exception {
         new LdPostgres(ctx, new SdPostgres(ctx, 101L)).save(
-            new CrPostgres(ctx, 61L), Map.of(5, Map.of(new SbFake(31L), new WhFixed(1)))
+            new CrPostgres(ctx, 61L), Map.of(5, Map.of(new SbFake(31L), new WhFake(1)))
         );
         MatcherAssert.assertThat(
             "Saving a draft prematurely changed the actual teaching load",
@@ -149,7 +149,7 @@ final class LdPostgresTest {
     void includesNewClassesInTheSavedGradeSelection(@Autowired final DSLContext ctx)
         throws Exception {
         new LdPostgres(ctx, new SdPostgres(ctx, 101L)).save(
-            new CrPostgres(ctx, 61L), Map.of(5, Map.of(new SbFake(31L), new WhFixed(1)))
+            new CrPostgres(ctx, 61L), Map.of(5, Map.of(new SbFake(31L), new WhFake(1)))
         );
         ctx.execute(
             "INSERT INTO school_class (id, school_id, grade, litera) VALUES (41, 1, 5, 'Г')"
@@ -170,7 +170,7 @@ final class LdPostgresTest {
     @Test
     void restoresGradeAdditionsAfterReopening(@Autowired final DSLContext ctx) throws Exception {
         new LdPostgres(ctx, new SdPostgres(ctx, 101L)).save(
-            new CrPostgres(ctx, 61L), Map.of(5, Map.of(new SbFake(31L), new WhFixed(2)))
+            new CrPostgres(ctx, 61L), Map.of(5, Map.of(new SbFake(31L), new WhFake(2)))
         );
         new LdPostgres(ctx, new SdPostgres(ctx, 101L)).apply();
         MatcherAssert.assertThat(
@@ -195,11 +195,11 @@ final class LdPostgresTest {
             """
         );
         final LoadDraft draft = new LdPostgres(ctx, new SdPostgres(ctx, 101L));
-        draft.save(new CrPostgres(ctx, 61L), Map.of(5, Map.of(new SbFake(31L), new WhFixed(1))));
+        draft.save(new CrPostgres(ctx, 61L), Map.of(5, Map.of(new SbFake(31L), new WhFake(1))));
         Assertions.assertThrows(
             DataAccessException.class,
             () -> draft.save(
-                new CrPostgres(ctx, 61L), Map.of(5, Map.of(new SbFake(31L), new WhFixed(2)))
+                new CrPostgres(ctx, 61L), Map.of(5, Map.of(new SbFake(31L), new WhFake(2)))
             ),
             "An individually assigned subject was omitted from the additional allowance"
         );
@@ -209,7 +209,7 @@ final class LdPostgresTest {
     void rechecksIndividuallyAddedHoursBeforeApplication(@Autowired final DSLContext ctx)
         throws Exception {
         final LoadDraft draft = new LdPostgres(ctx, new SdPostgres(ctx, 101L));
-        draft.save(new CrPostgres(ctx, 61L), Map.of(5, Map.of(new SbFake(31L), new WhFixed(2))));
+        draft.save(new CrPostgres(ctx, 61L), Map.of(5, Map.of(new SbFake(31L), new WhFake(2))));
         ctx.execute(
             """
             INSERT INTO class_curriculum (schedule_id, school_class_id, subject_id, hours)
@@ -228,7 +228,7 @@ final class LdPostgresTest {
         Assertions.assertThrows(
             DataAccessException.class,
             () -> new LdPostgres(ctx, new SdPostgres(ctx, 101L)).save(
-                new CrPostgres(ctx, 61L), Map.of(5, Map.of(new SbFake(id), new WhFixed(1)))
+                new CrPostgres(ctx, 61L), Map.of(5, Map.of(new SbFake(id), new WhFake(1)))
             ),
             "An unavailable or federal subject was accepted as a school addition"
         );
@@ -240,7 +240,7 @@ final class LdPostgresTest {
         Assertions.assertThrows(
             DataAccessException.class,
             () -> new LdPostgres(ctx, new SdPostgres(ctx, 101L)).save(
-                new CrPostgres(ctx, 61L), Map.of(grade, Map.of(new SbFake(31L), new WhFixed(1)))
+                new CrPostgres(ctx, 61L), Map.of(grade, Map.of(new SbFake(31L), new WhFake(1)))
             ),
             "An additional grade outside the curriculum level was accepted"
         );
@@ -249,11 +249,11 @@ final class LdPostgresTest {
     @Test
     void rollsBackAnInvalidReplacement(@Autowired final DSLContext ctx) throws Exception {
         final LoadDraft draft = new LdPostgres(ctx, new SdPostgres(ctx, 101L));
-        draft.save(new CrPostgres(ctx, 61L), Map.of(5, Map.of(new SbFake(31L), new WhFixed(1))));
+        draft.save(new CrPostgres(ctx, 61L), Map.of(5, Map.of(new SbFake(31L), new WhFake(1))));
         boolean rejected = false;
         try {
             draft.save(
-                new CrPostgres(ctx, 61L), Map.of(5, Map.of(new SbFake(31L), new WhFixed(4)))
+                new CrPostgres(ctx, 61L), Map.of(5, Map.of(new SbFake(31L), new WhFake(4)))
             );
         } catch (final DataAccessException ignored) {
             rejected = true;
@@ -274,7 +274,7 @@ final class LdPostgresTest {
     void switchesTheLevelAndClearsGradeSelections(@Autowired final DSLContext ctx)
         throws Exception {
         final LoadDraft draft = new LdPostgres(ctx, new SdPostgres(ctx, 101L));
-        draft.save(new CrPostgres(ctx, 61L), Map.of(5, Map.of(new SbFake(31L), new WhFixed(1))));
+        draft.save(new CrPostgres(ctx, 61L), Map.of(5, Map.of(new SbFake(31L), new WhFake(1))));
         draft.revise(new CrPostgres(ctx, 67L));
         draft.apply();
         MatcherAssert.assertThat(
@@ -293,7 +293,7 @@ final class LdPostgresTest {
     void preservesIndividualAdditionsWhenRemovingGradeSelections(@Autowired final DSLContext ctx)
         throws Exception {
         final LoadDraft draft = new LdPostgres(ctx, new SdPostgres(ctx, 101L));
-        draft.save(new CrPostgres(ctx, 61L), Map.of(5, Map.of(new SbFake(31L), new WhFixed(1))));
+        draft.save(new CrPostgres(ctx, 61L), Map.of(5, Map.of(new SbFake(31L), new WhFake(1))));
         draft.apply();
         ctx.execute(
             """
@@ -326,7 +326,7 @@ final class LdPostgresTest {
     @Test
     void serializesConcurrentApplications(@Autowired final DSLContext ctx) throws Exception {
         final LoadDraft draft = new LdPostgres(ctx, new SdPostgres(ctx, 101L));
-        draft.save(new CrPostgres(ctx, 61L), Map.of(5, Map.of(new SbFake(31L), new WhFixed(1))));
+        draft.save(new CrPostgres(ctx, 61L), Map.of(5, Map.of(new SbFake(31L), new WhFake(1))));
         try (ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor()) {
             final Future<Boolean> first = executor.submit(
                 () -> {
@@ -355,8 +355,8 @@ final class LdPostgresTest {
         throws Exception {
         new LdPostgres(ctx, new SdPostgres(ctx, 101L)).save(
             new CrPostgres(ctx, 61L), Map.of(
-                5, Map.of(new SbFake(31L), new WhFixed(1)),
-                6, Map.of(new SbFake(37L), new WhFixed(2))
+                5, Map.of(new SbFake(31L), new WhFake(1)),
+                6, Map.of(new SbFake(37L), new WhFake(2))
             )
         );
         new LdPostgres(ctx, new SdPostgres(ctx, 101L)).apply();
@@ -377,7 +377,7 @@ final class LdPostgresTest {
         Assertions.assertThrows(
             DataAccessException.class,
             () -> new LdPostgres(ctx, new SdPostgres(ctx, 101L)).save(
-                new CrPostgres(ctx, 61L), Map.of(7, Map.of(new SbFake(31L), new WhFixed(1)))
+                new CrPostgres(ctx, 61L), Map.of(7, Map.of(new SbFake(31L), new WhFake(1)))
             ),
             "Additional hours without an explicit maximum were saved for a grade without classes"
         );
@@ -387,7 +387,7 @@ final class LdPostgresTest {
     void rejectsArchivedSelectionsBeforeChangingAnyLoad(@Autowired final DSLContext ctx)
         throws Exception {
         final LoadDraft draft = new LdPostgres(ctx, new SdPostgres(ctx, 101L));
-        draft.save(new CrPostgres(ctx, 61L), Map.of(5, Map.of(new SbFake(31L), new WhFixed(2))));
+        draft.save(new CrPostgres(ctx, 61L), Map.of(5, Map.of(new SbFake(31L), new WhFake(2))));
         ctx.execute("UPDATE subject SET is_deleted = true WHERE id = 31");
         boolean rejected = false;
         try {
@@ -407,10 +407,10 @@ final class LdPostgresTest {
     @Test
     void removesAnArchivedSelection(@Autowired final DSLContext ctx) throws Exception {
         final LoadDraft draft = new LdPostgres(ctx, new SdPostgres(ctx, 101L));
-        draft.save(new CrPostgres(ctx, 61L), Map.of(5, Map.of(new SbFake(31L), new WhFixed(2))));
+        draft.save(new CrPostgres(ctx, 61L), Map.of(5, Map.of(new SbFake(31L), new WhFake(2))));
         draft.apply();
         ctx.execute("UPDATE subject SET is_deleted = true WHERE id = 31");
-        draft.save(new CrPostgres(ctx, 61L), Map.of(5, Map.of(new SbFake(31L), new WhFixed(0))));
+        draft.save(new CrPostgres(ctx, 61L), Map.of(5, Map.of(new SbFake(31L), new WhFake(0))));
         draft.apply();
         MatcherAssert.assertThat(
             "An archived grade selection retained its actual load after removal",
@@ -423,12 +423,12 @@ final class LdPostgresTest {
     @Test
     void rejectsArchivedRemovalsForAnotherGrade(@Autowired final DSLContext ctx) throws Exception {
         final LoadDraft draft = new LdPostgres(ctx, new SdPostgres(ctx, 101L));
-        draft.save(new CrPostgres(ctx, 61L), Map.of(5, Map.of(new SbFake(31L), new WhFixed(2))));
+        draft.save(new CrPostgres(ctx, 61L), Map.of(5, Map.of(new SbFake(31L), new WhFake(2))));
         ctx.execute("UPDATE subject SET is_deleted = true WHERE id = 31");
         Assertions.assertThrows(
             DataAccessException.class,
             () -> draft.save(
-                new CrPostgres(ctx, 61L), Map.of(6, Map.of(new SbFake(31L), new WhFixed(0)))
+                new CrPostgres(ctx, 61L), Map.of(6, Map.of(new SbFake(31L), new WhFake(0)))
             ),
             "An archived removal was authorized using another grade's selection"
         );
@@ -438,7 +438,7 @@ final class LdPostgresTest {
     void rechecksTheMaximumBeforeApplyingSavedHours(@Autowired final DSLContext ctx)
         throws Exception {
         final LoadDraft draft = new LdPostgres(ctx, new SdPostgres(ctx, 101L));
-        draft.save(new CrPostgres(ctx, 61L), Map.of(5, Map.of(new SbFake(31L), new WhFixed(3))));
+        draft.save(new CrPostgres(ctx, 61L), Map.of(5, Map.of(new SbFake(31L), new WhFake(3))));
         ctx.execute(
             "UPDATE federal_curriculum_requirement SET hours = 1 WHERE part_type = 'OPTIONAL'"
         );
@@ -452,11 +452,11 @@ final class LdPostgresTest {
     void rollsBackAllGradesWhenOneSubjectIsUnavailable(@Autowired final DSLContext ctx)
         throws Exception {
         final LoadDraft draft = new LdPostgres(ctx, new SdPostgres(ctx, 101L));
-        draft.save(new CrPostgres(ctx, 61L), Map.of(5, Map.of(new SbFake(31L), new WhFixed(2))));
+        draft.save(new CrPostgres(ctx, 61L), Map.of(5, Map.of(new SbFake(31L), new WhFake(2))));
         final Map<Integer, Map<Subject, WeeklyHours>> hours =
             new LinkedHashMap<>();
-        hours.put(5, Map.of(new SbFake(37L), new WhFixed(1)));
-        hours.put(6, Map.of(new SbFake(33L), new WhFixed(1)));
+        hours.put(5, Map.of(new SbFake(37L), new WhFake(1)));
+        hours.put(6, Map.of(new SbFake(33L), new WhFake(1)));
         boolean rejected = false;
         try {
             draft.save(new CrPostgres(ctx, 61L), hours);
@@ -480,7 +480,7 @@ final class LdPostgresTest {
     ) throws Exception {
         final LoadDraft draft = new LdPostgres(ctx, new SdPostgres(ctx, 101L));
         draft.save(
-            new CrPostgres(ctx, 61L), Map.of(5, Map.of(new SbFake(31L), new WhFixed(selected)))
+            new CrPostgres(ctx, 61L), Map.of(5, Map.of(new SbFake(31L), new WhFake(selected)))
         );
         ctx.execute(
             """
@@ -528,7 +528,7 @@ final class LdPostgresTest {
         Assertions.assertThrows(
             DataAccessException.class,
             () -> new LdPostgres(ctx, new SdPostgres(ctx, 101L)).save(
-                new CrPostgres(ctx, 61L), Map.of(5, Map.of(new SbFake(29L), new WhFixed(2)))
+                new CrPostgres(ctx, 61L), Map.of(5, Map.of(new SbFake(29L), new WhFake(2)))
             ),
             "The draft counted one subject as both mandatory and additional in the same grade"
         );
@@ -540,7 +540,7 @@ final class LdPostgresTest {
         Assertions.assertThrows(
             DataAccessException.class,
             () -> new LdPostgres(ctx, new SdPostgres(ctx, 101L)).save(
-                new CrPostgres(ctx, 61L), Map.of(6, Map.of(new SbFake(29L), new WhFixed(2)))
+                new CrPostgres(ctx, 61L), Map.of(6, Map.of(new SbFake(29L), new WhFake(2)))
             ),
             "A federal subject became an additional school subject outside its plan grade"
         );

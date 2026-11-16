@@ -25,10 +25,10 @@ final class WhPlannedTest {
     @ParameterizedTest
     @ValueSource(ints = {0, 7})
     void selectsHoursWithoutChangingTheOriginal(final int selected) {
-        final WeeklyHours origin = new WhProposed(new WhFixed(5), new WhFixed(3));
+        final WeeklyHours origin = new WhProposed(new WhFake(5), new WhFake(3));
         MatcherAssert.assertThat(
             "Selecting hours changed the original value or lost the selected hours",
-            List.of(new WhPlanned(origin, new WhFixed(selected)).value(), origin.value()),
+            List.of(new WhPlanned(origin, new WhFake(selected)).value(), origin.value()),
             Matchers.contains(selected, 5)
         );
     }
@@ -38,7 +38,7 @@ final class WhPlannedTest {
     void printsTheSelectedHoursWithTheOriginalContext(final int proposed, final int selected)
         throws Exception {
         final WeeklyHours hours = new WhPlanned(
-            new WhProposed(new WhFixed(5), new WhFixed(proposed)), new WhFixed(selected)
+            new WhProposed(new WhFake(5), new WhFake(proposed)), new WhFake(selected)
         );
         final ObjectNode expected = JsonNodeFactory.instance.objectNode()
             .put("current", 5).put("planned", selected);

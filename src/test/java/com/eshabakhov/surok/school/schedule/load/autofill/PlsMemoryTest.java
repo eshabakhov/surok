@@ -6,7 +6,7 @@ package com.eshabakhov.surok.school.schedule.load.autofill;
 import com.eshabakhov.surok.federal.subject.SbFake;
 import com.eshabakhov.surok.media.MdJson;
 import com.eshabakhov.surok.media.MdXml;
-import com.eshabakhov.surok.school.schedule.load.hours.WhFixed;
+import com.eshabakhov.surok.school.schedule.load.hours.WhFake;
 import com.eshabakhov.surok.school.schoolclass.ScFake;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -35,14 +35,14 @@ final class PlsMemoryTest {
                     new PlInitial(
                         new ScFake(17L),
                         new SbFake(29L),
-                        new WhFixed(5),
-                        new WhFixed(3)
+                        new WhFake(5),
+                        new WhFake(3)
                     ),
                     new PlInitial(
                         new ScFake(17L),
                         new SbFake(29L),
-                        new WhFixed(7),
-                        new WhFixed(3)
+                        new WhFake(7),
+                        new WhFake(3)
                     )
                 )
             ).iterate(),
@@ -57,8 +57,8 @@ final class PlsMemoryTest {
                 new PlInitial(
                     new ScFake(17L),
                     new SbFake(29L),
-                    new WhFixed(5),
-                    new WhFixed(3)
+                    new WhFake(5),
+                    new WhFake(3)
                 )
             )
         );
@@ -71,8 +71,8 @@ final class PlsMemoryTest {
                 new PlInitial(
                     new ScFake(17L),
                     new SbFake(29L),
-                    new WhFixed(5),
-                    new WhFixed(3)
+                    new WhFake(5),
+                    new WhFake(3)
                 )
             )
         );
@@ -88,8 +88,8 @@ final class PlsMemoryTest {
                         new PlInitial(
                             new ScFake(17L),
                             new SbFake(29L),
-                            new WhFixed(5),
-                            new WhFixed(3)
+                            new WhFake(5),
+                            new WhFake(3)
                         )
                     )
                 ).iterate().iterator();
@@ -114,8 +114,8 @@ final class PlsMemoryTest {
         final PlannedLoads plan = new PlsMemory(
             List.of(
                 new PlInitial(
-                    new ScFake(17L), new SbFake(29L), new WhFixed(5), new WhFixed(3)
-                ).with(new WhFixed(3))
+                    new ScFake(17L), new SbFake(29L), new WhFake(5), new WhFake(3)
+                ).with(new WhFake(3))
             )
         );
         MatcherAssert.assertThat(

@@ -13,7 +13,7 @@ import com.eshabakhov.surok.federal.subject.SbPostgres;
 import com.eshabakhov.surok.federal.subject.Subject;
 import com.eshabakhov.surok.school.schedule.Schedule;
 import com.eshabakhov.surok.school.schedule.load.hours.WeeklyHours;
-import com.eshabakhov.surok.school.schedule.load.hours.WhFixed;
+import com.eshabakhov.surok.school.schedule.load.hours.WhFake;
 import com.eshabakhov.surok.school.schoolclass.ScPostgres;
 import com.eshabakhov.surok.sql.ClasspathSql;
 import java.util.ArrayList;
@@ -177,13 +177,13 @@ public final class LdPostgres implements LoadDraft {
             PlannedLoad load = new PlInitial(
                 new ScPostgres(this.ctx, row.get("school_class_id", Long.class)),
                 new SbPostgres(this.ctx, row.get("subject_id", Long.class), true),
-                new WhFixed(row.get("current", Integer.class)),
-                new WhFixed(row.get("proposed", Integer.class))
+                new WhFake(row.get("current", Integer.class)),
+                new WhFake(row.get("proposed", Integer.class))
             );
             if (row.get("proposed", Integer.class) > 0) {
                 load = load.accept();
             } else if (row.get("planned") != null) {
-                load = load.with(new WhFixed(row.get("planned", Integer.class)));
+                load = load.with(new WhFake(row.get("planned", Integer.class)));
             }
             loads.add(load);
         }

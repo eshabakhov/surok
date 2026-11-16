@@ -8,7 +8,7 @@ import com.eshabakhov.surok.federal.curriculum.requirement.input.RequirementInpu
 import com.eshabakhov.surok.federal.subject.SbFake;
 import com.eshabakhov.surok.media.MdJson;
 import com.eshabakhov.surok.school.schedule.SdPostgres;
-import com.eshabakhov.surok.school.schedule.load.hours.WhFixed;
+import com.eshabakhov.surok.school.schedule.load.hours.WhFake;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.List;
@@ -81,7 +81,7 @@ final class AdPostgresTest {
         final Addition addition = new AdPostgres(
             ctx, new SdPostgres(ctx, 107L), new CrPostgres(ctx, 67L), 5
         );
-        addition.save(Map.of(new SbFake(37L), new WhFixed(1)));
+        addition.save(Map.of(new SbFake(37L), new WhFake(1)));
         addition.save(Map.of());
         MatcherAssert.assertThat(
             "An omitted subject lost its pending removal or retained its planned hours",
@@ -97,7 +97,7 @@ final class AdPostgresTest {
         final Addition addition = new AdPostgres(
             ctx, new SdPostgres(ctx, 107L), new CrPostgres(ctx, 67L), 5
         );
-        addition.save(Map.of(new SbFake(37L), new WhFixed(1)));
+        addition.save(Map.of(new SbFake(37L), new WhFake(1)));
         ctx.execute("UPDATE class_curriculum SET hours = 3");
         Assertions.assertThrows(
             RequirementInputException.class, addition::check,
@@ -111,7 +111,7 @@ final class AdPostgresTest {
             LoadInputException.class,
             () -> new AdPostgres(
                 ctx, new SdPostgres(ctx, 107L), new CrPostgres(ctx, 67L), 5
-            ).save(Map.of(new SbFake(41L), new WhFixed(1))),
+            ).save(Map.of(new SbFake(41L), new WhFake(1))),
             "A foreign subject was accepted into the grade addition"
         );
     }
@@ -122,7 +122,7 @@ final class AdPostgresTest {
         final Addition addition = new AdPostgres(
             ctx, new SdPostgres(ctx, 107L), new CrPostgres(ctx, 67L), 5
         );
-        addition.save(Map.of(new SbFake(37L), new WhFixed(1)));
+        addition.save(Map.of(new SbFake(37L), new WhFake(1)));
         ctx.execute("UPDATE federal_curriculum_requirement SET hours = 0 WHERE id = 73");
         MatcherAssert.assertThat(
             "The addition lost its selected subject, class totals or reduced requirement",

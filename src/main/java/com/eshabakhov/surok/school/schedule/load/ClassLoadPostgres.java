@@ -5,7 +5,7 @@ package com.eshabakhov.surok.school.schedule.load;
 
 import com.eshabakhov.surok.Media;
 import com.eshabakhov.surok.federal.subject.SbPostgres;
-import com.eshabakhov.surok.school.schedule.load.hours.WhFixed;
+import com.eshabakhov.surok.school.schedule.load.hours.WhFake;
 import com.eshabakhov.surok.school.schoolclass.ScPostgres;
 import com.eshabakhov.surok.sql.ClasspathSql;
 import org.jooq.DSLContext;
@@ -43,7 +43,7 @@ public final class ClassLoadPostgres implements ClassLoad {
     @Override
     public <T> Media<T> print(final Media<T> media) throws Exception {
         final Record selected = this.details();
-        return new WhFixed(selected.get("hours", Integer.class)).print(
+        return new WhFake(selected.get("hours", Integer.class)).print(
             media.with("id", selected.get("id", Long.class)).with(
                 "schoolClass", new ScPostgres(
                     this.ctx, selected.get("school_class_id", Long.class), true
