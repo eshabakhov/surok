@@ -9,7 +9,6 @@ import com.eshabakhov.surok.Printable;
 import com.eshabakhov.surok.user.Roles;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.Arrays;
-import java.util.stream.Stream;
 import org.springframework.web.bind.annotation.RequestMethod;
 
 /**
@@ -48,9 +47,9 @@ public final class PmRoles implements Printable {
     public <T> Media<T> print(final Media<T> media) throws Exception {
         return this.origin.print(media).with("method", this.method.name()).with(
             "access", new PrItems(
-                "grant", Stream.concat(
-                    Arrays.stream(Roles.RoleEnum.values()).map(Enum::name), Stream.of("ANONYMOUS")
-                ).map(role -> new PaRole(this.origin, role, this.request)).toList()
+                "grant", Arrays.stream(Roles.RoleEnum.values()).map(
+                    role -> new PaRole(this.origin, role.name(), this.request)
+                ).toList()
             )
         );
     }
