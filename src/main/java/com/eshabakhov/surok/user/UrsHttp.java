@@ -12,7 +12,6 @@ import com.eshabakhov.surok.media.MdXml;
 import com.eshabakhov.surok.media.MdXslt;
 import com.eshabakhov.surok.media.SrWeb;
 import com.eshabakhov.surok.media.XsClasspath;
-import com.eshabakhov.surok.school.SlsAuthorized;
 import com.eshabakhov.surok.school.SlsBrief;
 import com.eshabakhov.surok.school.SlsPostgres;
 import com.eshabakhov.surok.security.CsToken;
@@ -650,6 +649,6 @@ public final class UrsHttp {
     }
 
     private Users members(final UrAccount actor, final long id) throws Exception {
-        return new SlsAuthorized(new SlsPostgres(this.ctx), actor).school(id).users();
+        return new UrAcAuthorized(actor, new SlsPostgres(this.ctx)).schools().school(id).users();
     }
 }

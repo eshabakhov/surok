@@ -19,6 +19,7 @@ import com.eshabakhov.surok.media.XsClasspath;
 import com.eshabakhov.surok.school.input.SchoolInputException;
 import com.eshabakhov.surok.school.input.SlInputHttp;
 import com.eshabakhov.surok.security.CsToken;
+import com.eshabakhov.surok.user.UrAcAuthorized;
 import com.eshabakhov.surok.user.UrAcBrief;
 import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.servlet.http.HttpServletRequest;
@@ -105,9 +106,9 @@ public class SlsHttp {
                 MediaType.valueOf(SlsHttp.FRAGMENT)
             )
         ).type();
-        final Schools selected = new SlsAuthorized(
-            new SlsPostgres(this.ctx), user
-        ).selection(filters, page, sorts);
+        final Schools selected = new UrAcAuthorized(
+            user, new SlsPostgres(this.ctx)
+        ).schools().selection(filters, page, sorts);
         return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8))
             .varyBy(HttpHeaders.ACCEPT).body(
                 switch (type.toString()) {
@@ -169,7 +170,7 @@ public class SlsHttp {
         @AuthenticationPrincipal final UrAccount user
     ) throws Exception {
         final MediaType type = new AcHttp(request, "school-v1").type();
-        final Schools origin = new SlsAuthorized(new SlsPostgres(this.ctx), user);
+        final Schools origin = new UrAcAuthorized(user, new SlsPostgres(this.ctx)).schools();
         final School selected = origin.school(school);
         return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8)).body(
             switch (type.toString()) {
@@ -267,7 +268,7 @@ public class SlsHttp {
         @PathVariable final long school,
         @AuthenticationPrincipal final UrAccount user
     ) throws Exception {
-        new SlsAuthorized(new SlsPostgres(this.ctx), user).remove(school);
+        new UrAcAuthorized(user, new SlsPostgres(this.ctx)).schools().remove(school);
         return ResponseEntity.noContent().build();
     }
 
@@ -292,12 +293,14 @@ public class SlsHttp {
             final School selected;
             final HttpStatus status;
             if (creation) {
-                selected = new SlsAuthorized(new SlsPostgres(this.ctx), user).create(input);
+                selected = new UrAcAuthorized(
+                    user, new SlsPostgres(this.ctx)
+                ).schools().create(input);
                 status = HttpStatus.CREATED;
             } else {
-                selected = new SlsAuthorized(
-                    new SlsPostgres(this.ctx), user
-                ).revise(id, input);
+                selected = new UrAcAuthorized(
+                    user, new SlsPostgres(this.ctx)
+                ).schools().revise(id, input);
                 status = HttpStatus.OK;
             }
             final URI location = URI.create(String.format("/schools/%d", selected.uid()));
