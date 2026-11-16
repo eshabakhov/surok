@@ -13,7 +13,7 @@ import com.eshabakhov.surok.school.SlsBrief;
 import com.eshabakhov.surok.school.SlsPostgres;
 import com.eshabakhov.surok.security.CsToken;
 import com.eshabakhov.surok.user.AuthUser;
-import com.eshabakhov.surok.user.UrBrief;
+import com.eshabakhov.surok.user.UrAcBrief;
 import jakarta.servlet.http.HttpServletRequest;
 import java.nio.charset.StandardCharsets;
 import org.jooq.DSLContext;
@@ -78,7 +78,7 @@ public class PsHttp {
             .contentType(new MediaType(type, StandardCharsets.UTF_8)).body(
                 switch (type.toString()) {
                     case MediaType.TEXT_HTML_VALUE -> new SrWeb(
-                        new UrBrief(user), new SlsBrief(new SlsPostgres(this.ctx)),
+                        new UrAcBrief(user), new SlsBrief(new SlsPostgres(this.ctx)),
                         new CsToken((CsrfToken) request.getAttribute(CsrfToken.class.getName()))
                     ).print(
                         new MdXslt(

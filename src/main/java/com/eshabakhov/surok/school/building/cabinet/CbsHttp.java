@@ -26,7 +26,7 @@ import com.eshabakhov.surok.school.building.Building;
 import com.eshabakhov.surok.school.building.cabinet.input.CabinetInputException;
 import com.eshabakhov.surok.school.building.cabinet.input.CbInputHttp;
 import com.eshabakhov.surok.security.CsToken;
-import com.eshabakhov.surok.user.UrBrief;
+import com.eshabakhov.surok.user.UrAcBrief;
 import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.servlet.http.HttpServletRequest;
 import java.net.URI;
@@ -415,7 +415,7 @@ public class CbsHttp {
         final String view
     ) throws Exception {
         return new SrWeb(
-            new UrBrief(
+            new UrAcBrief(
                 (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal()
             ),
             new SlsBrief(new SlsPostgres(this.ctx)),

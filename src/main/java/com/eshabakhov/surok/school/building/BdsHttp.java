@@ -25,7 +25,7 @@ import com.eshabakhov.surok.school.SlsPostgres;
 import com.eshabakhov.surok.school.building.input.BdInputHttp;
 import com.eshabakhov.surok.school.building.input.BuildingInputException;
 import com.eshabakhov.surok.security.CsToken;
-import com.eshabakhov.surok.user.UrBrief;
+import com.eshabakhov.surok.user.UrAcBrief;
 import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.servlet.http.HttpServletRequest;
 import java.net.URI;
@@ -401,7 +401,7 @@ public class BdsHttp {
         final String view
     ) throws Exception {
         return new SrWeb(
-            new UrBrief(
+            new UrAcBrief(
                 (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal()
             ),
             new SlsBrief(new SlsPostgres(this.ctx)),

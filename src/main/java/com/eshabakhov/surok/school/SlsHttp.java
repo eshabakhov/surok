@@ -19,7 +19,7 @@ import com.eshabakhov.surok.media.XsClasspath;
 import com.eshabakhov.surok.school.input.SchoolInputException;
 import com.eshabakhov.surok.school.input.SlInputHttp;
 import com.eshabakhov.surok.security.CsToken;
-import com.eshabakhov.surok.user.UrBrief;
+import com.eshabakhov.surok.user.UrAcBrief;
 import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.servlet.http.HttpServletRequest;
 import java.net.URI;
@@ -348,7 +348,7 @@ public class SlsHttp {
         final String view, final Schools schools
     ) throws Exception {
         return new SrWeb(
-            new UrBrief(
+            new UrAcBrief(
                 (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal()
             ), schools,
             new CsToken((CsrfToken) request.getAttribute(CsrfToken.class.getName()))

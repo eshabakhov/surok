@@ -41,7 +41,7 @@ public final class UrsGlobalAuthorized implements Users {
 
     @Override
     public User add(final User user) throws Exception {
-        return new UrGlobalAuthorized(
+        return new UrAcGlobalAuthorized(
             new RtAdmin(this.actor).permit(this.origin).add(user), this.actor
         );
     }
@@ -57,14 +57,14 @@ public final class UrsGlobalAuthorized implements Users {
     public Iterable<User> iterate() {
         return StreamSupport.stream(
             new RtAdmin(this.actor).permit(this.origin).iterate().spliterator(), false
-        ).<User>map(user -> new UrGlobalAuthorized(user, this.actor)).toList();
+        ).<User>map(user -> new UrAcGlobalAuthorized(user, this.actor)).toList();
     }
 
     @Override
     public User register(
         final String username, final String password, final String email, final Boolean corporate
     ) throws Exception {
-        return new UrGlobalAuthorized(
+        return new UrAcGlobalAuthorized(
             new RtAdmin(this.actor).permit(this.origin).register(
                 username, password, email, corporate
             ), this.actor
@@ -73,21 +73,21 @@ public final class UrsGlobalAuthorized implements Users {
 
     @Override
     public User identification(final String login) throws Exception {
-        return new UrGlobalAuthorized(
+        return new UrAcGlobalAuthorized(
             new RtAdmin(this.actor).permit(this.origin).identification(login), this.actor
         );
     }
 
     @Override
     public User identification(final Long id) throws Exception {
-        return new UrGlobalAuthorized(
+        return new UrAcGlobalAuthorized(
             new RtAdmin(this.actor).permit(this.origin).identification(id), this.actor
         );
     }
 
     @Override
     public User authentication(final String login) throws Exception {
-        return new UrGlobalAuthorized(
+        return new UrAcGlobalAuthorized(
             new RtAdmin(this.actor).permit(this.origin).authentication(login), this.actor
         );
     }

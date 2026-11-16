@@ -20,7 +20,7 @@ import com.eshabakhov.surok.school.SlsPostgres;
 import com.eshabakhov.surok.school.schedule.Schedule;
 import com.eshabakhov.surok.school.schedule.SdBrief;
 import com.eshabakhov.surok.security.CsToken;
-import com.eshabakhov.surok.user.UrBrief;
+import com.eshabakhov.surok.user.UrAcBrief;
 import jakarta.servlet.http.HttpServletRequest;
 import java.nio.charset.StandardCharsets;
 import org.jooq.DSLContext;
@@ -166,7 +166,7 @@ public class ClsHttp {
         final String view
     ) throws Exception {
         return new SrWeb(
-            new UrBrief(
+            new UrAcBrief(
                 (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal()
             ),
             new SlsBrief(new SlsPostgres(this.ctx)),

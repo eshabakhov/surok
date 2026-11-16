@@ -27,7 +27,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  */
 @Testcontainers
 @SpringBootTest
-final class UrGlobalAuthorizedTest {
+final class UrAcGlobalAuthorizedTest {
 
     /** Isolated database. */
     @Container
@@ -51,7 +51,7 @@ final class UrGlobalAuthorizedTest {
         final String name = String.format("пользователь-%s", UUID.randomUUID());
         MatcherAssert.assertThat(
             "An administrator could not read global user credentials",
-            new UrGlobalAuthorized(
+            new UrAcGlobalAuthorized(
                 new UrsPostgres(ctx).register(
                     name, "ValidPassword1!",
                     String.format("%s@example.com", UUID.randomUUID()), false
@@ -73,7 +73,7 @@ final class UrGlobalAuthorizedTest {
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
         );
-        final User target = new UrGlobalAuthorized(
+        final User target = new UrAcGlobalAuthorized(
             new UrsPostgres(ctx).register(
                 String.format("цель-%s", UUID.randomUUID()), "ValidPassword1!",
                 String.format("%s@example.com", UUID.randomUUID()), false
@@ -94,9 +94,9 @@ final class UrGlobalAuthorizedTest {
      */
     @DynamicPropertySource
     static void properties(final DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", UrGlobalAuthorizedTest.POSTGRES::getJdbcUrl);
-        registry.add("spring.datasource.username", UrGlobalAuthorizedTest.POSTGRES::getUsername);
-        registry.add("spring.datasource.password", UrGlobalAuthorizedTest.POSTGRES::getPassword);
+        registry.add("spring.datasource.url", UrAcGlobalAuthorizedTest.POSTGRES::getJdbcUrl);
+        registry.add("spring.datasource.username", UrAcGlobalAuthorizedTest.POSTGRES::getUsername);
+        registry.add("spring.datasource.password", UrAcGlobalAuthorizedTest.POSTGRES::getPassword);
         registry.add("spring.liquibase.enabled", () -> true);
     }
 }
