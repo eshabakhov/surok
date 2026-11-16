@@ -5,7 +5,7 @@ package com.eshabakhov.surok.school.schedule;
 
 import com.eshabakhov.surok.Media;
 import com.eshabakhov.surok.School;
-import com.eshabakhov.surok.User;
+import com.eshabakhov.surok.UrAccount;
 import com.eshabakhov.surok.school.schedule.load.ClassLoads;
 import com.eshabakhov.surok.school.schedule.load.ClsAuthorized;
 import com.eshabakhov.surok.school.schedule.load.autofill.LdAuthorized;
@@ -30,7 +30,7 @@ public final class SdAuthorized implements Schedule {
     private final School school;
 
     /** Acting user. */
-    private final User actor;
+    private final UrAccount actor;
 
     /**
      * New protected schedule.
@@ -39,7 +39,7 @@ public final class SdAuthorized implements Schedule {
      * @param school Owning school
      * @param actor Acting user
      */
-    public SdAuthorized(final Schedule origin, final School school, final User actor) {
+    public SdAuthorized(final Schedule origin, final School school, final UrAccount actor) {
         this.origin = origin;
         this.school = school;
         this.actor = actor;

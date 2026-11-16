@@ -18,7 +18,7 @@ public interface Users {
      * @param user User to check
      * @return True if the user belongs to the collection
      */
-    boolean contains(User user);
+    boolean contains(UrAccount user);
 
     /**
      * Adds an existing user to a school collection.
@@ -27,7 +27,7 @@ public interface Users {
      * @return Added user
      * @throws Exception If adding fails
      */
-    User add(User user) throws Exception;
+    UrAccount add(UrAccount user) throws Exception;
 
     /**
      * Roles of a user in this collection.
@@ -35,7 +35,7 @@ public interface Users {
      * @param user User whose roles are requested
      * @return Scoped roles
      */
-    Roles roles(User user);
+    Roles roles(UrAccount user);
 
     /**
      * Users in this collection.

@@ -4,7 +4,7 @@
 package com.eshabakhov.surok.security.right;
 
 import com.eshabakhov.surok.School;
-import com.eshabakhov.surok.User;
+import com.eshabakhov.surok.UrAccount;
 import com.eshabakhov.surok.user.Roles;
 
 /**
@@ -16,7 +16,7 @@ import com.eshabakhov.surok.user.Roles;
 public final class RtSchoolDirector implements Right {
 
     /** Acting user. */
-    private final User actor;
+    private final UrAccount actor;
 
     /** School to revise. */
     private final School school;
@@ -27,7 +27,7 @@ public final class RtSchoolDirector implements Right {
      * @param actor Acting user
      * @param school School to revise
      */
-    public RtSchoolDirector(final User actor, final School school) {
+    public RtSchoolDirector(final UrAccount actor, final School school) {
         this.actor = actor;
         this.school = school;
     }

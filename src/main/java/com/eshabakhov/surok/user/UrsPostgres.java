@@ -4,7 +4,6 @@
 package com.eshabakhov.surok.user;
 
 import com.eshabakhov.surok.UrAccount;
-import com.eshabakhov.surok.User;
 import com.eshabakhov.surok.Users;
 import com.eshabakhov.surok.sql.ClasspathSql;
 import java.time.Duration;
@@ -50,7 +49,7 @@ public final class UrsPostgres implements Users {
     }
 
     @Override
-    public boolean contains(final User user) {
+    public boolean contains(final UrAccount user) {
         final boolean found;
         if (this.sid == null) {
             found = this.ctx.resultQuery(
@@ -65,7 +64,7 @@ public final class UrsPostgres implements Users {
     }
 
     @Override
-    public User add(final User user) throws Exception {
+    public UrAccount add(final UrAccount user) throws Exception {
         if (this.sid == null) {
             throw new IllegalStateException("A school is required to add a user");
         }
@@ -79,7 +78,7 @@ public final class UrsPostgres implements Users {
     }
 
     @Override
-    public Roles roles(final User user) {
+    public Roles roles(final UrAccount user) {
         final Roles selected;
         if (this.sid == null) {
             selected = user.roles();

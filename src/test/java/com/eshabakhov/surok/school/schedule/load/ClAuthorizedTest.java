@@ -4,7 +4,7 @@
 package com.eshabakhov.surok.school.schedule.load;
 
 import com.eshabakhov.surok.School;
-import com.eshabakhov.surok.User;
+import com.eshabakhov.surok.UrAccount;
 import com.eshabakhov.surok.federal.subject.SbFake;
 import com.eshabakhov.surok.media.MdJson;
 import com.eshabakhov.surok.school.SlsPostgres;
@@ -53,7 +53,7 @@ final class ClAuthorizedTest {
     @Test
     void deniesPrintingAfterMembershipIsRemoved(@Autowired final DSLContext ctx)
         throws Exception {
-        final User actor = new UrsPostgres(ctx).register(
+        final UrAccount actor = new UrsPostgres(ctx).register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
         );
@@ -80,7 +80,7 @@ final class ClAuthorizedTest {
      */
     @Test
     void printsTeachingLoadForAnAdministrator(@Autowired final DSLContext ctx) throws Exception {
-        final User actor = new UrsPostgres(ctx).register(
+        final UrAccount actor = new UrsPostgres(ctx).register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
         );

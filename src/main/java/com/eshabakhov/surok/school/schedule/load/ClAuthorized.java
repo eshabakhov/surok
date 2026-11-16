@@ -5,7 +5,7 @@ package com.eshabakhov.surok.school.schedule.load;
 
 import com.eshabakhov.surok.Media;
 import com.eshabakhov.surok.School;
-import com.eshabakhov.surok.User;
+import com.eshabakhov.surok.UrAccount;
 import com.eshabakhov.surok.security.right.RtAdmin;
 import com.eshabakhov.surok.security.right.RtEither;
 import com.eshabakhov.surok.security.right.RtSchoolMember;
@@ -25,7 +25,7 @@ public final class ClAuthorized implements ClassLoad {
     private final School school;
 
     /** Acting user. */
-    private final User actor;
+    private final UrAccount actor;
 
     /**
      * New protected teaching load.
@@ -34,7 +34,7 @@ public final class ClAuthorized implements ClassLoad {
      * @param school Owning school
      * @param actor Acting user
      */
-    public ClAuthorized(final ClassLoad origin, final School school, final User actor) {
+    public ClAuthorized(final ClassLoad origin, final School school, final UrAccount actor) {
         this.origin = origin;
         this.school = school;
         this.actor = actor;

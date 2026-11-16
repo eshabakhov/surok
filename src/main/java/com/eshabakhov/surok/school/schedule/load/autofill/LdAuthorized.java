@@ -5,7 +5,7 @@ package com.eshabakhov.surok.school.schedule.load.autofill;
 
 import com.eshabakhov.surok.Media;
 import com.eshabakhov.surok.School;
-import com.eshabakhov.surok.User;
+import com.eshabakhov.surok.UrAccount;
 import com.eshabakhov.surok.federal.curriculum.Curriculum;
 import com.eshabakhov.surok.federal.subject.Subject;
 import com.eshabakhov.surok.school.schedule.load.hours.WeeklyHours;
@@ -30,7 +30,7 @@ public final class LdAuthorized implements LoadDraft {
     private final School school;
 
     /** Acting user. */
-    private final User actor;
+    private final UrAccount actor;
 
     /**
      * New protected draft.
@@ -39,7 +39,7 @@ public final class LdAuthorized implements LoadDraft {
      * @param school Owning school
      * @param actor Acting user
      */
-    public LdAuthorized(final LoadDraft origin, final School school, final User actor) {
+    public LdAuthorized(final LoadDraft origin, final School school, final UrAccount actor) {
         this.origin = origin;
         this.school = school;
         this.actor = actor;

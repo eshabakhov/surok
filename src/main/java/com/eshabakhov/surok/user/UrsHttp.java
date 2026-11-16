@@ -5,7 +5,6 @@ package com.eshabakhov.surok.user;
 
 import com.eshabakhov.surok.PrItems;
 import com.eshabakhov.surok.UrAccount;
-import com.eshabakhov.surok.User;
 import com.eshabakhov.surok.Users;
 import com.eshabakhov.surok.media.AcHttp;
 import com.eshabakhov.surok.media.MdJson;
@@ -488,7 +487,7 @@ public final class UrsHttp {
         } else {
             status = HttpStatus.CREATED;
         }
-        final User added = members.add(selected);
+        final UrAccount added = members.add(selected);
         return ResponseEntity.status(status)
             .contentType(new MediaType(type, StandardCharsets.UTF_8)).location(
                 URI.create(String.format("/schools/%d/users/%d", school, user))
