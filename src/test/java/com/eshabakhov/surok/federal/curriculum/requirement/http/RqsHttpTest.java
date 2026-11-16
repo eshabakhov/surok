@@ -9,7 +9,7 @@ import com.eshabakhov.surok.federal.curriculum.requirement.RqsPostgres;
 import com.eshabakhov.surok.federal.curriculum.requirement.input.RqInputHttp;
 import com.eshabakhov.surok.user.AuthUser;
 import com.eshabakhov.surok.user.Roles;
-import com.eshabakhov.surok.user.UrPostgres;
+import com.eshabakhov.surok.user.UrAcPostgres;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -316,7 +316,7 @@ final class RqsHttpTest {
     }
 
     private MockHttpSession session(final Roles.RoleEnum role) throws Exception {
-        final User user = new UrPostgres(
+        final User user = new UrAcPostgres(
             this.ctx,
             this.ctx.resultQuery(
                 """

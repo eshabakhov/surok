@@ -6,7 +6,7 @@ package com.eshabakhov.surok.school.schedule.load.autofill;
 import com.eshabakhov.surok.school.SlPostgres;
 import com.eshabakhov.surok.user.AuthUser;
 import com.eshabakhov.surok.user.Roles;
-import com.eshabakhov.surok.user.UrPostgres;
+import com.eshabakhov.surok.user.UrAcPostgres;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
@@ -140,7 +140,7 @@ final class LdHttpTest {
             mvc.perform(
                 MockMvcRequestBuilders.get("/api-docs").with(
                     SecurityMockMvcRequestPostProcessors.user(
-                        new AuthUser(new UrPostgres(ctx, 47L))
+                        new AuthUser(new UrAcPostgres(ctx, 47L))
                     )
                 ).accept("application/json")
             ).andReturn().getResponse().getContentAsString()
@@ -187,7 +187,7 @@ final class LdHttpTest {
             mvc.perform(
                 MockMvcRequestBuilders.get("/api-docs").with(
                     SecurityMockMvcRequestPostProcessors.user(
-                        new AuthUser(new UrPostgres(ctx, 47L))
+                        new AuthUser(new UrAcPostgres(ctx, 47L))
                     )
                 ).accept("application/json")
             ).andReturn().getResponse().getContentAsString()
@@ -229,7 +229,7 @@ final class LdHttpTest {
             mvc.perform(
                 MockMvcRequestBuilders.get("/api-docs").with(
                     SecurityMockMvcRequestPostProcessors.user(
-                        new AuthUser(new UrPostgres(ctx, 47L))
+                        new AuthUser(new UrAcPostgres(ctx, 47L))
                     )
                 ).accept("application/json")
             ).andReturn().getResponse().getContentAsString()
@@ -271,7 +271,7 @@ final class LdHttpTest {
             mvc.perform(
                 MockMvcRequestBuilders.get("/api-docs").with(
                     SecurityMockMvcRequestPostProcessors.user(
-                        new AuthUser(new UrPostgres(ctx, 47L))
+                        new AuthUser(new UrAcPostgres(ctx, 47L))
                     )
                 ).accept("application/json")
             ).andReturn().getResponse().getContentAsString()
@@ -305,7 +305,7 @@ final class LdHttpTest {
             mvc.perform(
                 MockMvcRequestBuilders.put("/schools/1/schedules/101/loads/draft").with(
                     SecurityMockMvcRequestPostProcessors.user(
-                        new AuthUser(new UrPostgres(ctx, 41L))
+                        new AuthUser(new UrAcPostgres(ctx, 41L))
                     )
                 ).with(SecurityMockMvcRequestPostProcessors.csrf())
                     .contentType("application/vnd.surok.load-draft.v1+json")
@@ -324,7 +324,7 @@ final class LdHttpTest {
     ) throws Exception {
         final MockHttpServletResponse response = mvc.perform(
             MockMvcRequestBuilders.get("/schools/1/schedules/101/loads/draft").with(
-                SecurityMockMvcRequestPostProcessors.user(new AuthUser(new UrPostgres(ctx, 41L)))
+                SecurityMockMvcRequestPostProcessors.user(new AuthUser(new UrAcPostgres(ctx, 41L)))
             ).accept(String.format("application/vnd.surok.load-draft.v1+%s", format))
         ).andReturn().getResponse();
         MatcherAssert.assertThat(
@@ -359,7 +359,7 @@ final class LdHttpTest {
             mvc.perform(
                 MockMvcRequestBuilders.get("/schools/1/schedules/101/loads/draft").with(
                     SecurityMockMvcRequestPostProcessors.user(
-                        new AuthUser(new UrPostgres(ctx, 41L))
+                        new AuthUser(new UrAcPostgres(ctx, 41L))
                     )
                 ).accept("application/vnd.surok.load-draft.v1+json")
             ).andReturn().getResponse().getContentAsString()
@@ -393,7 +393,7 @@ final class LdHttpTest {
             MockMvcRequestBuilders.request(
                 method, String.format("/schools/1/schedules/101/loads/draft%s", suffix)
             ).with(
-                SecurityMockMvcRequestPostProcessors.user(new AuthUser(new UrPostgres(ctx, 41L)))
+                SecurityMockMvcRequestPostProcessors.user(new AuthUser(new UrAcPostgres(ctx, 41L)))
             ).with(SecurityMockMvcRequestPostProcessors.csrf())
                 .contentType("application/vnd.surok.load-draft.v1+json")
                 .accept("application/vnd.surok.load-draft.v1+xml")
@@ -420,7 +420,7 @@ final class LdHttpTest {
     ) throws Exception {
         final MockHttpServletResponse response = mvc.perform(
             MockMvcRequestBuilders.put("/schools/1/schedules/103/loads/draft").with(
-                SecurityMockMvcRequestPostProcessors.user(new AuthUser(new UrPostgres(ctx, 41L)))
+                SecurityMockMvcRequestPostProcessors.user(new AuthUser(new UrAcPostgres(ctx, 41L)))
             ).with(SecurityMockMvcRequestPostProcessors.csrf())
                 .contentType("application/vnd.surok.load-draft.v1+json")
                 .accept(String.format("application/vnd.surok.load-draft.v1+%s", format))
@@ -453,7 +453,7 @@ final class LdHttpTest {
                 mvc.perform(
                     MockMvcRequestBuilders.put("/schools/1/schedules/101/loads/draft").with(
                         SecurityMockMvcRequestPostProcessors.user(
-                            new AuthUser(new UrPostgres(ctx, 41L))
+                            new AuthUser(new UrAcPostgres(ctx, 41L))
                         )
                     ).with(SecurityMockMvcRequestPostProcessors.csrf())
                         .contentType("application/vnd.surok.load-draft.v1+json").content(
@@ -483,7 +483,7 @@ final class LdHttpTest {
                         "/schools/1/schedules/101/loads/draft/curriculum"
                     ).with(
                         SecurityMockMvcRequestPostProcessors.user(
-                            new AuthUser(new UrPostgres(ctx, 41L))
+                            new AuthUser(new UrAcPostgres(ctx, 41L))
                         )
                     ).with(SecurityMockMvcRequestPostProcessors.csrf())
                         .contentType("application/vnd.surok.load-draft.v1+json")
@@ -507,7 +507,7 @@ final class LdHttpTest {
                     "/schools/1/schedules/101/loads/draft/application"
                 ).with(
                     SecurityMockMvcRequestPostProcessors.user(
-                        new AuthUser(new UrPostgres(ctx, 41L))
+                        new AuthUser(new UrAcPostgres(ctx, 41L))
                     )
                 ).with(SecurityMockMvcRequestPostProcessors.csrf())
             ).andReturn();
@@ -534,7 +534,7 @@ final class LdHttpTest {
                     String.format("/schools/1/schedules/%d/loads/draft", schedule)
                 ).with(
                     SecurityMockMvcRequestPostProcessors.user(
-                        new AuthUser(new UrPostgres(ctx, 41L))
+                        new AuthUser(new UrAcPostgres(ctx, 41L))
                     )
                 )
             ).andReturn().getResponse().getStatus(),
@@ -561,7 +561,7 @@ final class LdHttpTest {
                         String.format("/schools/1/schedules/101/loads/draft%s", suffix)
                     ).with(
                         SecurityMockMvcRequestPostProcessors.user(
-                            new AuthUser(new UrPostgres(ctx, 41L))
+                            new AuthUser(new UrAcPostgres(ctx, 41L))
                         )
                     ).with(SecurityMockMvcRequestPostProcessors.csrf())
                         .header("Accept", accept)
@@ -579,7 +579,7 @@ final class LdHttpTest {
                     "/schools/1/schedules/101/loads/draft/application"
                 ).with(
                     SecurityMockMvcRequestPostProcessors.user(
-                        new AuthUser(new UrPostgres(ctx, 41L))
+                        new AuthUser(new UrAcPostgres(ctx, 41L))
                     )
                 ).with(SecurityMockMvcRequestPostProcessors.csrf())
                     .header("Accept", accept)
@@ -610,7 +610,7 @@ final class LdHttpTest {
             mvc.perform(
                 MockMvcRequestBuilders.put("/schools/1/schedules/101/loads/draft").with(
                     SecurityMockMvcRequestPostProcessors.user(
-                        new AuthUser(new UrPostgres(ctx, 41L))
+                        new AuthUser(new UrAcPostgres(ctx, 41L))
                     )
                 ).with(SecurityMockMvcRequestPostProcessors.csrf())
                     .contentType(type).content("{}")
@@ -630,7 +630,7 @@ final class LdHttpTest {
                 mvc.perform(
                     MockMvcRequestBuilders.put("/schools/1/schedules/101/loads/draft").with(
                         SecurityMockMvcRequestPostProcessors.user(
-                            new AuthUser(new UrPostgres(ctx, 41L))
+                            new AuthUser(new UrAcPostgres(ctx, 41L))
                         )
                     ).with(SecurityMockMvcRequestPostProcessors.csrf())
                         .contentType("application/vnd.surok.load-draft.v1+json").content(
@@ -664,7 +664,7 @@ final class LdHttpTest {
                     }
                 ).with(
                     SecurityMockMvcRequestPostProcessors.user(
-                        new AuthUser(new UrPostgres(ctx, 43L))
+                        new AuthUser(new UrAcPostgres(ctx, 43L))
                     )
                 ).with(SecurityMockMvcRequestPostProcessors.csrf())
                     .contentType("application/vnd.surok.load-draft.v1+json").content("{}")
@@ -683,7 +683,7 @@ final class LdHttpTest {
                     "/schools/1/schedules/101/loads/draft/application"
                 ).with(
                     SecurityMockMvcRequestPostProcessors.user(
-                        new AuthUser(new UrPostgres(ctx, 41L))
+                        new AuthUser(new UrAcPostgres(ctx, 41L))
                     )
                 )
             ).andReturn().getResponse().getStatus(),
@@ -700,7 +700,7 @@ final class LdHttpTest {
             mvc.perform(
                 MockMvcRequestBuilders.get("/schools/2/schedules/201/loads/draft").with(
                     SecurityMockMvcRequestPostProcessors.user(
-                        new AuthUser(new UrPostgres(ctx, 41L))
+                        new AuthUser(new UrAcPostgres(ctx, 41L))
                     )
                 )
             ).andReturn().getResponse().getStatus(),
@@ -718,7 +718,7 @@ final class LdHttpTest {
             mvc.perform(
                 MockMvcRequestBuilders.get("/schools/1/schedules/101/loads/draft").with(
                     SecurityMockMvcRequestPostProcessors.user(
-                        new AuthUser(new UrPostgres(ctx, 41L))
+                        new AuthUser(new UrAcPostgres(ctx, 41L))
                     )
                 )
             ).andReturn().getResponse().getStatus(),
@@ -735,7 +735,7 @@ final class LdHttpTest {
             mvc.perform(
                 MockMvcRequestBuilders.get("/schools/1/schedules/101/loads/draft").with(
                     SecurityMockMvcRequestPostProcessors.user(
-                        new AuthUser(new UrPostgres(ctx, 47L))
+                        new AuthUser(new UrAcPostgres(ctx, 47L))
                     )
                 )
             ).andReturn().getResponse().getStatus(),
@@ -749,7 +749,7 @@ final class LdHttpTest {
     ) throws Exception {
         final MockHttpServletResponse response = mvc.perform(
             MockMvcRequestBuilders.put("/schools/1/schedules/103/loads/draft").with(
-                SecurityMockMvcRequestPostProcessors.user(new AuthUser(new UrPostgres(ctx, 41L)))
+                SecurityMockMvcRequestPostProcessors.user(new AuthUser(new UrAcPostgres(ctx, 41L)))
             ).with(SecurityMockMvcRequestPostProcessors.csrf())
                 .contentType("application/vnd.surok.load-draft.v1+json").content(
                     """
@@ -774,7 +774,7 @@ final class LdHttpTest {
                 mvc.perform(
                     MockMvcRequestBuilders.get("/schools/1/schedules/103/loads/draft").with(
                         SecurityMockMvcRequestPostProcessors.user(
-                            new AuthUser(new UrPostgres(ctx, 41L))
+                            new AuthUser(new UrAcPostgres(ctx, 41L))
                         )
                     ).accept("text/html")
                 ).andReturn().getResponse().getContentAsString(),
@@ -803,7 +803,7 @@ final class LdHttpTest {
             mvc.perform(
                 MockMvcRequestBuilders.get("/schools/1/schedules/101/loads/draft/fragment").with(
                     SecurityMockMvcRequestPostProcessors.user(
-                        new AuthUser(new UrPostgres(ctx, 41L))
+                        new AuthUser(new UrAcPostgres(ctx, 41L))
                     )
                 ).accept("text/html")
             ).andReturn().getResponse().getContentAsString(),
@@ -830,7 +830,7 @@ final class LdHttpTest {
             mvc.perform(
                 MockMvcRequestBuilders.get("/schools/1/schedules/101/loads/draft").with(
                     SecurityMockMvcRequestPostProcessors.user(
-                        new AuthUser(new UrPostgres(ctx, 43L))
+                        new AuthUser(new UrAcPostgres(ctx, 43L))
                     )
                 ).accept("text/html")
             ).andReturn().getResponse().getContentAsString(),
@@ -852,7 +852,7 @@ final class LdHttpTest {
             mvc.perform(
                 MockMvcRequestBuilders.get("/schools/1/schedules/101/loads/draft").with(
                     SecurityMockMvcRequestPostProcessors.user(
-                        new AuthUser(new UrPostgres(ctx, 47L))
+                        new AuthUser(new UrAcPostgres(ctx, 47L))
                     )
                 ).accept("text/html")
             ).andReturn().getResponse().getContentAsString(),
@@ -869,14 +869,14 @@ final class LdHttpTest {
         @Autowired final MockMvc mvc, @Autowired final DSLContext ctx
     ) throws Exception {
         new SlPostgres(ctx, 1L).users().roles(
-            new UrPostgres(ctx, 49L)
+            new UrAcPostgres(ctx, 49L)
         ).grant(Roles.RoleEnum.DEPUTY_DIRECTOR);
         MatcherAssert.assertThat(
             "A deputy director received a read-only draft",
             mvc.perform(
                 MockMvcRequestBuilders.get("/schools/1/schedules/101/loads/draft").with(
                     SecurityMockMvcRequestPostProcessors.user(
-                        new AuthUser(new UrPostgres(ctx, 49L))
+                        new AuthUser(new UrAcPostgres(ctx, 49L))
                     )
                 ).accept("text/html")
             ).andReturn().getResponse().getContentAsString(),
@@ -897,7 +897,7 @@ final class LdHttpTest {
             mvc.perform(
                 MockMvcRequestBuilders.get("/schools/1/schedules/101/loads/draft").with(
                     SecurityMockMvcRequestPostProcessors.user(
-                        new AuthUser(new UrPostgres(ctx, 49L))
+                        new AuthUser(new UrAcPostgres(ctx, 49L))
                     )
                 ).accept("text/html")
             ).andReturn().getResponse().getContentAsString(),
@@ -923,7 +923,7 @@ final class LdHttpTest {
                     String.format("/schools/1/schedules/101/loads/draft%s", parts[1])
                 ).with(
                     SecurityMockMvcRequestPostProcessors.user(
-                        new AuthUser(new UrPostgres(ctx, 49L))
+                        new AuthUser(new UrAcPostgres(ctx, 49L))
                     )
                 ).with(SecurityMockMvcRequestPostProcessors.csrf())
                     .accept("application/vnd.surok.load-draft.v1+json")
@@ -949,7 +949,7 @@ final class LdHttpTest {
             mvc.perform(
                 MockMvcRequestBuilders.get("/schools/1/schedules/101/loads/draft").with(
                     SecurityMockMvcRequestPostProcessors.user(
-                        new AuthUser(new UrPostgres(ctx, 41L))
+                        new AuthUser(new UrAcPostgres(ctx, 41L))
                     )
                 ).accept("text/html")
             ).andReturn().getResponse().getContentAsString(),
@@ -972,7 +972,7 @@ final class LdHttpTest {
             "The draft hid unavailable mandatory federal subjects",
             mvc.perform(
                 MockMvcRequestBuilders.get("/schools/1/schedules/101/loads/draft").with(
-                SecurityMockMvcRequestPostProcessors.user(new AuthUser(new UrPostgres(ctx, 41L)))
+                SecurityMockMvcRequestPostProcessors.user(new AuthUser(new UrAcPostgres(ctx, 41L)))
             ).accept("text/html")
             ).andReturn().getResponse().getContentAsString(),
             Matchers.allOf(

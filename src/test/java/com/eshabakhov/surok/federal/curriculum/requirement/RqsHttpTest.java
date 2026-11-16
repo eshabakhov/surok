@@ -10,7 +10,7 @@ import com.eshabakhov.surok.filter.FiltersRequest;
 import com.eshabakhov.surok.page.PageRequest;
 import com.eshabakhov.surok.sort.SortsRequest;
 import com.eshabakhov.surok.user.Roles;
-import com.eshabakhov.surok.user.UrPostgres;
+import com.eshabakhov.surok.user.UrAcPostgres;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.List;
 import java.util.Set;
@@ -120,7 +120,7 @@ final class RqsHttpTest {
             "MANDATORY",
             false
         ).execute();
-        this.actor = new UrPostgres(
+        this.actor = new UrAcPostgres(
             this.ctx,
             this.ctx.resultQuery(
                 """
@@ -156,7 +156,7 @@ final class RqsHttpTest {
             request.addHeader(HttpHeaders.ACCEPT, accept);
         }
         request.setRequestURI("/federal/curriculums/1/requirements");
-        final User user = new UrPostgres(
+        final User user = new UrAcPostgres(
             this.ctx,
             this.ctx.resultQuery(
                 """
@@ -203,7 +203,7 @@ final class RqsHttpTest {
         request.setRequestURI(
             "/federal/curriculums/1/requirements"
         );
-        final User user = new UrPostgres(
+        final User user = new UrAcPostgres(
             this.ctx,
             this.ctx.resultQuery(
                 """
@@ -244,7 +244,7 @@ final class RqsHttpTest {
         final MockHttpServletRequest request = new MockHttpServletRequest();
         request.addHeader(HttpHeaders.ACCEPT, "text/html");
         request.setRequestURI(null);
-        final User user = new UrPostgres(
+        final User user = new UrAcPostgres(
             this.ctx,
             this.ctx.resultQuery(
                 """

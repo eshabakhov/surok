@@ -6,7 +6,7 @@ package com.eshabakhov.surok.school.building.cabinet;
 import com.eshabakhov.surok.User;
 import com.eshabakhov.surok.user.AuthUser;
 import com.eshabakhov.surok.user.Roles;
-import com.eshabakhov.surok.user.UrPostgres;
+import com.eshabakhov.surok.user.UrAcPostgres;
 import com.eshabakhov.surok.user.UrsPostgres;
 import java.util.List;
 import java.util.UUID;
@@ -825,7 +825,7 @@ final class CbsHttpTest {
 
     private MockHttpSession session(final Roles.RoleEnum role, final Long school)
         throws Exception {
-        final User user = new UrPostgres(
+        final User user = new UrAcPostgres(
             this.ctx,
             this.ctx.resultQuery(
                 """

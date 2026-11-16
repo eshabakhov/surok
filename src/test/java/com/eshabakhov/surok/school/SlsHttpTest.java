@@ -8,7 +8,7 @@ import com.eshabakhov.surok.school.input.SlInput;
 import com.eshabakhov.surok.school.input.SlInputName;
 import com.eshabakhov.surok.user.AuthUser;
 import com.eshabakhov.surok.user.Roles;
-import com.eshabakhov.surok.user.UrPostgres;
+import com.eshabakhov.surok.user.UrAcPostgres;
 import com.eshabakhov.surok.user.UrsPostgres;
 import java.util.UUID;
 import org.hamcrest.MatcherAssert;
@@ -678,7 +678,7 @@ final class SlsHttpTest {
      * @throws Exception If role creation fails
      */
     private AuthUser principal(final Roles.RoleEnum role) throws Exception {
-        final User user = new UrPostgres(
+        final User user = new UrAcPostgres(
             this.ctx,
             this.ctx.resultQuery(
                 """

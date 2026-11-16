@@ -6,7 +6,7 @@ package com.eshabakhov.surok.security.permission;
 import com.eshabakhov.surok.User;
 import com.eshabakhov.surok.user.AuthUser;
 import com.eshabakhov.surok.user.Roles;
-import com.eshabakhov.surok.user.UrPostgres;
+import com.eshabakhov.surok.user.UrAcPostgres;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.nio.charset.StandardCharsets;
@@ -76,7 +76,9 @@ final class PsHttpTest {
             "The matrix omitted actions or exposed representation controls",
             mvc.perform(
                 MockMvcRequestBuilders.get("/permissions").accept(MediaType.TEXT_HTML).with(
-                    SecurityMockMvcRequestPostProcessors.user(new AuthUser(new UrPostgres(ctx, 47)))
+                    SecurityMockMvcRequestPostProcessors.user(
+                        new AuthUser(new UrAcPostgres(ctx, 47))
+                    )
                 )
             ).andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8),
             Matchers.allOf(
@@ -113,7 +115,7 @@ final class PsHttpTest {
                 MockMvcRequestBuilders.get("/permissions").accept(type)
                     .header("X-Surok-Swagger", "true").with(
                         SecurityMockMvcRequestPostProcessors.user(
-                            new AuthUser(new UrPostgres(ctx, 53))
+                            new AuthUser(new UrAcPostgres(ctx, 53))
                         )
                     )
             ).andReturn().getResponse().getStatus(),
@@ -150,7 +152,7 @@ final class PsHttpTest {
                 MockMvcRequestBuilders.get("/permissions")
                     .accept("application/vnd.surok.permissions.v1+xml").with(
                         SecurityMockMvcRequestPostProcessors.user(
-                            new AuthUser(new UrPostgres(ctx, 47))
+                            new AuthUser(new UrAcPostgres(ctx, 47))
                         )
                     )
             ).andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8),
@@ -171,7 +173,9 @@ final class PsHttpTest {
         final JsonNode content = new ObjectMapper().readTree(
             mvc.perform(
                 MockMvcRequestBuilders.get("/api-docs").with(
-                    SecurityMockMvcRequestPostProcessors.user(new AuthUser(new UrPostgres(ctx, 47)))
+                    SecurityMockMvcRequestPostProcessors.user(
+                        new AuthUser(new UrAcPostgres(ctx, 47))
+                    )
                 )
             ).andReturn().getResponse().getContentAsString()
         ).path("paths").path("/permissions").path("get").path("responses").path("200")
@@ -196,7 +200,9 @@ final class PsHttpTest {
         final JsonNode document = new ObjectMapper().readTree(
             mvc.perform(
                 MockMvcRequestBuilders.get("/api-docs").with(
-                    SecurityMockMvcRequestPostProcessors.user(new AuthUser(new UrPostgres(ctx, 47)))
+                    SecurityMockMvcRequestPostProcessors.user(
+                        new AuthUser(new UrAcPostgres(ctx, 47))
+                    )
                 )
             ).andReturn().getResponse().getContentAsString()
         );
@@ -223,7 +229,7 @@ final class PsHttpTest {
                 mvc.perform(
                     MockMvcRequestBuilders.get("/api-docs").with(
                         SecurityMockMvcRequestPostProcessors.user(
-                            new AuthUser(new UrPostgres(ctx, 53))
+                            new AuthUser(new UrAcPostgres(ctx, 53))
                         )
                     )
                 ).andReturn().getResponse().getContentAsString()
@@ -295,7 +301,7 @@ final class PsHttpTest {
                 MockMvcRequestBuilders.get("/permissions")
                     .accept("application/vnd.surok.permissions.v1+json").with(
                         SecurityMockMvcRequestPostProcessors.user(
-                            new AuthUser(new UrPostgres(ctx, 47))
+                            new AuthUser(new UrAcPostgres(ctx, 47))
                         )
                     )
             ).andReturn().getResponse().getContentAsString()
@@ -328,14 +334,14 @@ final class PsHttpTest {
                 mvc.perform(
                     MockMvcRequestBuilders.get("/users/profile").with(
                         SecurityMockMvcRequestPostProcessors.user(
-                            new AuthUser(new UrPostgres(ctx, 47))
+                            new AuthUser(new UrAcPostgres(ctx, 47))
                         )
                     )
                 ).andReturn().getResponse().getContentAsString().contains("href=\"/permissions\""),
                 mvc.perform(
                     MockMvcRequestBuilders.get("/users/profile").with(
                         SecurityMockMvcRequestPostProcessors.user(
-                            new AuthUser(new UrPostgres(ctx, 53))
+                            new AuthUser(new UrAcPostgres(ctx, 53))
                         )
                     )
                 ).andReturn().getResponse().getContentAsString().contains("href=\"/permissions\"")
@@ -350,7 +356,7 @@ final class PsHttpTest {
         final Roles.RoleEnum role, @Autowired final MockMvc mvc,
         @Autowired final DSLContext ctx
     ) throws Exception {
-        final User actor = new UrPostgres(ctx, 53);
+        final User actor = new UrAcPostgres(ctx, 53);
         actor.roles().grant(role);
         MatcherAssert.assertThat(
             "A subscription role opened the permission page",
@@ -371,7 +377,9 @@ final class PsHttpTest {
             "The permission resource accepted an unsupported representation",
             mvc.perform(
                 MockMvcRequestBuilders.get("/permissions").accept(MediaType.APPLICATION_JSON).with(
-                    SecurityMockMvcRequestPostProcessors.user(new AuthUser(new UrPostgres(ctx, 47)))
+                    SecurityMockMvcRequestPostProcessors.user(
+                        new AuthUser(new UrAcPostgres(ctx, 47))
+                    )
                 )
             ).andReturn().getResponse().getStatus(),
             Matchers.is(HttpStatus.NOT_ACCEPTABLE.value())

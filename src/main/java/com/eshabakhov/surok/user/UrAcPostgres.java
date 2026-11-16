@@ -15,7 +15,7 @@ import org.jooq.DSLContext;
  *
  * @since 0.0.1
  */
-public final class UrPostgres implements User {
+public final class UrAcPostgres implements User {
 
     /** Database context. */
     private final DSLContext ctx;
@@ -29,7 +29,7 @@ public final class UrPostgres implements User {
      * @param ctx Database context
      * @param id User identifier
      */
-    public UrPostgres(final DSLContext ctx, final long id) {
+    public UrAcPostgres(final DSLContext ctx, final long id) {
         this.ctx = ctx;
         this.id = id;
     }
