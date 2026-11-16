@@ -4,6 +4,7 @@
 package com.eshabakhov.surok.security.right;
 
 import com.eshabakhov.surok.User;
+import com.eshabakhov.surok.user.Roles;
 
 /**
  * Global administrator right for operations on any school.
@@ -27,6 +28,6 @@ public final class RtAdmin implements Right {
 
     @Override
     public boolean allows() {
-        return this.actor.isAdmin();
+        return this.actor.roles().contains(Roles.RoleEnum.ADMIN);
     }
 }

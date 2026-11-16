@@ -6,6 +6,7 @@ package com.eshabakhov.surok.user;
 import com.eshabakhov.surok.Media;
 import com.eshabakhov.surok.Schools;
 import com.eshabakhov.surok.User;
+import com.eshabakhov.surok.security.right.RtAdmin;
 import java.util.Collection;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -50,7 +51,7 @@ public final class AuthUser implements UserDetails, OAuth2User, User {
         final Stream<SimpleGrantedAuthority> account = this.user.roles().list().stream()
             .map(role -> new SimpleGrantedAuthority(String.format("ROLE_%s", role.name())));
         final Collection<? extends GrantedAuthority> granted;
-        if (this.user.isAdmin()) {
+        if (new RtAdmin(this.user).allows()) {
             granted = account.toList();
         } else {
             granted = Stream.concat(
@@ -115,11 +116,6 @@ public final class AuthUser implements UserDetails, OAuth2User, User {
     @Override
     public ReferenceInformation info() {
         return this.user.info();
-    }
-
-    @Override
-    public boolean isAdmin() {
-        return this.user.isAdmin();
     }
 
     @Override
