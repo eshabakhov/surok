@@ -4,7 +4,7 @@
 package com.eshabakhov.surok.user;
 
 import com.eshabakhov.surok.School;
-import com.eshabakhov.surok.User;
+import com.eshabakhov.surok.UrAccount;
 import com.eshabakhov.surok.school.input.SlInput;
 import com.eshabakhov.surok.school.input.SlInputName;
 import java.util.UUID;
@@ -46,14 +46,14 @@ final class RlsAuthorizedTest {
     @Test
     void grantsASchoolRoleForTheDirector(@Autowired final DSLContext ctx)
         throws Exception {
-        final User actor = new UrsPostgres(ctx).register(
+        final UrAccount actor = new UrsPostgres(ctx).register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
         );
         final School school = actor.schools().create(
             new SlInputName(new SlInput(), String.format("Школа %s", UUID.randomUUID()))
         );
-        final User target = new UrsPostgres(ctx).register(
+        final UrAccount target = new UrsPostgres(ctx).register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
         );
@@ -76,14 +76,14 @@ final class RlsAuthorizedTest {
      */
     @Test
     void readsSchoolRolesForAViewer(@Autowired final DSLContext ctx) throws Exception {
-        final User actor = new UrsPostgres(ctx).register(
+        final UrAccount actor = new UrsPostgres(ctx).register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
         );
         final School school = actor.schools().create(
             new SlInputName(new SlInput(), String.format("Гимназия %s", UUID.randomUUID()))
         );
-        final User viewer = new UrsPostgres(ctx).register(
+        final UrAccount viewer = new UrsPostgres(ctx).register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
         );
@@ -105,18 +105,18 @@ final class RlsAuthorizedTest {
      */
     @Test
     void deniesRoleAssignmentByAViewer(@Autowired final DSLContext ctx) throws Exception {
-        final User actor = new UrsPostgres(ctx).register(
+        final UrAccount actor = new UrsPostgres(ctx).register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
         );
         final School school = actor.schools().create(
             new SlInputName(new SlInput(), String.format("Школа %s", UUID.randomUUID()))
         );
-        final User viewer = new UrsPostgres(ctx).register(
+        final UrAccount viewer = new UrsPostgres(ctx).register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
         );
-        final User target = new UrsPostgres(ctx).register(
+        final UrAccount target = new UrsPostgres(ctx).register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
         );
@@ -141,14 +141,14 @@ final class RlsAuthorizedTest {
     @Test
     void deniesRoleAssignmentAfterDirectorRevocation(@Autowired final DSLContext ctx)
         throws Exception {
-        final User actor = new UrsPostgres(ctx).register(
+        final UrAccount actor = new UrsPostgres(ctx).register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
         );
         final School school = actor.schools().create(
             new SlInputName(new SlInput(), String.format("Лицей %s", UUID.randomUUID()))
         );
-        final User target = new UrsPostgres(ctx).register(
+        final UrAccount target = new UrsPostgres(ctx).register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
         );

@@ -3,7 +3,7 @@
  */
 package com.eshabakhov.surok.user;
 
-import com.eshabakhov.surok.User;
+import com.eshabakhov.surok.UrAccount;
 import com.eshabakhov.surok.security.right.RtAdmin;
 import java.util.List;
 
@@ -20,7 +20,7 @@ public final class RlsGlobalAuthorized implements Roles {
     private final Roles origin;
 
     /** Acting user. */
-    private final User actor;
+    private final UrAccount actor;
 
     /**
      * New protected roles.
@@ -28,7 +28,7 @@ public final class RlsGlobalAuthorized implements Roles {
      * @param origin Underlying global roles
      * @param actor Acting user
      */
-    public RlsGlobalAuthorized(final Roles origin, final User actor) {
+    public RlsGlobalAuthorized(final Roles origin, final UrAccount actor) {
         this.origin = origin;
         this.actor = actor;
     }

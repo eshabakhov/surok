@@ -10,7 +10,7 @@ import com.eshabakhov.surok.PrItems;
 import com.eshabakhov.surok.School;
 import com.eshabakhov.surok.Schools;
 import com.eshabakhov.surok.Sorts;
-import com.eshabakhov.surok.User;
+import com.eshabakhov.surok.UrAccount;
 import com.eshabakhov.surok.Users;
 import com.eshabakhov.surok.page.ResponsePage;
 import com.eshabakhov.surok.school.filter.FlsCdSchool;
@@ -37,7 +37,7 @@ public final class SlsPostgres implements Schools {
     private final DSLContext ctx;
 
     /** Acting user, absent for the unrestricted repository. */
-    private final User actor;
+    private final UrAccount actor;
 
     /**
      * New schools collection.
@@ -55,7 +55,7 @@ public final class SlsPostgres implements Schools {
      * @param ctx Database context
      * @param actor Acting user
      */
-    public SlsPostgres(final DSLContext ctx, final User actor) {
+    public SlsPostgres(final DSLContext ctx, final UrAccount actor) {
         this.ctx = ctx;
         this.actor = actor;
     }

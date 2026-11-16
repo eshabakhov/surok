@@ -23,7 +23,7 @@ public final class UrAcGlobalAuthorized implements UrAccount {
     private final User origin;
 
     /** Acting user. */
-    private final User actor;
+    private final UrAccount actor;
 
     /**
      * New protected user.
@@ -31,7 +31,7 @@ public final class UrAcGlobalAuthorized implements UrAccount {
      * @param origin Underlying user
      * @param actor Acting user
      */
-    public UrAcGlobalAuthorized(final User origin, final User actor) {
+    public UrAcGlobalAuthorized(final User origin, final UrAccount actor) {
         this.origin = origin;
         this.actor = actor;
     }

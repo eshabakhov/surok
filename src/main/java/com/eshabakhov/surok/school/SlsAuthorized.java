@@ -9,7 +9,7 @@ import com.eshabakhov.surok.Page;
 import com.eshabakhov.surok.School;
 import com.eshabakhov.surok.Schools;
 import com.eshabakhov.surok.Sorts;
-import com.eshabakhov.surok.User;
+import com.eshabakhov.surok.UrAccount;
 import com.eshabakhov.surok.security.right.RtAdmin;
 import com.eshabakhov.surok.security.right.RtEither;
 import com.eshabakhov.surok.security.right.RtSchoolMembership;
@@ -28,7 +28,7 @@ public final class SlsAuthorized implements Schools {
     private final Schools origin;
 
     /** Acting user. */
-    private final User actor;
+    private final UrAccount actor;
 
     /**
      * New authorized school collection.
@@ -36,7 +36,7 @@ public final class SlsAuthorized implements Schools {
      * @param origin Schools of the actor, or all schools for an administrator
      * @param actor Acting user
      */
-    public SlsAuthorized(final Schools origin, final User actor) {
+    public SlsAuthorized(final Schools origin, final UrAccount actor) {
         this.origin = origin;
         this.actor = actor;
     }

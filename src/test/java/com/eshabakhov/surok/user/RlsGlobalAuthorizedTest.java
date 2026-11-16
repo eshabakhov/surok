@@ -3,7 +3,7 @@
  */
 package com.eshabakhov.surok.user;
 
-import com.eshabakhov.surok.User;
+import com.eshabakhov.surok.UrAccount;
 import java.util.UUID;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
@@ -43,7 +43,7 @@ final class RlsGlobalAuthorizedTest {
     @Test
     void deniesRoleAssignmentByARegularUser(@Autowired final DSLContext ctx)
         throws Exception {
-        final User actor = new UrsPostgres(ctx).register(
+        final UrAccount actor = new UrsPostgres(ctx).register(
             String.format("читатель-%s", UUID.randomUUID()), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
         );
@@ -65,11 +65,11 @@ final class RlsGlobalAuthorizedTest {
     @Test
     void assignsAndReadsAGlobalRoleForAnAdministrator(@Autowired final DSLContext ctx)
         throws Exception {
-        final User actor = new UrsPostgres(ctx).register(
+        final UrAccount actor = new UrsPostgres(ctx).register(
             String.format("администратор-%s", UUID.randomUUID()), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
         );
-        final User target = new UrsPostgres(ctx).register(
+        final UrAccount target = new UrsPostgres(ctx).register(
             String.format("пользователь-%s", UUID.randomUUID()), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
         );
@@ -91,7 +91,7 @@ final class RlsGlobalAuthorizedTest {
     @Test
     void deniesRoleListingAfterAdministratorRevocation(@Autowired final DSLContext ctx)
         throws Exception {
-        final User actor = new UrsPostgres(ctx).register(
+        final UrAccount actor = new UrsPostgres(ctx).register(
             String.format("бывший-администратор-%s", UUID.randomUUID()), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
         );

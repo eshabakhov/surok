@@ -4,7 +4,7 @@
 package com.eshabakhov.surok.school.schedule.load.autofill;
 
 import com.eshabakhov.surok.School;
-import com.eshabakhov.surok.User;
+import com.eshabakhov.surok.UrAccount;
 import com.eshabakhov.surok.federal.curriculum.CrPostgres;
 import com.eshabakhov.surok.media.MdJson;
 import com.eshabakhov.surok.school.SlAuthorized;
@@ -53,7 +53,7 @@ final class LdAuthorizedTest {
     @Test
     void deniesApplicationAfterDirectorRoleIsRevoked(@Autowired final DSLContext ctx)
         throws Exception {
-        final User actor = new UrsPostgres(ctx).register(
+        final UrAccount actor = new UrsPostgres(ctx).register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
         );
@@ -80,7 +80,7 @@ final class LdAuthorizedTest {
     @Test
     void deniesReadingAfterMembershipIsRemoved(@Autowired final DSLContext ctx)
         throws Exception {
-        final User actor = new UrsPostgres(ctx).register(
+        final UrAccount actor = new UrsPostgres(ctx).register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
         );
@@ -107,7 +107,7 @@ final class LdAuthorizedTest {
     @Test
     void deniesSavingAfterDirectorBecomesViewer(@Autowired final DSLContext ctx)
         throws Exception {
-        final User actor = new UrsPostgres(ctx).register(
+        final UrAccount actor = new UrsPostgres(ctx).register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
         );
@@ -134,7 +134,7 @@ final class LdAuthorizedTest {
      */
     @Test
     void readsAnAbsentDraftForAnAdministrator(@Autowired final DSLContext ctx) throws Exception {
-        final User actor = new UrsPostgres(ctx).register(
+        final UrAccount actor = new UrsPostgres(ctx).register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
         );

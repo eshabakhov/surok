@@ -3,7 +3,7 @@
  */
 package com.eshabakhov.surok.user;
 
-import com.eshabakhov.surok.User;
+import com.eshabakhov.surok.UrAccount;
 import java.util.UUID;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
@@ -43,7 +43,7 @@ final class UrAcGlobalAuthorizedTest {
     @Test
     void readsGlobalUserCredentialsForAnAdministrator(@Autowired final DSLContext ctx)
         throws Exception {
-        final User actor = new UrsPostgres(ctx).register(
+        final UrAccount actor = new UrsPostgres(ctx).register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
         );
@@ -69,11 +69,11 @@ final class UrAcGlobalAuthorizedTest {
     @Test
     void rejectsRetainedUserAfterAdministratorRevocation(@Autowired final DSLContext ctx)
         throws Exception {
-        final User actor = new UrsPostgres(ctx).register(
+        final UrAccount actor = new UrsPostgres(ctx).register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
         );
-        final User target = new UrAcGlobalAuthorized(
+        final UrAccount target = new UrAcGlobalAuthorized(
             new UrsPostgres(ctx).register(
                 String.format("цель-%s", UUID.randomUUID()), "ValidPassword1!",
                 String.format("%s@example.com", UUID.randomUUID()), false

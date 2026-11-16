@@ -4,7 +4,7 @@
 package com.eshabakhov.surok.school;
 
 import com.eshabakhov.surok.School;
-import com.eshabakhov.surok.User;
+import com.eshabakhov.surok.UrAccount;
 import com.eshabakhov.surok.Users;
 import com.eshabakhov.surok.school.building.input.BdInput;
 import com.eshabakhov.surok.school.building.input.BdInputName;
@@ -50,7 +50,7 @@ final class SlAuthorizedTest {
      */
     @Test
     void allowsTheDirectorToReviseItsSchool(@Autowired final DSLContext ctx) throws Exception {
-        final User actor = new UrsPostgres(ctx).register(
+        final UrAccount actor = new UrsPostgres(ctx).register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
         );
@@ -74,7 +74,7 @@ final class SlAuthorizedTest {
      */
     @Test
     void deniesRevisionByAViewer(@Autowired final DSLContext ctx) throws Exception {
-        final User actor = new UrsPostgres(ctx).register(
+        final UrAccount actor = new UrsPostgres(ctx).register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
         );
@@ -101,7 +101,7 @@ final class SlAuthorizedTest {
     @Test
     void allowsAnAdministratorToReviseAnUnrelatedSchool(@Autowired final DSLContext ctx)
         throws Exception {
-        final User actor = new UrsPostgres(ctx).register(
+        final UrAccount actor = new UrsPostgres(ctx).register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
         );
@@ -126,7 +126,7 @@ final class SlAuthorizedTest {
     @Test
     void deniesRevisionAfterDirectorRoleIsRevoked(@Autowired final DSLContext ctx)
         throws Exception {
-        final User actor = new UrsPostgres(ctx).register(
+        final UrAccount actor = new UrsPostgres(ctx).register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
         );
@@ -151,7 +151,7 @@ final class SlAuthorizedTest {
     @Test
     void deniesNestedResourcesAfterMembershipIsRemoved(@Autowired final DSLContext ctx)
         throws Exception {
-        final User actor = new UrsPostgres(ctx).register(
+        final UrAccount actor = new UrsPostgres(ctx).register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
         );
@@ -175,7 +175,7 @@ final class SlAuthorizedTest {
     @Test
     void deniesReadingMembersAfterMembershipIsRemoved(@Autowired final DSLContext ctx)
         throws Exception {
-        final User actor = new UrsPostgres(ctx).register(
+        final UrAccount actor = new UrsPostgres(ctx).register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
         );
@@ -200,11 +200,11 @@ final class SlAuthorizedTest {
     void deniesAddingMembersAfterDirectorRoleIsRevoked(@Autowired final DSLContext ctx)
         throws Exception {
         final Users accounts = new UrsPostgres(ctx);
-        final User actor = accounts.register(
+        final UrAccount actor = accounts.register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
         );
-        final User target = accounts.register(
+        final UrAccount target = accounts.register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
         );
@@ -229,11 +229,11 @@ final class SlAuthorizedTest {
     void deniesGrantingRolesAfterDirectorRoleIsRevoked(@Autowired final DSLContext ctx)
         throws Exception {
         final Users accounts = new UrsPostgres(ctx);
-        final User actor = accounts.register(
+        final UrAccount actor = accounts.register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
         );
-        final User target = accounts.register(
+        final UrAccount target = accounts.register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
         );
@@ -258,7 +258,7 @@ final class SlAuthorizedTest {
     @Test
     void deniesBuildingCreationThroughAViewersSchool(@Autowired final DSLContext ctx)
         throws Exception {
-        final User actor = new UrsPostgres(ctx).register(
+        final UrAccount actor = new UrsPostgres(ctx).register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
         );

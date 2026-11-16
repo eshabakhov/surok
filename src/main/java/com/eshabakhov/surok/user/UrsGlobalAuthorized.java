@@ -22,7 +22,7 @@ public final class UrsGlobalAuthorized implements Users {
     private final Users origin;
 
     /** Acting user. */
-    private final User actor;
+    private final UrAccount actor;
 
     /**
      * New protected global users.
@@ -30,7 +30,7 @@ public final class UrsGlobalAuthorized implements Users {
      * @param origin Underlying global users
      * @param actor Acting user
      */
-    public UrsGlobalAuthorized(final Users origin, final User actor) {
+    public UrsGlobalAuthorized(final Users origin, final UrAccount actor) {
         this.origin = origin;
         this.actor = actor;
     }
