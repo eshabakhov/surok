@@ -11,9 +11,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.security.core.Authentication;
-import org.springframework.stereotype.Component;
 import org.springframework.util.AntPathMatcher;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.method.HandlerMethod;
@@ -22,11 +20,10 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandl
 
 /**
  * Live permission catalog backed by Spring MVC mappings and decorator rules.
- * For example, inject this catalog into both Swagger filtering and the matrix resource.
+ * For example, construct this catalog with a request's locale to render the role matrix.
  *
  * @since 0.0.1
  */
-@Component
 public final class PsSpring implements Permissions {
 
     /** Registered controllers. */
@@ -46,8 +43,8 @@ public final class PsSpring implements Permissions {
      * @param anonymous Public paths
      */
     public PsSpring(
-        @Qualifier("requestMappingHandlerMapping") final RequestMappingHandlerMapping mappings,
-        final HttpServletRequest request, @Qualifier("publicPaths") final List<String> anonymous
+        final RequestMappingHandlerMapping mappings,
+        final HttpServletRequest request, final List<String> anonymous
     ) {
         this.mappings = mappings;
         this.request = request;

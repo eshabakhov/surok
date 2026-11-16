@@ -16,7 +16,9 @@ import com.eshabakhov.surok.user.UrAcAuth;
 import com.eshabakhov.surok.user.UrAcBrief;
 import jakarta.servlet.http.HttpServletRequest;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import org.jooq.DSLContext;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -26,6 +28,7 @@ import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 
 /**
  * Administrator-only permission matrix with negotiated HTML, JSON and XML representations.
@@ -36,8 +39,11 @@ import org.springframework.web.server.ResponseStatusException;
 @RestController
 public class PsHttp {
 
-    /** Live controller permissions. */
-    private final Permissions origin;
+    /** Registered controllers. */
+    private final RequestMappingHandlerMapping mappings;
+
+    /** Public paths shared with the filter chains. */
+    private final List<String> anonymous;
 
     /** Database context for shared page navigation. */
     private final DSLContext ctx;
@@ -45,11 +51,17 @@ public class PsHttp {
     /**
      * New permission resource.
      *
-     * @param origin Live permission catalog
+     * @param mappings Registered MVC mappings
+     * @param anonymous Public paths
      * @param ctx Database context
      */
-    public PsHttp(final Permissions origin, final DSLContext ctx) {
-        this.origin = origin;
+    public PsHttp(
+        @Qualifier("requestMappingHandlerMapping") final RequestMappingHandlerMapping mappings,
+        @Qualifier("publicPaths") final List<String> anonymous,
+        final DSLContext ctx
+    ) {
+        this.mappings = mappings;
+        this.anonymous = anonymous;
         this.ctx = ctx;
     }
 
@@ -73,7 +85,9 @@ public class PsHttp {
         @AuthenticationPrincipal final UrAcAuth user, final HttpServletRequest request
     ) throws Exception {
         final MediaType type = new AcHttp(request, "permissions.v1").type();
-        final Permissions permissions = new PsAuthorized(this.origin, user);
+        final Permissions permissions = new PsAuthorized(
+            new PsSpring(this.mappings, request, this.anonymous), user
+        );
         return ResponseEntity.ok().cacheControl(CacheControl.noStore())
             .contentType(new MediaType(type, StandardCharsets.UTF_8)).body(
                 switch (type.toString()) {
