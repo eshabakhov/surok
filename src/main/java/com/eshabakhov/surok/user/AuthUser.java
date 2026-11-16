@@ -70,22 +70,22 @@ public final class AuthUser implements UserDetails, OAuth2User, User {
 
     @Override
     public String getPassword() {
-        return this.user.credentials().password();
+        return this.user.account().password();
     }
 
     @Override
     public String getUsername() {
-        return this.user.credentials().username();
+        return this.user.account().username();
     }
 
     @Override
     public boolean isEnabled() {
-        return this.user.info().alive();
+        return this.user.account().alive();
     }
 
     @Override
     public String getName() {
-        return this.user.credentials().username();
+        return this.user.account().username();
     }
 
     @Override
@@ -99,8 +99,8 @@ public final class AuthUser implements UserDetails, OAuth2User, User {
     }
 
     @Override
-    public Credentials credentials() {
-        return this.user.credentials();
+    public Account account() {
+        return this.user.account();
     }
 
     @Override
@@ -111,11 +111,6 @@ public final class AuthUser implements UserDetails, OAuth2User, User {
     @Override
     public Schools schools() {
         return this.user.schools();
-    }
-
-    @Override
-    public ReferenceInformation info() {
-        return this.user.info();
     }
 
     @Override

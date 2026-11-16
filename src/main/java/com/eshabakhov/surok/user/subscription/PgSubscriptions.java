@@ -51,7 +51,7 @@ public final class PgSubscriptions implements Subscriptions {
 
     @Override
     public Subscription subscription() throws Exception {
-        if (this.user.info().corporate() || new RtAdmin(this.user).allows()) {
+        if (this.user.account().corporate() || new RtAdmin(this.user).allows()) {
             throw new PersonalOnlyException(this.user.uid());
         }
         final Record selected = this.ctx.resultQuery(
@@ -70,7 +70,7 @@ public final class PgSubscriptions implements Subscriptions {
 
     @Override
     public void subscription(final Subscription.Plan plan) throws Exception {
-        if (this.user.info().corporate() || new RtAdmin(this.user).allows()) {
+        if (this.user.account().corporate() || new RtAdmin(this.user).allows()) {
             throw new PersonalOnlyException(this.user.uid());
         }
         final OffsetDateTime expires;

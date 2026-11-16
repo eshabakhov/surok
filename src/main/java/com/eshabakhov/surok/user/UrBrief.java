@@ -33,8 +33,8 @@ public final class UrBrief implements User {
     }
 
     @Override
-    public Credentials credentials() {
-        return this.origin.credentials();
+    public Account account() {
+        return this.origin.account();
     }
 
     @Override
@@ -48,14 +48,9 @@ public final class UrBrief implements User {
     }
 
     @Override
-    public ReferenceInformation info() {
-        return this.origin.info();
-    }
-
-    @Override
     public <T> Media<T> print(final Media<T> media) {
-        return media.with("username", this.credentials().username())
+        return media.with("username", this.account().username())
             .with("admin", new RtAdmin(this).allows())
-            .with("subscription", !this.info().corporate() && !new RtAdmin(this).allows());
+            .with("subscription", !this.account().corporate() && !new RtAdmin(this).allows());
     }
 }

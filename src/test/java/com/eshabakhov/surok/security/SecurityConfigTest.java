@@ -111,7 +111,7 @@ final class SecurityConfigTest {
                     mvc.perform(
                         MockMvcRequestBuilders.get("/api-docs").with(
                             SecurityMockMvcRequestPostProcessors.httpBasic(
-                                SecurityConfigTest.administrator(ctx).credentials().username(),
+                                SecurityConfigTest.administrator(ctx).account().username(),
                                 "ValidPassword1!"
                             )
                         )
@@ -171,7 +171,7 @@ final class SecurityConfigTest {
             mvc.perform(
                 MockMvcRequestBuilders.get("/api-docs").with(
                     SecurityMockMvcRequestPostProcessors.httpBasic(
-                        user.credentials().username(), "SchoolPassword1!"
+                        user.account().username(), "SchoolPassword1!"
                     )
                 )
             ).andReturn().getResponse().getContentAsString()
@@ -221,7 +221,7 @@ final class SecurityConfigTest {
             mvc.perform(
                 MockMvcRequestBuilders.get("/api-docs").with(
                     SecurityMockMvcRequestPostProcessors.httpBasic(
-                        SecurityConfigTest.administrator(ctx).credentials().username(),
+                        SecurityConfigTest.administrator(ctx).account().username(),
                         "Incorrect1!"
                     )
                 ).header("X-Requested-With", "XMLHttpRequest")
@@ -240,7 +240,7 @@ final class SecurityConfigTest {
                 MockMvcRequestBuilders.get("/api-docs")
                     .header("X-Requested-With", "XMLHttpRequest").with(
                         SecurityMockMvcRequestPostProcessors.httpBasic(
-                            SecurityConfigTest.administrator(ctx).credentials().username(),
+                            SecurityConfigTest.administrator(ctx).account().username(),
                             "Incorrect1!"
                         )
                     )
@@ -289,7 +289,7 @@ final class SecurityConfigTest {
                         .accept("application/vnd.surok.subject-v1+json")
                         .content(String.format("{\"name\":\"%s\"}", name)).with(
                             SecurityMockMvcRequestPostProcessors.httpBasic(
-                                SecurityConfigTest.administrator(ctx).credentials().username(),
+                                SecurityConfigTest.administrator(ctx).account().username(),
                                 "ValidPassword1!"
                             )
                         )
@@ -312,7 +312,7 @@ final class SecurityConfigTest {
                     .accept("application/vnd.surok.subject-v1+json")
                     .content("{\"name\":\"Астрономия\"}").with(
                         SecurityMockMvcRequestPostProcessors.httpBasic(
-                            SecurityConfigTest.administrator(ctx).credentials().username(),
+                            SecurityConfigTest.administrator(ctx).account().username(),
                             "ValidPassword1!"
                         )
                     )
@@ -335,7 +335,7 @@ final class SecurityConfigTest {
             "/schools",
             mvc.perform(
                 SecurityMockMvcRequestBuilders.formLogin()
-                    .user(SecurityConfigTest.administrator(ctx).credentials().username())
+                    .user(SecurityConfigTest.administrator(ctx).account().username())
                     .password("ValidPassword1!")
             ).andReturn().getResponse().getRedirectedUrl(),
             "Valid credentials did not reach the login success handler"
@@ -356,7 +356,7 @@ final class SecurityConfigTest {
             "/users/login?error=bad_credentials",
             mvc.perform(
                 SecurityMockMvcRequestBuilders.formLogin()
-                    .user(SecurityConfigTest.administrator(ctx).credentials().username())
+                    .user(SecurityConfigTest.administrator(ctx).account().username())
                     .password("WrongPassword1!")
             ).andReturn().getResponse().getRedirectedUrl(),
             "Wrong password did not reach the login failure handler"
@@ -401,7 +401,7 @@ final class SecurityConfigTest {
                     ).uid()
                 ).accept("application/vnd.surok.schedules.v1+json").with(
                     SecurityMockMvcRequestPostProcessors.httpBasic(
-                        SecurityConfigTest.administrator(ctx).credentials().username(),
+                        SecurityConfigTest.administrator(ctx).account().username(),
                         "ValidPassword1!"
                     )
                 )
@@ -426,7 +426,7 @@ final class SecurityConfigTest {
                 MockMvcRequestBuilders.get("/schools/1/schedules")
                     .accept("application/vnd.surok.schedules.v1+json").with(
                     SecurityMockMvcRequestPostProcessors.httpBasic(
-                        SecurityConfigTest.administrator(ctx).credentials().username(),
+                        SecurityConfigTest.administrator(ctx).account().username(),
                         "WrongPassword1!"
                     )
                 )
@@ -504,7 +504,7 @@ final class SecurityConfigTest {
                     .contentType("application/vnd.surok.schedule-v1+json")
                     .content("{\"name\":\"Year\"}").with(
                         SecurityMockMvcRequestPostProcessors.httpBasic(
-                            SecurityConfigTest.administrator(ctx).credentials().username(),
+                            SecurityConfigTest.administrator(ctx).account().username(),
                             "ValidPassword1!"
                         )
                     )

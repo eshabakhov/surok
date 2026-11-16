@@ -157,16 +157,14 @@ public final class UrsHttp {
         final User created = new UrsPostgres(this.ctx).register(
             username.asText(), password.asText(), email.asText(), false
         );
+        final Account account = created.account();
         return ResponseEntity.created(
             URI.create(String.format("/users/%s", created.uid()))
         ).body(
             Map.of(
-                "uid", created.uid(),
-                "credentials", Map.of("username", created.credentials().username()),
+                "uid", created.uid(), "credentials", Map.of("username", account.username()),
                 "roles", created.roles().print(new MdJson()).print(),
-                "info", Map.of(
-                    "corporate", created.info().corporate(), "alive", created.info().alive()
-                ),
+                "info", Map.of("corporate", account.corporate(), "alive", account.alive()),
                 "admin", new RtAdmin(created).allows()
             )
         );
@@ -322,7 +320,7 @@ public final class UrsHttp {
     ) throws Exception {
         final MediaType type = new AcHttp(request).type();
         final ResponseEntity<String> response;
-        if (user.info().corporate() || new RtAdmin(user).allows()) {
+        if (user.account().corporate() || new RtAdmin(user).allows()) {
             response = ResponseEntity.status(HttpStatus.FOUND)
                 .location(URI.create("/users/profile")).build();
         } else {
@@ -368,7 +366,7 @@ public final class UrsHttp {
     ) throws Exception {
         new AcHttp(request).type();
         String target = "/users/profile";
-        if (!user.info().corporate() && !new RtAdmin(user).allows()) {
+        if (!user.account().corporate() && !new RtAdmin(user).allows()) {
             final Subscription.Plan selected;
             try {
                 selected = Subscription.Plan.valueOf(plan);
@@ -405,7 +403,7 @@ public final class UrsHttp {
     ) throws Exception {
         new AcHttp(request).type();
         String target = "/users/profile";
-        if (!user.info().corporate() && !new RtAdmin(user).allows()) {
+        if (!user.account().corporate() && !new RtAdmin(user).allows()) {
             new PgSubscriptions(this.ctx, user).subscription(Subscription.Plan.BASIC);
             target = "/users/subscription?cancelled";
         }

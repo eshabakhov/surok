@@ -30,7 +30,7 @@ public final class UrProfile implements Printable {
 
     @Override
     public <T> Media<T> print(final Media<T> media) throws Exception {
-        final String name = this.origin.credentials().username();
+        final String name = this.origin.account().username();
         String initial = "U";
         if (!name.isEmpty()) {
             initial = name.substring(0, name.offsetByCodePoints(0, 1)).toUpperCase(Locale.ROOT);

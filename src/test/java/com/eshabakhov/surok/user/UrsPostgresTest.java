@@ -77,7 +77,7 @@ final class UrsPostgresTest {
         );
         Assertions.assertThrows(
             UserLockedException.class,
-            () -> new UrsPostgres(ctx).authentication(user.credentials().username()),
+            () -> new UrsPostgres(ctx).authentication(user.account().username()),
             "Recent login failures did not lock the user"
         );
     }
@@ -103,7 +103,7 @@ final class UrsPostgresTest {
         );
         Assertions.assertEquals(
             user.uid(),
-            new UrsPostgres(ctx).authentication(user.credentials().username()).uid(),
+            new UrsPostgres(ctx).authentication(user.account().username()).uid(),
             "Expired login failures incorrectly locked the user"
         );
     }
@@ -205,6 +205,25 @@ final class UrsPostgresTest {
         );
         Assertions.assertThrows(
             RoleGrantException.class, () -> user.roles().grant(Roles.RoleEnum.VIEWER)
+        );
+    }
+
+    /**
+     * Deleted accounts cannot remain enabled through a retained security adapter.
+     *
+     * @param ctx Database context
+     * @throws Exception If account creation or deletion fails
+     */
+    @Test
+    void disablesADeletedAccountInTheSecurityAdapter(@Autowired final DSLContext ctx)
+        throws Exception {
+        final User user = new UrsPostgres(ctx).register(
+            String.format("Удалённый-%s", UUID.randomUUID()), "ValidPassword1!",
+            String.format("%s@example.com", UUID.randomUUID()), false
+        );
+        new UrsPostgres(ctx).remove(user.uid());
+        Assertions.assertFalse(
+            new AuthUser(user).isEnabled(), "A deleted account remained enabled for authentication"
         );
     }
 
