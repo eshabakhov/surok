@@ -4,6 +4,7 @@
 package com.eshabakhov.surok.user;
 
 import com.eshabakhov.surok.error.SimpleError;
+import com.eshabakhov.surok.media.MdJson;
 import java.time.Instant;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -45,7 +46,8 @@ public final class UserExceptionHandler {
     )
     public ResponseEntity<Object> handleRegistrationException(final Exception exception) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-            .contentType(MediaType.APPLICATION_JSON)
-            .body(new SimpleError(exception.getMessage(), Instant.now()));
+            .contentType(MediaType.APPLICATION_JSON).body(
+                new SimpleError(exception.getMessage(), Instant.now()).print(new MdJson()).print()
+            );
     }
 }

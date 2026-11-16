@@ -3,7 +3,6 @@
  */
 package com.eshabakhov.surok;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import java.time.Instant;
 
 /**
@@ -11,14 +10,18 @@ import java.time.Instant;
  *
  * @since 0.0.1
  */
-public interface ErrorResponse {
+public interface ErrorResponse extends Printable {
+
+    @Override
+    default <T> Media<T> print(final Media<T> media) {
+        return media.with("message", this.message()).with("timestamp", this.timestamp().toString());
+    }
 
     /**
      * Human-readable error message.
      *
      * @return Message
      */
-    @JsonProperty
     String message();
 
     /**
@@ -26,6 +29,5 @@ public interface ErrorResponse {
      *
      * @return Timestamp
      */
-    @JsonProperty
     Instant timestamp();
 }
