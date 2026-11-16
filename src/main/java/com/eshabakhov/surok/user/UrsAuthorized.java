@@ -4,6 +4,7 @@
 package com.eshabakhov.surok.user;
 
 import com.eshabakhov.surok.School;
+import com.eshabakhov.surok.UrAccount;
 import com.eshabakhov.surok.User;
 import com.eshabakhov.surok.Users;
 import com.eshabakhov.surok.security.right.RtAdmin;
@@ -65,14 +66,14 @@ public final class UrsAuthorized implements Users {
     }
 
     @Override
-    public Iterable<User> iterate() {
+    public Iterable<UrAccount> iterate() {
         return new RtEither(
             new RtAdmin(this.actor), new RtSchoolMember(this.actor, this.school)
         ).permit(this.origin).iterate();
     }
 
     @Override
-    public User register(
+    public UrAccount register(
         final String username, final String password, final String email,
         final Boolean corporate
     ) throws Exception {
@@ -82,21 +83,21 @@ public final class UrsAuthorized implements Users {
     }
 
     @Override
-    public User identification(final String login) throws Exception {
+    public UrAccount identification(final String login) throws Exception {
         return new RtEither(
             new RtAdmin(this.actor), new RtSchoolMember(this.actor, this.school)
         ).permit(this.origin).identification(login);
     }
 
     @Override
-    public User identification(final Long id) throws Exception {
+    public UrAccount identification(final Long id) throws Exception {
         return new RtEither(
             new RtAdmin(this.actor), new RtSchoolMember(this.actor, this.school)
         ).permit(this.origin).identification(id);
     }
 
     @Override
-    public User authentication(final String login) throws Exception {
+    public UrAccount authentication(final String login) throws Exception {
         return new RtEither(
             new RtAdmin(this.actor), new RtSchoolMember(this.actor, this.school)
         ).permit(this.origin).authentication(login);

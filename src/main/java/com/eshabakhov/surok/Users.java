@@ -42,7 +42,7 @@ public interface Users {
      *
      * @return Users
      */
-    Iterable<User> iterate();
+    Iterable<UrAccount> iterate();
 
     /**
      * Register new user.
@@ -55,7 +55,7 @@ public interface Users {
      * @throws Exception if creation fails
      * @checkstyle ParameterNumberCheck (2 lines)
      */
-    User register(
+    UrAccount register(
         String username,
         String password,
         String email,
@@ -69,7 +69,7 @@ public interface Users {
      * @return User
      * @throws Exception if user not found
      */
-    User identification(String login) throws Exception;
+    UrAccount identification(String login) throws Exception;
 
     /**
      * Identify user by id.
@@ -78,7 +78,7 @@ public interface Users {
      * @return User
      * @throws Exception if user not found
      */
-    User identification(Long id) throws Exception;
+    UrAccount identification(Long id) throws Exception;
 
     /**
      * Authenticate user by login.
@@ -87,7 +87,7 @@ public interface Users {
      * @return User
      * @throws Exception If authentication fails
      */
-    User authentication(String login) throws Exception;
+    UrAccount authentication(String login) throws Exception;
 
     /**
      * Removes user by id.

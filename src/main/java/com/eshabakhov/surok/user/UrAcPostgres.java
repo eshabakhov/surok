@@ -5,7 +5,7 @@ package com.eshabakhov.surok.user;
 
 import com.eshabakhov.surok.Media;
 import com.eshabakhov.surok.Schools;
-import com.eshabakhov.surok.User;
+import com.eshabakhov.surok.UrAccount;
 import com.eshabakhov.surok.school.SlsPostgres;
 import com.eshabakhov.surok.security.right.RtAdmin;
 import org.jooq.DSLContext;
@@ -15,7 +15,7 @@ import org.jooq.DSLContext;
  *
  * @since 0.0.1
  */
-public final class UrAcPostgres implements User {
+public final class UrAcPostgres implements UrAccount {
 
     /** Database context. */
     private final DSLContext ctx;

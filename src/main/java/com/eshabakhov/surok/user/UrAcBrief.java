@@ -5,6 +5,7 @@ package com.eshabakhov.surok.user;
 
 import com.eshabakhov.surok.Media;
 import com.eshabakhov.surok.Schools;
+import com.eshabakhov.surok.UrAccount;
 import com.eshabakhov.surok.User;
 import com.eshabakhov.surok.security.right.RtAdmin;
 
@@ -13,7 +14,7 @@ import com.eshabakhov.surok.security.right.RtAdmin;
  *
  * @since 0.0.1
  */
-public final class UrAcBrief implements User {
+public final class UrAcBrief implements UrAccount {
 
     /** Origin user. */
     private final User origin;

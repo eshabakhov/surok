@@ -3,6 +3,7 @@
  */
 package com.eshabakhov.surok.user;
 
+import com.eshabakhov.surok.UrAccount;
 import com.eshabakhov.surok.User;
 import com.eshabakhov.surok.Users;
 import com.eshabakhov.surok.security.right.RtAdmin;
@@ -54,14 +55,14 @@ public final class UrsGlobalAuthorized implements Users {
     }
 
     @Override
-    public Iterable<User> iterate() {
+    public Iterable<UrAccount> iterate() {
         return StreamSupport.stream(
             new RtAdmin(this.actor).permit(this.origin).iterate().spliterator(), false
-        ).<User>map(user -> new UrAcGlobalAuthorized(user, this.actor)).toList();
+        ).<UrAccount>map(user -> new UrAcGlobalAuthorized(user, this.actor)).toList();
     }
 
     @Override
-    public User register(
+    public UrAccount register(
         final String username, final String password, final String email, final Boolean corporate
     ) throws Exception {
         return new UrAcGlobalAuthorized(
@@ -72,21 +73,21 @@ public final class UrsGlobalAuthorized implements Users {
     }
 
     @Override
-    public User identification(final String login) throws Exception {
+    public UrAccount identification(final String login) throws Exception {
         return new UrAcGlobalAuthorized(
             new RtAdmin(this.actor).permit(this.origin).identification(login), this.actor
         );
     }
 
     @Override
-    public User identification(final Long id) throws Exception {
+    public UrAccount identification(final Long id) throws Exception {
         return new UrAcGlobalAuthorized(
             new RtAdmin(this.actor).permit(this.origin).identification(id), this.actor
         );
     }
 
     @Override
-    public User authentication(final String login) throws Exception {
+    public UrAccount authentication(final String login) throws Exception {
         return new UrAcGlobalAuthorized(
             new RtAdmin(this.actor).permit(this.origin).authentication(login), this.actor
         );
