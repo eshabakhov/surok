@@ -11,12 +11,12 @@ import com.eshabakhov.surok.security.right.RtAdmin;
 
 /**
  * Global user whose account data is available to the current administrator.
- * For example, {@code new UrGlobalAuthorized(user, actor).roles()}
+ * For example, {@code new UrAcGlobalAuthorized(user, actor).roles()}
  * returns roles that recheck the actor before every operation.
  *
  * @since 0.0.1
  */
-public final class UrGlobalAuthorized implements User {
+public final class UrAcGlobalAuthorized implements User {
 
     /** Underlying user. */
     private final User origin;
@@ -30,7 +30,7 @@ public final class UrGlobalAuthorized implements User {
      * @param origin Underlying user
      * @param actor Acting user
      */
-    public UrGlobalAuthorized(final User origin, final User actor) {
+    public UrAcGlobalAuthorized(final User origin, final User actor) {
         this.origin = origin;
         this.actor = actor;
     }

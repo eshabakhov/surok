@@ -288,7 +288,7 @@ public final class UrsHttp {
             new MediaType(new AcHttp(request).type(), StandardCharsets.UTF_8)
         ).body(
             new SrWeb(
-                new UrBrief(user), new SlsBrief(new SlsPostgres(this.ctx)),
+                new UrAcBrief(user), new SlsBrief(new SlsPostgres(this.ctx)),
                 new CsToken((CsrfToken) request.getAttribute(CsrfToken.class.getName()))
             ).print(
                 new MdXslt(
@@ -327,7 +327,7 @@ public final class UrsHttp {
             response = ResponseEntity.ok()
                 .contentType(new MediaType(type, StandardCharsets.UTF_8)).body(
                     new SrWeb(
-                        new UrBrief(user), new SlsBrief(new SlsPostgres(this.ctx)),
+                        new UrAcBrief(user), new SlsBrief(new SlsPostgres(this.ctx)),
                         new CsToken((CsrfToken) request.getAttribute(CsrfToken.class.getName()))
                     ).print(
                         new MdXslt(

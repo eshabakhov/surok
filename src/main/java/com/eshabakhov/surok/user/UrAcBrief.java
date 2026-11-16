@@ -13,7 +13,7 @@ import com.eshabakhov.surok.security.right.RtAdmin;
  *
  * @since 0.0.1
  */
-public final class UrBrief implements User {
+public final class UrAcBrief implements User {
 
     /** Origin user. */
     private final User origin;
@@ -23,7 +23,7 @@ public final class UrBrief implements User {
      *
      * @param origin Origin user
      */
-    public UrBrief(final User origin) {
+    public UrAcBrief(final User origin) {
         this.origin = origin;
     }
 

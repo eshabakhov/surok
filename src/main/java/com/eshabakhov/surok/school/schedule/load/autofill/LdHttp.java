@@ -27,7 +27,7 @@ import com.eshabakhov.surok.security.CsToken;
 import com.eshabakhov.surok.security.right.RtAdmin;
 import com.eshabakhov.surok.security.right.RtDirectorOrDeputy;
 import com.eshabakhov.surok.security.right.RtEither;
-import com.eshabakhov.surok.user.UrBrief;
+import com.eshabakhov.surok.user.UrAcBrief;
 import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.servlet.http.HttpServletRequest;
 import java.nio.charset.StandardCharsets;
@@ -130,7 +130,7 @@ public class LdHttp {
                         }
                         yield new LdWeb(draft).print(
                             new SrWeb(
-                                new UrBrief(actor),
+                                new UrAcBrief(actor),
                                 new SlsBrief(new SlsPostgres(this.ctx)),
                                 new CsToken(
                                     (CsrfToken) request.getAttribute(CsrfToken.class.getName())

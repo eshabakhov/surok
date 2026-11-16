@@ -25,7 +25,7 @@ import com.eshabakhov.surok.school.SlsPostgres;
 import com.eshabakhov.surok.school.schoolclass.input.ScInputHttp;
 import com.eshabakhov.surok.school.schoolclass.input.SchoolClassInputException;
 import com.eshabakhov.surok.security.CsToken;
-import com.eshabakhov.surok.user.UrBrief;
+import com.eshabakhov.surok.user.UrAcBrief;
 import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.servlet.http.HttpServletRequest;
 import java.net.URI;
@@ -398,7 +398,7 @@ public class ScsHttp {
         final String view
     ) throws Exception {
         return new SrWeb(
-            new UrBrief(
+            new UrAcBrief(
                 (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal()
             ),
             new SlsBrief(new SlsPostgres(this.ctx)),
