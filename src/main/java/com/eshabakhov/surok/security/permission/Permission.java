@@ -4,8 +4,8 @@
 package com.eshabakhov.surok.security.permission;
 
 import com.eshabakhov.surok.Printable;
-import jakarta.servlet.http.HttpServletRequest;
-import org.springframework.security.core.Authentication;
+import com.eshabakhov.surok.Schools;
+import com.eshabakhov.surok.UrAccount;
 
 /**
  * Permission to invoke a controller operation.
@@ -16,12 +16,18 @@ import org.springframework.security.core.Authentication;
 public interface Permission extends Printable {
 
     /**
-     * Evaluate the controller's authorization rule for an account and school scope.
+     * Evaluate access for a visitor without an account.
+     *
+     * @return Whether the operation is public
+     */
+    boolean allows();
+
+    /**
+     * Evaluate the controller's authorization rule for an account in the supplied schools.
      *
      * @param actor Account being inspected
-     * @param request Current HTTP request
-     * @param own Whether the requested school belongs to the account
+     * @param schools Schools in which access is evaluated
      * @return Whether the rule grants access
      */
-    boolean allows(Authentication actor, HttpServletRequest request, boolean own);
+    boolean allows(UrAccount actor, Schools schools);
 }

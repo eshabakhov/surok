@@ -86,7 +86,8 @@ public final class AdPostgres implements Addition {
                         Map.of(), Map.of(
                             "hours", new WhPlanned(
                                 new WhProposed(
-                                    new WhFake(row.get("current", Integer.class)), new WhFake(0)
+                                    new WhFake(row.get("current", Integer.class)),
+                                    new WhFake(0)
                                 ),
                                 new WhFake(row.get("planned", Integer.class))
                             )

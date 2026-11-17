@@ -6,7 +6,6 @@ package com.eshabakhov.surok.security.permission;
 import com.eshabakhov.surok.Media;
 import com.eshabakhov.surok.UrAccount;
 import com.eshabakhov.surok.security.right.RtAdmin;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.RequestMethod;
 
 /**
@@ -36,10 +35,15 @@ public final class PsAuthorized implements Permissions {
     }
 
     @Override
-    public boolean allows(
-        final String path, final RequestMethod method, final Authentication caller
-    ) {
-        return new RtAdmin(this.actor).permit(this.origin).allows(path, method, caller);
+    public boolean allows(final String path, final RequestMethod method) {
+        return new RtAdmin(this.actor).permit(this.origin).allows(path, method);
+    }
+
+    @Override
+    public Permissions selection(final UrAccount caller) {
+        return new PsAuthorized(
+            new RtAdmin(this.actor).permit(this.origin).selection(caller), this.actor
+        );
     }
 
     @Override

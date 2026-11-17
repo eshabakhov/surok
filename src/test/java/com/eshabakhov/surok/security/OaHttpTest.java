@@ -4,7 +4,6 @@
 package com.eshabakhov.surok.security;
 
 import com.eshabakhov.surok.user.Roles;
-import com.eshabakhov.surok.user.UrAcAuth;
 import com.eshabakhov.surok.user.UrAcRole;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.swagger.v3.core.util.Json;
@@ -642,10 +641,9 @@ final class OaHttpTest {
      * Authenticate a representative role without a database account.
      */
     private static RequestPostProcessor actor(final String role) {
-        final UrAcRole actor = new UrAcRole(Roles.RoleEnum.valueOf(role));
         return SecurityMockMvcRequestPostProcessors.authentication(
             UsernamePasswordAuthenticationToken.authenticated(
-                actor, "", new UrAcAuth(actor).getAuthorities()
+                new UrAcRole(Roles.RoleEnum.valueOf(role)), "", List.of()
             )
         );
     }

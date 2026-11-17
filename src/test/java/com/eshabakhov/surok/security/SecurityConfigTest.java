@@ -3,6 +3,7 @@
  */
 package com.eshabakhov.surok.security;
 
+import com.eshabakhov.surok.School;
 import com.eshabakhov.surok.UrAccount;
 import com.eshabakhov.surok.school.SlsPostgres;
 import com.eshabakhov.surok.school.input.SlInput;
@@ -187,6 +188,83 @@ final class SecurityConfigTest {
             Matchers.contains(
                 true, role == Roles.RoleEnum.DIRECTOR, false, role == Roles.RoleEnum.DIRECTOR
             )
+        );
+    }
+
+    /**
+     * Shows school mutations granted by any current membership.
+     *
+     * @param role Role in the first school
+     * @param mvc HTTP client
+     * @param ctx Database context
+     * @throws Exception If account creation or documentation fails
+     */
+    @ParameterizedTest
+    @EnumSource(value = Roles.RoleEnum.class, names = {"DIRECTOR", "DEPUTY_DIRECTOR"})
+    void showsOperationsGrantedInAnySchool(
+        final Roles.RoleEnum role, @Autowired final MockMvc mvc, @Autowired final DSLContext ctx
+    ) throws Exception {
+        final UrAccount user = new UrsPostgres(ctx).register(
+            UUID.randomUUID().toString(), "SchoolPassword1!",
+            String.format("%s@example.org", UUID.randomUUID()), true
+        );
+        final School managed = new SlsPostgres(ctx).create(
+            new SlInputName(new SlInput(), "Гимназия руководителя")
+        );
+        managed.users().add(user);
+        managed.users().roles(user).grant(role);
+        final School viewed = new SlsPostgres(ctx).create(
+            new SlInputName(new SlInput(), "Лицей наблюдателя")
+        );
+        viewed.users().add(user);
+        viewed.users().roles(user).grant(Roles.RoleEnum.VIEWER);
+        MatcherAssert.assertThat(
+            "Swagger ignored modification rights in an earlier school",
+            new ObjectMapper().readTree(
+                mvc.perform(
+                    MockMvcRequestBuilders.get("/api-docs").with(
+                        SecurityMockMvcRequestPostProcessors.httpBasic(
+                            user.account().username(), "SchoolPassword1!"
+                        )
+                    )
+                ).andReturn().getResponse().getContentAsString()
+            ).path("paths").path("/schools/{school}/buildings").has("post"),
+            Matchers.is(true)
+        );
+    }
+
+    /**
+     * Reads current administrator rights instead of cached authentication authorities.
+     *
+     * @param mvc HTTP client
+     * @param ctx Database context
+     * @throws Exception If registration or documentation fails
+     */
+    @Test
+    void hidesAdministratorOperationsAfterRoleRevocation(
+        @Autowired final MockMvc mvc, @Autowired final DSLContext ctx
+    ) throws Exception {
+        final UrAccount user = new UrsPostgres(ctx).register(
+            UUID.randomUUID().toString(), "SchoolPassword1!",
+            String.format("%s@example.org", UUID.randomUUID()), true
+        );
+        final long role = user.roles().grant(Roles.RoleEnum.ADMIN).uid();
+        final UrAcAuth principal = new UrAcAuth(user);
+        final UsernamePasswordAuthenticationToken token =
+            UsernamePasswordAuthenticationToken.authenticated(
+                principal, "", principal.getAuthorities()
+            );
+        user.roles().revoke(role);
+        MatcherAssert.assertThat(
+            "Swagger retained administrator operations after role revocation",
+            new ObjectMapper().readTree(
+                mvc.perform(
+                    MockMvcRequestBuilders.get("/api-docs").with(
+                        SecurityMockMvcRequestPostProcessors.authentication(token)
+                    )
+                ).andReturn().getResponse().getContentAsString()
+            ).path("paths").path("/federal/curriculums").has("post"),
+            Matchers.is(false)
         );
     }
 
