@@ -587,6 +587,17 @@ final class BdsHttpTest {
         ).andExpect(MockMvcResultMatchers.status().isNotAcceptable());
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = {"/create", "/10/edit"})
+    void opensBuildingFormsForASchoolViewer(final String suffix) throws Exception {
+        this.mvc.perform(
+            MockMvcRequestBuilders.get(String.format("/schools/1/buildings%s", suffix))
+                .session(this.session(Roles.RoleEnum.VIEWER, 1L)).accept(MediaType.TEXT_HTML)
+        ).andExpect(MockMvcResultMatchers.status().isOk()).andExpect(
+            MockMvcResultMatchers.content().string(Matchers.containsString("<form"))
+        );
+    }
+
     /** Verifies a blank edit is reported to the browser as a validation error. */
     @Test
     void rejectsBlankBuildingNamesOnUpdate() throws Exception {

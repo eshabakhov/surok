@@ -1624,7 +1624,11 @@ paths:
       tags:
         - Buildings
       summary: Get building
-      operationId: building
+      operationId: Buildings.building
+      x-permission:
+        grants:
+          - globalRoles: [ADMIN]
+          - schoolMember: true
       parameters:
         - name: school
           in: path
@@ -1673,7 +1677,11 @@ paths:
         - Buildings
       summary: Update building
       description: Update the building with versioned JSON. The browser edit form uses this operation.
-      operationId: revise_5
+      operationId: Building.revise
+      x-permission:
+        grants:
+          - globalRoles: [ADMIN]
+          - schoolRoles: [DIRECTOR, DEPUTY_DIRECTOR]
       parameters:
         - name: school
           in: path
@@ -1741,7 +1749,11 @@ paths:
       tags:
         - Buildings
       summary: Remove building
-      operationId: remove_5
+      operationId: Buildings.remove
+      x-permission:
+        grants:
+          - globalRoles: [ADMIN]
+          - schoolRoles: [DIRECTOR, DEPUTY_DIRECTOR]
       parameters:
         - name: school
           in: path
@@ -3653,8 +3665,10 @@ paths:
     get:
       tags:
         - Buildings
-      summary: Get building
-      operationId: building_1
+      summary: Open the building editing form
+      operationId: openBuildingEditForm
+      x-permission:
+        sameAs: Buildings.building
       parameters:
         - name: school
           in: path
@@ -3977,7 +3991,11 @@ paths:
       tags:
         - Buildings
       summary: Open the building creation form
-      operationId: selection_12
+      operationId: openBuildingCreationForm
+      x-permission:
+        grants:
+          - globalRoles: [ADMIN]
+          - schoolMember: true
       parameters:
         - name: school
           in: path
@@ -4005,7 +4023,11 @@ paths:
         - Buildings
       summary: List buildings
       description: Select a full HTML page, an HTML results fragment, JSON, or XML with the Accept header.
-      operationId: selection_14
+      operationId: Buildings.selection
+      x-permission:
+        grants:
+          - globalRoles: [ADMIN]
+          - schoolMember: true
       parameters:
         - name: school
           in: path
@@ -4097,7 +4119,11 @@ paths:
       tags:
         - Buildings
       summary: Create building
-      operationId: create_14
+      operationId: Buildings.create
+      x-permission:
+        grants:
+          - globalRoles: [ADMIN]
+          - schoolRoles: [DIRECTOR, DEPUTY_DIRECTOR]
       parameters:
         - name: school
           in: path

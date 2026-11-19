@@ -3,7 +3,10 @@
  */
 package com.eshabakhov.surok.security;
 
+import com.eshabakhov.surok.school.building.Building;
+import com.eshabakhov.surok.school.building.Buildings;
 import com.fasterxml.jackson.databind.JsonNode;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.stream.Stream;
 import org.hamcrest.MatcherAssert;
@@ -18,6 +21,65 @@ import org.springframework.core.io.ClassPathResource;
  * @since 0.0.1
  */
 final class OaContractTest {
+
+    /**
+     * Requires the domain action for each published Buildings operation.
+     *
+     * @throws Exception If the specification cannot be read
+     */
+    @Test
+    void declaresBuildingActions() throws Exception {
+        MatcherAssert.assertThat(
+            "Buildings operations must declare the action enforced by the API",
+            new OaYaml(new ClassPathResource("openapi.yml")).read().path("paths")
+                .properties().stream().flatMap(
+                    path -> path.getValue().properties().stream().filter(
+                        method -> method.getValue().path("tags").valueStream()
+                            .anyMatch(tag -> "Buildings".equals(tag.asText()))
+                    ).map(
+                        method -> String.join(
+                            " ", method.getKey(), path.getKey(),
+                            method.getValue().path("operationId").asText()
+                        )
+                    )
+                ).toList(),
+            Matchers.containsInAnyOrder(
+                "get /schools/{school}/buildings Buildings.selection",
+                "post /schools/{school}/buildings Buildings.create",
+                "get /schools/{school}/buildings/{building} Buildings.building",
+                "put /schools/{school}/buildings/{building} Building.revise",
+                "delete /schools/{school}/buildings/{building} Buildings.remove",
+                "get /schools/{school}/buildings/{building}/edit openBuildingEditForm",
+                "get /schools/{school}/buildings/create openBuildingCreationForm"
+            )
+        );
+    }
+
+    /**
+     * Detects a domain method rename that would leave the contract pointing to an obsolete name.
+     *
+     * @throws Exception If the contract cannot be read
+     */
+    @Test
+    void bindsBuildingOperationIdsToDomainMethods() throws Exception {
+        MatcherAssert.assertThat(
+            "A Buildings operation references a missing domain method",
+            new OaYaml(new ClassPathResource("openapi.yml")).read().path("paths").valueStream()
+                .flatMap(JsonNode::valueStream)
+                .filter(operation -> operation.has("x-permission"))
+                .map(operation -> operation.path("operationId").asText())
+                .filter(id -> id.startsWith("Buildings.") || id.startsWith("Building.")).toList(),
+            Matchers.everyItem(
+                Matchers.in(
+                    Stream.of(Buildings.class, Building.class).flatMap(
+                        type -> Arrays.stream(type.getDeclaredMethods()).map(
+                            method -> String.join(".", type.getSimpleName(), method.getName())
+                        )
+                    ).toList()
+                )
+            )
+        );
+    }
 
     /**
      * Requires a typed example for every request and response representation.

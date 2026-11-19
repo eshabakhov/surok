@@ -5,8 +5,11 @@ package com.eshabakhov.surok.security.permission;
 
 import com.eshabakhov.surok.Media;
 import com.eshabakhov.surok.PrItems;
+import com.eshabakhov.surok.Printable;
+import com.eshabakhov.surok.School;
 import com.eshabakhov.surok.Schools;
 import com.eshabakhov.surok.UrAccount;
+import com.eshabakhov.surok.security.right.Right;
 import com.eshabakhov.surok.user.Roles;
 import com.eshabakhov.surok.user.UrAcRole;
 import java.util.Arrays;
@@ -17,12 +20,13 @@ import org.springframework.web.bind.annotation.RequestMethod;
  * An operation decorated with access for every application role and anonymous users.
  * For example, print the POST cabinet route as one matrix row.
  *
+ * @param <R> Permission with a printable operation description
  * @since 0.0.1
  */
-public final class PmRoles implements Permission {
+public final class PmRoles<R extends Permission & Printable> implements Permission, Printable {
 
     /** Controller permission. */
-    private final Permission origin;
+    private final R origin;
 
     /** HTTP method. */
     private final RequestMethod method;
@@ -37,7 +41,7 @@ public final class PmRoles implements Permission {
      * @param method HTTP method
      * @param locale Locale for role titles
      */
-    public PmRoles(final Permission origin, final RequestMethod method, final Locale locale) {
+    public PmRoles(final R origin, final RequestMethod method, final Locale locale) {
         this(
             origin,
             method,
@@ -45,12 +49,12 @@ public final class PmRoles implements Permission {
                 role -> {
                     final Grant grant;
                     if (role == Roles.RoleEnum.ANONYMOUS) {
-                        grant = new GrRole(origin::allows, origin::allows, role, locale);
+                        grant = new GrRole(origin.right(), origin.right(), role, locale);
                     } else {
                         final UrAccount actor = new UrAcRole(1L, role);
                         grant = new GrRole(
-                            () -> origin.allows(actor, actor.schools()),
-                            () -> origin.allows(actor, new UrAcRole(2L, role).schools()),
+                            origin.right(actor, actor.schools()),
+                            origin.right(actor, new UrAcRole(2L, role).schools()),
                             role,
                             locale
                         );
@@ -69,7 +73,7 @@ public final class PmRoles implements Permission {
      * @param grants Role access entries
      */
     private PmRoles(
-        final Permission origin,
+        final R origin,
         final RequestMethod method,
         final Iterable<Grant> grants
     ) {
@@ -79,13 +83,18 @@ public final class PmRoles implements Permission {
     }
 
     @Override
-    public boolean allows() {
-        return this.origin.allows();
+    public Right right() {
+        return this.origin.right();
     }
 
     @Override
-    public boolean allows(final UrAccount actor, final Schools schools) {
-        return this.origin.allows(actor, schools);
+    public Right right(final UrAccount actor, final School school) {
+        return this.origin.right(actor, school);
+    }
+
+    @Override
+    public Right right(final UrAccount actor, final Schools schools) {
+        return this.origin.right(actor, schools);
     }
 
     @Override

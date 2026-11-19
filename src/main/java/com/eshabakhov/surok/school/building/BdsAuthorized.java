@@ -9,10 +9,7 @@ import com.eshabakhov.surok.Page;
 import com.eshabakhov.surok.School;
 import com.eshabakhov.surok.Sorts;
 import com.eshabakhov.surok.UrAccount;
-import com.eshabakhov.surok.security.right.RtAdmin;
-import com.eshabakhov.surok.security.right.RtDirectorOrDeputy;
-import com.eshabakhov.surok.security.right.RtEither;
-import com.eshabakhov.surok.security.right.RtSchoolMember;
+import com.eshabakhov.surok.security.permission.PmYaml;
 import java.util.stream.StreamSupport;
 
 /**
@@ -23,6 +20,9 @@ import java.util.stream.StreamSupport;
  * @since 0.0.1
  */
 public final class BdsAuthorized implements Buildings {
+
+    /** Shared operation permissions. */
+    private final PmYaml permissions;
 
     /** Underlying buildings. */
     private final Buildings origin;
@@ -41,6 +41,22 @@ public final class BdsAuthorized implements Buildings {
      * @param actor Acting user
      */
     public BdsAuthorized(final Buildings origin, final School school, final UrAccount actor) {
+        this(origin, school, actor, PmYaml.PACKAGED);
+    }
+
+    /**
+     * New protected resource with the supplied operation permissions.
+     *
+     * @param origin Underlying resource
+     * @param school Target school
+     * @param actor Acting account
+     * @param permissions Shared permission catalog
+     */
+    BdsAuthorized(
+        final Buildings origin, final School school, final UrAccount actor,
+        final PmYaml permissions
+    ) {
+        this.permissions = permissions;
         this.origin = origin;
         this.school = school;
         this.actor = actor;
@@ -49,20 +65,20 @@ public final class BdsAuthorized implements Buildings {
     @Override
     public Building create(final BuildingInput input) throws Exception {
         return new BdAuthorized(
-            new RtEither(
-                new RtAdmin(this.actor), new RtDirectorOrDeputy(this.actor, this.school)
-            ).permit(this.origin).create(input),
-            this.school, this.actor
+            this.permissions.forOperation("Buildings.create")
+                .right(this.actor, this.school)
+                .permit(this.origin).create(input),
+            this.school, this.actor, this.permissions
         );
     }
 
     @Override
     public Building building(final long id) throws Exception {
         return new BdAuthorized(
-            new RtEither(
-                new RtAdmin(this.actor), new RtSchoolMember(this.actor, this.school)
-            ).permit(this.origin).building(id),
-            this.school, this.actor
+            this.permissions.forOperation("Buildings.building")
+                .right(this.actor, this.school)
+                .permit(this.origin).building(id),
+            this.school, this.actor, this.permissions
         );
     }
 
@@ -71,36 +87,35 @@ public final class BdsAuthorized implements Buildings {
         final Filters filters, final Page page, final Sorts sorts
     ) throws Exception {
         return new BdsAuthorized(
-            new RtEither(
-                new RtAdmin(this.actor), new RtSchoolMember(this.actor, this.school)
-            ).permit(this.origin).selection(
-                filters, page, sorts
-            ), this.school, this.actor
+            this.permissions.forOperation("Buildings.selection")
+                .right(this.actor, this.school)
+                .permit(this.origin).selection(filters, page, sorts),
+            this.school, this.actor, this.permissions
         );
     }
 
     @Override
     public Iterable<Building> iterate() {
         return StreamSupport.stream(
-            new RtEither(
-                new RtAdmin(this.actor), new RtSchoolMember(this.actor, this.school)
-            ).permit(this.origin).iterate().spliterator(), false
+            this.permissions.forOperation("Buildings.selection")
+                .right(this.actor, this.school).permit(this.origin)
+                .iterate().spliterator(), false
         ).<Building>map(
-            building -> new BdAuthorized(building, this.school, this.actor)
+            building -> new BdAuthorized(building, this.school, this.actor, this.permissions)
         ).toList();
     }
 
     @Override
     public void remove(final long id) throws Exception {
-        new RtEither(
-            new RtAdmin(this.actor), new RtDirectorOrDeputy(this.actor, this.school)
-        ).permit(this.origin).remove(id);
+        this.permissions.forOperation("Buildings.remove")
+            .right(this.actor, this.school)
+            .permit(this.origin).remove(id);
     }
 
     @Override
     public <T> Media<T> print(final Media<T> media) throws Exception {
-        return new RtEither(
-            new RtAdmin(this.actor), new RtSchoolMember(this.actor, this.school)
-        ).permit(this.origin).print(media);
+        return this.permissions.forOperation("Buildings.selection")
+            .right(this.actor, this.school)
+            .permit(this.origin).print(media);
     }
 }

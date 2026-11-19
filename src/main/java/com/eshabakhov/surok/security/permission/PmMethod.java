@@ -4,8 +4,11 @@
 package com.eshabakhov.surok.security.permission;
 
 import com.eshabakhov.surok.Media;
+import com.eshabakhov.surok.Printable;
+import com.eshabakhov.surok.School;
 import com.eshabakhov.surok.Schools;
 import com.eshabakhov.surok.UrAccount;
+import com.eshabakhov.surok.school.SlsSingle;
 import com.eshabakhov.surok.security.right.Right;
 import com.eshabakhov.surok.security.right.RtAdmin;
 import com.eshabakhov.surok.security.right.RtDirectorOrDeputy;
@@ -25,7 +28,7 @@ import org.springframework.web.method.HandlerMethod;
  *
  * @since 0.0.1
  */
-public final class PmMethod implements Permission {
+public final class PmMethod implements Permission, Printable {
 
     /** Registered handler. */
     private final HandlerMethod handler;
@@ -50,13 +53,18 @@ public final class PmMethod implements Permission {
     }
 
     @Override
-    public boolean allows() {
-        return this.anonymous;
+    public Right right() {
+        return () -> this.anonymous;
     }
 
     @Override
-    public boolean allows(final UrAccount actor, final Schools schools) {
-        return this.rule(actor, schools).allows();
+    public Right right(final UrAccount actor, final School school) {
+        return this.right(actor, new SlsSingle(actor.schools(), school));
+    }
+
+    @Override
+    public Right right(final UrAccount actor, final Schools schools) {
+        return this.rule(actor, schools);
     }
 
     @Override
@@ -112,7 +120,7 @@ public final class PmMethod implements Permission {
         );
         return switch (this.handler.getBeanType().getSimpleName()) {
             case "SlsHttp" -> this.schools(admin, member, director);
-            case "BdsHttp", "CbsHttp", "ScsHttp", "ThsHttp", "SdsHttp", "ClsHttp", "LdHttp" ->
+            case "CbsHttp", "ScsHttp", "ThsHttp", "SdsHttp", "ClsHttp", "LdHttp" ->
                 this.resources(member, editor);
             case "CrsHttp" -> this.curriculums(admin);
             case "RqsHttp" -> this.requirements(admin);
@@ -210,7 +218,7 @@ public final class PmMethod implements Permission {
      */
     private Right resources(final Right member, final Right editor) {
         return switch (this.handler.getMethod().getName()) {
-            case "selection", "building", "cabinet", "clazz", "teacher", "schedule", "load",
+            case "selection", "cabinet", "clazz", "teacher", "schedule", "load",
                 "read", "form" -> member;
             case "create", "revise", "remove", "save", "apply" -> editor;
             case null, default -> () -> false;

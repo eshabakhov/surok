@@ -15,6 +15,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.StreamSupport;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.jooq.DSLContext;
@@ -92,11 +93,11 @@ final class SecurityConfigTest {
         MatcherAssert.assertThat(
             "Anonymous documentation exposed protected operations or required Basic for registration",
             List.of(
-                spec.path("paths").has("/users/register"),
+                spec.has("x-permissions"), spec.path("paths").has("/users/register"),
                 spec.path("paths").has("/federal/curriculums"),
                 spec.path("paths").path("/users").path("post").path("security").isEmpty()
             ),
-            Matchers.contains(true, false, true)
+            Matchers.contains(false, true, false, true)
         );
     }
 
@@ -147,9 +148,10 @@ final class SecurityConfigTest {
             List.of(
                 paths.path("/federal/curriculums").has("get"),
                 paths.path("/federal/curriculums").has("post"),
-                paths.path("/federal/subjects").has("post"), paths.has("/schools")
+                paths.path("/federal/subjects").has("post"), paths.has("/schools"),
+                paths.has("/schools/{school}/buildings")
             ),
-            Matchers.contains(true, false, false, true)
+            Matchers.contains(true, false, false, true, false)
         );
     }
 
@@ -183,10 +185,14 @@ final class SecurityConfigTest {
                 paths.path("/schools/{school}/subjects").has("get"),
                 paths.path("/schools/{school}/subjects").has("post"),
                 paths.path("/federal/subjects").has("post"),
-                paths.path("/schools/{school}/schedules/{schedule}/loads/draft").has("put")
+                paths.path("/schools/{school}/schedules/{schedule}/loads/draft").has("put"),
+                paths.path("/schools/{school}/buildings/create").has("get"),
+                paths.path("/schools/{school}/buildings/{building}/edit").has("get"),
+                paths.path("/schools/{school}/buildings").has("post")
             ),
             Matchers.contains(
-                true, role == Roles.RoleEnum.DIRECTOR, false, role == Roles.RoleEnum.DIRECTOR
+                true, role == Roles.RoleEnum.DIRECTOR, false, role == Roles.RoleEnum.DIRECTOR,
+                true, true, role == Roles.RoleEnum.DIRECTOR
             )
         );
     }
@@ -208,28 +214,51 @@ final class SecurityConfigTest {
             UUID.randomUUID().toString(), "SchoolPassword1!",
             String.format("%s@example.org", UUID.randomUUID()), true
         );
-        final School managed = new SlsPostgres(ctx).create(
-            new SlInputName(new SlInput(), "Гимназия руководителя")
-        );
-        managed.users().add(user);
-        managed.users().roles(user).grant(role);
         final School viewed = new SlsPostgres(ctx).create(
             new SlInputName(new SlInput(), "Лицей наблюдателя")
         );
         viewed.users().add(user);
         viewed.users().roles(user).grant(Roles.RoleEnum.VIEWER);
-        MatcherAssert.assertThat(
-            "Swagger ignored modification rights in an earlier school",
-            new ObjectMapper().readTree(
-                mvc.perform(
-                    MockMvcRequestBuilders.get("/api-docs").with(
-                        SecurityMockMvcRequestPostProcessors.httpBasic(
-                            user.account().username(), "SchoolPassword1!"
+        final School managed = new SlsPostgres(ctx).create(
+            new SlInputName(new SlInput(), "Гимназия руководителя")
+        );
+        managed.users().add(user);
+        final long assignment = managed.users().roles(user).grant(role).uid();
+        final String path = "/schools/{school}/buildings";
+        final JsonNode operation = SecurityConfigTest.buildings(mvc, user).path("post");
+        final List<JsonNode> rows = new ObjectMapper().readTree(
+            mvc.perform(
+                MockMvcRequestBuilders.get("/permissions")
+                    .accept("application/vnd.surok.permissions.v1+json").with(
+                        SecurityMockMvcRequestPostProcessors.user(
+                            new UrAcAuth(SecurityConfigTest.administrator(ctx))
                         )
                     )
-                ).andReturn().getResponse().getContentAsString()
-            ).path("paths").path("/schools/{school}/buildings").has("post"),
-            Matchers.is(true)
+            ).andReturn().getResponse().getContentAsByteArray()
+        ).path("operations").valueStream().filter(
+            row -> path.equals(row.path("path").asText()) && "POST".equals(
+                row.path("method").asText()
+            )
+        ).toList();
+        final int created = SecurityConfigTest.create(mvc, user, managed);
+        final int forbidden = SecurityConfigTest.create(mvc, user, viewed);
+        managed.users().roles(user).revoke(assignment);
+        MatcherAssert.assertThat(
+            "Building creation disagreed between the API, the matrix and Swagger",
+            List.of(
+                operation.path("operationId").asText(),
+                operation.at("/x-permission/grants/0/globalRoles/0").asText(), rows.size(),
+                rows.getFirst().path("consumes").asText(),
+                SecurityConfigTest.scope(rows.getFirst(), role),
+                SecurityConfigTest.scope(rows.getFirst(), Roles.RoleEnum.VIEWER),
+                created, forbidden, SecurityConfigTest.buildings(mvc, user).has("post"),
+                SecurityConfigTest.create(mvc, user, managed)
+            ),
+            Matchers.contains(
+                "Buildings.create", "ADMIN", 1,
+                "application/vnd.surok.building-v1+json, application/x-www-form-urlencoded",
+                "school", "denied", 201, 403, false, 403
+            )
         );
     }
 
@@ -649,6 +678,38 @@ final class SecurityConfigTest {
         registry.add("spring.datasource.username", SecurityConfigTest.POSTGRES::getUsername);
         registry.add("spring.datasource.password", SecurityConfigTest.POSTGRES::getPassword);
         registry.add("spring.liquibase.enabled", () -> true);
+    }
+
+    private static String scope(final JsonNode row, final Roles.RoleEnum role) {
+        return StreamSupport.stream(row.path("access").spliterator(), false)
+            .filter(grant -> role.name().equals(grant.path("role").asText()))
+            .findFirst().orElseThrow().path("scope").asText();
+    }
+
+    private static JsonNode buildings(final MockMvc mvc, final UrAccount user) throws Exception {
+        return new ObjectMapper().readTree(
+            mvc.perform(
+                MockMvcRequestBuilders.get("/api-docs").with(
+                    SecurityMockMvcRequestPostProcessors.httpBasic(
+                        user.account().username(), "SchoolPassword1!"
+                    )
+                )
+            ).andReturn().getResponse().getContentAsString()
+        ).path("paths").path("/schools/{school}/buildings");
+    }
+
+    private static int create(final MockMvc mvc, final UrAccount user, final School school)
+        throws Exception {
+        return mvc.perform(
+            MockMvcRequestBuilders.post("/schools/{school}/buildings", school.uid())
+                .contentType("application/vnd.surok.building-v1+json")
+                .accept("application/vnd.surok.building-v1+json")
+                .content("{\"name\":\"Корпус на Садовой\"}").with(
+                    SecurityMockMvcRequestPostProcessors.httpBasic(
+                        user.account().username(), "SchoolPassword1!"
+                    )
+                ).with(SecurityMockMvcRequestPostProcessors.csrf())
+        ).andReturn().getResponse().getStatus();
     }
 
     private static UrAccount administrator(final DSLContext ctx) throws Exception {
