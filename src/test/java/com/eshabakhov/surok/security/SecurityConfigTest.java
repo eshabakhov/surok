@@ -154,7 +154,7 @@ final class SecurityConfigTest {
     }
 
     @ParameterizedTest
-    @EnumSource(value = Roles.RoleEnum.class, names = {"DIRECTOR", "VIEWER"})
+    @EnumSource(value = Roles.RoleEnum.class, names = {"DIRECTOR", "STUDENT"})
     void distinguishesSchoolAndFederalPermissions(
         final Roles.RoleEnum role, @Autowired final MockMvc mvc, @Autowired final DSLContext ctx
     ) throws Exception {
@@ -214,10 +214,10 @@ final class SecurityConfigTest {
         managed.users().add(user);
         managed.users().roles(user).grant(role);
         final School viewed = new SlsPostgres(ctx).create(
-            new SlInputName(new SlInput(), "Лицей наблюдателя")
+            new SlInputName(new SlInput(), "Лицей ученика")
         );
         viewed.users().add(user);
-        viewed.users().roles(user).grant(Roles.RoleEnum.VIEWER);
+        viewed.users().roles(user).grant(Roles.RoleEnum.STUDENT);
         MatcherAssert.assertThat(
             "Swagger ignored modification rights in an earlier school",
             new ObjectMapper().readTree(

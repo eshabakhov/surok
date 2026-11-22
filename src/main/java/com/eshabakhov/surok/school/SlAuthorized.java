@@ -25,7 +25,7 @@ import com.eshabakhov.surok.user.UrsAuthorized;
 
 /**
  * School whose revision follows the acting user's current school role.
- * For example, {@code new SlAuthorized(school, viewer).revise(input)} is
+ * For example, {@code new SlAuthorized(school, student).revise(input)} is
  * rejected, while a director can revise the same school.
  *
  * @since 0.0.1

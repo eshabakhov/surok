@@ -417,7 +417,7 @@ final class CrsHttpTest {
             "An authenticated reader could not browse the federal standard",
             this.mvc.perform(
                 MockMvcRequestBuilders.get(String.format("/federal/curriculums%s", path))
-                    .session(this.session(Roles.RoleEnum.VIEWER)).accept(MediaType.TEXT_HTML)
+                    .session(this.session(Roles.RoleEnum.STUDENT)).accept(MediaType.TEXT_HTML)
             ).andReturn().getResponse().getStatus(),
             Matchers.is(200)
         );
@@ -430,7 +430,7 @@ final class CrsHttpTest {
             "A reader could open an administrative curriculum form",
             this.mvc.perform(
                 MockMvcRequestBuilders.get(String.format("/federal/curriculums%s", path))
-                    .session(this.session(Roles.RoleEnum.VIEWER)).accept(MediaType.TEXT_HTML)
+                    .session(this.session(Roles.RoleEnum.STUDENT)).accept(MediaType.TEXT_HTML)
             ).andReturn().getResponse().getStatus(),
             Matchers.is(403)
         );
@@ -444,7 +444,7 @@ final class CrsHttpTest {
         MatcherAssert.assertThat(
             "A reader changed a federal resource despite valid CSRF protection",
             this.mvc.perform(
-                this.authorized(path, Roles.RoleEnum.VIEWER).accept(MediaType.TEXT_HTML)
+                this.authorized(path, Roles.RoleEnum.STUDENT).accept(MediaType.TEXT_HTML)
             ).andReturn().getResponse().getStatus(),
             Matchers.is(403)
         );
@@ -494,7 +494,7 @@ final class CrsHttpTest {
         MatcherAssert.assertThat(
             "A reader deleted a federal plan or requirement",
             this.mvc.perform(
-                this.authorized(path, Roles.RoleEnum.VIEWER, HttpMethod.DELETE)
+                this.authorized(path, Roles.RoleEnum.STUDENT, HttpMethod.DELETE)
                     .accept(MediaType.TEXT_HTML)
             ).andReturn().getResponse().getStatus(),
             Matchers.is(403)
@@ -513,7 +513,7 @@ final class CrsHttpTest {
             "An authenticated reader could not retrieve a versioned federal representation",
             this.mvc.perform(
                 MockMvcRequestBuilders.get(String.format("/federal/curriculums%s", path))
-                    .session(this.session(Roles.RoleEnum.VIEWER))
+                    .session(this.session(Roles.RoleEnum.STUDENT))
                     .accept(String.format("application/vnd.surok.%s+json", resource))
             ).andReturn().getResponse().getStatus(),
             Matchers.is(200)
@@ -744,7 +744,7 @@ final class CrsHttpTest {
                 String.format("%s@example.org", UUID.randomUUID())
             ).fetchSingle("id", Long.class)
         );
-        if (role != Roles.RoleEnum.VIEWER) {
+        if (role != Roles.RoleEnum.STUDENT) {
             user.roles().grant(role);
         }
         final UrAcAuth principal = new UrAcAuth(user);

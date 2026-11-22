@@ -29,7 +29,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
  * Checks modification rights on a protected school.
- * For example, a school viewer may inspect but not rename its school.
+ * For example, a school student may inspect but not rename its school.
  *
  * @since 0.0.1
  */
@@ -67,13 +67,13 @@ final class SlAuthorizedTest {
     }
 
     /**
-     * Rejects revisions from a member with only the viewer role.
+     * Rejects revisions from a member with only the student role.
      *
      * @param ctx Database context
      * @throws Exception If setup fails
      */
     @Test
-    void deniesRevisionByAViewer(@Autowired final DSLContext ctx) throws Exception {
+    void deniesRevisionByAStudent(@Autowired final DSLContext ctx) throws Exception {
         final UrAccount actor = new UrsPostgres(ctx).register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
@@ -82,13 +82,13 @@ final class SlAuthorizedTest {
             new SlInputName(new SlInput(), "Школа просмотра")
         );
         new UrsPostgres(ctx, school.uid()).add(actor);
-        school.users().roles(actor).grant(Roles.RoleEnum.VIEWER);
+        school.users().roles(actor).grant(Roles.RoleEnum.STUDENT);
         Assertions.assertThrows(
             AccessDeniedException.class,
             () -> new SlAuthorized(school, actor).revise(
                 new SlInputName(new SlInput(), "Запрещённое имя")
             ),
-            "A viewer revised the school"
+            "A student revised the school"
         );
     }
 
@@ -256,7 +256,7 @@ final class SlAuthorizedTest {
      * @throws Exception If setup fails
      */
     @Test
-    void deniesBuildingCreationThroughAViewersSchool(@Autowired final DSLContext ctx)
+    void deniesBuildingCreationThroughAStudentsSchool(@Autowired final DSLContext ctx)
         throws Exception {
         final UrAccount actor = new UrsPostgres(ctx).register(
             UUID.randomUUID().toString(), "ValidPassword1!",
@@ -266,13 +266,13 @@ final class SlAuthorizedTest {
             new SlInputName(new SlInput(), "Школа зрителя корпусов")
         );
         school.users().add(actor);
-        school.users().roles(actor).grant(Roles.RoleEnum.VIEWER);
+        school.users().roles(actor).grant(Roles.RoleEnum.STUDENT);
         Assertions.assertThrows(
             AccessDeniedException.class,
             () -> new SlAuthorized(school, actor).buildings().create(
                 new BdInputName(new BdInput(), "Запрещённый корпус")
             ),
-            "A viewer created a building through the school"
+            "A student created a building through the school"
         );
     }
 

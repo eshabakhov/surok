@@ -17,7 +17,7 @@ import java.util.stream.StreamSupport;
 
 /**
  * School schedules protected by the acting user's school role.
- * For example, a director can create a schedule and a viewer can list them.
+ * For example, a director can create a schedule and a student can list them.
  *
  * @since 0.0.1
  */

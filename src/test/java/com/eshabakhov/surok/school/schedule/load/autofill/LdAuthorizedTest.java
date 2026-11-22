@@ -99,13 +99,13 @@ final class LdAuthorizedTest {
     }
 
     /**
-     * Denies saving a retained draft after the director becomes a viewer.
+     * Denies saving a retained draft after the director becomes a student.
      *
      * @param ctx Database context
      * @throws Exception If setup fails
      */
     @Test
-    void deniesSavingAfterDirectorBecomesViewer(@Autowired final DSLContext ctx)
+    void deniesSavingAfterDirectorBecomesStudent(@Autowired final DSLContext ctx)
         throws Exception {
         final UrAccount actor = new UrsPostgres(ctx).register(
             UUID.randomUUID().toString(), "ValidPassword1!",
@@ -118,11 +118,11 @@ final class LdAuthorizedTest {
             new SdInputName(new SdInput(), "Учебный год")
         ).draft();
         school.users().roles(actor).revoke(school.users().roles(actor).list().getFirst().uid());
-        school.users().roles(actor).grant(Roles.RoleEnum.VIEWER);
+        school.users().roles(actor).grant(Roles.RoleEnum.STUDENT);
         Assertions.assertThrows(
             AccessDeniedException.class,
             () -> draft.save(new CrPostgres(ctx, 61L), Map.of()),
-            "A viewer saved a retained load draft"
+            "A student saved a retained load draft"
         );
     }
 

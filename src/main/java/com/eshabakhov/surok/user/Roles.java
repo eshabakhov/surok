@@ -87,9 +87,6 @@ public interface Roles extends Printable {
         /** Pro maker. */
         PRO_MAKER,
 
-        /** Viewer. */
-        VIEWER,
-
         /** Visitor without an authenticated account. */
         ANONYMOUS
     }

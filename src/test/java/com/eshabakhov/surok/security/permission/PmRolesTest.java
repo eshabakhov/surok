@@ -21,7 +21,7 @@ import org.springframework.web.method.HandlerMethod;
 
 /**
  * Permission decoration preserves the underlying authorization rule.
- * For example, adding matrix columns cannot grant a viewer building removal access.
+ * For example, adding matrix columns cannot grant a student building removal access.
  *
  * @since 0.0.1
  */
@@ -43,7 +43,7 @@ final class PmRolesTest {
             ).print(new MdJson()).print().path("access").findValuesAsText("role"),
             Matchers.contains(
                 "ADMIN", "DIRECTOR", "DEPUTY_DIRECTOR", "TEACHER", "STUDENT",
-                "BASIC_MAKER", "ADVANCED_MAKER", "PRO_MAKER", "VIEWER", "ANONYMOUS"
+                "BASIC_MAKER", "ADVANCED_MAKER", "PRO_MAKER", "ANONYMOUS"
             )
         );
     }
@@ -51,7 +51,7 @@ final class PmRolesTest {
     @ParameterizedTest
     @CsvSource({
         "DIRECTOR, 17, true", "DIRECTOR, 29, false", "DEPUTY_DIRECTOR, 17, true",
-        "DEPUTY_DIRECTOR, 29, false", "VIEWER, 17, false", "VIEWER, 29, false",
+        "DEPUTY_DIRECTOR, 29, false", "STUDENT, 17, false", "STUDENT, 29, false",
         "ADMIN, 17, true", "ADMIN, 29, true"
     })
     void preservesTheOriginalRuleForEachSchoolScope(

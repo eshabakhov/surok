@@ -35,7 +35,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
  * Verifies role checks around a school's building collection.
- * A viewer's global subscription does not authorize building mutations.
+ * A student's global subscription does not authorize building mutations.
  *
  * @since 0.0.1
  */
@@ -122,13 +122,13 @@ final class BdsAuthorizedTest {
     }
 
     /**
-     * Rejects a viewer even though registration gave it BASIC_MAKER.
+     * Rejects a student even though registration gave it BASIC_MAKER.
      *
      * @param ctx Database context
      * @throws Exception If setup fails
      */
     @Test
-    void deniesBuildingCreationToAViewer(@Autowired final DSLContext ctx) throws Exception {
+    void deniesBuildingCreationToAStudent(@Autowired final DSLContext ctx) throws Exception {
         final UrAccount actor = new UrsPostgres(ctx).register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
@@ -137,13 +137,13 @@ final class BdsAuthorizedTest {
             new SlInputName(new SlInput(), "Школа зрителя")
         );
         school.users().add(actor);
-        school.users().roles(actor).grant(Roles.RoleEnum.VIEWER);
+        school.users().roles(actor).grant(Roles.RoleEnum.STUDENT);
         Assertions.assertThrows(
             AccessDeniedException.class,
             () -> new BdsAuthorized(school.buildings(), school, actor).create(
                 new BdInputName(new BdInput(), "Запрещённый корпус")
             ),
-            "A viewer created a school building"
+            "A student created a school building"
         );
     }
 

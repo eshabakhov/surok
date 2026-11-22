@@ -3,7 +3,13 @@ openapi: 3.0.1
 info:
   title: Surok API
   version: "@project.version@"
-  description: Manage schools, federal curricula, and schedules.
+  description: >-
+    Manage schools, federal curricula, and schedules.
+    The x-roles list names alternative roles for an operation.
+    ADMIN is global.
+    School roles apply in the school identified by the path.
+    An empty list requires no specific role.
+    Authentication is defined by security.
 servers:
   - url: /
 security:
@@ -15,6 +21,7 @@ paths:
         - Schools
       summary: Get school
       operationId: school
+      x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR, TEACHER, STUDENT]
       parameters:
         - name: school
           in: path
@@ -54,6 +61,7 @@ paths:
       summary: Update school
       description: Update the school with JSON. The browser edit form uses this operation.
       operationId: revise
+      x-roles: [ADMIN, DIRECTOR]
       parameters:
         - name: school
           in: path
@@ -112,6 +120,7 @@ paths:
         - Schools
       summary: Remove school
       operationId: remove
+      x-roles: [ADMIN]
       parameters:
         - name: school
           in: path
@@ -132,6 +141,7 @@ paths:
         - Users
       summary: Add existing user to school
       operationId: add
+      x-roles: [ADMIN, DIRECTOR]
       parameters:
         - name: school
           in: path
@@ -201,6 +211,7 @@ paths:
         - Users
       summary: Remove user from school
       operationId: remove_1
+      x-roles: [ADMIN, DIRECTOR]
       parameters:
         - name: school
           in: path
@@ -231,6 +242,7 @@ paths:
         - Teachers
       summary: Get teacher
       operationId: teacher
+      x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR, TEACHER, STUDENT]
       parameters:
         - name: school
           in: path
@@ -280,6 +292,7 @@ paths:
       summary: Update teacher
       description: Update the teacher with versioned JSON. The browser edit form uses this operation.
       operationId: revise_1
+      x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR]
       parameters:
         - name: school
           in: path
@@ -373,6 +386,7 @@ paths:
         - Teachers
       summary: Remove teacher
       operationId: remove_2
+      x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR]
       parameters:
         - name: school
           in: path
@@ -403,6 +417,7 @@ paths:
         - Schedules
       summary: Get schedule
       operationId: schedule
+      x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR, TEACHER, STUDENT]
       parameters:
         - name: school
           in: path
@@ -452,6 +467,7 @@ paths:
       summary: Update schedule
       description: Update the schedule with versioned JSON. The browser edit form uses this operation.
       operationId: revise_2
+      x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR]
       parameters:
         - name: school
           in: path
@@ -545,6 +561,7 @@ paths:
         - Schedules
       summary: Remove schedule
       operationId: remove_3
+      x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR]
       parameters:
         - name: school
           in: path
@@ -579,6 +596,7 @@ paths:
         Identifiers in examples must be replaced with existing school, schedule,
         curriculum and subject identifiers
       operationId: read
+      x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR, TEACHER, STUDENT]
       parameters:
         - name: school
           in: path
@@ -810,6 +828,7 @@ paths:
         Returns 201 with Location for a new draft, or 200 for an existing draft
         A valid CSRF token is required, including when using Basic authentication
       operationId: save
+      x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR]
       parameters:
         - name: school
           in: path
@@ -1259,6 +1278,7 @@ paths:
         plan changes. The request contains only the new curriculum reference
         A valid CSRF token is required, including when using Basic authentication
       operationId: revise_3
+      x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR]
       parameters:
         - name: school
           in: path
@@ -1453,6 +1473,7 @@ paths:
         - SchoolClasses
       summary: Get school class
       operationId: clazz
+      x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR, TEACHER, STUDENT]
       parameters:
         - name: school
           in: path
@@ -1502,6 +1523,7 @@ paths:
       summary: Update school class
       description: Update the school class with versioned JSON. The browser edit form uses this operation.
       operationId: revise_4
+      x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR]
       parameters:
         - name: school
           in: path
@@ -1595,6 +1617,7 @@ paths:
         - SchoolClasses
       summary: Remove school class
       operationId: remove_4
+      x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR]
       parameters:
         - name: school
           in: path
@@ -1624,7 +1647,8 @@ paths:
       tags:
         - Buildings
       summary: Get building
-      operationId: building
+      operationId: Buildings.building
+      x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR, TEACHER, STUDENT]
       parameters:
         - name: school
           in: path
@@ -1673,7 +1697,8 @@ paths:
         - Buildings
       summary: Update building
       description: Update the building with versioned JSON. The browser edit form uses this operation.
-      operationId: revise_5
+      operationId: Building.revise
+      x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR]
       parameters:
         - name: school
           in: path
@@ -1741,7 +1766,8 @@ paths:
       tags:
         - Buildings
       summary: Remove building
-      operationId: remove_5
+      operationId: Buildings.remove
+      x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR]
       parameters:
         - name: school
           in: path
@@ -1772,6 +1798,7 @@ paths:
         - Cabinets
       summary: Get cabinet
       operationId: cabinet
+      x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR, TEACHER, STUDENT]
       parameters:
         - name: school
           in: path
@@ -1831,6 +1858,7 @@ paths:
       summary: Update classroom
       description: Update the cabinet with versioned JSON. The browser edit form uses this operation.
       operationId: revise_6
+      x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR]
       parameters:
         - name: school
           in: path
@@ -1909,6 +1937,7 @@ paths:
         - Cabinets
       summary: Remove cabinet
       operationId: remove_6
+      x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR]
       parameters:
         - name: school
           in: path
@@ -1949,6 +1978,7 @@ paths:
         - Subjects
       summary: Get subject
       operationId: subject
+      x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR, TEACHER, STUDENT]
       parameters:
         - name: school
           in: path
@@ -1997,6 +2027,7 @@ paths:
         - Subjects
       summary: Update subject
       operationId: revise_7
+      x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR]
       parameters:
         - name: school
           in: path
@@ -2065,6 +2096,7 @@ paths:
         - Subjects
       summary: Remove subject
       operationId: remove_7
+      x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR]
       parameters:
         - name: school
           in: path
@@ -2095,6 +2127,7 @@ paths:
         - Subjects
       summary: Get subject
       operationId: subject_1
+      x-roles: []
       parameters:
         - name: subject
           in: path
@@ -2133,6 +2166,7 @@ paths:
         - Subjects
       summary: Update subject
       operationId: revise_8
+      x-roles: [ADMIN]
       parameters:
         - name: subject
           in: path
@@ -2191,6 +2225,7 @@ paths:
         - Subjects
       summary: Remove subject
       operationId: remove_8
+      x-roles: [ADMIN]
       parameters:
         - name: subject
           in: path
@@ -2211,6 +2246,7 @@ paths:
         - Federal Curriculum Requirements
       summary: Get federal curriculum requirement
       operationId: requirement
+      x-roles: []
       parameters:
         - name: curriculum
           in: path
@@ -2258,6 +2294,7 @@ paths:
       tags:
         - Federal Curriculum Requirements
       operationId: update
+      x-roles: [ADMIN]
       parameters:
         - name: curriculum
           in: path
@@ -2327,6 +2364,7 @@ paths:
         - Federal Curriculum Requirements
       summary: Update curriculum requirement
       operationId: revise_9
+      x-roles: [ADMIN]
       parameters:
         - name: curriculum
           in: path
@@ -2397,6 +2435,7 @@ paths:
         - Federal Curriculum Requirements
       summary: Remove federal curriculum requirement
       operationId: remove_9
+      x-roles: [ADMIN]
       parameters:
         - name: curriculum
           in: path
@@ -2428,6 +2467,7 @@ paths:
       tags:
         - Users
       operationId: checkout
+      x-roles: []
       responses:
         "302":
           description: Redirect to the next page. No body.
@@ -2455,6 +2495,7 @@ paths:
       tags:
         - Users
       operationId: cancel
+      x-roles: []
       responses:
         "302":
           description: Redirect to the next page. No body.
@@ -2480,6 +2521,7 @@ paths:
       tags:
         - Users
       operationId: page
+      x-roles: []
       responses:
         "200":
           description: Rendered browser page.
@@ -2499,6 +2541,7 @@ paths:
         - Users
       summary: List school users
       operationId: list
+      x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR, TEACHER, STUDENT]
       parameters:
         - name: school
           in: path
@@ -2531,6 +2574,7 @@ paths:
         - Users
       summary: Add an existing account by username or email
       operationId: attach
+      x-roles: [ADMIN, DIRECTOR]
       parameters:
         - name: school
           in: path
@@ -2601,6 +2645,7 @@ paths:
         - Users
       summary: List school roles of user
       operationId: roles
+      x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR, TEACHER, STUDENT]
       parameters:
         - name: school
           in: path
@@ -2637,6 +2682,7 @@ paths:
         - Users
       summary: Grant school role
       operationId: grant
+      x-roles: [ADMIN, DIRECTOR]
       parameters:
         - name: school
           in: path
@@ -2690,6 +2736,7 @@ paths:
         - Teachers
       summary: Get teacher
       operationId: teacher_1
+      x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR, TEACHER, STUDENT]
       parameters:
         - name: school
           in: path
@@ -2739,6 +2786,7 @@ paths:
         - Teachers
       summary: Open the teacher creation form
       operationId: selection
+      x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR, TEACHER, STUDENT]
       parameters:
         - name: school
           in: path
@@ -2767,6 +2815,7 @@ paths:
       summary: List teachers
       description: Select a full HTML page, an HTML results fragment, JSON, or XML with the Accept header.
       operationId: selection_2
+      x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR, TEACHER, STUDENT]
       parameters:
         - name: school
           in: path
@@ -2859,6 +2908,7 @@ paths:
         - Teachers
       summary: Create teacher
       operationId: create_2
+      x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR]
       parameters:
         - name: school
           in: path
@@ -2928,6 +2978,7 @@ paths:
         The response shows current hours after application
         A valid CSRF token is required, including when using Basic authentication
       operationId: apply
+      x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR]
       parameters:
         - name: school
           in: path
@@ -3148,6 +3199,7 @@ paths:
         - Schedules
       summary: Get schedule
       operationId: schedule_1
+      x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR, TEACHER, STUDENT]
       parameters:
         - name: school
           in: path
@@ -3197,6 +3249,7 @@ paths:
         - Schedules
       summary: Open the schedule creation form
       operationId: selection_3
+      x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR, TEACHER, STUDENT]
       parameters:
         - name: school
           in: path
@@ -3225,6 +3278,7 @@ paths:
       summary: List schedules
       description: Select a full HTML page, an HTML results fragment, JSON, or XML with the Accept header.
       operationId: selection_4
+      x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR, TEACHER, STUDENT]
       parameters:
         - name: school
           in: path
@@ -3317,6 +3371,7 @@ paths:
         - Schedules
       summary: Create schedule
       operationId: create_4
+      x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR]
       parameters:
         - name: school
           in: path
@@ -3382,6 +3437,7 @@ paths:
         - Schools
       summary: Get school
       operationId: school_1
+      x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR, TEACHER, STUDENT]
       parameters:
         - name: school
           in: path
@@ -3421,6 +3477,7 @@ paths:
         - SchoolClasses
       summary: Get school class
       operationId: clazz_1
+      x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR, TEACHER, STUDENT]
       parameters:
         - name: school
           in: path
@@ -3470,6 +3527,7 @@ paths:
         - SchoolClasses
       summary: Open the class creation form
       operationId: selection_6
+      x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR, TEACHER, STUDENT]
       parameters:
         - name: school
           in: path
@@ -3498,6 +3556,7 @@ paths:
       summary: List classes
       description: Select a full HTML page, an HTML results fragment, JSON, or XML with the Accept header.
       operationId: selection_8
+      x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR, TEACHER, STUDENT]
       parameters:
         - name: school
           in: path
@@ -3590,6 +3649,7 @@ paths:
         - SchoolClasses
       summary: Create school class
       operationId: create_8
+      x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR]
       parameters:
         - name: school
           in: path
@@ -3653,8 +3713,9 @@ paths:
     get:
       tags:
         - Buildings
-      summary: Get building
-      operationId: building_1
+      summary: Open the building editing form
+      operationId: openBuildingEditForm
+      x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR, TEACHER, STUDENT]
       parameters:
         - name: school
           in: path
@@ -3704,6 +3765,7 @@ paths:
         - Cabinets
       summary: Get cabinet
       operationId: cabinet_1
+      x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR, TEACHER, STUDENT]
       parameters:
         - name: school
           in: path
@@ -3763,6 +3825,7 @@ paths:
         - Cabinets
       summary: Open the cabinet creation form
       operationId: selection_9
+      x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR, TEACHER, STUDENT]
       parameters:
         - name: school
           in: path
@@ -3801,6 +3864,7 @@ paths:
       summary: List cabinets
       description: Select a full HTML page, an HTML results fragment, JSON, or XML with the Accept header.
       operationId: selection_11
+      x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR, TEACHER, STUDENT]
       parameters:
         - name: school
           in: path
@@ -3903,6 +3967,7 @@ paths:
         - Cabinets
       summary: Create classroom
       operationId: create_11
+      x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR]
       parameters:
         - name: school
           in: path
@@ -3977,7 +4042,8 @@ paths:
       tags:
         - Buildings
       summary: Open the building creation form
-      operationId: selection_12
+      operationId: openBuildingCreationForm
+      x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR, TEACHER, STUDENT]
       parameters:
         - name: school
           in: path
@@ -4005,7 +4071,8 @@ paths:
         - Buildings
       summary: List buildings
       description: Select a full HTML page, an HTML results fragment, JSON, or XML with the Accept header.
-      operationId: selection_14
+      operationId: Buildings.selection
+      x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR, TEACHER, STUDENT]
       parameters:
         - name: school
           in: path
@@ -4097,7 +4164,8 @@ paths:
       tags:
         - Buildings
       summary: Create building
-      operationId: create_14
+      operationId: Buildings.create
+      x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR]
       parameters:
         - name: school
           in: path
@@ -4163,6 +4231,7 @@ paths:
         - Schools
       summary: Open the school creation form
       operationId: selection_15
+      x-roles: []
       responses:
         "200":
           description: HTML page with the school creation form.
@@ -4180,6 +4249,7 @@ paths:
       summary: List schools
       description: Select a full HTML page, an HTML results fragment, JSON, or XML with the Accept header.
       operationId: selection_16
+      x-roles: []
       parameters:
         - name: filter
           in: query
@@ -4262,6 +4332,7 @@ paths:
         - Schools
       summary: Create school
       operationId: create_16
+      x-roles: []
       responses:
         "201":
           description: The resource was created.
@@ -4322,6 +4393,7 @@ paths:
         - Subjects
       summary: Get subject editing form
       operationId: editSubjectFederal
+      x-roles: [ADMIN]
       parameters:
         - name: subject
           in: path
@@ -4349,6 +4421,7 @@ paths:
         - Subjects
       summary: Get subject editing form
       operationId: editSubjectSchool
+      x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR, TEACHER, STUDENT]
       parameters:
         - name: school
           in: path
@@ -4386,6 +4459,7 @@ paths:
         - Subjects
       summary: Get subject creation form
       operationId: formSubjectFederal
+      x-roles: [ADMIN]
       responses:
         "200":
           description: HTML form for creating a subject.
@@ -4403,6 +4477,7 @@ paths:
         - Subjects
       summary: Get subject creation form
       operationId: formSubjectSchool
+      x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR, TEACHER, STUDENT]
       parameters:
         - name: school
           in: path
@@ -4431,6 +4506,7 @@ paths:
         - Subjects
       summary: List subjects
       operationId: selection_22
+      x-roles: []
       parameters:
         - name: filter
           in: query
@@ -4513,6 +4589,7 @@ paths:
         - Subjects
       summary: Create subject
       operationId: create_22
+      x-roles: [ADMIN]
       responses:
         "201":
           description: The resource was created.
@@ -4567,6 +4644,7 @@ paths:
         - Subjects
       summary: List subjects
       operationId: selection_23
+      x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR, TEACHER, STUDENT]
       parameters:
         - name: school
           in: path
@@ -4659,6 +4737,7 @@ paths:
         - Subjects
       summary: Create subject
       operationId: create_23
+      x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR]
       parameters:
         - name: school
           in: path
@@ -4724,6 +4803,7 @@ paths:
         - Federal Curriculum Requirements
       summary: List federal curriculum requirements
       operationId: selection_24
+      x-roles: []
       parameters:
         - name: curriculum
           in: path
@@ -4818,6 +4898,7 @@ paths:
         - Federal Curriculum Requirements
       summary: Create curriculum requirement
       operationId: create_24
+      x-roles: [ADMIN]
       parameters:
         - name: curriculum
           in: path
@@ -4891,6 +4972,7 @@ paths:
         - Federal Curriculums
       summary: Get federal curriculum editing form
       operationId: editCurriculum
+      x-roles: [ADMIN]
       parameters:
         - name: curriculum
           in: path
@@ -4920,6 +5002,7 @@ paths:
         - Federal Curriculums
       summary: Get federal curriculum creation form
       operationId: formCurriculum
+      x-roles: [ADMIN]
       responses:
         "200":
           description: HTML form for creating a federal curriculum.
@@ -4938,6 +5021,7 @@ paths:
       summary: Register new user
       description: Accepts JSON or the browser registration form.
       operationId: register
+      x-roles: []
       responses:
         "201":
           description: The user account was created.
@@ -5000,6 +5084,7 @@ paths:
         - Users
       summary: Get all roles for user
       operationId: listRoles
+      x-roles: [ADMIN]
       parameters:
         - name: user
           in: path
@@ -5026,6 +5111,7 @@ paths:
         - Users
       summary: Assign role to user
       operationId: assignRole
+      x-roles: [ADMIN]
       parameters:
         - name: user
           in: path
@@ -5068,6 +5154,7 @@ paths:
       tags:
         - Users
       operationId: page_1
+      x-roles: []
       responses:
         "200":
           description: Rendered browser page.
@@ -5112,6 +5199,7 @@ paths:
       tags:
         - Users
       operationId: page_2
+      x-roles: []
       responses:
         "200":
           description: Rendered browser page.
@@ -5149,6 +5237,7 @@ paths:
       tags:
         - Users
       operationId: page_3
+      x-roles: []
       responses:
         "200":
           description: Rendered browser page.
@@ -5167,6 +5256,7 @@ paths:
         - Teaching loads
       summary: Get teaching load
       operationId: load
+      x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR, TEACHER, STUDENT]
       parameters:
         - name: school
           in: path
@@ -5226,6 +5316,7 @@ paths:
         - Teaching loads
       summary: List teaching loads
       operationId: selection_27
+      x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR, TEACHER, STUDENT]
       parameters:
         - name: school
           in: path
@@ -5295,6 +5386,7 @@ paths:
         - Teaching loads
       summary: List teaching loads
       operationId: selection_28
+      x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR, TEACHER, STUDENT]
       parameters:
         - name: school
           in: path
@@ -5365,6 +5457,7 @@ paths:
         - Teaching loads
       summary: List teaching loads
       operationId: selection_29
+      x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR, TEACHER, STUDENT]
       parameters:
         - name: school
           in: path
@@ -5438,6 +5531,7 @@ paths:
         Identifiers in examples must be replaced with existing school, schedule,
         curriculum and subject identifiers
       operationId: read_1
+      x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR, TEACHER, STUDENT]
       parameters:
         - name: school
           in: path
@@ -5671,6 +5765,7 @@ paths:
         routes are listed, excluding GET aliases for forms and fragments. Examples show an
         excerpt; the response includes all roles, including ANONYMOUS
       operationId: page_4
+      x-roles: [ADMIN]
       responses:
         "200":
           description: Permission matrix grouped by resource.
@@ -5737,6 +5832,7 @@ paths:
         - Federal Curriculums
       summary: Get federal curriculum
       operationId: curriculum_1
+      x-roles: []
       parameters:
         - name: curriculum
           in: path
@@ -5789,6 +5885,7 @@ paths:
         - Federal Curriculums
       summary: Update federal curriculum
       operationId: reviseCurriculum
+      x-roles: [ADMIN]
       parameters:
         - name: curriculum
           in: path
@@ -5869,6 +5966,7 @@ paths:
         - Federal Curriculums
       summary: Remove federal curriculum
       operationId: remove_10
+      x-roles: [ADMIN]
       parameters:
         - name: curriculum
           in: path
@@ -5891,6 +5989,7 @@ paths:
         - Federal Curriculums
       summary: List federal curriculums
       operationId: selection_38
+      x-roles: []
       parameters:
         - name: filter
           in: query
@@ -5975,6 +6074,7 @@ paths:
         - Federal Curriculums
       summary: Create federal curriculum
       operationId: createCurriculum
+      x-roles: [ADMIN]
       responses:
         '201':
           description: The resource was created.
@@ -6055,6 +6155,7 @@ paths:
         - Users
       summary: Revoke school role
       operationId: revoke
+      x-roles: [ADMIN, DIRECTOR]
       parameters:
         - name: school
           in: path
@@ -6095,6 +6196,7 @@ paths:
         - Users
       summary: Remove user account
       operationId: remove_11
+      x-roles: [ADMIN]
       parameters:
         - name: user
           in: path
@@ -6115,6 +6217,7 @@ paths:
         - Users
       summary: Remove role from user
       operationId: removeRole
+      x-roles: [ADMIN]
       parameters:
         - name: user
           in: path
@@ -7204,7 +7307,6 @@ components:
             - DEPUTY_DIRECTOR
             - TEACHER
             - STUDENT
-            - VIEWER
     AccountRoleInput:
       type: object
       description: Account-wide role to grant.
@@ -7239,7 +7341,6 @@ components:
             - DEPUTY_DIRECTOR
             - TEACHER
             - STUDENT
-            - VIEWER
     SchoolRoleList:
       type: array
       description: Role assignments visible on this account or membership.
@@ -8118,14 +8219,14 @@ components:
       summary: Existing account as shown in a school membership response.
       value:
         id: 53
-        username: schedule.viewer
+        username: schedule.student
         admin: false
     SchoolMemberXml:
       summary: Existing account as shown in a school membership response.
       value: |-
         <user>
           <id>53</id>
-          <username>schedule.viewer</username>
+          <username>schedule.student</username>
           <admin>false</admin>
         </user>
     TeacherJson:
@@ -8347,8 +8448,8 @@ components:
     RegistrationForm:
       summary: Browser registration form.
       value:
-        username: schedule.viewer
-        email: viewer@example.org
+        username: schedule.student
+        email: student@example.org
         password: Example-Pass-42!
         confirmPassword: Example-Pass-42!
     HtmlPageRegistrationErrorHtml:
@@ -8359,7 +8460,7 @@ components:
       value:
         items:
           - id: 53
-            username: schedule.viewer
+            username: schedule.student
             admin: false
     SchoolMemberListXml:
       summary: Collection of user records.
@@ -8367,28 +8468,28 @@ components:
         <users>
           <user>
             <id>53</id>
-            <username>schedule.viewer</username>
+            <username>schedule.student</username>
             <admin>false</admin>
           </user>
         </users>
     MembershipInputJson:
       summary: Existing account to attach to a school.
       value:
-        login: viewer@example.org
+        login: student@example.org
     SchoolRoleListJson:
       summary: Role assignments visible on this account or membership.
       value:
         - uid: 84
-          name: VIEWER
+          name: STUDENT
     SchoolRoleInputJson:
       summary: School role to grant to an existing member.
       value:
-        role: VIEWER
+        role: STUDENT
     SchoolRoleJson:
       summary: A role assignment attached to a user.
       value:
         uid: 84
-        name: VIEWER
+        name: STUDENT
     HtmlPageTeacherEditHtml:
       summary: Edit form that submits versioned JSON with PUT through JavaScript.
       value: |-
@@ -8912,15 +9013,15 @@ components:
     RegistrationInputJson:
       summary: New account registration data.
       value:
-        username: schedule.viewer
-        email: viewer@example.org
+        username: schedule.student
+        email: student@example.org
         password: Example-Pass-42!
     AccountJson:
       summary: Account returned after successful registration.
       value:
         uid: 53
         credentials:
-          username: schedule.viewer
+          username: schedule.student
         roles:
           list:
             - uid: 84

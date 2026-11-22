@@ -15,8 +15,7 @@
                 'STUDENT',
                 'BASIC_MAKER',
                 'ADVANCED_MAKER',
-                'PRO_MAKER',
-                'VIEWER'
+                'PRO_MAKER'
             );
             ]]>
         </sql>

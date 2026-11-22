@@ -76,7 +76,7 @@ final class BdAuthorizedTest {
      * @throws Exception If setup fails
      */
     @Test
-    void deniesCabinetCreationThroughAViewersBuilding(@Autowired final DSLContext ctx)
+    void deniesCabinetCreationThroughAStudentsBuilding(@Autowired final DSLContext ctx)
         throws Exception {
         final UrAccount actor = new UrsPostgres(ctx).register(
             UUID.randomUUID().toString(), "ValidPassword1!",
@@ -89,13 +89,13 @@ final class BdAuthorizedTest {
             new BdInputName(new BdInput(), "Корпус зрителя")
         );
         school.users().add(actor);
-        school.users().roles(actor).grant(Roles.RoleEnum.VIEWER);
+        school.users().roles(actor).grant(Roles.RoleEnum.STUDENT);
         Assertions.assertThrows(
             AccessDeniedException.class,
             () -> new BdAuthorized(building, school, actor).cabinets().create(
                 new CbInputName(new CbInput(), "Запрещённый кабинет")
             ),
-            "A viewer created a cabinet through a building"
+            "A student created a cabinet through a building"
         );
     }
 

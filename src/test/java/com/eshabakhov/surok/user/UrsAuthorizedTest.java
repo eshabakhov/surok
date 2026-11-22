@@ -66,13 +66,13 @@ final class UrsAuthorizedTest {
     }
 
     /**
-     * Lets a viewer inspect other members of their school.
+     * Lets a student inspect other members of their school.
      *
      * @param ctx Database context
      * @throws Exception If setup fails
      */
     @Test
-    void readsSchoolMembersForAViewer(@Autowired final DSLContext ctx) throws Exception {
+    void readsSchoolMembersForAStudent(@Autowired final DSLContext ctx) throws Exception {
         final UrAccount actor = new UrsPostgres(ctx).register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
@@ -80,15 +80,15 @@ final class UrsAuthorizedTest {
         final School school = actor.schools().create(
             new SlInputName(new SlInput(), String.format("Гимназия %s", UUID.randomUUID()))
         );
-        final UrAccount viewer = new UrsPostgres(ctx).register(
+        final UrAccount student = new UrsPostgres(ctx).register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
         );
-        school.users().add(viewer);
-        school.users().roles(viewer).grant(Roles.RoleEnum.VIEWER);
+        school.users().add(student);
+        school.users().roles(student).grant(Roles.RoleEnum.STUDENT);
         MatcherAssert.assertThat(
-            "A school viewer could not inspect another member",
-            new UrsAuthorized(school.users(), school, viewer).contains(actor),
+            "A school student could not inspect another member",
+            new UrsAuthorized(school.users(), school, student).contains(actor),
             Matchers.is(true)
         );
     }

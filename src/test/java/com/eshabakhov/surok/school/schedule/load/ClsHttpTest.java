@@ -116,7 +116,7 @@ final class ClsHttpTest {
     void printsOnlyRequestedPageAndSchedule() throws Exception {
         this.mvc.perform(
             MockMvcRequestBuilders.get("/schools/1/schedules/100/loads/")
-                .session(this.session(Roles.RoleEnum.VIEWER, 1L))
+                .session(this.session(Roles.RoleEnum.STUDENT, 1L))
                 .accept("application/vnd.surok.class-loads.v1+json")
                 .param("limit", "1").param("offset", "2")
         ).andExpect(MockMvcResultMatchers.status().isOk())
@@ -127,7 +127,7 @@ final class ClsHttpTest {
             .andExpect(MockMvcResultMatchers.jsonPath("$.page.offset").value(2));
         this.mvc.perform(
             MockMvcRequestBuilders.get("/schools/1/schedules/100/loads")
-                .session(this.session(Roles.RoleEnum.VIEWER, 1L))
+                .session(this.session(Roles.RoleEnum.STUDENT, 1L))
                 .accept("application/vnd.surok.class-loads.v1+xml")
         ).andExpect(MockMvcResultMatchers.status().isOk())
             .andExpect(MockMvcResultMatchers.xpath("count(/loads/load)").number(2.0));
@@ -137,7 +137,7 @@ final class ClsHttpTest {
     void negotiatesEntityFormats() throws Exception {
         this.mvc.perform(
             MockMvcRequestBuilders.get("/schools/1/schedules/100/loads/50")
-                .session(this.session(Roles.RoleEnum.VIEWER, 1L))
+                .session(this.session(Roles.RoleEnum.STUDENT, 1L))
                 .accept("application/vnd.surok.class-load-v1+json")
         ).andExpect(MockMvcResultMatchers.status().isOk())
             .andExpect(MockMvcResultMatchers.jsonPath("$.schoolClass.id").value(10))
@@ -145,7 +145,7 @@ final class ClsHttpTest {
             .andExpect(MockMvcResultMatchers.jsonPath("$.hours").value(5));
         this.mvc.perform(
             MockMvcRequestBuilders.get("/schools/1/schedules/100/loads/50")
-                .session(this.session(Roles.RoleEnum.VIEWER, 1L))
+                .session(this.session(Roles.RoleEnum.STUDENT, 1L))
                 .accept("application/vnd.surok.class-load-v1+xml")
         ).andExpect(MockMvcResultMatchers.status().isOk())
             .andExpect(MockMvcResultMatchers.xpath("/load/schoolClass/name").string("2А"));
@@ -262,14 +262,14 @@ final class ClsHttpTest {
             this.mvc.perform(
                 MockMvcRequestBuilders.get(
                     String.format("/schools/1/schedules/100/loads/%d", identifier)
-                ).session(this.session(Roles.RoleEnum.VIEWER, 1L))
+                ).session(this.session(Roles.RoleEnum.STUDENT, 1L))
             ).andReturn().getResponse().getStatus(),
             Matchers.is(404)
         );
     }
 
     @ParameterizedTest
-    @CsvSource({"DIRECTOR, 403", "VIEWER, 403", "ADMIN, 200"})
+    @CsvSource({"DIRECTOR, 403", "STUDENT, 403", "ADMIN, 200"})
     void restrictsAnotherSchoolsLoads(final Roles.RoleEnum role, final int status)
         throws Exception {
         MatcherAssert.assertThat(
@@ -289,7 +289,7 @@ final class ClsHttpTest {
             "The applied loads endpoint returned an unsupported representation",
             this.mvc.perform(
                 MockMvcRequestBuilders.get("/schools/1/schedules/100/loads")
-                    .session(this.session(Roles.RoleEnum.VIEWER, 1L)).header("Accept", accept)
+                    .session(this.session(Roles.RoleEnum.STUDENT, 1L)).header("Accept", accept)
             ).andReturn().getResponse().getStatus(),
             Matchers.is(406)
         );
@@ -313,7 +313,7 @@ final class ClsHttpTest {
         }
         if (List.of(
             Roles.RoleEnum.DIRECTOR, Roles.RoleEnum.DEPUTY_DIRECTOR,
-            Roles.RoleEnum.TEACHER, Roles.RoleEnum.STUDENT, Roles.RoleEnum.VIEWER
+            Roles.RoleEnum.TEACHER, Roles.RoleEnum.STUDENT
         ).contains(role)) {
             new UrsPostgres(this.ctx, school).roles(user).grant(role);
         } else {

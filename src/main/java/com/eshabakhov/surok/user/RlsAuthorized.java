@@ -13,7 +13,7 @@ import java.util.List;
 
 /**
  * School role assignments that check current membership on each operation.
- * For example, a director can grant a school role and a viewer can list roles.
+ * For example, a director can grant a school role and a student can list roles.
  *
  * @since 0.0.1
  */

@@ -11,7 +11,7 @@ import java.util.ResourceBundle;
 
 /**
  * One role's access to an operation, including the school ownership condition.
- * For example, print DIRECTOR with scope school and VIEWER with scope denied.
+ * For example, print DIRECTOR with scope school and STUDENT with scope denied.
  *
  * @since 0.0.1
  */

@@ -221,7 +221,7 @@ final class UserControllerTest {
         final Roles roles;
         if (scoped) {
             path = String.format("/schools/%d/users/%d/roles", school.uid(), target.uid());
-            name = "VIEWER";
+            name = "STUDENT";
             type = "application/vnd.surok.school-role.v1+json";
             roles = school.users().roles(target);
         } else {

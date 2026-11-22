@@ -20,7 +20,7 @@ final class RlsSchoolTest {
     @ParameterizedTest
     @EnumSource(
         value = Roles.RoleEnum.class,
-        names = {"DIRECTOR", "DEPUTY_DIRECTOR", "TEACHER", "STUDENT", "VIEWER"},
+        names = {"DIRECTOR", "DEPUTY_DIRECTOR", "TEACHER", "STUDENT"},
         mode = EnumSource.Mode.EXCLUDE
     )
     void rejectsRolesThatCannotBeAssignedWithinASchool(final Roles.RoleEnum role) {

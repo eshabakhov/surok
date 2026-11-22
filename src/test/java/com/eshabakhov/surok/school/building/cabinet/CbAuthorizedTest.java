@@ -75,13 +75,13 @@ final class CbAuthorizedTest {
     }
 
     /**
-     * Rejects a viewer's direct attempt to revise a cabinet.
+     * Rejects a student's direct attempt to revise a cabinet.
      *
      * @param ctx Database context
      * @throws Exception If setup fails
      */
     @Test
-    void deniesRevisionByAViewer(@Autowired final DSLContext ctx) throws Exception {
+    void deniesRevisionByAStudent(@Autowired final DSLContext ctx) throws Exception {
         final UrAccount actor = new UrsPostgres(ctx).register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
@@ -93,13 +93,13 @@ final class CbAuthorizedTest {
             new BdInputName(new BdInput(), "Корпус зрителя")
         ).cabinets().create(new CbInputName(new CbInput(), "Кабинет зрителя"));
         school.users().add(actor);
-        school.users().roles(actor).grant(Roles.RoleEnum.VIEWER);
+        school.users().roles(actor).grant(Roles.RoleEnum.STUDENT);
         Assertions.assertThrows(
             AccessDeniedException.class,
             () -> new CbAuthorized(selected, school, actor).revise(
                 new CbInputName(new CbInput(), "Другое имя")
             ),
-            "A viewer revised a cabinet"
+            "A student revised a cabinet"
         );
     }
 

@@ -17,7 +17,7 @@ import java.util.stream.StreamSupport;
 
 /**
  * School teachers protected by the acting user's current school role.
- * For example, a director can add a teacher and a viewer can list teachers.
+ * For example, a director can add a teacher and a student can list teachers.
  *
  * @since 0.0.1
  */
