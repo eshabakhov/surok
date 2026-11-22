@@ -14,7 +14,7 @@ import java.util.stream.StreamSupport;
 
 /**
  * Applied teaching loads visible to members of their school.
- * For example, a viewer can list the loads of a selected schedule.
+ * For example, a student can list the loads of a selected schedule.
  *
  * @since 0.0.1
  */

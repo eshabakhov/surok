@@ -143,7 +143,7 @@ final class RqsHttpTest {
             this.mvc.perform(
                 MockMvcRequestBuilders.get(
                     "/federal/curriculums/17/requirements/{id}", this.optional(5, 0).uid()
-                ).session(this.session(Roles.RoleEnum.VIEWER)).accept(
+                ).session(this.session(Roles.RoleEnum.STUDENT)).accept(
                     String.format(
                         "application/vnd.surok.federal-curriculum-requirement-v1+%s", format
                     )
@@ -179,7 +179,7 @@ final class RqsHttpTest {
             this.mvc.perform(
                 this.authorized(
                     MockMvcRequestBuilders.post("/federal/curriculums/17/requirements"),
-                    Roles.RoleEnum.VIEWER
+                    Roles.RoleEnum.STUDENT
                 ).contentType("application/vnd.surok.federal-curriculum-requirement-v1+json")
                     .accept("application/vnd.surok.federal-curriculum-requirement-v1+json").content(
                         "{\"grade\":5,\"partType\":\"OPTIONAL\",\"hours\":7}"
@@ -327,7 +327,7 @@ final class RqsHttpTest {
                 String.format("%s@example.org", UUID.randomUUID())
             ).fetchSingle("id", Long.class)
         );
-        if (role != Roles.RoleEnum.VIEWER) {
+        if (role != Roles.RoleEnum.STUDENT) {
             user.roles().grant(role);
         }
         final UrAcAuth principal = new UrAcAuth(user);

@@ -13,7 +13,7 @@ import com.eshabakhov.surok.security.right.RtSchoolMember;
 
 /**
  * School users whose operations check the acting user's current membership.
- * For example, a director may add a member, while a viewer may only read.
+ * For example, a director may add a member, while a student may only read.
  *
  * @since 0.0.1
  */

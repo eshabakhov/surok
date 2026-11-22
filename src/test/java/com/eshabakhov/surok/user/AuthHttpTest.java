@@ -121,7 +121,7 @@ final class AuthHttpTest {
     @ParameterizedTest
     @CsvSource(
         {
-            "ADMIN, false, /schools", "VIEWER, false, /schools", "DIRECTOR, true, /schools"
+            "ADMIN, false, /schools", "BASIC_MAKER, false, /schools", "DIRECTOR, true, /schools"
         }
     )
     void selectsAuthenticatedDestination(
@@ -137,7 +137,7 @@ final class AuthHttpTest {
             .register("visitor", "ValidPassword1!", "visitor@example.com", false);
         if (school) {
             new UrsPostgres(this.ctx, identifier).roles(user).grant(role);
-        } else if (role != Roles.RoleEnum.VIEWER) {
+        } else if (role == Roles.RoleEnum.ADMIN) {
             user.roles().grant(role);
         }
         this.mvc.perform(

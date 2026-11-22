@@ -17,7 +17,7 @@ import java.util.stream.StreamSupport;
 
 /**
  * School classes protected by the acting user's current school role.
- * For example, a director can create a class and a viewer can list classes.
+ * For example, a director can create a class and a student can list classes.
  *
  * @since 0.0.1
  */

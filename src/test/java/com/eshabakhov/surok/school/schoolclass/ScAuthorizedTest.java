@@ -75,13 +75,13 @@ final class ScAuthorizedTest {
     }
 
     /**
-     * Allows a school viewer to read a class grade.
+     * Allows a school student to read a class grade.
      *
      * @param ctx Database context
      * @throws Exception If setup or reading fails
      */
     @Test
-    void readsTheGradeForAViewer(@Autowired final DSLContext ctx) throws Exception {
+    void readsTheGradeForAStudent(@Autowired final DSLContext ctx) throws Exception {
         final UrAccount actor = new UrsPostgres(ctx).register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
@@ -90,9 +90,9 @@ final class ScAuthorizedTest {
             new SlInputName(new SlInput(), "Школа зрителя")
         );
         school.users().add(actor);
-        school.users().roles(actor).grant(Roles.RoleEnum.VIEWER);
+        school.users().roles(actor).grant(Roles.RoleEnum.STUDENT);
         MatcherAssert.assertThat(
-            "A school viewer could not read a class grade",
+            "A school student could not read a class grade",
             new ScAuthorized(
                 school.schoolClasses().create(
                     new ScInputLitera(new ScInputGrade(new ScInput(), "7"), "Я")

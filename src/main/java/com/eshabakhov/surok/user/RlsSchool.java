@@ -49,7 +49,7 @@ public final class RlsSchool implements Roles {
     public Role grant(final RoleEnum role) throws Exception {
         if (!List.of(
             RoleEnum.DIRECTOR, RoleEnum.DEPUTY_DIRECTOR,
-            RoleEnum.TEACHER, RoleEnum.STUDENT, RoleEnum.VIEWER
+            RoleEnum.TEACHER, RoleEnum.STUDENT
         ).contains(role)) {
             throw new RoleGrantException("Only school roles can be assigned within a school");
         }

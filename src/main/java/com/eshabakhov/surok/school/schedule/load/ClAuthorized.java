@@ -12,7 +12,7 @@ import com.eshabakhov.surok.security.right.RtSchoolMember;
 
 /**
  * Applied teaching load visible to members of its school.
- * For example, a viewer can inspect its class, subject, and hours.
+ * For example, a student can inspect its class, subject, and hours.
  *
  * @since 0.0.1
  */

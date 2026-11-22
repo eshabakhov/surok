@@ -606,7 +606,6 @@ public final class UrsHttp {
                 case "DEPUTY_DIRECTOR" -> Roles.RoleEnum.DEPUTY_DIRECTOR;
                 case "TEACHER" -> Roles.RoleEnum.TEACHER;
                 case "STUDENT" -> Roles.RoleEnum.STUDENT;
-                case "VIEWER" -> Roles.RoleEnum.VIEWER;
                 case null, default -> throw new RoleAssignmentException("Unknown school role");
             }
         );

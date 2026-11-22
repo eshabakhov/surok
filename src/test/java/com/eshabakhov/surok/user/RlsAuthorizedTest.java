@@ -24,7 +24,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
  * School role assignments follow the actor's current school role.
- * For example, a viewer can inspect roles while only a director can grant them.
+ * For example, a student can inspect roles while only a director can grant them.
  *
  * @since 0.0.1
  */
@@ -69,13 +69,13 @@ final class RlsAuthorizedTest {
     }
 
     /**
-     * Lets a viewer inspect school roles.
+     * Lets a student inspect school roles.
      *
      * @param ctx Database context
      * @throws Exception If setup fails
      */
     @Test
-    void readsSchoolRolesForAViewer(@Autowired final DSLContext ctx) throws Exception {
+    void readsSchoolRolesForAStudent(@Autowired final DSLContext ctx) throws Exception {
         final UrAccount actor = new UrsPostgres(ctx).register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
@@ -83,28 +83,28 @@ final class RlsAuthorizedTest {
         final School school = actor.schools().create(
             new SlInputName(new SlInput(), String.format("Гимназия %s", UUID.randomUUID()))
         );
-        final UrAccount viewer = new UrsPostgres(ctx).register(
+        final UrAccount student = new UrsPostgres(ctx).register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
         );
-        school.users().add(viewer);
-        school.users().roles(viewer).grant(Roles.RoleEnum.VIEWER);
+        school.users().add(student);
+        school.users().roles(student).grant(Roles.RoleEnum.STUDENT);
         MatcherAssert.assertThat(
-            "A school viewer could not inspect their role",
-            new RlsAuthorized(school.users().roles(viewer), school, viewer).contains(
-                Roles.RoleEnum.VIEWER
+            "A school student could not inspect their role",
+            new RlsAuthorized(school.users().roles(student), school, student).contains(
+                Roles.RoleEnum.STUDENT
             ), Matchers.is(true)
         );
     }
 
     /**
-     * Prevents a school viewer from granting roles to another member.
+     * Prevents a school student from granting roles to another member.
      *
      * @param ctx Database context
      * @throws Exception If setup fails
      */
     @Test
-    void deniesRoleAssignmentByAViewer(@Autowired final DSLContext ctx) throws Exception {
+    void deniesRoleAssignmentByAStudent(@Autowired final DSLContext ctx) throws Exception {
         final UrAccount actor = new UrsPostgres(ctx).register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
@@ -112,7 +112,7 @@ final class RlsAuthorizedTest {
         final School school = actor.schools().create(
             new SlInputName(new SlInput(), String.format("Школа %s", UUID.randomUUID()))
         );
-        final UrAccount viewer = new UrsPostgres(ctx).register(
+        final UrAccount student = new UrsPostgres(ctx).register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
         );
@@ -120,15 +120,15 @@ final class RlsAuthorizedTest {
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
         );
-        school.users().add(viewer);
-        school.users().roles(viewer).grant(Roles.RoleEnum.VIEWER);
+        school.users().add(student);
+        school.users().roles(student).grant(Roles.RoleEnum.STUDENT);
         school.users().add(target);
         Assertions.assertThrows(
             AccessDeniedException.class,
-            () -> new RlsAuthorized(school.users().roles(target), school, viewer).grant(
+            () -> new RlsAuthorized(school.users().roles(target), school, student).grant(
                 Roles.RoleEnum.TEACHER
             ),
-            "A school viewer granted a role to another member"
+            "A school student granted a role to another member"
         );
     }
 

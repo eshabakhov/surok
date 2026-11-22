@@ -192,19 +192,19 @@ final class UrsPostgresTest {
     }
 
     /**
-     * Viewer is a school role and cannot be granted globally.
+     * Student is a school role and cannot be granted globally.
      *
      * @param ctx Database context
      * @throws Exception If user registration fails
      */
     @Test
-    void rejectsGlobalViewerRole(@Autowired final DSLContext ctx) throws Exception {
+    void rejectsGlobalStudentRole(@Autowired final DSLContext ctx) throws Exception {
         final UrAccount user = new UrsPostgres(ctx).register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
         );
         Assertions.assertThrows(
-            RoleGrantException.class, () -> user.roles().grant(Roles.RoleEnum.VIEWER)
+            RoleGrantException.class, () -> user.roles().grant(Roles.RoleEnum.STUDENT)
         );
     }
 

@@ -17,7 +17,7 @@ import java.util.Map;
 
 /**
  * Teaching load draft protected by the acting user's current school role.
- * For example, a viewer can inspect a draft while a director can apply it.
+ * For example, a student can inspect a draft while a director can apply it.
  *
  * @since 0.0.1
  */

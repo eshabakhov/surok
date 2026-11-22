@@ -66,7 +66,7 @@ final class UrAcRoleTest {
         MatcherAssert.assertThat(
             "A representative school exposed its director role to an unrelated user",
             new RtSchoolDirector(
-                new UrAcRole(43L, Roles.RoleEnum.VIEWER),
+                new UrAcRole(43L, Roles.RoleEnum.STUDENT),
                 new UrAcRole(31L, Roles.RoleEnum.DIRECTOR).schools().iterate().iterator().next()
             ).allows(),
             Matchers.is(false)

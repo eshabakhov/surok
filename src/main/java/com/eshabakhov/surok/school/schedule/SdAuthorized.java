@@ -17,7 +17,7 @@ import com.eshabakhov.surok.security.right.RtSchoolMember;
 
 /**
  * Schedule that checks the acting user's current school role.
- * For example, a viewer can read its loads but cannot revise its name.
+ * For example, a student can read its loads but cannot revise its name.
  *
  * @since 0.0.1
  */

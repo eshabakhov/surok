@@ -38,7 +38,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
  * Verifies school roles around a building's cabinet collection.
- * A deputy director can create, while a viewer cannot remove cabinets.
+ * A deputy director can create, while a student cannot remove cabinets.
  *
  * @since 0.0.1
  */
@@ -169,13 +169,13 @@ final class CbsAuthorizedTest {
     }
 
     /**
-     * Rejects removal by a school viewer with a global subscription.
+     * Rejects removal by a school student with a global subscription.
      *
      * @param ctx Database context
      * @throws Exception If setup fails
      */
     @Test
-    void deniesCabinetRemovalToAViewer(@Autowired final DSLContext ctx) throws Exception {
+    void deniesCabinetRemovalToAStudent(@Autowired final DSLContext ctx) throws Exception {
         final UrAccount actor = new UrsPostgres(ctx).register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
@@ -190,11 +190,11 @@ final class CbsAuthorizedTest {
             new CbInputName(new CbInput(), "Кабинет зрителя")
         ).uid();
         school.users().add(actor);
-        school.users().roles(actor).grant(Roles.RoleEnum.VIEWER);
+        school.users().roles(actor).grant(Roles.RoleEnum.STUDENT);
         Assertions.assertThrows(
             AccessDeniedException.class,
             () -> new CbsAuthorized(building.cabinets(), school, actor).remove(id),
-            "A school viewer removed a cabinet"
+            "A school student removed a cabinet"
         );
     }
 

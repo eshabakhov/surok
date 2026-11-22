@@ -27,7 +27,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
  * Protected school navigation from a user with an account.
- * For example, a director in one school remains a viewer in another school.
+ * For example, a director in one school remains a student in another school.
  *
  * @since 0.0.1
  */
@@ -65,15 +65,15 @@ final class UrAcAuthorizedTest {
         );
         actor.schools().create(new SlInputName(new SlInput(), "Школа директора"));
         final School school = new SlsPostgres(ctx).create(
-            new SlInputName(new SlInput(), "Школа наблюдателя")
+            new SlInputName(new SlInput(), "Школа ученика")
         );
         school.users().add(actor);
-        school.users().roles(actor).grant(Roles.RoleEnum.VIEWER);
+        school.users().roles(actor).grant(Roles.RoleEnum.STUDENT);
         Assertions.assertThrows(
             AccessDeniedException.class,
             () -> new UrAcAuthorized(actor, new SlsPostgres(ctx)).schools().school(school.uid())
                 .buildings().create(new BdInputName(new BdInput(), "Закрытый корпус")),
-            "A director changed a school where their role was viewer"
+            "A director changed a school where their role was student"
         );
     }
 

@@ -411,19 +411,19 @@ final class SlsHttpTest {
         );
     }
 
-    /** A global subscription does not permit a viewer to revise a school. */
+    /** A global subscription does not permit a student to revise a school. */
     @Test
-    void deniesSchoolRevisionToSubscribedViewer() throws Exception {
+    void deniesSchoolRevisionToSubscribedStudent() throws Exception {
         this.prepare();
-        final UrAcAuth viewer = this.principal(Roles.RoleEnum.VIEWER);
-        viewer.roles().grant(Roles.RoleEnum.BASIC_MAKER);
+        final UrAcAuth student = this.principal(Roles.RoleEnum.STUDENT);
+        student.roles().grant(Roles.RoleEnum.BASIC_MAKER);
         this.mvc.perform(
             MockMvcRequestBuilders.put("/schools/3")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"name\":\"Чужое название\"}")
                 .accept("application/vnd.surok.school-v1+json")
                 .with(SecurityMockMvcRequestPostProcessors.csrf())
-                .with(SecurityMockMvcRequestPostProcessors.user(viewer))
+                .with(SecurityMockMvcRequestPostProcessors.user(student))
         ).andExpect(MockMvcResultMatchers.status().isForbidden());
     }
 
@@ -527,7 +527,7 @@ final class SlsHttpTest {
     @Test
     void deniesMemberManagementToNonDirectors() throws Exception {
         this.prepare();
-        final UrAcAuth viewer = this.principal(Roles.RoleEnum.VIEWER);
+        final UrAcAuth student = this.principal(Roles.RoleEnum.STUDENT);
         final UrAccount target = new UrsPostgres(this.ctx).register(
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.org", UUID.randomUUID()), false
@@ -535,7 +535,7 @@ final class SlsHttpTest {
         this.mvc.perform(
             MockMvcRequestBuilders.put(
                 String.format("/schools/3/users/%d", target.uid())
-            ).with(SecurityMockMvcRequestPostProcessors.user(viewer))
+            ).with(SecurityMockMvcRequestPostProcessors.user(student))
                 .with(SecurityMockMvcRequestPostProcessors.csrf())
                 .accept("application/vnd.surok.school-user.v1+json")
         ).andExpect(MockMvcResultMatchers.status().isForbidden());
@@ -544,15 +544,15 @@ final class SlsHttpTest {
         );
     }
 
-    /** A school viewer may inspect its members through the protected collection. */
+    /** A school student may inspect its members through the protected collection. */
     @Test
-    void allowsSchoolViewerToReadMembers() throws Exception {
+    void allowsSchoolStudentToReadMembers() throws Exception {
         this.prepare();
         this.mvc.perform(
             MockMvcRequestBuilders.get("/schools/3/users")
                 .accept("application/vnd.surok.school-users.v1+json").with(
                     SecurityMockMvcRequestPostProcessors.user(
-                        this.principal(Roles.RoleEnum.VIEWER)
+                        this.principal(Roles.RoleEnum.STUDENT)
                     )
                 )
         ).andExpect(MockMvcResultMatchers.status().isOk()).andExpect(
@@ -562,18 +562,18 @@ final class SlsHttpTest {
 
     /** A global subscription does not permit granting a school role. */
     @Test
-    void deniesRoleGrantToSubscribedViewer() throws Exception {
+    void deniesRoleGrantToSubscribedStudent() throws Exception {
         this.prepare();
-        final UrAcAuth viewer = this.principal(Roles.RoleEnum.VIEWER);
-        viewer.roles().grant(Roles.RoleEnum.BASIC_MAKER);
+        final UrAcAuth student = this.principal(Roles.RoleEnum.STUDENT);
+        student.roles().grant(Roles.RoleEnum.BASIC_MAKER);
         this.mvc.perform(
             MockMvcRequestBuilders.post(
-                String.format("/schools/3/users/%d/roles", viewer.uid())
+                String.format("/schools/3/users/%d/roles", student.uid())
             ).contentType("application/vnd.surok.school-role.v1+json")
                 .accept("application/vnd.surok.school-role.v1+json")
                 .content("{\"role\":\"TEACHER\"}")
                 .with(SecurityMockMvcRequestPostProcessors.csrf())
-                .with(SecurityMockMvcRequestPostProcessors.user(viewer))
+                .with(SecurityMockMvcRequestPostProcessors.user(student))
         ).andExpect(MockMvcResultMatchers.status().isForbidden());
     }
 
@@ -585,7 +585,7 @@ final class SlsHttpTest {
             MockMvcRequestBuilders.get("/schools/4/users")
                 .accept("application/vnd.surok.school-users.v1+json").with(
                     SecurityMockMvcRequestPostProcessors.user(
-                        this.principal(Roles.RoleEnum.VIEWER)
+                        this.principal(Roles.RoleEnum.STUDENT)
                     )
                 )
         ).andExpect(MockMvcResultMatchers.status().isForbidden());

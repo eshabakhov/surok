@@ -19,6 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.info.BuildProperties;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -64,7 +65,8 @@ final class OaHttpTest {
             "The API information lost the packaged description or the build version",
             List.of(info.path("description").asText(), info.path("version").asText()),
             Matchers.contains(
-                "Manage schools, federal curricula, and schedules.", build.getVersion()
+                new OaYaml(new ClassPathResource("openapi.yml")).read()
+                    .at("/info/description").asText(), build.getVersion()
             )
         );
     }
@@ -258,7 +260,7 @@ final class OaHttpTest {
         final JsonNode document = Yaml.mapper().readTree(
             mvc.perform(
                 MockMvcRequestBuilders.get("/api-docs.yaml").with(
-                    OaHttpTest.actor("VIEWER")
+                    OaHttpTest.actor("STUDENT")
                 )
             ).andReturn().getResponse().getContentAsByteArray()
         );
@@ -471,7 +473,7 @@ final class OaHttpTest {
         final JsonNode paths = Json.mapper().readTree(
             mvc.perform(
                 MockMvcRequestBuilders.get("/api-docs").with(
-                    OaHttpTest.actor("VIEWER")
+                    OaHttpTest.actor("STUDENT")
                 )
             ).andReturn().getResponse().getContentAsByteArray()
         ).path("paths");
@@ -543,7 +545,7 @@ final class OaHttpTest {
         final JsonNode paths = Json.mapper().readTree(
             mvc.perform(
                 MockMvcRequestBuilders.get("/api-docs").with(
-                    OaHttpTest.actor("VIEWER")
+                    OaHttpTest.actor("STUDENT")
                 )
             ).andReturn().getResponse().getContentAsByteArray()
         ).path("paths");

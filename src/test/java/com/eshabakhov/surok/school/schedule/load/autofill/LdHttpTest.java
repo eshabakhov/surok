@@ -98,7 +98,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
         """
         INSERT INTO public.user (id, username, password, email, corporate)
         VALUES (41, 'директор', 'secret', 'director@example.org', true),
-            (43, 'читатель', 'secret', 'viewer@example.org', true),
+            (43, 'читатель', 'secret', 'student@example.org', true),
             (47, 'администратор', 'secret', 'admin@example.org', true),
             (49, 'создатель', 'secret', 'maker@example.org', true);
         """,
@@ -109,7 +109,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
         INSERT INTO school_user_role (school_user_id, role_id)
         SELECT school_user.id, role.id FROM school_user, role
         WHERE (school_user.user_id = 41 AND role.name = 'DIRECTOR')
-            OR (school_user.user_id = 43 AND role.name = 'VIEWER');
+            OR (school_user.user_id = 43 AND role.name = 'STUDENT');
         """,
         """
         INSERT INTO user_role (user_id, role_id)
@@ -650,12 +650,12 @@ final class LdHttpTest {
 
     @ParameterizedTest
     @ValueSource(strings = {"", "/curriculum", "/application"})
-    void forbidsMutationsForViewers(
+    void forbidsMutationsForStudents(
         final String suffix, @Autowired final MockMvc mvc, @Autowired final DSLContext ctx
     ) throws Exception {
         final String path = String.format("/schools/1/schedules/101/loads/draft%s", suffix);
         MatcherAssert.assertThat(
-            "A viewer was allowed to mutate the draft or its actual loads",
+            "A student was allowed to mutate the draft or its actual loads",
             mvc.perform(
                 (
                     switch (suffix) {
@@ -822,11 +822,11 @@ final class LdHttpTest {
     }
 
     @Test
-    void rendersReadOnlyPlanningForViewers(
+    void rendersReadOnlyPlanningForStudents(
         @Autowired final MockMvc mvc, @Autowired final DSLContext ctx
     ) throws Exception {
         MatcherAssert.assertThat(
-            "A viewer received controls for saving or applying teaching loads",
+            "A student received controls for saving or applying teaching loads",
             mvc.perform(
                 MockMvcRequestBuilders.get("/schools/1/schedules/101/loads/draft").with(
                     SecurityMockMvcRequestPostProcessors.user(

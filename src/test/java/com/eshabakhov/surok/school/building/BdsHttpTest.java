@@ -121,7 +121,7 @@ final class BdsHttpTest {
         this.mvc.perform(
             MockMvcRequestBuilders.get("/schools/1/buildings")
                 .accept("application/vnd.surok.buildings.v1+json")
-                .session(this.session(Roles.RoleEnum.VIEWER, 1L))
+                .session(this.session(Roles.RoleEnum.STUDENT, 1L))
                 .param("name_ct", "north").param("limit", "1")
         ).andExpect(MockMvcResultMatchers.status().isOk())
             .andExpect(MockMvcResultMatchers.jsonPath("$.items.length()").value(1))
@@ -136,7 +136,7 @@ final class BdsHttpTest {
         this.mvc.perform(
             MockMvcRequestBuilders.get("/schools/1/buildings/10")
                 .accept("application/vnd.surok.building-v1+json")
-                .session(this.session(Roles.RoleEnum.VIEWER, 1L))
+                .session(this.session(Roles.RoleEnum.STUDENT, 1L))
         ).andExpect(MockMvcResultMatchers.status().isOk())
             .andExpect(MockMvcResultMatchers.content().json("{\"id\":10,\"name\":\"North\"}"));
     }
@@ -151,10 +151,10 @@ final class BdsHttpTest {
     }
 
     @Test
-    void deniesJsonCreationForViewer() throws Exception {
+    void deniesJsonCreationForStudent() throws Exception {
         this.mvc.perform(
             this.authorized(
-                MockMvcRequestBuilders.post("/schools/1/buildings"), Roles.RoleEnum.VIEWER
+                MockMvcRequestBuilders.post("/schools/1/buildings"), Roles.RoleEnum.STUDENT
             ).accept("application/vnd.surok.building-v1+json")
                 .contentType("application/vnd.surok.building-v1+json")
                 .content("{\"name\":\"East\"}")
@@ -432,7 +432,7 @@ final class BdsHttpTest {
         final String accept = "application/vnd.surok.building-v1+json";
         this.mvc.perform(
             MockMvcRequestBuilders.get("/schools/1/buildings/10")
-                .session(this.session(Roles.RoleEnum.VIEWER, 1L)).header("Accept", accept)
+                .session(this.session(Roles.RoleEnum.STUDENT, 1L)).header("Accept", accept)
         ).andExpect(MockMvcResultMatchers.status().isOk())
             .andExpect(MockMvcResultMatchers.content().contentTypeCompatibleWith(accept))
             .andExpect(MockMvcResultMatchers.jsonPath("$.name").value("North"));
@@ -443,7 +443,7 @@ final class BdsHttpTest {
         final String accept = "application/vnd.surok.building-v1+xml";
         this.mvc.perform(
             MockMvcRequestBuilders.get("/schools/1/buildings/10")
-                .session(this.session(Roles.RoleEnum.VIEWER, 1L)).header("Accept", accept)
+                .session(this.session(Roles.RoleEnum.STUDENT, 1L)).header("Accept", accept)
         ).andExpect(MockMvcResultMatchers.status().isOk())
             .andExpect(MockMvcResultMatchers.content().contentTypeCompatibleWith(accept))
             .andExpect(MockMvcResultMatchers.xpath("/building/name").string("North"));
@@ -463,7 +463,7 @@ final class BdsHttpTest {
     void honorsAcceptPriorities(final String accept, final String expected) throws Exception {
         this.mvc.perform(
             MockMvcRequestBuilders.get("/schools/1/buildings/10")
-                .session(this.session(Roles.RoleEnum.VIEWER, 1L)).header("Accept", accept)
+                .session(this.session(Roles.RoleEnum.STUDENT, 1L)).header("Accept", accept)
         ).andExpect(MockMvcResultMatchers.status().isOk()).andExpect(
             MockMvcResultMatchers.content().contentTypeCompatibleWith(expected)
         );
@@ -480,7 +480,7 @@ final class BdsHttpTest {
     void rejectsUnavailableRepresentations(final String accept) throws Exception {
         this.mvc.perform(
             MockMvcRequestBuilders.get("/schools/1/buildings/10")
-                .session(this.session(Roles.RoleEnum.VIEWER, 1L)).header("Accept", accept)
+                .session(this.session(Roles.RoleEnum.STUDENT, 1L)).header("Accept", accept)
         ).andExpect(MockMvcResultMatchers.status().isNotAcceptable());
     }
 
@@ -490,7 +490,7 @@ final class BdsHttpTest {
         for (final String suffix : List.of("", "/create", "/10", "/10/edit")) {
             this.mvc.perform(
                 MockMvcRequestBuilders.get(String.format("%s%s", "/schools/1/buildings", suffix))
-                    .session(this.session(Roles.RoleEnum.VIEWER, 1L)).header("Accept", accept)
+                    .session(this.session(Roles.RoleEnum.STUDENT, 1L)).header("Accept", accept)
             ).andExpect(MockMvcResultMatchers.status().isNotAcceptable());
         }
     }
@@ -501,7 +501,7 @@ final class BdsHttpTest {
         throws Exception {
         this.mvc.perform(
             MockMvcRequestBuilders.get("/schools/1/buildings")
-                .session(this.session(Roles.RoleEnum.VIEWER, 1L))
+                .session(this.session(Roles.RoleEnum.STUDENT, 1L))
                 .accept("application/vnd.surok.buildings.v1+json")
                 .param("sort", String.format("name:%s", direction))
         ).andExpect(MockMvcResultMatchers.status().isOk())
@@ -509,7 +509,7 @@ final class BdsHttpTest {
             .andExpect(MockMvcResultMatchers.jsonPath("$.items[1].name").value(second));
         this.mvc.perform(
             MockMvcRequestBuilders.get("/schools/1/buildings")
-                .session(this.session(Roles.RoleEnum.VIEWER, 1L))
+                .session(this.session(Roles.RoleEnum.STUDENT, 1L))
                 .accept("text/vnd.surok.buildings-fragment+html")
                 .param("sort", String.format("name:%s", direction))
         ).andExpect(MockMvcResultMatchers.status().isOk()).andExpect(
@@ -523,7 +523,7 @@ final class BdsHttpTest {
     void printsVersionedCollection() throws Exception {
         this.mvc.perform(
             MockMvcRequestBuilders.get("/schools/1/buildings")
-                .session(this.session(Roles.RoleEnum.VIEWER, 1L))
+                .session(this.session(Roles.RoleEnum.STUDENT, 1L))
                 .header("Accept", "application/vnd.surok.buildings.v1+json")
                 .param("filter", "name:North").param("limit", "1")
                 .param("sort", "name:DESC")
@@ -538,7 +538,7 @@ final class BdsHttpTest {
         final String type = "text/vnd.surok.buildings-fragment+html";
         this.mvc.perform(
             MockMvcRequestBuilders.get("/schools/1/buildings")
-                .session(this.session(Roles.RoleEnum.VIEWER, 1L)).accept(type)
+                .session(this.session(Roles.RoleEnum.STUDENT, 1L)).accept(type)
                 .param("filter", "name:North").param("limit", "1")
         ).andExpectAll(
             MockMvcResultMatchers.status().isOk(),
@@ -567,7 +567,7 @@ final class BdsHttpTest {
     void rejectsLegacyBuildingListRoutes(final String suffix) throws Exception {
         this.mvc.perform(
             MockMvcRequestBuilders.get(String.format("/schools/1/buildings%s", suffix))
-                .session(this.session(Roles.RoleEnum.VIEWER, 1L)).accept(MediaType.TEXT_HTML)
+                .session(this.session(Roles.RoleEnum.STUDENT, 1L)).accept(MediaType.TEXT_HTML)
         ).andExpect(MockMvcResultMatchers.status().is4xxClientError());
     }
 
@@ -700,8 +700,8 @@ final class BdsHttpTest {
     }
 
     @Test
-    void deniesFormMutationForViewer() throws Exception {
-        final MockHttpSession session = this.session(Roles.RoleEnum.VIEWER, 1L);
+    void deniesFormMutationForStudent() throws Exception {
+        final MockHttpSession session = this.session(Roles.RoleEnum.STUDENT, 1L);
         final MvcResult form = this.mvc.perform(
             MockMvcRequestBuilders.get("/schools/1/buildings/create").session(session)
         ).andReturn();
@@ -823,7 +823,7 @@ final class BdsHttpTest {
         }
         if (List.of(
             Roles.RoleEnum.DIRECTOR, Roles.RoleEnum.DEPUTY_DIRECTOR,
-            Roles.RoleEnum.TEACHER, Roles.RoleEnum.STUDENT, Roles.RoleEnum.VIEWER
+            Roles.RoleEnum.TEACHER, Roles.RoleEnum.STUDENT
         ).contains(role)) {
             new UrsPostgres(this.ctx, school).roles(user).grant(role);
         } else {

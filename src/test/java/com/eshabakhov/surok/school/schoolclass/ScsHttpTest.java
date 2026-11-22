@@ -121,7 +121,7 @@ final class ScsHttpTest {
         }
         this.mvc.perform(
             MockMvcRequestBuilders.get("/schools/1/classes")
-                .session(this.session(Roles.RoleEnum.VIEWER, 1L))
+                .session(this.session(Roles.RoleEnum.STUDENT, 1L))
                 .accept("application/vnd.surok.school-classes.v1+json")
                 .param(parameter, value).param("limit", "1")
         ).andExpect(MockMvcResultMatchers.status().isOk())
@@ -136,7 +136,7 @@ final class ScsHttpTest {
         throws Exception {
         this.mvc.perform(
             MockMvcRequestBuilders.get("/schools/1/classes")
-                .session(this.session(Roles.RoleEnum.VIEWER, 1L))
+                .session(this.session(Roles.RoleEnum.STUDENT, 1L))
                 .accept("application/vnd.surok.school-classes.v1+json")
                 .param("sort", String.format("name:%s", direction))
         ).andExpect(MockMvcResultMatchers.status().isOk())
@@ -148,7 +148,7 @@ final class ScsHttpTest {
     void printsVersionedEntity() throws Exception {
         this.mvc.perform(
             MockMvcRequestBuilders.get("/schools/1/classes/10")
-                .session(this.session(Roles.RoleEnum.VIEWER, 1L))
+                .session(this.session(Roles.RoleEnum.STUDENT, 1L))
                 .accept("application/vnd.surok.school-class-v1+json")
         ).andExpect(MockMvcResultMatchers.status().isOk()).andExpect(
             MockMvcResultMatchers.content().json(
@@ -157,14 +157,14 @@ final class ScsHttpTest {
         );
         this.mvc.perform(
             MockMvcRequestBuilders.get("/schools/1/classes/10")
-                .session(this.session(Roles.RoleEnum.VIEWER, 1L))
+                .session(this.session(Roles.RoleEnum.STUDENT, 1L))
                 .accept("application/vnd.surok.school-class-v1+xml")
         ).andExpect(MockMvcResultMatchers.status().isOk())
             .andExpect(MockMvcResultMatchers.xpath("/school-class/grade").string("2"))
             .andExpect(MockMvcResultMatchers.xpath("/school-class/litera").string("А"));
         this.mvc.perform(
             MockMvcRequestBuilders.get("/schools/1/classes")
-                .session(this.session(Roles.RoleEnum.VIEWER, 1L))
+                .session(this.session(Roles.RoleEnum.STUDENT, 1L))
                 .accept("application/vnd.surok.school-classes.v1+xml")
         ).andExpect(MockMvcResultMatchers.status().isOk())
             .andExpect(MockMvcResultMatchers.xpath("count(/classes/school-class)").number(2.0));
@@ -175,7 +175,7 @@ final class ScsHttpTest {
     void rendersXsltPages(final String suffix) throws Exception {
         this.mvc.perform(
             MockMvcRequestBuilders.get(String.format("/schools/1/classes%s", suffix))
-                .session(this.session(Roles.RoleEnum.VIEWER, 1L))
+                .session(this.session(Roles.RoleEnum.STUDENT, 1L))
         ).andExpect(MockMvcResultMatchers.status().isOk()).andExpect(
             MockMvcResultMatchers.content().string(Matchers.not(Matchers.emptyString()))
         );
@@ -187,7 +187,7 @@ final class ScsHttpTest {
         for (final String suffix : List.of("", "/create", "/10", "/10/edit")) {
             this.mvc.perform(
                 MockMvcRequestBuilders.get(String.format("/schools/1/classes%s", suffix))
-                    .session(this.session(Roles.RoleEnum.VIEWER, 1L)).header("Accept", accept)
+                    .session(this.session(Roles.RoleEnum.STUDENT, 1L)).header("Accept", accept)
             ).andExpect(MockMvcResultMatchers.status().isNotAcceptable());
         }
     }
@@ -231,7 +231,7 @@ final class ScsHttpTest {
         ).andExpect(MockMvcResultMatchers.status().isOk());
         this.mvc.perform(
             MockMvcRequestBuilders.get("/schools/1/classes/10")
-                .session(this.session(Roles.RoleEnum.VIEWER, 1L))
+                .session(this.session(Roles.RoleEnum.STUDENT, 1L))
                 .accept("application/vnd.surok.school-class-v1+json")
         ).andExpect(MockMvcResultMatchers.jsonPath("$.name").value("3В"));
     }
@@ -247,7 +247,7 @@ final class ScsHttpTest {
         ).andExpect(MockMvcResultMatchers.status().isConflict());
         this.mvc.perform(
             MockMvcRequestBuilders.get("/schools/1/classes/10")
-                .session(this.session(Roles.RoleEnum.VIEWER, 1L))
+                .session(this.session(Roles.RoleEnum.STUDENT, 1L))
                 .accept("application/vnd.surok.school-class-v1+json")
         ).andExpect(MockMvcResultMatchers.jsonPath("$.name").value("2А"));
     }
@@ -280,7 +280,7 @@ final class ScsHttpTest {
         ).andExpect(MockMvcResultMatchers.status().isBadRequest());
         this.mvc.perform(
             MockMvcRequestBuilders.get("/schools/1/classes/10")
-                .session(this.session(Roles.RoleEnum.VIEWER, 1L))
+                .session(this.session(Roles.RoleEnum.STUDENT, 1L))
                 .accept("application/vnd.surok.school-class-v1+json")
         ).andExpect(MockMvcResultMatchers.jsonPath("$.name").value("2А"));
     }
@@ -353,7 +353,7 @@ final class ScsHttpTest {
     void rejectsLegacyClassListRoutes(final String suffix) throws Exception {
         this.mvc.perform(
             MockMvcRequestBuilders.get(String.format("/schools/1/classes%s", suffix))
-                .session(this.session(Roles.RoleEnum.VIEWER, 1L)).accept(MediaType.TEXT_HTML)
+                .session(this.session(Roles.RoleEnum.STUDENT, 1L)).accept(MediaType.TEXT_HTML)
         ).andExpect(MockMvcResultMatchers.status().is4xxClientError());
     }
 
@@ -373,7 +373,7 @@ final class ScsHttpTest {
         final String type = "text/vnd.surok.school-classes-fragment+html";
         this.mvc.perform(
             MockMvcRequestBuilders.get("/schools/1/classes")
-                .session(this.session(Roles.RoleEnum.VIEWER, 1L)).accept(type)
+                .session(this.session(Roles.RoleEnum.STUDENT, 1L)).accept(type)
                 .param("filter", "name:2А").param("limit", "1")
         ).andExpectAll(
             MockMvcResultMatchers.status().isOk(),
@@ -426,7 +426,7 @@ final class ScsHttpTest {
         ).andExpect(MockMvcResultMatchers.status().isNotAcceptable());
         this.mvc.perform(
             MockMvcRequestBuilders.get("/schools/1/classes")
-                .session(this.session(Roles.RoleEnum.VIEWER, 1L))
+                .session(this.session(Roles.RoleEnum.STUDENT, 1L))
                 .accept("application/vnd.surok.school-classes.v1+json")
         ).andExpect(MockMvcResultMatchers.jsonPath("$.page.total").value(2))
             .andExpect(MockMvcResultMatchers.jsonPath("$.items[0].name").value("2А"));
@@ -437,7 +437,7 @@ final class ScsHttpTest {
     void rejectsUnavailableClasses(final long identifier) throws Exception {
         final String path = String.format("/schools/1/classes/%d", identifier);
         this.mvc.perform(
-            MockMvcRequestBuilders.get(path).session(this.session(Roles.RoleEnum.VIEWER, 1L))
+            MockMvcRequestBuilders.get(path).session(this.session(Roles.RoleEnum.STUDENT, 1L))
         ).andExpect(MockMvcResultMatchers.status().isNotFound());
         this.mvc.perform(
             this.authorized(MockMvcRequestBuilders.put(path), Roles.RoleEnum.DIRECTOR)
@@ -450,10 +450,10 @@ final class ScsHttpTest {
     }
 
     @Test
-    void deniesViewerMutationsAndForeignSchools() throws Exception {
+    void deniesStudentMutationsAndForeignSchools() throws Exception {
         this.mvc.perform(
             this.authorized(
-                MockMvcRequestBuilders.post("/schools/1/classes"), Roles.RoleEnum.VIEWER
+                MockMvcRequestBuilders.post("/schools/1/classes"), Roles.RoleEnum.STUDENT
             ).contentType(MediaType.APPLICATION_FORM_URLENCODED)
                 .param("grade", "3").param("litera", "А")
         ).andExpect(MockMvcResultMatchers.status().isForbidden());
@@ -500,7 +500,7 @@ final class ScsHttpTest {
         ).andExpect(MockMvcResultMatchers.status().isNoContent());
         this.mvc.perform(
             MockMvcRequestBuilders.get("/schools/1/classes/10")
-                .session(this.session(Roles.RoleEnum.VIEWER, 1L))
+                .session(this.session(Roles.RoleEnum.STUDENT, 1L))
         ).andExpect(MockMvcResultMatchers.status().isNotFound());
     }
 
@@ -624,7 +624,7 @@ final class ScsHttpTest {
         }
         if (List.of(
             Roles.RoleEnum.DIRECTOR, Roles.RoleEnum.DEPUTY_DIRECTOR,
-            Roles.RoleEnum.TEACHER, Roles.RoleEnum.STUDENT, Roles.RoleEnum.VIEWER
+            Roles.RoleEnum.TEACHER, Roles.RoleEnum.STUDENT
         ).contains(role)) {
             new UrsPostgres(this.ctx, school).roles(user).grant(role);
         } else {

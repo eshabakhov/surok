@@ -67,12 +67,12 @@ final class PgSubscriptionsTest {
         MatcherAssert.assertThat(
             "Upgraded subscription lost a role or retained an incorrect role",
             List.of(
-                user.roles().list().stream().map(Role::name).toList(),
+                user.roles().list().stream().map(Role::name).sorted().toList(),
                 user.schools().school(school).users().roles(user).list().stream()
-                    .map(Role::name).toList()
+                    .map(Role::name).sorted().toList()
             ),
-            Matchers.containsInAnyOrder(
-                List.of("BASIC_MAKER", "ADVANCED_MAKER", "PRO_MAKER"),
+            Matchers.contains(
+                List.of("ADVANCED_MAKER", "BASIC_MAKER", "PRO_MAKER"),
                 List.of("DIRECTOR", "TEACHER")
             )
         );

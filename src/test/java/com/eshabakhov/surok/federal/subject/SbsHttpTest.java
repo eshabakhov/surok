@@ -191,7 +191,7 @@ final class SbsHttpTest {
         this.mvc.perform(
             MockMvcRequestBuilders.get("/schools/1/subjects")
                 .accept("application/vnd.surok.subjects.v1+json")
-                .session(this.session(Roles.RoleEnum.VIEWER, 1L))
+                .session(this.session(Roles.RoleEnum.STUDENT, 1L))
                 .param("name_ct", "north").param("limit", "1")
         ).andExpect(MockMvcResultMatchers.status().isOk())
             .andExpect(MockMvcResultMatchers.jsonPath("$.items.length()").value(1))
@@ -206,7 +206,7 @@ final class SbsHttpTest {
         this.mvc.perform(
             MockMvcRequestBuilders.get("/schools/1/subjects/10")
                 .accept("application/vnd.surok.subject-v1+json")
-                .session(this.session(Roles.RoleEnum.VIEWER, 1L))
+                .session(this.session(Roles.RoleEnum.STUDENT, 1L))
         ).andExpect(MockMvcResultMatchers.status().isOk())
             .andExpect(MockMvcResultMatchers.content().json("{\"id\":10,\"name\":\"North\"}"));
     }
@@ -221,7 +221,7 @@ final class SbsHttpTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"VIEWER", "BASIC_MAKER"})
+    @ValueSource(strings = {"STUDENT", "BASIC_MAKER"})
     void deniesJsonCreationWithoutASchoolEditorRole(final String role) throws Exception {
         this.mvc.perform(
             this.authorized(
@@ -457,7 +457,7 @@ final class SbsHttpTest {
         final String accept = "application/vnd.surok.subject-v1+json";
         this.mvc.perform(
             MockMvcRequestBuilders.get("/schools/1/subjects/10")
-                .session(this.session(Roles.RoleEnum.VIEWER, 1L)).header("Accept", accept)
+                .session(this.session(Roles.RoleEnum.STUDENT, 1L)).header("Accept", accept)
         ).andExpect(MockMvcResultMatchers.status().isOk())
             .andExpect(MockMvcResultMatchers.content().contentTypeCompatibleWith(accept))
             .andExpect(MockMvcResultMatchers.jsonPath("$.name").value("North"));
@@ -468,7 +468,7 @@ final class SbsHttpTest {
         final String accept = "application/vnd.surok.subject-v1+xml";
         this.mvc.perform(
             MockMvcRequestBuilders.get("/schools/1/subjects/10")
-                .session(this.session(Roles.RoleEnum.VIEWER, 1L)).header("Accept", accept)
+                .session(this.session(Roles.RoleEnum.STUDENT, 1L)).header("Accept", accept)
         ).andExpect(MockMvcResultMatchers.status().isOk())
             .andExpect(MockMvcResultMatchers.content().contentTypeCompatibleWith(accept))
             .andExpect(MockMvcResultMatchers.xpath("/subject/name").string("North"));
@@ -488,7 +488,7 @@ final class SbsHttpTest {
     void honorsAcceptPriorities(final String accept, final String expected) throws Exception {
         this.mvc.perform(
             MockMvcRequestBuilders.get("/schools/1/subjects/10")
-                .session(this.session(Roles.RoleEnum.VIEWER, 1L)).header("Accept", accept)
+                .session(this.session(Roles.RoleEnum.STUDENT, 1L)).header("Accept", accept)
         ).andExpect(MockMvcResultMatchers.status().isOk()).andExpect(
             MockMvcResultMatchers.content().contentTypeCompatibleWith(expected)
         );
@@ -505,7 +505,7 @@ final class SbsHttpTest {
     void rejectsUnavailableRepresentations(final String accept) throws Exception {
         this.mvc.perform(
             MockMvcRequestBuilders.get("/schools/1/subjects/10")
-                .session(this.session(Roles.RoleEnum.VIEWER, 1L)).header("Accept", accept)
+                .session(this.session(Roles.RoleEnum.STUDENT, 1L)).header("Accept", accept)
         ).andExpect(MockMvcResultMatchers.status().isNotAcceptable());
     }
 
@@ -515,7 +515,7 @@ final class SbsHttpTest {
         for (final String suffix : List.of("", "/create", "/10", "/10/edit")) {
             this.mvc.perform(
                 MockMvcRequestBuilders.get(String.format("%s%s", "/schools/1/subjects", suffix))
-                    .session(this.session(Roles.RoleEnum.VIEWER, 1L)).header("Accept", accept)
+                    .session(this.session(Roles.RoleEnum.STUDENT, 1L)).header("Accept", accept)
             ).andExpect(MockMvcResultMatchers.status().isNotAcceptable());
         }
     }
@@ -526,7 +526,7 @@ final class SbsHttpTest {
         throws Exception {
         this.mvc.perform(
             MockMvcRequestBuilders.get("/schools/1/subjects")
-                .session(this.session(Roles.RoleEnum.VIEWER, 1L))
+                .session(this.session(Roles.RoleEnum.STUDENT, 1L))
                 .accept("application/vnd.surok.subjects.v1+json")
                 .param("sort", String.format("name:%s", direction))
         ).andExpect(MockMvcResultMatchers.status().isOk())
@@ -535,7 +535,7 @@ final class SbsHttpTest {
         final String fragment = "text/vnd.surok.subjects-fragment+html";
         this.mvc.perform(
             MockMvcRequestBuilders.get("/schools/1/subjects")
-                .session(this.session(Roles.RoleEnum.VIEWER, 1L)).accept(fragment)
+                .session(this.session(Roles.RoleEnum.STUDENT, 1L)).accept(fragment)
                 .param("sort", String.format("name:%s", direction))
         ).andExpect(MockMvcResultMatchers.status().isOk()).andExpect(
             MockMvcResultMatchers.content().contentTypeCompatibleWith(fragment)
@@ -554,7 +554,7 @@ final class SbsHttpTest {
     void rejectsLegacySubjectListRoutes(final String suffix) throws Exception {
         this.mvc.perform(
             MockMvcRequestBuilders.get(String.format("/schools/1/subjects%s", suffix))
-                .session(this.session(Roles.RoleEnum.VIEWER, 1L)).accept(MediaType.TEXT_HTML)
+                .session(this.session(Roles.RoleEnum.STUDENT, 1L)).accept(MediaType.TEXT_HTML)
         ).andExpect(MockMvcResultMatchers.status().is4xxClientError());
     }
 
@@ -572,7 +572,7 @@ final class SbsHttpTest {
     void printsVersionedCollection() throws Exception {
         this.mvc.perform(
             MockMvcRequestBuilders.get("/schools/1/subjects")
-                .session(this.session(Roles.RoleEnum.VIEWER, 1L))
+                .session(this.session(Roles.RoleEnum.STUDENT, 1L))
                 .header("Accept", "application/vnd.surok.subjects.v1+json")
                 .param("filter", "name:North").param("limit", "1")
                 .param("sort", "name:DESC")
@@ -669,8 +669,8 @@ final class SbsHttpTest {
     }
 
     @Test
-    void deniesFormMutationForViewer() throws Exception {
-        final MockHttpSession session = this.session(Roles.RoleEnum.VIEWER, 1L);
+    void deniesFormMutationForStudent() throws Exception {
+        final MockHttpSession session = this.session(Roles.RoleEnum.STUDENT, 1L);
         final MvcResult form = this.mvc.perform(
             MockMvcRequestBuilders.get("/schools/1/subjects/create").session(session)
         ).andReturn();
@@ -771,7 +771,7 @@ final class SbsHttpTest {
         ).andExpect(MockMvcResultMatchers.status().isConflict());
         this.mvc.perform(
             MockMvcRequestBuilders.get("/schools/1/subjects/10")
-                .session(this.session(Roles.RoleEnum.VIEWER, 1L))
+                .session(this.session(Roles.RoleEnum.STUDENT, 1L))
                 .accept("application/vnd.surok.subject-v1+json")
         ).andExpect(MockMvcResultMatchers.jsonPath("$.name").value("North"));
     }
@@ -830,11 +830,11 @@ final class SbsHttpTest {
         ).andExpect(MockMvcResultMatchers.status().isNoContent());
         this.mvc.perform(
             MockMvcRequestBuilders.get("/schools/1/subjects/10")
-                .session(this.session(Roles.RoleEnum.VIEWER, 1L))
+                .session(this.session(Roles.RoleEnum.STUDENT, 1L))
         ).andExpect(MockMvcResultMatchers.status().isNotFound());
         this.mvc.perform(
             MockMvcRequestBuilders.get("/schools/1/schedules/100/loads")
-                .session(this.session(Roles.RoleEnum.VIEWER, 1L))
+                .session(this.session(Roles.RoleEnum.STUDENT, 1L))
                 .accept("application/vnd.surok.class-loads.v1+json")
         ).andExpect(MockMvcResultMatchers.status().isOk())
             .andExpect(MockMvcResultMatchers.jsonPath("$.items[0].subject.name").value("Renamed"));
@@ -849,7 +849,7 @@ final class SbsHttpTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"ADMIN", "DIRECTOR", "VIEWER"})
+    @ValueSource(strings = {"ADMIN", "DIRECTOR", "STUDENT"})
     void listsTheSharedCatalogueWithoutSchoolSubjects(final String role) throws Exception {
         this.ctx.execute(
             "INSERT INTO subject (id, name, origin) VALUES (29, 'Математика', 'FEDERAL')"
@@ -970,7 +970,7 @@ final class SbsHttpTest {
         }
         if (List.of(
             Roles.RoleEnum.DIRECTOR, Roles.RoleEnum.DEPUTY_DIRECTOR,
-            Roles.RoleEnum.TEACHER, Roles.RoleEnum.STUDENT, Roles.RoleEnum.VIEWER
+            Roles.RoleEnum.TEACHER, Roles.RoleEnum.STUDENT
         ).contains(role)) {
             new UrsPostgres(this.ctx, school).roles(user).grant(role);
         } else {
