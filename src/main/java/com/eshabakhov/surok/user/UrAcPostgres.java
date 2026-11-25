@@ -7,7 +7,6 @@ import com.eshabakhov.surok.Media;
 import com.eshabakhov.surok.Schools;
 import com.eshabakhov.surok.UrAccount;
 import com.eshabakhov.surok.school.SlsPostgres;
-import com.eshabakhov.surok.security.right.RtAdmin;
 import org.jooq.DSLContext;
 
 /**
@@ -59,6 +58,6 @@ public final class UrAcPostgres implements UrAccount {
         return media
             .with("id", this.uid())
             .with("username", this.account().username())
-            .with("admin", new RtAdmin(this).allows());
+            .with("admin", this.roles().contains(Roles.RoleEnum.ADMIN));
     }
 }

@@ -24,10 +24,13 @@ import com.eshabakhov.surok.school.SlsPostgres;
 import com.eshabakhov.surok.school.teacher.input.TeacherInputException;
 import com.eshabakhov.surok.school.teacher.input.ThInputHttp;
 import com.eshabakhov.surok.security.CsToken;
+import com.eshabakhov.surok.security.OaYaml;
+import com.eshabakhov.surok.security.Operations;
 import com.eshabakhov.surok.user.UrAcAuthorized;
 import com.eshabakhov.surok.user.UrAcBrief;
 import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.servlet.http.HttpServletRequest;
+import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashSet;
@@ -35,6 +38,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 import org.jooq.DSLContext;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -75,16 +79,32 @@ public class ThsHttp {
     /** HTML representation containing only the teacher results. */
     private static final String FRAGMENT = "text/vnd.surok.teachers-fragment+html";
 
+    /** Shared operation declarations. */
+    private final Operations operations;
+
     /** Database context. */
     private final DSLContext ctx;
 
     /**
-     * New resource.
+     * New resource with explicitly constructed YAML operations.
      *
      * @param ctx Database context
+     * @throws IOException If the API description cannot be read
      */
-    public ThsHttp(final DSLContext ctx) {
+    @Autowired
+    public ThsHttp(final DSLContext ctx) throws IOException {
+        this(ctx, new OaYaml().operations());
+    }
+
+    /**
+     * New controller using the application operation catalog.
+     *
+     * @param ctx Database context
+     * @param operations Shared operation declarations
+     */
+    public ThsHttp(final DSLContext ctx, final Operations operations) {
         this.ctx = ctx;
+        this.operations = operations;
     }
 
     /**
@@ -118,7 +138,7 @@ public class ThsHttp {
             )
         ).type();
         final School sch = new UrAcAuthorized(
-            actor, new SlsPostgres(this.ctx)
+            actor, this.operations
         ).schools().school(school);
         final Set<Filter> requested = new LinkedHashSet<>(filters.filters());
         requested.addAll(
@@ -171,9 +191,10 @@ public class ThsHttp {
             new MediaType(MediaType.TEXT_HTML, StandardCharsets.UTF_8)
         ).body(
             this.web(
-                request, new UrAcAuthorized(
-                    actor, new SlsPostgres(this.ctx)
-                ).schools().school(school),
+                request, this.operations.operation("Teachers.form")
+                    .permission(actor, school).permit(
+                        new UrAcAuthorized(actor, this.operations)
+                    ).schools().school(school),
                 "create"
             ).print()
         );
@@ -205,10 +226,17 @@ public class ThsHttp {
     ) throws Exception {
         final MediaType type = new AcHttp(request, "teacher-v1").type();
         final School sch = new UrAcAuthorized(
-            actor, new SlsPostgres(this.ctx)
+            actor, this.operations
         ).schools().school(school);
         final Teachers origin = sch.teachers();
-        final Teacher selected = origin.teacher(teacher);
+        final String operation;
+        if (request.getRequestURI().endsWith("/edit")) {
+            operation = "Teachers.edit";
+        } else {
+            operation = "Teachers.teacher";
+        }
+        final Teacher selected = this.operations.operation(operation)
+            .permission(actor, sch).permit(origin).teacher(teacher);
         return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8)).body(
             switch (type.toString()) {
                 case MediaType.TEXT_HTML_VALUE -> {
@@ -325,7 +353,7 @@ public class ThsHttp {
     ) throws Exception {
         final MediaType type = new AcHttp(request, "teacher-v1").type();
         final Teacher revised = new UrAcAuthorized(
-            actor, new SlsPostgres(this.ctx)
+            actor, this.operations
         ).schools().school(school).teachers().revise(teacher, new ThInputHttp(json));
         return ThsHttp.result(
             type, revised, HttpStatus.OK, String.format("/schools/%d/teachers", school),
@@ -348,7 +376,7 @@ public class ThsHttp {
         @PathVariable final long teacher,
         @AuthenticationPrincipal final UrAccount actor
     ) throws Exception {
-        new UrAcAuthorized(actor, new SlsPostgres(this.ctx)).schools()
+        new UrAcAuthorized(actor, this.operations).schools()
             .school(school).teachers().remove(teacher);
         return ResponseEntity.noContent().build();
     }
@@ -359,7 +387,9 @@ public class ThsHttp {
         final String base = String.format("/schools/%d/teachers", school);
         return ThsHttp.result(
             type,
-            new UrAcAuthorized(actor, new SlsPostgres(this.ctx)).schools().school(school).teachers()
+            new UrAcAuthorized(
+                actor, this.operations
+            ).schools().school(school).teachers()
                 .create(input),
             HttpStatus.CREATED, base, base
         );

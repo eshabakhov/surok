@@ -13,6 +13,7 @@ import com.eshabakhov.surok.school.input.SlInputName;
 import com.eshabakhov.surok.school.schoolclass.input.ScInput;
 import com.eshabakhov.surok.school.schoolclass.input.ScInputGrade;
 import com.eshabakhov.surok.school.schoolclass.input.ScInputLitera;
+import com.eshabakhov.surok.security.OaYaml;
 import com.eshabakhov.surok.sort.SortsRequest;
 import com.eshabakhov.surok.user.Roles;
 import com.eshabakhov.surok.user.UrsPostgres;
@@ -65,7 +66,7 @@ final class ScsAuthorizedTest {
             new SlInputName(new SlInput(), "Школа отозванного директора")
         );
         final SchoolClasses classes = new ScsAuthorized(
-            school.schoolClasses(), school, actor
+            school.schoolClasses(), school, actor, new OaYaml().operations()
         );
         school.users().roles(actor).revoke(school.users().roles(actor).list().getFirst().uid());
         Assertions.assertThrows(
@@ -95,7 +96,9 @@ final class ScsAuthorizedTest {
         );
         MatcherAssert.assertThat(
             "An administrator could not create a class without school membership",
-            new ScsAuthorized(school.schoolClasses(), school, actor).create(
+            new ScsAuthorized(
+                school.schoolClasses(), school, actor, new OaYaml().operations()
+            ).create(
                 new ScInputLitera(new ScInputGrade(new ScInput(), "7"), "Я")
             ).uid(), Matchers.greaterThan(0L)
         );
@@ -122,7 +125,9 @@ final class ScsAuthorizedTest {
         ).uid();
         Assertions.assertThrows(
             AccessDeniedException.class,
-            () -> new ScsAuthorized(school.schoolClasses(), school, actor).clazz(id),
+            () -> new ScsAuthorized(
+                school.schoolClasses(), school, actor, new OaYaml().operations()
+            ).clazz(id),
             "An outsider read a class in another school"
         );
     }
@@ -144,7 +149,7 @@ final class ScsAuthorizedTest {
             new SlInputName(new SlInput(), "Школа с отзывом доступа")
         );
         final SchoolClasses selected = new ScsAuthorized(
-            school.schoolClasses(), school, actor
+            school.schoolClasses(), school, actor, new OaYaml().operations()
         ).selection(
             new FiltersRequest(Set.of()), new PageRequest(20, 1),
             new SortsRequest(List.of())

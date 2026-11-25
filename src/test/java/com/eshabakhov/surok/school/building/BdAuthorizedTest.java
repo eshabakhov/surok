@@ -12,6 +12,7 @@ import com.eshabakhov.surok.school.building.input.BdInput;
 import com.eshabakhov.surok.school.building.input.BdInputName;
 import com.eshabakhov.surok.school.input.SlInput;
 import com.eshabakhov.surok.school.input.SlInputName;
+import com.eshabakhov.surok.security.OaYaml;
 import com.eshabakhov.surok.user.Roles;
 import com.eshabakhov.surok.user.UrsPostgres;
 import java.util.UUID;
@@ -59,7 +60,8 @@ final class BdAuthorizedTest {
             new SlInputName(new SlInput(), "Школа корпуса")
         );
         final Building selected = new BdAuthorized(
-            school.buildings().create(new BdInputName(new BdInput(), "Корпус")), school, actor
+            school.buildings().create(new BdInputName(new BdInput(), "Корпус")),
+            school, actor, new OaYaml().operations()
         );
         school.users().roles(actor).revoke(school.users().roles(actor).list().get(0).uid());
         Assertions.assertThrows(
@@ -92,7 +94,9 @@ final class BdAuthorizedTest {
         school.users().roles(actor).grant(Roles.RoleEnum.STUDENT);
         Assertions.assertThrows(
             AccessDeniedException.class,
-            () -> new BdAuthorized(building, school, actor).cabinets().create(
+            () -> new BdAuthorized(
+                building, school, actor, new OaYaml().operations()
+            ).cabinets().create(
                 new CbInputName(new CbInput(), "Запрещённый кабинет")
             ),
             "A student created a cabinet through a building"

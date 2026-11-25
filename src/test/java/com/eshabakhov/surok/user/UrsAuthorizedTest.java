@@ -9,6 +9,7 @@ import com.eshabakhov.surok.Users;
 import com.eshabakhov.surok.school.SlsPostgres;
 import com.eshabakhov.surok.school.input.SlInput;
 import com.eshabakhov.surok.school.input.SlInputName;
+import com.eshabakhov.surok.security.OaYaml;
 import java.util.UUID;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
@@ -58,7 +59,7 @@ final class UrsAuthorizedTest {
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
         );
-        new UrsAuthorized(school.users(), school, actor).add(target);
+        new UrsAuthorized(school.users(), school, actor, new OaYaml().operations()).add(target);
         MatcherAssert.assertThat(
             "A school director could not add an existing member",
             school.users().contains(target), Matchers.is(true)
@@ -88,7 +89,9 @@ final class UrsAuthorizedTest {
         school.users().roles(student).grant(Roles.RoleEnum.STUDENT);
         MatcherAssert.assertThat(
             "A school student could not inspect another member",
-            new UrsAuthorized(school.users(), school, student).contains(actor),
+            new UrsAuthorized(
+                school.users(), school, student, new OaYaml().operations()
+            ).contains(actor),
             Matchers.is(true)
         );
     }
@@ -114,7 +117,7 @@ final class UrsAuthorizedTest {
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
         );
-        new UrsAuthorized(school.users(), school, actor).add(target);
+        new UrsAuthorized(school.users(), school, actor, new OaYaml().operations()).add(target);
         MatcherAssert.assertThat(
             "A global administrator could not add a member without school membership",
             school.users().contains(target), Matchers.is(true)
@@ -141,7 +144,9 @@ final class UrsAuthorizedTest {
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
         );
-        final Users members = new UrsAuthorized(school.users(), school, actor);
+        final Users members = new UrsAuthorized(
+            school.users(), school, actor, new OaYaml().operations()
+        );
         school.users().roles(actor).revoke(school.users().roles(actor).list().getFirst().uid());
         Assertions.assertThrows(
             AccessDeniedException.class,

@@ -4,6 +4,7 @@
 package com.eshabakhov.surok.user;
 
 import com.eshabakhov.surok.UrAccount;
+import com.eshabakhov.surok.security.OaYaml;
 import java.util.UUID;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
@@ -55,7 +56,7 @@ final class UrAcGlobalAuthorizedTest {
                 new UrsPostgres(ctx).register(
                     name, "ValidPassword1!",
                     String.format("%s@example.com", UUID.randomUUID()), false
-                ), actor
+                ), actor, new OaYaml().operations()
             ).account().username(), Matchers.is(name)
         );
     }
@@ -77,7 +78,7 @@ final class UrAcGlobalAuthorizedTest {
             new UrsPostgres(ctx).register(
                 String.format("цель-%s", UUID.randomUUID()), "ValidPassword1!",
                 String.format("%s@example.com", UUID.randomUUID()), false
-            ), actor
+            ), actor, new OaYaml().operations()
         );
         actor.roles().revoke(actor.roles().grant(Roles.RoleEnum.ADMIN).uid());
         Assertions.assertThrows(

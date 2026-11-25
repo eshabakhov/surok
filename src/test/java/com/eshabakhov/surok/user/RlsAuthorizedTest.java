@@ -7,6 +7,7 @@ import com.eshabakhov.surok.School;
 import com.eshabakhov.surok.UrAccount;
 import com.eshabakhov.surok.school.input.SlInput;
 import com.eshabakhov.surok.school.input.SlInputName;
+import com.eshabakhov.surok.security.OaYaml;
 import java.util.UUID;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
@@ -58,7 +59,9 @@ final class RlsAuthorizedTest {
             String.format("%s@example.com", UUID.randomUUID()), false
         );
         school.users().add(target);
-        new RlsAuthorized(school.users().roles(target), school, actor).grant(
+        new RlsAuthorized(
+            school.users().roles(target), school, actor, new OaYaml().operations()
+        ).grant(
             Roles.RoleEnum.TEACHER
         );
         MatcherAssert.assertThat(
@@ -91,7 +94,9 @@ final class RlsAuthorizedTest {
         school.users().roles(student).grant(Roles.RoleEnum.STUDENT);
         MatcherAssert.assertThat(
             "A school student could not inspect their role",
-            new RlsAuthorized(school.users().roles(student), school, student).contains(
+            new RlsAuthorized(
+                school.users().roles(student), school, student, new OaYaml().operations()
+            ).contains(
                 Roles.RoleEnum.STUDENT
             ), Matchers.is(true)
         );
@@ -125,7 +130,9 @@ final class RlsAuthorizedTest {
         school.users().add(target);
         Assertions.assertThrows(
             AccessDeniedException.class,
-            () -> new RlsAuthorized(school.users().roles(target), school, student).grant(
+            () -> new RlsAuthorized(
+                school.users().roles(target), school, student, new OaYaml().operations()
+            ).grant(
                 Roles.RoleEnum.TEACHER
             ),
             "A school student granted a role to another member"
@@ -153,7 +160,9 @@ final class RlsAuthorizedTest {
             String.format("%s@example.com", UUID.randomUUID()), false
         );
         school.users().add(target);
-        final Roles roles = new RlsAuthorized(school.users().roles(target), school, actor);
+        final Roles roles = new RlsAuthorized(
+            school.users().roles(target), school, actor, new OaYaml().operations()
+        );
         school.users().roles(actor).revoke(school.users().roles(actor).list().getFirst().uid());
         Assertions.assertThrows(
             AccessDeniedException.class,

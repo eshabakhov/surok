@@ -7,9 +7,7 @@ import com.eshabakhov.surok.Media;
 import com.eshabakhov.surok.Page;
 import com.eshabakhov.surok.School;
 import com.eshabakhov.surok.UrAccount;
-import com.eshabakhov.surok.security.right.RtAdmin;
-import com.eshabakhov.surok.security.right.RtEither;
-import com.eshabakhov.surok.security.right.RtSchoolMember;
+import com.eshabakhov.surok.security.Operations;
 import java.util.stream.StreamSupport;
 
 /**
@@ -19,6 +17,9 @@ import java.util.stream.StreamSupport;
  * @since 0.0.1
  */
 public final class ClsAuthorized implements ClassLoads {
+
+    /** Shared operation declarations. */
+    private final Operations operations;
 
     /** Underlying teaching loads. */
     private final ClassLoads origin;
@@ -30,53 +31,58 @@ public final class ClsAuthorized implements ClassLoads {
     private final UrAccount actor;
 
     /**
-     * New protected teaching loads.
+     * New protected object with shared operation declarations.
      *
-     * @param origin Underlying loads
-     * @param school Owning school
+     * @param origin Underlying origin
+     * @param school Underlying school
      * @param actor Acting user
+     * @param operations Shared operation declarations
      */
-    public ClsAuthorized(final ClassLoads origin, final School school, final UrAccount actor) {
+    public ClsAuthorized(
+        final ClassLoads origin, final School school, final UrAccount actor,
+        final Operations operations
+    ) {
         this.origin = origin;
         this.school = school;
         this.actor = actor;
+        this.operations = operations;
     }
 
     @Override
     public ClassLoad load(final long id) throws Exception {
         return new ClAuthorized(
-            new RtEither(
-                new RtAdmin(this.actor), new RtSchoolMember(this.actor, this.school)
-            ).permit(this.origin).load(id),
-            this.school, this.actor
+            this.operations.operation("ClassLoads.load")
+                .permission(this.actor, this.school)
+                .permit(this.origin).load(id),
+            this.school, this.actor, this.operations
         );
     }
 
     @Override
     public ClassLoads selection(final Page page) throws Exception {
         return new ClsAuthorized(
-            new RtEither(
-                new RtAdmin(this.actor), new RtSchoolMember(this.actor, this.school)
-            ).permit(this.origin).selection(page),
-            this.school, this.actor
+            this.operations.operation("ClassLoads.selection")
+                .permission(this.actor, this.school)
+                .permit(this.origin).selection(page),
+            this.school, this.actor, this.operations
         );
     }
 
     @Override
     public Iterable<ClassLoad> iterate() {
         return StreamSupport.stream(
-            new RtEither(
-                new RtAdmin(this.actor), new RtSchoolMember(this.actor, this.school)
-            ).permit(this.origin).iterate().spliterator(), false
+            this.operations.operation("ClassLoads.selection")
+                .permission(this.actor, this.school)
+                .permit(this.origin).iterate().spliterator(), false
         ).<ClassLoad>map(
-            load -> new ClAuthorized(load, this.school, this.actor)
+            load -> new ClAuthorized(load, this.school, this.actor, this.operations)
         ).toList();
     }
 
     @Override
     public <T> Media<T> print(final Media<T> media) throws Exception {
-        return new RtEither(
-            new RtAdmin(this.actor), new RtSchoolMember(this.actor, this.school)
-        ).permit(this.origin).print(media);
+        return this.operations.operation("ClassLoads.selection")
+            .permission(this.actor, this.school)
+            .permit(this.origin).print(media);
     }
 }

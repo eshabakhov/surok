@@ -6,19 +6,19 @@ package com.eshabakhov.surok.federal.subject;
 import com.eshabakhov.surok.Media;
 import com.eshabakhov.surok.School;
 import com.eshabakhov.surok.UrAccount;
-import com.eshabakhov.surok.security.right.RtAdmin;
-import com.eshabakhov.surok.security.right.RtDirectorOrDeputy;
-import com.eshabakhov.surok.security.right.RtEither;
-import com.eshabakhov.surok.security.right.RtSchoolMember;
+import com.eshabakhov.surok.security.Operations;
 
 /**
  * School subject whose revision follows the actor's current school role.
- * For example, {@code new SbAuthorized(subject, school, actor).revise(input)}
+ * For example, {@code new SbAuthorized(subject, school, actor, operations).revise(input)}
  * refuses a member who lost the school's director role.
  *
  * @since 0.0.1
  */
 public final class SbAuthorized implements Subject {
+
+    /** Shared operation declarations. */
+    private final Operations operations;
 
     /** Underlying school subject. */
     private final Subject subject;
@@ -30,16 +30,21 @@ public final class SbAuthorized implements Subject {
     private final UrAccount actor;
 
     /**
-     * New protected school subject.
+     * New protected object with shared operation declarations.
      *
-     * @param subject Underlying school subject
-     * @param school Owning school
+     * @param subject Underlying subject
+     * @param school Underlying school
      * @param actor Acting user
+     * @param operations Shared operation declarations
      */
-    public SbAuthorized(final Subject subject, final School school, final UrAccount actor) {
+    public SbAuthorized(
+        final Subject subject, final School school, final UrAccount actor,
+        final Operations operations
+    ) {
         this.subject = subject;
         this.school = school;
         this.actor = actor;
+        this.operations = operations;
     }
 
     @Override
@@ -49,32 +54,32 @@ public final class SbAuthorized implements Subject {
 
     @Override
     public String name() throws Exception {
-        return new RtEither(
-            new RtAdmin(this.actor), new RtSchoolMember(this.actor, this.school)
-        ).permit(this.subject).name();
+        return this.operations.operation("SchoolSubjects.subject")
+            .permission(this.actor, this.school)
+            .permit(this.subject).name();
     }
 
     @Override
     public Origin origin() throws Exception {
-        return new RtEither(
-            new RtAdmin(this.actor), new RtSchoolMember(this.actor, this.school)
-        ).permit(this.subject).origin();
+        return this.operations.operation("SchoolSubjects.subject")
+            .permission(this.actor, this.school)
+            .permit(this.subject).origin();
     }
 
     @Override
     public Subject revise(final SubjectInput input) throws Exception {
         return new SbAuthorized(
-            new RtEither(
-                new RtAdmin(this.actor), new RtDirectorOrDeputy(this.actor, this.school)
-            ).permit(this.subject).revise(input),
-            this.school, this.actor
+            this.operations.operation("SchoolSubjects.revise")
+                .permission(this.actor, this.school)
+                .permit(this.subject).revise(input),
+            this.school, this.actor, this.operations
         );
     }
 
     @Override
     public <T> Media<T> print(final Media<T> media) throws Exception {
-        return new RtEither(
-            new RtAdmin(this.actor), new RtSchoolMember(this.actor, this.school)
-        ).permit(this.subject).print(media);
+        return this.operations.operation("SchoolSubjects.subject")
+            .permission(this.actor, this.school)
+            .permit(this.subject).print(media);
     }
 }

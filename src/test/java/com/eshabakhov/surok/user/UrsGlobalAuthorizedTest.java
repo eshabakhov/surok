@@ -5,6 +5,7 @@ package com.eshabakhov.surok.user;
 
 import com.eshabakhov.surok.UrAccount;
 import com.eshabakhov.surok.Users;
+import com.eshabakhov.surok.security.OaYaml;
 import java.util.UUID;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
@@ -49,7 +50,9 @@ final class UrsGlobalAuthorizedTest {
         );
         Assertions.assertThrows(
             AccessDeniedException.class,
-            () -> new UrsGlobalAuthorized(new UrsPostgres(ctx), actor).remove(97L),
+            () -> new UrsGlobalAuthorized(
+                new UrsPostgres(ctx), actor, new OaYaml().operations()
+            ).remove(97L),
             "A regular user removed an account"
         );
     }
@@ -72,7 +75,9 @@ final class UrsGlobalAuthorizedTest {
             String.format("%s@example.com", UUID.randomUUID()), false
         );
         final Role granted = actor.roles().grant(Roles.RoleEnum.ADMIN);
-        final Users users = new UrsGlobalAuthorized(new UrsPostgres(ctx), actor);
+        final Users users = new UrsGlobalAuthorized(
+            new UrsPostgres(ctx), actor, new OaYaml().operations()
+        );
         final Roles roles = users.identification(target.uid()).roles();
         actor.roles().revoke(granted.uid());
         Assertions.assertThrows(
@@ -96,7 +101,9 @@ final class UrsGlobalAuthorizedTest {
         );
         Assertions.assertThrows(
             AccessDeniedException.class,
-            () -> new UrsGlobalAuthorized(new UrsPostgres(ctx), actor).identification(97L),
+            () -> new UrsGlobalAuthorized(
+                new UrsPostgres(ctx), actor, new OaYaml().operations()
+            ).identification(97L),
             "A regular user looked up a global account"
         );
     }
@@ -118,7 +125,9 @@ final class UrsGlobalAuthorizedTest {
         final String name = String.format("новый-%s", UUID.randomUUID());
         MatcherAssert.assertThat(
             "An administrator could not register a global user",
-            new UrsGlobalAuthorized(new UrsPostgres(ctx), actor).register(
+            new UrsGlobalAuthorized(
+                new UrsPostgres(ctx), actor, new OaYaml().operations()
+            ).register(
                 name, "ValidPassword1!",
                 String.format("%s@example.com", UUID.randomUUID()), false
             ).account().username(), Matchers.is(name)

@@ -10,6 +10,7 @@ import com.eshabakhov.surok.page.PageRequest;
 import com.eshabakhov.surok.school.SlsPostgres;
 import com.eshabakhov.surok.school.input.SlInput;
 import com.eshabakhov.surok.school.input.SlInputName;
+import com.eshabakhov.surok.security.OaYaml;
 import com.eshabakhov.surok.user.Roles;
 import com.eshabakhov.surok.user.UrsPostgres;
 import java.util.UUID;
@@ -59,7 +60,7 @@ final class ClsAuthorizedTest {
             new SlInputName(new SlInput(), "Школа учебной нагрузки")
         );
         final ClassLoads loads = new ClsAuthorized(
-            new ClassLoadsPostgres(ctx, 41L), school, actor
+            new ClassLoadsPostgres(ctx, 41L), school, actor, new OaYaml().operations()
         );
         school.users().remove(actor.uid());
         Assertions.assertThrows(
@@ -88,7 +89,7 @@ final class ClsAuthorizedTest {
                 new ClassLoadsPostgres(ctx, 41L),
                 new SlsPostgres(ctx).create(
                     new SlInputName(new SlInput(), "Чужая школа с нагрузкой")
-                ), actor
+                ), actor, new OaYaml().operations()
             ).iterate(),
             Matchers.emptyIterable()
         );
@@ -111,7 +112,7 @@ final class ClsAuthorizedTest {
             new SlInputName(new SlInput(), "Школа с отзывом доступа")
         );
         final ClassLoads selected = new ClsAuthorized(
-            new ClassLoadsPostgres(ctx, 43L), school, actor
+            new ClassLoadsPostgres(ctx, 43L), school, actor, new OaYaml().operations()
         ).selection(new PageRequest(17, 2));
         school.users().remove(actor.uid());
         Assertions.assertThrows(

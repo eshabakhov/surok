@@ -10,6 +10,7 @@ import com.eshabakhov.surok.school.building.input.BdInput;
 import com.eshabakhov.surok.school.building.input.BdInputName;
 import com.eshabakhov.surok.school.input.SlInput;
 import com.eshabakhov.surok.school.input.SlInputName;
+import com.eshabakhov.surok.security.OaYaml;
 import com.eshabakhov.surok.user.Roles;
 import com.eshabakhov.surok.user.UrsPostgres;
 import java.util.UUID;
@@ -59,7 +60,7 @@ final class SlAuthorizedTest {
         );
         MatcherAssert.assertThat(
             "The school director could not revise its school",
-            new SlAuthorized(school, actor).revise(
+            new SlAuthorized(school, actor, new OaYaml().operations()).revise(
                 new SlInputName(new SlInput(), "Новая школа")
             ).uid(),
             Matchers.equalTo(school.uid())
@@ -85,7 +86,7 @@ final class SlAuthorizedTest {
         school.users().roles(actor).grant(Roles.RoleEnum.STUDENT);
         Assertions.assertThrows(
             AccessDeniedException.class,
-            () -> new SlAuthorized(school, actor).revise(
+            () -> new SlAuthorized(school, actor, new OaYaml().operations()).revise(
                 new SlInputName(new SlInput(), "Запрещённое имя")
             ),
             "A student revised the school"
@@ -111,7 +112,7 @@ final class SlAuthorizedTest {
         );
         MatcherAssert.assertThat(
             "An administrator could not revise an unrelated school",
-            new SlAuthorized(school, actor).revise(
+            new SlAuthorized(school, actor, new OaYaml().operations()).revise(
                 new SlInputName(new SlInput(), "Переименованная школа")
             ).uid(), Matchers.equalTo(school.uid())
         );
@@ -133,7 +134,7 @@ final class SlAuthorizedTest {
         final School school = actor.schools().create(
             new SlInputName(new SlInput(), "Школа с отзывом")
         );
-        final School selected = new SlAuthorized(school, actor);
+        final School selected = new SlAuthorized(school, actor, new OaYaml().operations());
         school.users().roles(actor).revoke(school.users().roles(actor).list().get(0).uid());
         Assertions.assertThrows(
             AccessDeniedException.class,
@@ -158,7 +159,7 @@ final class SlAuthorizedTest {
         final School school = actor.schools().create(
             new SlInputName(new SlInput(), "Школа без доступа")
         );
-        final School selected = new SlAuthorized(school, actor);
+        final School selected = new SlAuthorized(school, actor, new OaYaml().operations());
         school.users().remove(actor.uid());
         Assertions.assertThrows(
             AccessDeniedException.class, selected::buildings,
@@ -182,7 +183,7 @@ final class SlAuthorizedTest {
         final School school = actor.schools().create(
             new SlInputName(new SlInput(), "Школа отозванного участника")
         );
-        final Users members = new SlAuthorized(school, actor).users();
+        final Users members = new SlAuthorized(school, actor, new OaYaml().operations()).users();
         school.users().remove(actor.uid());
         Assertions.assertThrows(
             AccessDeniedException.class, members::iterate,
@@ -211,7 +212,7 @@ final class SlAuthorizedTest {
         final School school = actor.schools().create(
             new SlInputName(new SlInput(), "Школа отозванного директора")
         );
-        final Users members = new SlAuthorized(school, actor).users();
+        final Users members = new SlAuthorized(school, actor, new OaYaml().operations()).users();
         school.users().roles(actor).revoke(school.users().roles(actor).list().getFirst().uid());
         Assertions.assertThrows(
             AccessDeniedException.class, () -> members.add(target),
@@ -241,7 +242,9 @@ final class SlAuthorizedTest {
             new SlInputName(new SlInput(), "Школа отозванных ролей")
         );
         school.users().add(target);
-        final Roles assigned = new SlAuthorized(school, actor).users().roles(target);
+        final Roles assigned = new SlAuthorized(
+            school, actor, new OaYaml().operations()
+        ).users().roles(target);
         school.users().roles(actor).revoke(school.users().roles(actor).list().getFirst().uid());
         Assertions.assertThrows(
             AccessDeniedException.class, () -> assigned.grant(Roles.RoleEnum.TEACHER),
@@ -269,7 +272,7 @@ final class SlAuthorizedTest {
         school.users().roles(actor).grant(Roles.RoleEnum.STUDENT);
         Assertions.assertThrows(
             AccessDeniedException.class,
-            () -> new SlAuthorized(school, actor).buildings().create(
+            () -> new SlAuthorized(school, actor, new OaYaml().operations()).buildings().create(
                 new BdInputName(new BdInput(), "Запрещённый корпус")
             ),
             "A student created a building through the school"

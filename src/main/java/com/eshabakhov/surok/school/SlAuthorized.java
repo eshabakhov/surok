@@ -17,20 +17,20 @@ import com.eshabakhov.surok.school.schoolclass.SchoolClasses;
 import com.eshabakhov.surok.school.schoolclass.ScsAuthorized;
 import com.eshabakhov.surok.school.teacher.Teachers;
 import com.eshabakhov.surok.school.teacher.ThsAuthorized;
-import com.eshabakhov.surok.security.right.RtAdmin;
-import com.eshabakhov.surok.security.right.RtEither;
-import com.eshabakhov.surok.security.right.RtSchoolDirector;
-import com.eshabakhov.surok.security.right.RtSchoolMember;
+import com.eshabakhov.surok.security.Operations;
 import com.eshabakhov.surok.user.UrsAuthorized;
 
 /**
  * School whose revision follows the acting user's current school role.
- * For example, {@code new SlAuthorized(school, student).revise(input)} is
+ * For example, {@code new SlAuthorized(school, student, operations).revise(input)} is
  * rejected, while a director can revise the same school.
  *
  * @since 0.0.1
  */
 public final class SlAuthorized implements School {
+
+    /** Shared operation declarations. */
+    private final Operations operations;
 
     /** Underlying school. */
     private final School origin;
@@ -39,14 +39,19 @@ public final class SlAuthorized implements School {
     private final UrAccount actor;
 
     /**
-     * New authorized school.
+     * New protected object with shared operation declarations.
      *
-     * @param origin Underlying school
+     * @param origin Underlying origin
      * @param actor Acting user
+     * @param operations Shared operation declarations
      */
-    public SlAuthorized(final School origin, final UrAccount actor) {
+    public SlAuthorized(
+        final School origin, final UrAccount actor,
+        final Operations operations
+    ) {
         this.origin = origin;
         this.actor = actor;
+        this.operations = operations;
     }
 
     @Override
@@ -57,76 +62,74 @@ public final class SlAuthorized implements School {
     @Override
     public School revise(final SchoolInput input) throws Exception {
         return new SlAuthorized(
-            new RtEither(
-                new RtAdmin(this.actor), new RtSchoolDirector(this.actor, this.origin)
-            ).permit(this.origin).revise(input),
-            this.actor
+            this.operations.operation("Schools.revise")
+                .permission(this.actor, this.origin)
+                .permit(this.origin).revise(input),
+            this.actor, this.operations
         );
     }
 
     @Override
     public Users users() {
         return new UrsAuthorized(
-            new RtEither(
-                new RtAdmin(this.actor), new RtSchoolMember(this.actor, this.origin)
-            ).permit(this.origin).users(), this.origin, this.actor
+            this.operations.operation("SchoolUsers.list")
+                .permission(this.actor, this.origin)
+                .permit(this.origin).users(), this.origin, this.actor, this.operations
         );
     }
 
     @Override
     public Buildings buildings() {
         return new BdsAuthorized(
-            new RtEither(
-                new RtAdmin(this.actor), new RtSchoolMember(this.actor, this.origin)
-            ).permit(this.origin).buildings(),
-            this.origin, this.actor
+            this.operations.operation("Buildings.selection").permission(this.actor, this.origin)
+                .permit(this.origin).buildings(), this.origin, this.actor, this.operations
         );
     }
 
     @Override
     public Teachers teachers() {
         return new ThsAuthorized(
-            new RtEither(
-                new RtAdmin(this.actor), new RtSchoolMember(this.actor, this.origin)
-            ).permit(this.origin).teachers(),
-            this.origin, this.actor
+            this.operations.operation("Teachers.selection")
+                .permission(this.actor, this.origin)
+                .permit(this.origin).teachers(),
+            this.origin, this.actor, this.operations
         );
     }
 
     @Override
     public SchoolClasses schoolClasses() {
         return new ScsAuthorized(
-            new RtEither(
-                new RtAdmin(this.actor), new RtSchoolMember(this.actor, this.origin)
-            ).permit(this.origin).schoolClasses(),
-            this.origin, this.actor
+            this.operations.operation("SchoolClasses.selection")
+                .permission(this.actor, this.origin)
+                .permit(this.origin).schoolClasses(),
+            this.origin, this.actor, this.operations
         );
     }
 
     @Override
     public Subjects subjects() {
         return new SbsAuthorized(
-            new RtEither(
-                new RtAdmin(this.actor), new RtSchoolMember(this.actor, this.origin)
-            ).permit(this.origin).subjects(),
-            this.origin, this.actor
+            this.operations.operation("SchoolSubjects.selection")
+                .permission(this.actor, this.origin)
+                .permit(this.origin).subjects(),
+            this.origin, this.actor, this.operations
         );
     }
 
     @Override
     public Schedules schedules() {
         return new SdsAuthorized(
-            new RtEither(
-                new RtAdmin(this.actor), new RtSchoolMember(this.actor, this.origin)
-            ).permit(this.origin).schedules(),
-            this.origin, this.actor
+            this.operations.operation("Schedules.selection")
+                .permission(this.actor, this.origin)
+                .permit(this.origin).schedules(),
+            this.origin, this.actor, this.operations
         );
     }
 
     @Override
     public <T> Media<T> print(final Media<T> media) throws Exception {
-        return new RtEither(
-            new RtAdmin(this.actor), new RtSchoolMember(this.actor, this.origin)
-        ).permit(this.origin).print(media);
+        return this.operations.operation("Schools.school")
+            .permission(this.actor, this.origin)
+            .permit(this.origin).print(media);
     }
 }

@@ -6,6 +6,7 @@ package com.eshabakhov.surok.federal.curriculum;
 import com.eshabakhov.surok.UrAccount;
 import com.eshabakhov.surok.federal.curriculum.input.CrInput;
 import com.eshabakhov.surok.federal.curriculum.input.CrInputHttp;
+import com.eshabakhov.surok.security.OaYaml;
 import com.eshabakhov.surok.user.Roles;
 import com.eshabakhov.surok.user.UrsPostgres;
 import java.util.List;
@@ -55,7 +56,9 @@ final class CrAuthorizedTest {
         );
         Assertions.assertThrows(
             AccessDeniedException.class,
-            () -> new CrAuthorized(new CrPostgres(ctx, 91L), actor).revise(new CrInput()),
+            () -> new CrAuthorized(
+                new CrPostgres(ctx, 91L), actor, new OaYaml().operations()
+            ).revise(new CrInput()),
             "A regular user revised a federal curriculum"
         );
     }
@@ -85,7 +88,7 @@ final class CrAuthorizedTest {
                         "year", "2026/2027"
                     )
                 )
-            ), actor
+            ), actor, new OaYaml().operations()
         );
         actor.roles().grant(Roles.RoleEnum.ADMIN);
         MatcherAssert.assertThat(

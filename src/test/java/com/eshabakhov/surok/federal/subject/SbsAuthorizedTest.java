@@ -12,6 +12,7 @@ import com.eshabakhov.surok.page.PageRequest;
 import com.eshabakhov.surok.school.SlsPostgres;
 import com.eshabakhov.surok.school.input.SlInput;
 import com.eshabakhov.surok.school.input.SlInputName;
+import com.eshabakhov.surok.security.OaYaml;
 import com.eshabakhov.surok.sort.SortsRequest;
 import com.eshabakhov.surok.user.Roles;
 import com.eshabakhov.surok.user.UrsPostgres;
@@ -63,7 +64,9 @@ final class SbsAuthorizedTest {
         final School school = actor.schools().create(
             new SlInputName(new SlInput(), "Школа предметов")
         );
-        final Subjects subjects = new SbsAuthorized(school.subjects(), school, actor);
+        final Subjects subjects = new SbsAuthorized(
+            school.subjects(), school, actor, new OaYaml().operations()
+        );
         school.users().roles(actor).revoke(school.users().roles(actor).list().getFirst().uid());
         Assertions.assertThrows(
             AccessDeniedException.class,
@@ -91,7 +94,9 @@ final class SbsAuthorizedTest {
         school.users().roles(actor).revoke(school.users().roles(actor).list().getFirst().uid());
         Assertions.assertThrows(
             AccessDeniedException.class,
-            () -> new SbsAuthorized(school.subjects(), school, actor).revise(
+            () -> new SbsAuthorized(
+                school.subjects(), school, actor, new OaYaml().operations()
+            ).revise(
                 91L, new SbInputName(new SbInput(), "Геометрия")
             ),
             "A missing school subject was looked up before authorization"
@@ -115,7 +120,7 @@ final class SbsAuthorizedTest {
             new SlInputName(new SlInput(), "Школа истории")
         );
         final Subject subject = new SbsAuthorized(
-            school.subjects(), school, actor
+            school.subjects(), school, actor, new OaYaml().operations()
         ).create(new SbInputName(new SbInput(), "История края"));
         school.users().roles(actor).revoke(school.users().roles(actor).list().getFirst().uid());
         Assertions.assertThrows(
@@ -143,7 +148,7 @@ final class SbsAuthorizedTest {
         );
         MatcherAssert.assertThat(
             "An administrator could not add a subject without school membership",
-            new SbsAuthorized(school.subjects(), school, actor).create(
+            new SbsAuthorized(school.subjects(), school, actor, new OaYaml().operations()).create(
                 new SbInputName(new SbInput(), "Краеведение")
             ).uid(), Matchers.greaterThan(0L)
         );
@@ -165,7 +170,9 @@ final class SbsAuthorizedTest {
         final School school = actor.schools().create(
             new SlInputName(new SlInput(), "Школа предметов с отзывом доступа")
         );
-        final Subjects selected = new SbsAuthorized(school.subjects(), school, actor).selection(
+        final Subjects selected = new SbsAuthorized(
+            school.subjects(), school, actor, new OaYaml().operations()
+        ).selection(
             new FiltersRequest(Set.of()), new PageRequest(17, 1),
             new SortsRequest(List.of())
         );

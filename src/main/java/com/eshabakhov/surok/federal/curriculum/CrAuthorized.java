@@ -7,17 +7,20 @@ import com.eshabakhov.surok.Media;
 import com.eshabakhov.surok.UrAccount;
 import com.eshabakhov.surok.federal.curriculum.requirement.Requirements;
 import com.eshabakhov.surok.federal.curriculum.requirement.RqsAuthorized;
-import com.eshabakhov.surok.security.right.RtAdmin;
+import com.eshabakhov.surok.security.Operations;
 import java.util.List;
 
 /**
  * Federal curriculum whose revision requires an administrator.
- * For example, {@code new CrAuthorized(curriculum, user).requirements()}
+ * For example, {@code new CrAuthorized(curriculum, user, operations).requirements()}
  * preserves authorization when navigating to its requirements.
  *
  * @since 0.0.1
  */
 public final class CrAuthorized implements Curriculum {
+
+    /** Shared operation declarations. */
+    private final Operations operations;
 
     /** Underlying curriculum. */
     private final Curriculum origin;
@@ -26,14 +29,19 @@ public final class CrAuthorized implements Curriculum {
     private final UrAccount actor;
 
     /**
-     * New protected federal curriculum.
+     * New protected object with shared operation declarations.
      *
-     * @param origin Underlying curriculum
+     * @param origin Underlying origin
      * @param actor Acting user
+     * @param operations Shared operation declarations
      */
-    public CrAuthorized(final Curriculum origin, final UrAccount actor) {
+    public CrAuthorized(
+        final Curriculum origin, final UrAccount actor,
+        final Operations operations
+    ) {
         this.origin = origin;
         this.actor = actor;
+        this.operations = operations;
     }
 
     @Override
@@ -43,23 +51,33 @@ public final class CrAuthorized implements Curriculum {
 
     @Override
     public List<Integer> grades() throws Exception {
-        return this.origin.grades();
+        return this.operations.operation("Curriculums.curriculum")
+            .permission(this.actor)
+            .permit(this.origin).grades();
     }
 
     @Override
     public Curriculum revise(final CurriculumInput input) throws Exception {
         return new CrAuthorized(
-            new RtAdmin(this.actor).permit(this.origin).revise(input), this.actor
+            this.operations.operation("Curriculums.revise")
+                .permission(this.actor)
+                .permit(this.origin).revise(input), this.actor, this.operations
         );
     }
 
     @Override
     public Requirements requirements() {
-        return new RqsAuthorized(this.origin.requirements(), this.actor);
+        return new RqsAuthorized(
+            this.operations.operation("Requirements.selection")
+                .permission(this.actor)
+                .permit(this.origin).requirements(), this.actor, this.operations
+        );
     }
 
     @Override
     public <T> Media<T> print(final Media<T> media) throws Exception {
-        return this.origin.print(media);
+        return this.operations.operation("Curriculums.curriculum")
+            .permission(this.actor)
+            .permit(this.origin).print(media);
     }
 }

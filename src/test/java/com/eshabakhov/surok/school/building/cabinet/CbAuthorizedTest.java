@@ -12,6 +12,7 @@ import com.eshabakhov.surok.school.building.input.BdInput;
 import com.eshabakhov.surok.school.building.input.BdInputName;
 import com.eshabakhov.surok.school.input.SlInput;
 import com.eshabakhov.surok.school.input.SlInputName;
+import com.eshabakhov.surok.security.OaYaml;
 import com.eshabakhov.surok.user.Roles;
 import com.eshabakhov.surok.user.UrsPostgres;
 import java.util.UUID;
@@ -64,7 +65,7 @@ final class CbAuthorizedTest {
             school.buildings().create(
                 new BdInputName(new BdInput(), "Корпус кабинета")
             ).cabinets().create(new CbInputName(new CbInput(), "Кабинет")),
-            school, actor
+            school, actor, new OaYaml().operations()
         );
         school.users().roles(actor).revoke(school.users().roles(actor).list().get(0).uid());
         Assertions.assertThrows(
@@ -96,7 +97,7 @@ final class CbAuthorizedTest {
         school.users().roles(actor).grant(Roles.RoleEnum.STUDENT);
         Assertions.assertThrows(
             AccessDeniedException.class,
-            () -> new CbAuthorized(selected, school, actor).revise(
+            () -> new CbAuthorized(selected, school, actor, new OaYaml().operations()).revise(
                 new CbInputName(new CbInput(), "Другое имя")
             ),
             "A student revised a cabinet"
@@ -124,7 +125,7 @@ final class CbAuthorizedTest {
         ).cabinets().create(new CbInputName(new CbInput(), "Первое имя кабинета"));
         MatcherAssert.assertThat(
             "An administrator could not revise a cabinet without school membership",
-            new CbAuthorized(cabinet, school, actor).revise(
+            new CbAuthorized(cabinet, school, actor, new OaYaml().operations()).revise(
                 new CbInputName(new CbInput(), "Новое имя кабинета")
             ).uid(), Matchers.equalTo(cabinet.uid())
         );

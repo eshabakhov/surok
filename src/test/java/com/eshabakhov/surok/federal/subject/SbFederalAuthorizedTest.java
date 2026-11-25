@@ -6,6 +6,7 @@ package com.eshabakhov.surok.federal.subject;
 import com.eshabakhov.surok.UrAccount;
 import com.eshabakhov.surok.federal.subject.input.SbInput;
 import com.eshabakhov.surok.federal.subject.input.SbInputName;
+import com.eshabakhov.surok.security.OaYaml;
 import com.eshabakhov.surok.user.Roles;
 import com.eshabakhov.surok.user.UrsPostgres;
 import java.util.UUID;
@@ -53,7 +54,9 @@ final class SbFederalAuthorizedTest {
         );
         Assertions.assertThrows(
             AccessDeniedException.class,
-            () -> new SbFederalAuthorized(new SbPostgres(ctx, 91L), actor).revise(
+            () -> new SbFederalAuthorized(
+                new SbPostgres(ctx, 91L), actor, new OaYaml().operations()
+            ).revise(
                 new SbInputName(new SbInput(), "Геометрия")
             ),
             "A regular user revised a retained federal subject"
@@ -77,7 +80,7 @@ final class SbFederalAuthorizedTest {
         final Subject subject = new SbFederalAuthorized(
             new SbsFederal(ctx).create(
                 new SbInputName(new SbInput(), String.format("Физика %s", UUID.randomUUID()))
-            ), actor
+            ), actor, new OaYaml().operations()
         );
         actor.roles().grant(Roles.RoleEnum.ADMIN);
         final String name = String.format("Астрономия %s", UUID.randomUUID());

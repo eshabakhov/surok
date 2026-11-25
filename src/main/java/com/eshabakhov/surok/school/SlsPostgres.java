@@ -16,7 +16,6 @@ import com.eshabakhov.surok.page.ResponsePage;
 import com.eshabakhov.surok.school.filter.FlsCdSchool;
 import com.eshabakhov.surok.school.input.MdSlInput;
 import com.eshabakhov.surok.school.sort.StsJqSchool;
-import com.eshabakhov.surok.security.right.RtAdmin;
 import com.eshabakhov.surok.sql.ClasspathSql;
 import com.eshabakhov.surok.user.Roles;
 import com.eshabakhov.surok.user.UrsPostgres;
@@ -63,7 +62,7 @@ public final class SlsPostgres implements Schools {
     @Override
     public boolean contains(final long id) {
         final boolean found;
-        if (this.actor == null) {
+        if (this.actor == null || this.actor.roles().contains(Roles.RoleEnum.ADMIN)) {
             found = this.ctx.resultQuery(
                 new ClasspathSql("school/find-by-id.sql").text(), id, false
             ).fetchOne() != null;
@@ -128,7 +127,7 @@ public final class SlsPostgres implements Schools {
             )
         );
         final Condition visible;
-        if (this.actor == null) {
+        if (this.actor == null || this.actor.roles().contains(Roles.RoleEnum.ADMIN)) {
             visible = scoped;
         } else {
             visible = scoped.and(
@@ -165,7 +164,7 @@ public final class SlsPostgres implements Schools {
     @Override
     public Iterable<School> iterate() {
         final Iterable<School> schools;
-        if (this.actor == null) {
+        if (this.actor == null || this.actor.roles().contains(Roles.RoleEnum.ADMIN)) {
             schools = this.ctx.resultQuery(
                 new ClasspathSql("school/list-active.sql").text(), false
             ).fetch(selected -> new SlPostgres(this.ctx, selected.get("id", Long.class)));
@@ -184,7 +183,7 @@ public final class SlsPostgres implements Schools {
 
     @Override
     public void remove(final long sid) throws Exception {
-        if (this.actor != null && !new RtAdmin(this.actor).allows()) {
+        if (this.actor != null && !this.actor.roles().contains(Roles.RoleEnum.ADMIN)) {
             throw new AccessDeniedException("Only an administrator can delete a school");
         }
         final Record selected = this.ctx.resultQuery(

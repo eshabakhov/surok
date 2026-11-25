@@ -7,6 +7,7 @@ import com.eshabakhov.surok.Media;
 import com.eshabakhov.surok.Schools;
 import com.eshabakhov.surok.UrAccount;
 import com.eshabakhov.surok.school.SlsAuthorized;
+import com.eshabakhov.surok.security.Operations;
 
 /**
  * Account user whose school navigation returns protected domain objects.
@@ -17,21 +18,23 @@ import com.eshabakhov.surok.school.SlsAuthorized;
  */
 public final class UrAcAuthorized implements UrAccount {
 
+    /** Shared operation declarations. */
+    private final Operations operations;
+
     /** Acting account user. */
     private final UrAccount origin;
 
-    /** School repository to protect. */
-    private final Schools schools;
-
     /**
-     * New user with protected school navigation.
+     * New protected object with shared operation declarations.
      *
-     * @param origin Acting account user
-     * @param schools School repository
+     * @param origin Underlying origin
+     * @param operations Shared operation declarations
      */
-    public UrAcAuthorized(final UrAccount origin, final Schools schools) {
+    public UrAcAuthorized(
+        final UrAccount origin, final Operations operations
+    ) {
         this.origin = origin;
-        this.schools = schools;
+        this.operations = operations;
     }
 
     @Override
@@ -51,7 +54,7 @@ public final class UrAcAuthorized implements UrAccount {
 
     @Override
     public Schools schools() {
-        return new SlsAuthorized(this.schools, this.origin);
+        return new SlsAuthorized(this.origin.schools(), this.origin, this.operations);
     }
 
     @Override

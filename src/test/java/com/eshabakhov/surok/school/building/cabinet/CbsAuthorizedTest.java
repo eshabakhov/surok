@@ -16,9 +16,11 @@ import com.eshabakhov.surok.school.building.input.BdInput;
 import com.eshabakhov.surok.school.building.input.BdInputName;
 import com.eshabakhov.surok.school.input.SlInput;
 import com.eshabakhov.surok.school.input.SlInputName;
+import com.eshabakhov.surok.security.OaYaml;
 import com.eshabakhov.surok.sort.SortsRequest;
 import com.eshabakhov.surok.user.Roles;
 import com.eshabakhov.surok.user.UrsPostgres;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -29,6 +31,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -52,6 +55,46 @@ final class CbsAuthorizedTest {
         new PostgreSQLContainer<>("postgres:16-alpine");
 
     /**
+     * Uses supplied roles instead of a hard-coded school editor policy.
+     *
+     * @param ctx Database context
+     * @throws Exception If setup or creation fails
+     */
+    @Test
+    void createsACabinetUsingTheSuppliedDeclaration(@Autowired final DSLContext ctx)
+        throws Exception {
+        final UrAccount actor = new UrsPostgres(ctx).register(
+            UUID.randomUUID().toString(), "ValidPassword1!",
+            String.format("%s@example.com", UUID.randomUUID()), false
+        );
+        final School school = new SlsPostgres(ctx).create(
+            new SlInputName(new SlInput(), "Школа ученика")
+        );
+        school.users().add(actor);
+        school.users().roles(actor).grant(Roles.RoleEnum.STUDENT);
+        MatcherAssert.assertThat(
+            "Cabinet creation ignored the supplied permission declaration",
+            new CbsAuthorized(
+                school.buildings().create(
+                    new BdInputName(new BdInput(), "Учебный корпус")
+                ).cabinets(), school, actor,
+                new OaYaml(
+                    new ByteArrayResource(
+                        """
+                        paths:
+                            /кабинеты:
+                                post:
+                                    operationId: Cabinets.create
+                                    x-roles: [STUDENT]
+                        """.getBytes(StandardCharsets.UTF_8)
+                    )
+                ).operations()
+            ).create(new CbInputName(new CbInput(), "Кабинет астрономии")).uid(),
+            Matchers.greaterThan(0L)
+        );
+    }
+
+    /**
      * Allows a deputy director to create a cabinet.
      *
      * @param ctx Database context
@@ -73,7 +116,7 @@ final class CbsAuthorizedTest {
         school.users().roles(actor).grant(Roles.RoleEnum.DEPUTY_DIRECTOR);
         MatcherAssert.assertThat(
             "A deputy director could not create a cabinet",
-            new CbsAuthorized(building.cabinets(), school, actor).create(
+            new CbsAuthorized(building.cabinets(), school, actor, new OaYaml().operations()).create(
                 new CbInputName(new CbInput(), "Кабинет химии")
             ).print(new MdJson()).print().path("name").asText(),
             Matchers.is("Кабинет химии")
@@ -101,7 +144,7 @@ final class CbsAuthorizedTest {
             new CbsAuthorized(
                 school.buildings().create(
                     new BdInputName(new BdInput(), "Корпус администратора")
-                ).cabinets(), school, actor
+                ).cabinets(), school, actor, new OaYaml().operations()
             ).create(
                 new CbInputName(new CbInput(), "Кабинет администратора")
             ).uid(), Matchers.greaterThan(0L)
@@ -132,7 +175,9 @@ final class CbsAuthorizedTest {
         ).uid();
         Assertions.assertThrows(
             AccessDeniedException.class,
-            () -> new CbsAuthorized(building.cabinets(), school, actor).cabinet(id),
+            () -> new CbsAuthorized(
+                building.cabinets(), school, actor, new OaYaml().operations()
+            ).cabinet(id),
             "An outsider read a cabinet in another school"
         );
     }
@@ -156,7 +201,7 @@ final class CbsAuthorizedTest {
         final Cabinets selected = new CbsAuthorized(
             school.buildings().create(
                 new BdInputName(new BdInput(), "Корпус с отзывом доступа")
-            ).cabinets(), school, actor
+            ).cabinets(), school, actor, new OaYaml().operations()
         ).selection(
             new FiltersRequest(Set.of()), new PageRequest(20, 1),
             new SortsRequest(List.of())
@@ -193,7 +238,9 @@ final class CbsAuthorizedTest {
         school.users().roles(actor).grant(Roles.RoleEnum.STUDENT);
         Assertions.assertThrows(
             AccessDeniedException.class,
-            () -> new CbsAuthorized(building.cabinets(), school, actor).remove(id),
+            () -> new CbsAuthorized(
+                building.cabinets(), school, actor, new OaYaml().operations()
+            ).remove(id),
             "A school student removed a cabinet"
         );
     }

@@ -11,6 +11,7 @@ import com.eshabakhov.surok.school.input.SlInputName;
 import com.eshabakhov.surok.school.schoolclass.input.ScInput;
 import com.eshabakhov.surok.school.schoolclass.input.ScInputGrade;
 import com.eshabakhov.surok.school.schoolclass.input.ScInputLitera;
+import com.eshabakhov.surok.security.OaYaml;
 import com.eshabakhov.surok.user.Roles;
 import com.eshabakhov.surok.user.UrsPostgres;
 import java.util.UUID;
@@ -62,7 +63,7 @@ final class ScAuthorizedTest {
         final SchoolClass clazz = new ScAuthorized(
             school.schoolClasses().create(
                 new ScInputLitera(new ScInputGrade(new ScInput(), "7"), "Я")
-            ), school, actor
+            ), school, actor, new OaYaml().operations()
         );
         school.users().roles(actor).revoke(school.users().roles(actor).list().getFirst().uid());
         Assertions.assertThrows(
@@ -96,7 +97,7 @@ final class ScAuthorizedTest {
             new ScAuthorized(
                 school.schoolClasses().create(
                     new ScInputLitera(new ScInputGrade(new ScInput(), "7"), "Я")
-                ), school, actor
+                ), school, actor, new OaYaml().operations()
             ).grade(), Matchers.is(7)
         );
     }
@@ -122,7 +123,7 @@ final class ScAuthorizedTest {
         );
         MatcherAssert.assertThat(
             "An administrator could not revise a class without school membership",
-            new ScAuthorized(clazz, school, actor).revise(
+            new ScAuthorized(clazz, school, actor, new OaYaml().operations()).revise(
                 new ScInputLitera(new ScInputGrade(new ScInput(), "8"), "Я")
             ).uid(), Matchers.equalTo(clazz.uid())
         );

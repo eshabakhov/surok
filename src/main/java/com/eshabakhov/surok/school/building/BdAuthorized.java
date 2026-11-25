@@ -8,19 +8,19 @@ import com.eshabakhov.surok.School;
 import com.eshabakhov.surok.UrAccount;
 import com.eshabakhov.surok.school.building.cabinet.Cabinets;
 import com.eshabakhov.surok.school.building.cabinet.CbsAuthorized;
-import com.eshabakhov.surok.security.right.RtAdmin;
-import com.eshabakhov.surok.security.right.RtDirectorOrDeputy;
-import com.eshabakhov.surok.security.right.RtEither;
-import com.eshabakhov.surok.security.right.RtSchoolMember;
+import com.eshabakhov.surok.security.Operations;
 
 /**
  * Building that checks the acting user's school role for each operation.
- * For example, {@code new BdAuthorized(building, school, actor).cabinets()}
+ * For example, {@code new BdAuthorized(building, school, actor, operations).cabinets()}
  * returns cabinets that keep the same authorization boundary.
  *
  * @since 0.0.1
  */
 public final class BdAuthorized implements Building {
+
+    /** Shared operation permissions. */
+    private final Operations operations;
 
     /** Underlying building. */
     private final Building origin;
@@ -32,13 +32,18 @@ public final class BdAuthorized implements Building {
     private final UrAccount actor;
 
     /**
-     * New protected building.
+     * New protected resource with the supplied operation permissions.
      *
-     * @param origin Underlying building
-     * @param school School that owns it
-     * @param actor Acting user
+     * @param origin Underlying resource
+     * @param school Target school
+     * @param actor Acting account
+     * @param operations Described operations
      */
-    public BdAuthorized(final Building origin, final School school, final UrAccount actor) {
+    public BdAuthorized(
+        final Building origin, final School school, final UrAccount actor,
+        final Operations operations
+    ) {
+        this.operations = operations;
         this.origin = origin;
         this.school = school;
         this.actor = actor;
@@ -52,27 +57,33 @@ public final class BdAuthorized implements Building {
     @Override
     public Building revise(final BuildingInput input) throws Exception {
         return new BdAuthorized(
-            new RtEither(
-                new RtAdmin(this.actor), new RtDirectorOrDeputy(this.actor, this.school)
-            ).permit(this.origin).revise(input),
-            this.school, this.actor
+            this.operations.operation("Building.revise")
+                .permission(this.actor, this.school)
+                .permit(this.origin)
+                .revise(input),
+            this.school,
+            this.actor,
+            this.operations
         );
     }
 
     @Override
     public Cabinets cabinets() {
         return new CbsAuthorized(
-            new RtEither(
-                new RtAdmin(this.actor), new RtSchoolMember(this.actor, this.school)
-            ).permit(this.origin).cabinets(),
-            this.school, this.actor
+            this.operations.operation("Cabinets.selection")
+                .permission(this.actor, this.school)
+                .permit(this.origin)
+                .cabinets(),
+            this.school,
+            this.actor, this.operations
         );
     }
 
     @Override
     public <T> Media<T> print(final Media<T> media) throws Exception {
-        return new RtEither(
-            new RtAdmin(this.actor), new RtSchoolMember(this.actor, this.school)
-        ).permit(this.origin).print(media);
+        return this.operations.operation("Buildings.building")
+            .permission(this.actor, this.school)
+            .permit(this.origin)
+            .print(media);
     }
 }

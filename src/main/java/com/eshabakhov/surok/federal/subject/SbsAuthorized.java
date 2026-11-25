@@ -9,20 +9,20 @@ import com.eshabakhov.surok.Page;
 import com.eshabakhov.surok.School;
 import com.eshabakhov.surok.Sorts;
 import com.eshabakhov.surok.UrAccount;
-import com.eshabakhov.surok.security.right.RtAdmin;
-import com.eshabakhov.surok.security.right.RtDirectorOrDeputy;
-import com.eshabakhov.surok.security.right.RtEither;
-import com.eshabakhov.surok.security.right.RtSchoolMember;
+import com.eshabakhov.surok.security.Operations;
 import java.util.stream.StreamSupport;
 
 /**
  * School subject catalogue protected by the actor's current school role.
- * For example, {@code new SbsAuthorized(subjects, school, actor).create(input)}
+ * For example, {@code new SbsAuthorized(subjects, school, actor, operations).create(input)}
  * permits the school's director or deputy to add a local subject.
  *
  * @since 0.0.1
  */
 public final class SbsAuthorized implements Subjects {
+
+    /** Shared operation declarations. */
+    private final Operations operations;
 
     /** Underlying school catalogue. */
     private final Subjects origin;
@@ -34,45 +34,50 @@ public final class SbsAuthorized implements Subjects {
     private final UrAccount actor;
 
     /**
-     * New protected school catalogue.
+     * New protected object with shared operation declarations.
      *
-     * @param origin Underlying school catalogue
-     * @param school Owning school
+     * @param origin Underlying origin
+     * @param school Underlying school
      * @param actor Acting user
+     * @param operations Shared operation declarations
      */
-    public SbsAuthorized(final Subjects origin, final School school, final UrAccount actor) {
+    public SbsAuthorized(
+        final Subjects origin, final School school, final UrAccount actor,
+        final Operations operations
+    ) {
         this.origin = origin;
         this.school = school;
         this.actor = actor;
+        this.operations = operations;
     }
 
     @Override
     public Subject create(final SubjectInput input) throws Exception {
         return new SbAuthorized(
-            new RtEither(
-                new RtAdmin(this.actor), new RtDirectorOrDeputy(this.actor, this.school)
-            ).permit(this.origin).create(input),
-            this.school, this.actor
+            this.operations.operation("SchoolSubjects.create")
+                .permission(this.actor, this.school)
+                .permit(this.origin).create(input),
+            this.school, this.actor, this.operations
         );
     }
 
     @Override
     public Subject subject(final long id) throws Exception {
         return new SbAuthorized(
-            new RtEither(
-                new RtAdmin(this.actor), new RtSchoolMember(this.actor, this.school)
-            ).permit(this.origin).subject(id),
-            this.school, this.actor
+            this.operations.operation("SchoolSubjects.subject")
+                .permission(this.actor, this.school)
+                .permit(this.origin).subject(id),
+            this.school, this.actor, this.operations
         );
     }
 
     @Override
     public Subject revise(final long id, final SubjectInput input) throws Exception {
         return new SbAuthorized(
-            new RtEither(
-                new RtAdmin(this.actor), new RtDirectorOrDeputy(this.actor, this.school)
-            ).permit(this.origin).revise(id, input),
-            this.school, this.actor
+            this.operations.operation("SchoolSubjects.revise")
+                .permission(this.actor, this.school)
+                .permit(this.origin).revise(id, input),
+            this.school, this.actor, this.operations
         );
     }
 
@@ -81,35 +86,35 @@ public final class SbsAuthorized implements Subjects {
         final Filters filters, final Page page, final Sorts sorts
     ) throws Exception {
         return new SbsAuthorized(
-            new RtEither(
-                new RtAdmin(this.actor), new RtSchoolMember(this.actor, this.school)
-            ).permit(this.origin).selection(filters, page, sorts),
-            this.school, this.actor
+            this.operations.operation("SchoolSubjects.selection")
+                .permission(this.actor, this.school)
+                .permit(this.origin).selection(filters, page, sorts),
+            this.school, this.actor, this.operations
         );
     }
 
     @Override
     public Iterable<Subject> iterate() {
         return StreamSupport.stream(
-            new RtEither(
-                new RtAdmin(this.actor), new RtSchoolMember(this.actor, this.school)
-            ).permit(this.origin).iterate().spliterator(), false
+            this.operations.operation("SchoolSubjects.selection")
+                .permission(this.actor, this.school)
+                .permit(this.origin).iterate().spliterator(), false
         ).<Subject>map(
-            subject -> new SbAuthorized(subject, this.school, this.actor)
+            subject -> new SbAuthorized(subject, this.school, this.actor, this.operations)
         ).toList();
     }
 
     @Override
     public void remove(final long id) throws Exception {
-        new RtEither(
-            new RtAdmin(this.actor), new RtDirectorOrDeputy(this.actor, this.school)
-        ).permit(this.origin).remove(id);
+        this.operations.operation("SchoolSubjects.remove")
+            .permission(this.actor, this.school)
+            .permit(this.origin).remove(id);
     }
 
     @Override
     public <T> Media<T> print(final Media<T> media) throws Exception {
-        return new RtEither(
-            new RtAdmin(this.actor), new RtSchoolMember(this.actor, this.school)
-        ).permit(this.origin).print(media);
+        return this.operations.operation("SchoolSubjects.selection")
+            .permission(this.actor, this.school)
+            .permit(this.origin).print(media);
     }
 }

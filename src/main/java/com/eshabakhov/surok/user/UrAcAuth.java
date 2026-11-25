@@ -6,7 +6,6 @@ package com.eshabakhov.surok.user;
 import com.eshabakhov.surok.Media;
 import com.eshabakhov.surok.Schools;
 import com.eshabakhov.surok.UrAccount;
-import com.eshabakhov.surok.security.right.RtAdmin;
 import java.util.Collection;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -51,7 +50,7 @@ public final class UrAcAuth implements UserDetails, OAuth2User, UrAccount {
         final Stream<SimpleGrantedAuthority> account = this.user.roles().list().stream()
             .map(role -> new SimpleGrantedAuthority(String.format("ROLE_%s", role.name())));
         final Collection<? extends GrantedAuthority> granted;
-        if (new RtAdmin(this.user).allows()) {
+        if (this.user.roles().contains(Roles.RoleEnum.ADMIN)) {
             granted = account.toList();
         } else {
             granted = Stream.concat(

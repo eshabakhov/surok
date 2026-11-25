@@ -12,6 +12,7 @@ import com.eshabakhov.surok.school.input.SlInput;
 import com.eshabakhov.surok.school.input.SlInputName;
 import com.eshabakhov.surok.school.schedule.load.hours.WhFake;
 import com.eshabakhov.surok.school.schoolclass.ScFake;
+import com.eshabakhov.surok.security.OaYaml;
 import com.eshabakhov.surok.user.Roles;
 import com.eshabakhov.surok.user.UrsPostgres;
 import java.util.UUID;
@@ -62,7 +63,7 @@ final class ClAuthorizedTest {
         );
         final ClassLoad load = new ClAuthorized(
             new ClFake(31L, new ScFake(17L), new SbFake(23L), new WhFake(5)),
-            school, actor
+            school, actor, new OaYaml().operations()
         );
         school.users().remove(actor.uid());
         Assertions.assertThrows(
@@ -91,7 +92,7 @@ final class ClAuthorizedTest {
                 new ClFake(37L, new ScFake(17L), new SbFake(23L), new WhFake(5)),
                 new SlsPostgres(ctx).create(
                     new SlInputName(new SlInput(), "Чужая школа с нагрузкой")
-                ), actor
+                ), actor, new OaYaml().operations()
             ).print(new MdJson()).print().get("id").asLong(),
             Matchers.is(37L)
         );

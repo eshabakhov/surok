@@ -13,9 +13,11 @@ import com.eshabakhov.surok.school.building.input.BdInput;
 import com.eshabakhov.surok.school.building.input.BdInputName;
 import com.eshabakhov.surok.school.input.SlInput;
 import com.eshabakhov.surok.school.input.SlInputName;
+import com.eshabakhov.surok.security.OaYaml;
 import com.eshabakhov.surok.sort.SortsRequest;
 import com.eshabakhov.surok.user.Roles;
 import com.eshabakhov.surok.user.UrsPostgres;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -26,6 +28,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -49,6 +52,44 @@ final class BdsAuthorizedTest {
         new PostgreSQLContainer<>("postgres:16-alpine");
 
     /**
+     * Uses the supplied declaration instead of a hardcoded director rule.
+     *
+     * @param ctx Database context
+     * @throws Exception If setup or creation fails
+     */
+    @Test
+    void createsABuildingForTheRoleDeclaredByTheOperation(@Autowired final DSLContext ctx)
+        throws Exception {
+        final UrAccount actor = new UrsPostgres(ctx).register(
+            UUID.randomUUID().toString(), "ValidPassword1!",
+            String.format("%s@example.com", UUID.randomUUID()), false
+        );
+        final School school = new SlsPostgres(ctx).create(
+            new SlInputName(new SlInput(), "Школа особого разрешения")
+        );
+        school.users().add(actor);
+        school.users().roles(actor).grant(Roles.RoleEnum.STUDENT);
+        MatcherAssert.assertThat(
+            "The building decorator ignored the supplied permission declaration",
+            new BdsAuthorized(
+                school.buildings(), school, actor,
+                new OaYaml(
+                    new ByteArrayResource(
+                        """
+                        paths:
+                            /schools/{school}/buildings:
+                                post:
+                                    operationId: Buildings.create
+                                    x-roles: [STUDENT]
+                        """.getBytes(StandardCharsets.UTF_8)
+                    )
+                ).operations()
+            ).create(new BdInputName(new BdInput(), "Учебный корпус"))
+                .uid(), Matchers.greaterThan(0L)
+        );
+    }
+
+    /**
      * Allows a school director to create a building.
      *
      * @param ctx Database context
@@ -65,7 +106,7 @@ final class BdsAuthorizedTest {
         );
         MatcherAssert.assertThat(
             "The director could not create a building",
-            new BdsAuthorized(school.buildings(), school, actor).create(
+            new BdsAuthorized(school.buildings(), school, actor, new OaYaml().operations()).create(
                 new BdInputName(new BdInput(), "Новый корпус")
             ).print(new MdJson()).print().path("name").asText(),
             Matchers.is("Новый корпус")
@@ -91,7 +132,7 @@ final class BdsAuthorizedTest {
         school.users().roles(actor).grant(Roles.RoleEnum.DEPUTY_DIRECTOR);
         MatcherAssert.assertThat(
             "A deputy director could not create a building",
-            new BdsAuthorized(school.buildings(), school, actor).create(
+            new BdsAuthorized(school.buildings(), school, actor, new OaYaml().operations()).create(
                 new BdInputName(new BdInput(), "Корпус заместителя")
             ).uid(), Matchers.greaterThan(0L)
         );
@@ -115,7 +156,7 @@ final class BdsAuthorizedTest {
         );
         MatcherAssert.assertThat(
             "An administrator could not create a building without membership",
-            new BdsAuthorized(school.buildings(), school, actor).create(
+            new BdsAuthorized(school.buildings(), school, actor, new OaYaml().operations()).create(
                 new BdInputName(new BdInput(), "Корпус администратора")
             ).uid(), Matchers.greaterThan(0L)
         );
@@ -140,7 +181,9 @@ final class BdsAuthorizedTest {
         school.users().roles(actor).grant(Roles.RoleEnum.STUDENT);
         Assertions.assertThrows(
             AccessDeniedException.class,
-            () -> new BdsAuthorized(school.buildings(), school, actor).create(
+            () -> new BdsAuthorized(
+                school.buildings(), school, actor, new OaYaml().operations()
+            ).create(
                 new BdInputName(new BdInput(), "Запрещённый корпус")
             ),
             "A student created a school building"
@@ -164,7 +207,7 @@ final class BdsAuthorizedTest {
             new SlInputName(new SlInput(), "Школа с отзывом доступа")
         );
         final Buildings selected = new BdsAuthorized(
-            school.buildings(), school, actor
+            school.buildings(), school, actor, new OaYaml().operations()
         ).selection(
             new FiltersRequest(Set.of()), new PageRequest(20, 1),
             new SortsRequest(List.of())

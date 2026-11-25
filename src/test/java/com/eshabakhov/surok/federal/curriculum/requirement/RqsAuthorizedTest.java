@@ -9,6 +9,7 @@ import com.eshabakhov.surok.federal.curriculum.input.CrInputHttp;
 import com.eshabakhov.surok.federal.curriculum.requirement.input.MdRqInput;
 import com.eshabakhov.surok.federal.curriculum.requirement.input.RqInput;
 import com.eshabakhov.surok.federal.curriculum.requirement.input.RqInputHttp;
+import com.eshabakhov.surok.security.OaYaml;
 import com.eshabakhov.surok.user.Roles;
 import com.eshabakhov.surok.user.UrsPostgres;
 import java.util.Map;
@@ -56,7 +57,9 @@ final class RqsAuthorizedTest {
         );
         Assertions.assertThrows(
             AccessDeniedException.class,
-            () -> new RqsAuthorized(new RqsPostgres(ctx, 91L), actor).create(new RqInput()),
+            () -> new RqsAuthorized(
+                new RqsPostgres(ctx, 91L), actor, new OaYaml().operations()
+            ).create(new RqInput()),
             "A regular user created a federal requirement"
         );
     }
@@ -76,7 +79,9 @@ final class RqsAuthorizedTest {
         );
         Assertions.assertThrows(
             AccessDeniedException.class,
-            () -> new RqsAuthorized(new RqsPostgres(ctx, 91L), actor).revise(97L, new RqInput()),
+            () -> new RqsAuthorized(
+                new RqsPostgres(ctx, 91L), actor, new OaYaml().operations()
+            ).revise(97L, new RqInput()),
             "A missing requirement was looked up before authorization"
         );
     }
@@ -108,7 +113,7 @@ final class RqsAuthorizedTest {
                             "year", "2026/2027"
                         )
                     )
-                ).requirements(), actor
+                ).requirements(), actor, new OaYaml().operations()
             ).create(
                 new RqInputHttp(
                     Map.of("grade", "5", "partType", "OPTIONAL", "hours", "3")
@@ -144,7 +149,7 @@ final class RqsAuthorizedTest {
                 new UrsPostgres(ctx).register(
                     UUID.randomUUID().toString(), "ValidPassword1!",
                     String.format("%s@example.com", UUID.randomUUID()), false
-                )
+                ), new OaYaml().operations()
             ).requirement(
                 origin.create(
                     new RqInputHttp(

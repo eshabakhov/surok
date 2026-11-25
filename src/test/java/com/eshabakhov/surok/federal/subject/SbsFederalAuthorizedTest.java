@@ -6,6 +6,7 @@ package com.eshabakhov.surok.federal.subject;
 import com.eshabakhov.surok.UrAccount;
 import com.eshabakhov.surok.federal.subject.input.SbInput;
 import com.eshabakhov.surok.federal.subject.input.SbInputName;
+import com.eshabakhov.surok.security.OaYaml;
 import com.eshabakhov.surok.user.Roles;
 import com.eshabakhov.surok.user.UrsPostgres;
 import java.util.UUID;
@@ -52,7 +53,9 @@ final class SbsFederalAuthorizedTest {
         );
         Assertions.assertThrows(
             AccessDeniedException.class,
-            () -> new SbsFederalAuthorized(new SbsFederal(ctx), actor).create(
+            () -> new SbsFederalAuthorized(
+                new SbsFederal(ctx), actor, new OaYaml().operations()
+            ).create(
                 new SbInputName(new SbInput(), "Геометрия")
             ),
             "A regular user created a federal subject"
@@ -74,7 +77,9 @@ final class SbsFederalAuthorizedTest {
         );
         Assertions.assertThrows(
             AccessDeniedException.class,
-            () -> new SbsFederalAuthorized(new SbsFederal(ctx), actor).revise(
+            () -> new SbsFederalAuthorized(
+                new SbsFederal(ctx), actor, new OaYaml().operations()
+            ).revise(
                 97L, new SbInputName(new SbInput(), "Геометрия")
             ),
             "A missing federal subject was looked up before authorization"
@@ -97,7 +102,7 @@ final class SbsFederalAuthorizedTest {
         actor.roles().grant(Roles.RoleEnum.ADMIN);
         MatcherAssert.assertThat(
             "An administrator could not create a federal subject",
-            new SbsFederalAuthorized(new SbsFederal(ctx), actor).create(
+            new SbsFederalAuthorized(new SbsFederal(ctx), actor, new OaYaml().operations()).create(
                 new SbInputName(new SbInput(), String.format("Геометрия %s", UUID.randomUUID()))
             ).origin(),
             Matchers.is(Subject.Origin.FEDERAL)
@@ -120,7 +125,7 @@ final class SbsFederalAuthorizedTest {
         final String name = String.format("Астрономия %s", UUID.randomUUID());
         MatcherAssert.assertThat(
             "A regular user could not read a federal subject",
-            new SbsFederalAuthorized(new SbsFederal(ctx), actor).subject(
+            new SbsFederalAuthorized(new SbsFederal(ctx), actor, new OaYaml().operations()).subject(
                 new SbsFederal(ctx).create(new SbInputName(new SbInput(), name)).uid()
             ).name(),
             Matchers.is(name)

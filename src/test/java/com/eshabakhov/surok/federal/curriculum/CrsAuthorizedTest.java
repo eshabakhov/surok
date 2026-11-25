@@ -6,8 +6,11 @@ package com.eshabakhov.surok.federal.curriculum;
 import com.eshabakhov.surok.UrAccount;
 import com.eshabakhov.surok.federal.curriculum.input.CrInput;
 import com.eshabakhov.surok.federal.curriculum.input.CrInputHttp;
+import com.eshabakhov.surok.security.OaYaml;
 import com.eshabakhov.surok.user.Roles;
+import com.eshabakhov.surok.user.UrAcRole;
 import com.eshabakhov.surok.user.UrsPostgres;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -18,6 +21,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -41,6 +45,41 @@ final class CrsAuthorizedTest {
         new PostgreSQLContainer<>("postgres:16-alpine");
 
     /**
+     * Applies declared global roles without an administrator bypass.
+     *
+     * @param ctx Database context
+     * @throws Exception If creation fails
+     */
+    @Test
+    void createsUsingTheSuppliedGlobalPermission(@Autowired final DSLContext ctx)
+        throws Exception {
+        MatcherAssert.assertThat(
+            "Federal curriculum creation ignored the declared global role",
+            new CrsAuthorized(
+                new CrsPostgres(ctx), new UrAcRole(97L, Roles.RoleEnum.BASIC_MAKER),
+                new OaYaml(
+                    new ByteArrayResource(
+                        """
+                        paths:
+                            /планы:
+                                post:
+                                    operationId: Curriculums.create
+                                    x-roles: [BASIC_MAKER]
+                        """.getBytes(StandardCharsets.UTF_8)
+                    )
+                ).operations()
+            ).create(
+                new CrInputHttp(
+                    Map.of(
+                        "title", "Особый учебный план", "level", "PRIMARY", "week", "FIVE_DAYS",
+                        "version", UUID.randomUUID().toString(), "year", "2028/2029"
+                    )
+                )
+            ).uid(), Matchers.greaterThan(0L)
+        );
+    }
+
+    /**
      * Rejects federal curriculum creation by a regular user.
      *
      * @param ctx Database context
@@ -54,7 +93,9 @@ final class CrsAuthorizedTest {
         );
         Assertions.assertThrows(
             AccessDeniedException.class,
-            () -> new CrsAuthorized(new CrsPostgres(ctx), actor).create(new CrInput()),
+            () -> new CrsAuthorized(
+                new CrsPostgres(ctx), actor, new OaYaml().operations()
+            ).create(new CrInput()),
             "A regular user created a federal curriculum"
         );
     }
@@ -74,7 +115,9 @@ final class CrsAuthorizedTest {
         );
         Assertions.assertThrows(
             AccessDeniedException.class,
-            () -> new CrsAuthorized(new CrsPostgres(ctx), actor).revise(91L, new CrInput()),
+            () -> new CrsAuthorized(
+                new CrsPostgres(ctx), actor, new OaYaml().operations()
+            ).revise(91L, new CrInput()),
             "A missing curriculum was looked up before authorization"
         );
     }
@@ -95,7 +138,7 @@ final class CrsAuthorizedTest {
         actor.roles().grant(Roles.RoleEnum.ADMIN);
         MatcherAssert.assertThat(
             "An administrator could not create a federal curriculum",
-            new CrsAuthorized(new CrsPostgres(ctx), actor).create(
+            new CrsAuthorized(new CrsPostgres(ctx), actor, new OaYaml().operations()).create(
                 new CrInputHttp(
                     Map.of(
                         "title", String.format("Начальный план %s", UUID.randomUUID()),
@@ -125,7 +168,7 @@ final class CrsAuthorizedTest {
                 new UrsPostgres(ctx).register(
                     UUID.randomUUID().toString(), "ValidPassword1!",
                     String.format("%s@example.com", UUID.randomUUID()), false
-                )
+                ), new OaYaml().operations()
             ).curriculum(
                 new CrsPostgres(ctx).create(
                     new CrInputHttp(

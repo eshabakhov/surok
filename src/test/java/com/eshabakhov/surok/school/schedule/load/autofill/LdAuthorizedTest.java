@@ -13,6 +13,7 @@ import com.eshabakhov.surok.school.input.SlInput;
 import com.eshabakhov.surok.school.input.SlInputName;
 import com.eshabakhov.surok.school.schedule.input.SdInput;
 import com.eshabakhov.surok.school.schedule.input.SdInputName;
+import com.eshabakhov.surok.security.OaYaml;
 import com.eshabakhov.surok.user.Roles;
 import com.eshabakhov.surok.user.UrsPostgres;
 import java.util.Map;
@@ -60,7 +61,9 @@ final class LdAuthorizedTest {
         final School school = actor.schools().create(
             new SlInputName(new SlInput(), "Школа черновиков")
         );
-        final LoadDraft draft = new SlAuthorized(school, actor).schedules().create(
+        final LoadDraft draft = new SlAuthorized(
+            school, actor, new OaYaml().operations()
+        ).schedules().create(
             new SdInputName(new SdInput(), "Учебный год")
         ).draft();
         school.users().roles(actor).revoke(school.users().roles(actor).list().getFirst().uid());
@@ -87,7 +90,9 @@ final class LdAuthorizedTest {
         final School school = actor.schools().create(
             new SlInputName(new SlInput(), "Школа закрытых черновиков")
         );
-        final LoadDraft draft = new SlAuthorized(school, actor).schedules().create(
+        final LoadDraft draft = new SlAuthorized(
+            school, actor, new OaYaml().operations()
+        ).schedules().create(
             new SdInputName(new SdInput(), "Учебный год")
         ).draft();
         school.users().remove(actor.uid());
@@ -114,7 +119,9 @@ final class LdAuthorizedTest {
         final School school = actor.schools().create(
             new SlInputName(new SlInput(), "Школа черновиков для просмотра")
         );
-        final LoadDraft draft = new SlAuthorized(school, actor).schedules().create(
+        final LoadDraft draft = new SlAuthorized(
+            school, actor, new OaYaml().operations()
+        ).schedules().create(
             new SdInputName(new SdInput(), "Учебный год")
         ).draft();
         school.users().roles(actor).revoke(school.users().roles(actor).list().getFirst().uid());
@@ -147,7 +154,7 @@ final class LdAuthorizedTest {
             () -> new LdAuthorized(
                 school.schedules().create(
                     new SdInputName(new SdInput(), "Учебный год без черновика")
-                ).draft(), school, actor
+                ).draft(), school, actor, new OaYaml().operations()
             ).curriculum(),
             "An administrator could not inspect a draft outside their schools"
         );

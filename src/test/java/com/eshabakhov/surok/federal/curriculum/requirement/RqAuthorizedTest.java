@@ -9,6 +9,7 @@ import com.eshabakhov.surok.federal.curriculum.input.CrInputHttp;
 import com.eshabakhov.surok.federal.curriculum.requirement.input.MdRqInput;
 import com.eshabakhov.surok.federal.curriculum.requirement.input.RqInput;
 import com.eshabakhov.surok.federal.curriculum.requirement.input.RqInputHttp;
+import com.eshabakhov.surok.security.OaYaml;
 import com.eshabakhov.surok.user.Roles;
 import com.eshabakhov.surok.user.UrsPostgres;
 import java.util.Map;
@@ -57,7 +58,9 @@ final class RqAuthorizedTest {
         );
         Assertions.assertThrows(
             AccessDeniedException.class,
-            () -> new RqAuthorized(new RqMandatory(ctx, 91L), actor).revise(new RqInput()),
+            () -> new RqAuthorized(
+                new RqMandatory(ctx, 91L), actor, new OaYaml().operations()
+            ).revise(new RqInput()),
             "A regular user revised a federal requirement"
         );
     }
@@ -91,7 +94,7 @@ final class RqAuthorizedTest {
                 new RqInputHttp(
                     Map.of("grade", "3", "partType", "OPTIONAL", "hours", "2")
                 )
-            ), actor
+            ), actor, new OaYaml().operations()
         );
         actor.roles().grant(Roles.RoleEnum.ADMIN);
         MatcherAssert.assertThat(

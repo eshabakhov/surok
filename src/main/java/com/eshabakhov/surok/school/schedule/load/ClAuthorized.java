@@ -6,9 +6,7 @@ package com.eshabakhov.surok.school.schedule.load;
 import com.eshabakhov.surok.Media;
 import com.eshabakhov.surok.School;
 import com.eshabakhov.surok.UrAccount;
-import com.eshabakhov.surok.security.right.RtAdmin;
-import com.eshabakhov.surok.security.right.RtEither;
-import com.eshabakhov.surok.security.right.RtSchoolMember;
+import com.eshabakhov.surok.security.Operations;
 
 /**
  * Applied teaching load visible to members of its school.
@@ -17,6 +15,9 @@ import com.eshabakhov.surok.security.right.RtSchoolMember;
  * @since 0.0.1
  */
 public final class ClAuthorized implements ClassLoad {
+
+    /** Shared operation declarations. */
+    private final Operations operations;
 
     /** Underlying teaching load. */
     private final ClassLoad origin;
@@ -28,16 +29,21 @@ public final class ClAuthorized implements ClassLoad {
     private final UrAccount actor;
 
     /**
-     * New protected teaching load.
+     * New protected object with shared operation declarations.
      *
-     * @param origin Underlying load
-     * @param school Owning school
+     * @param origin Underlying origin
+     * @param school Underlying school
      * @param actor Acting user
+     * @param operations Shared operation declarations
      */
-    public ClAuthorized(final ClassLoad origin, final School school, final UrAccount actor) {
+    public ClAuthorized(
+        final ClassLoad origin, final School school, final UrAccount actor,
+        final Operations operations
+    ) {
         this.origin = origin;
         this.school = school;
         this.actor = actor;
+        this.operations = operations;
     }
 
     @Override
@@ -47,8 +53,8 @@ public final class ClAuthorized implements ClassLoad {
 
     @Override
     public <T> Media<T> print(final Media<T> media) throws Exception {
-        return new RtEither(
-            new RtAdmin(this.actor), new RtSchoolMember(this.actor, this.school)
-        ).permit(this.origin).print(media);
+        return this.operations.operation("ClassLoads.load")
+            .permission(this.actor, this.school)
+            .permit(this.origin).print(media);
     }
 }

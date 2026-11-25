@@ -6,7 +6,6 @@ package com.eshabakhov.surok.user;
 import com.eshabakhov.surok.Media;
 import com.eshabakhov.surok.Schools;
 import com.eshabakhov.surok.UrAccount;
-import com.eshabakhov.surok.security.right.RtAdmin;
 
 /**
  * Brief user representation for shared browser controls.
@@ -50,7 +49,9 @@ public final class UrAcBrief implements UrAccount {
     @Override
     public <T> Media<T> print(final Media<T> media) {
         return media.with("username", this.account().username())
-            .with("admin", new RtAdmin(this).allows())
-            .with("subscription", !this.account().corporate() && !new RtAdmin(this).allows());
+            .with("admin", this.roles().contains(Roles.RoleEnum.ADMIN)).with(
+                "subscription", !this.account().corporate()
+                    && !this.roles().contains(Roles.RoleEnum.ADMIN)
+            );
     }
 }

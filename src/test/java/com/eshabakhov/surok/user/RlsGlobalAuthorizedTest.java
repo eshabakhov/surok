@@ -4,6 +4,7 @@
 package com.eshabakhov.surok.user;
 
 import com.eshabakhov.surok.UrAccount;
+import com.eshabakhov.surok.security.OaYaml;
 import java.util.UUID;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
@@ -50,7 +51,7 @@ final class RlsGlobalAuthorizedTest {
         Assertions.assertThrows(
             AccessDeniedException.class,
             () -> new RlsGlobalAuthorized(
-                new Roles.RlsPostgres(ctx, 97L), actor
+                new Roles.RlsPostgres(ctx, 97L), actor, new OaYaml().operations()
             ).grant(Roles.RoleEnum.PRO_MAKER),
             "A regular user assigned a global role"
         );
@@ -74,7 +75,9 @@ final class RlsGlobalAuthorizedTest {
             String.format("%s@example.com", UUID.randomUUID()), false
         );
         actor.roles().grant(Roles.RoleEnum.ADMIN);
-        final Roles roles = new RlsGlobalAuthorized(target.roles(), actor);
+        final Roles roles = new RlsGlobalAuthorized(
+            target.roles(), actor, new OaYaml().operations()
+        );
         roles.grant(Roles.RoleEnum.ADVANCED_MAKER);
         MatcherAssert.assertThat(
             "An administrator could not assign and read a global role",
@@ -95,7 +98,9 @@ final class RlsGlobalAuthorizedTest {
             String.format("бывший-администратор-%s", UUID.randomUUID()), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
         );
-        final Roles roles = new RlsGlobalAuthorized(actor.roles(), actor);
+        final Roles roles = new RlsGlobalAuthorized(
+            actor.roles(), actor, new OaYaml().operations()
+        );
         actor.roles().revoke(actor.roles().grant(Roles.RoleEnum.ADMIN).uid());
         Assertions.assertThrows(
             AccessDeniedException.class,

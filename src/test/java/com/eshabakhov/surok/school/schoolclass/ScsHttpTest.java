@@ -597,7 +597,7 @@ final class ScsHttpTest {
     ) throws Exception {
         final MockHttpSession session = this.session(role, 1L);
         final MvcResult form = this.mvc.perform(
-            MockMvcRequestBuilders.get("/schools/1/classes/create").session(session)
+            MockMvcRequestBuilders.get("/users/profile").session(session)
         ).andExpect(MockMvcResultMatchers.status().isOk()).andReturn();
         final CsrfToken token = (CsrfToken) form.getRequest().getAttribute(
             CsrfToken.class.getName()

@@ -6,6 +6,7 @@ package com.eshabakhov.surok.school;
 import com.eshabakhov.surok.School;
 import com.eshabakhov.surok.Schools;
 import com.eshabakhov.surok.Sort;
+import com.eshabakhov.surok.UrAccount;
 import com.eshabakhov.surok.filter.FilterRequest;
 import com.eshabakhov.surok.filter.FiltersRequest;
 import com.eshabakhov.surok.media.MdJson;
@@ -14,8 +15,12 @@ import com.eshabakhov.surok.school.input.SlInput;
 import com.eshabakhov.surok.school.input.SlInputName;
 import com.eshabakhov.surok.sort.SortRequest;
 import com.eshabakhov.surok.sort.SortsRequest;
+import com.eshabakhov.surok.user.Roles;
+import com.eshabakhov.surok.user.UrsPostgres;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
+import java.util.stream.StreamSupport;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.jooq.DSLContext;
@@ -57,6 +62,37 @@ final class SlsPostgresTest {
     @Autowired
     SlsPostgresTest(final DSLContext ctx) {
         this.ctx = ctx;
+    }
+
+    /**
+     * Gives an administrator access without requiring school membership.
+     *
+     * @throws Exception If setup or selection fails
+     */
+    @Test
+    void includesUnrelatedSchoolsForAnAdministrator() throws Exception {
+        final UrAccount actor = new UrsPostgres(this.ctx).register(
+            UUID.randomUUID().toString(), "ValidPassword1!",
+            String.format("%s@example.com", UUID.randomUUID()), false
+        );
+        actor.roles().grant(Roles.RoleEnum.ADMIN);
+        final School school = this.collection().create(
+            new SlInputName(new SlInput(), "Школа вне членства")
+        );
+        MatcherAssert.assertThat(
+            "An administrator could not access a school outside their memberships",
+            List.of(
+                actor.schools().contains(school.uid()),
+                StreamSupport.stream(actor.schools().iterate().spliterator(), false)
+                    .anyMatch(item -> item.uid().equals(school.uid())),
+                StreamSupport.stream(
+                    actor.schools().selection(
+                        new FiltersRequest(Set.of()), new PageRequest(Integer.MAX_VALUE, 1),
+                        new SortsRequest(List.of())
+                    ).iterate().spliterator(), false
+                ).anyMatch(item -> item.uid().equals(school.uid()))
+            ), Matchers.contains(true, true, true)
+        );
     }
 
     /** Checks Unicode values are bound as literal data. */

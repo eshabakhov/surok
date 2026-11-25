@@ -266,7 +266,7 @@ final class PsHttpTest {
         "/schools/{school}/schedules, POST, DEPUTY_DIRECTOR, school",
         "/schools/{school}/schedules, POST, BASIC_MAKER, denied",
         "/schools/{school}/schedules/{schedule}/loads, GET, STUDENT, school",
-        "/schools/{school}/schedules/{schedule}/loads/{load:[0-9]+}, GET, ADMIN, all",
+        "/schools/{school}/schedules/{schedule}/loads/{load}, GET, ADMIN, all",
         "/schools/{school}/schedules/{schedule}/loads/draft, GET, STUDENT, school",
         "/schools/{school}/schedules/{schedule}/loads/draft, PUT, DIRECTOR, school",
         "/schools/{school}/schedules/{schedule}/loads/draft, PUT, BASIC_MAKER, denied",

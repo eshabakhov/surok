@@ -10,6 +10,7 @@ import com.eshabakhov.surok.school.input.SlInput;
 import com.eshabakhov.surok.school.input.SlInputName;
 import com.eshabakhov.surok.school.teacher.input.ThInput;
 import com.eshabakhov.surok.school.teacher.input.ThInputName;
+import com.eshabakhov.surok.security.OaYaml;
 import com.eshabakhov.surok.user.Roles;
 import com.eshabakhov.surok.user.UrsPostgres;
 import java.util.UUID;
@@ -60,7 +61,7 @@ final class ThAuthorizedTest {
         );
         final Teacher teacher = new ThAuthorized(
             school.teachers().create(new ThInputName(new ThInput(), "Учитель Яна")),
-            school, actor
+            school, actor, new OaYaml().operations()
         );
         school.users().roles(actor).revoke(school.users().roles(actor).list().getFirst().uid());
         Assertions.assertThrows(
@@ -91,7 +92,7 @@ final class ThAuthorizedTest {
         );
         MatcherAssert.assertThat(
             "An administrator could not revise a teacher without school membership",
-            new ThAuthorized(teacher, school, actor).revise(
+            new ThAuthorized(teacher, school, actor, new OaYaml().operations()).revise(
                 new ThInputName(new ThInput(), "Учитель Зоя")
             ).uid(), Matchers.equalTo(teacher.uid())
         );

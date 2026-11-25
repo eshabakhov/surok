@@ -19,14 +19,17 @@ import com.eshabakhov.surok.media.XsClasspath;
 import com.eshabakhov.surok.school.SlsBrief;
 import com.eshabakhov.surok.school.SlsPostgres;
 import com.eshabakhov.surok.security.CsToken;
-import com.eshabakhov.surok.security.right.RtAdmin;
+import com.eshabakhov.surok.security.OaYaml;
+import com.eshabakhov.surok.security.Operations;
 import com.eshabakhov.surok.user.UrAcBrief;
 import jakarta.servlet.http.HttpServletRequest;
+import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import org.jooq.DSLContext;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -60,6 +63,9 @@ public class CrsHttp {
     /** HTML fragment representation of the curriculum collection. */
     private static final String FRAGMENT = "text/vnd.surok.federal-curriculums-fragment+html";
 
+    /** Shared operation declarations. */
+    private final Operations operations;
+
     /** JOOQ context. */
     private final DSLContext ctx;
 
@@ -67,14 +73,26 @@ public class CrsHttp {
     private final Curriculums origin;
 
     /**
-     * New controller.
+     * New resource with explicitly constructed YAML operations.
      *
-     * @param ctx JOOQ context
-     * @since 0.0.1
+     * @param ctx Database context
+     * @throws IOException If the API description cannot be read
      */
-    public CrsHttp(final DSLContext ctx) {
+    @Autowired
+    public CrsHttp(final DSLContext ctx) throws IOException {
+        this(ctx, new OaYaml().operations());
+    }
+
+    /**
+     * New controller using the application operation catalog.
+     *
+     * @param ctx Database context
+     * @param operations Shared operation declarations
+     */
+    public CrsHttp(final DSLContext ctx, final Operations operations) {
         this.ctx = ctx;
         this.origin = new CrsPostgres(ctx);
+        this.operations = operations;
     }
 
     /**
@@ -105,7 +123,9 @@ public class CrsHttp {
             new AcHttp(
                 request, "federal-curriculum-v1", "federal-curriculum-v2"
             ).type(),
-            new CrsAuthorized(this.origin, actor).create(new CrInputHttp(parameters)),
+            new CrsAuthorized(
+                this.origin, actor, this.operations
+            ).create(new CrInputHttp(parameters)),
             HttpStatus.CREATED
         );
     }
@@ -139,7 +159,7 @@ public class CrsHttp {
     ) throws Exception {
         return CrsHttp.result(
             new AcHttp(request, "federal-curriculum-v1", "federal-curriculum-v2").type(),
-            new CrsAuthorized(this.origin, actor).create(new CrInputHttp(fields)),
+            new CrsAuthorized(this.origin, actor, this.operations).create(new CrInputHttp(fields)),
             HttpStatus.CREATED
         );
     }
@@ -171,7 +191,7 @@ public class CrsHttp {
         final MediaType type = new AcHttp(
             request, "federal-curriculum-v1", "federal-curriculum-v2"
         ).type();
-        final Curriculums curriculums = new CrsAuthorized(this.origin, actor);
+        final Curriculums curriculums = new CrsAuthorized(this.origin, actor, this.operations);
         final Curriculum selected = curriculums.curriculum(curriculum);
         return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8)).body(
             switch (type.toString()) {
@@ -211,7 +231,9 @@ public class CrsHttp {
     ) throws Exception {
         final MediaType type = new AcHttp(request, List.of(MediaType.TEXT_HTML)).type();
         final Curriculums curriculums = new CrsAuthorized(
-            new RtAdmin(actor).permit(this.origin), actor
+            this.operations.operation("Curriculums.edit")
+                .permission(actor)
+                .permit(this.origin), actor, this.operations
         );
         return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8)).body(
             this.web(request, "xslt/federal-curriculum.xsl", "edit").with(
@@ -254,7 +276,7 @@ public class CrsHttp {
             new AcHttp(
                 request, "federal-curriculum-v1", "federal-curriculum-v2"
             ).type(),
-            new CrsAuthorized(this.origin, actor).revise(
+            new CrsAuthorized(this.origin, actor, this.operations).revise(
                 curriculum, new CrInputHttp(fields)
             ), HttpStatus.OK
         );
@@ -296,7 +318,9 @@ public class CrsHttp {
                 MediaType.valueOf(CrsHttp.FRAGMENT)
             )
         ).type();
-        final Curriculums selected = new CrsAuthorized(this.origin, actor).selection(
+        final Curriculums selected = new CrsAuthorized(
+            this.origin, actor, this.operations
+        ).selection(
             filters, page, sorts
         );
         return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8))
@@ -342,7 +366,7 @@ public class CrsHttp {
                 new AcHttp(request, List.of(MediaType.TEXT_HTML)).type(), StandardCharsets.UTF_8
             )
         ).body(
-            new RtAdmin(actor).permit(
+            this.operations.operation("Curriculums.form").permission(actor).permit(
                 this.web(request, "xslt/federal-curriculums.xsl", "create")
             ).print()
         );
@@ -361,7 +385,7 @@ public class CrsHttp {
         @PathVariable(name = "curriculum") final long id,
         @AuthenticationPrincipal final UrAccount actor
     ) throws Exception {
-        new CrsAuthorized(this.origin, actor).remove(id);
+        new CrsAuthorized(this.origin, actor, this.operations).remove(id);
         return ResponseEntity.noContent().build();
     }
 

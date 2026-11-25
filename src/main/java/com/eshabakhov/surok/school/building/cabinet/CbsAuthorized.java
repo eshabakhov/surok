@@ -9,20 +9,20 @@ import com.eshabakhov.surok.Page;
 import com.eshabakhov.surok.School;
 import com.eshabakhov.surok.Sorts;
 import com.eshabakhov.surok.UrAccount;
-import com.eshabakhov.surok.security.right.RtAdmin;
-import com.eshabakhov.surok.security.right.RtDirectorOrDeputy;
-import com.eshabakhov.surok.security.right.RtEither;
-import com.eshabakhov.surok.security.right.RtSchoolMember;
+import com.eshabakhov.surok.security.Operations;
 import java.util.stream.StreamSupport;
 
 /**
  * Building cabinets protected by the acting user's school role.
- * For example, {@code new CbsAuthorized(building.cabinets(), school, actor).create(input)}
+ * For example, {@code new CbsAuthorized(items, school, actor, operations).create(input)}
  * permits creation by a director or deputy director.
  *
  * @since 0.0.1
  */
 public final class CbsAuthorized implements Cabinets {
+
+    /** Shared operation declarations. */
+    private final Operations operations;
 
     /** Underlying cabinets. */
     private final Cabinets origin;
@@ -34,35 +34,40 @@ public final class CbsAuthorized implements Cabinets {
     private final UrAccount actor;
 
     /**
-     * New protected cabinet collection.
+     * New protected object with shared operation declarations.
      *
-     * @param origin Underlying cabinets
-     * @param school School that owns them
+     * @param origin Underlying origin
+     * @param school Underlying school
      * @param actor Acting user
+     * @param operations Shared operation declarations
      */
-    public CbsAuthorized(final Cabinets origin, final School school, final UrAccount actor) {
+    public CbsAuthorized(
+        final Cabinets origin, final School school, final UrAccount actor,
+        final Operations operations
+    ) {
         this.origin = origin;
         this.school = school;
         this.actor = actor;
+        this.operations = operations;
     }
 
     @Override
     public Cabinet create(final CabinetInput input) throws Exception {
         return new CbAuthorized(
-            new RtEither(
-                new RtAdmin(this.actor), new RtDirectorOrDeputy(this.actor, this.school)
-            ).permit(this.origin).create(input),
-            this.school, this.actor
+            this.operations.operation("Cabinets.create")
+                .permission(this.actor, this.school)
+                .permit(this.origin).create(input),
+            this.school, this.actor, this.operations
         );
     }
 
     @Override
     public Cabinet cabinet(final long id) throws Exception {
         return new CbAuthorized(
-            new RtEither(
-                new RtAdmin(this.actor), new RtSchoolMember(this.actor, this.school)
-            ).permit(this.origin).cabinet(id),
-            this.school, this.actor
+            this.operations.operation("Cabinets.cabinet")
+                .permission(this.actor, this.school)
+                .permit(this.origin).cabinet(id),
+            this.school, this.actor, this.operations
         );
     }
 
@@ -71,36 +76,36 @@ public final class CbsAuthorized implements Cabinets {
         final Filters filters, final Page page, final Sorts sorts
     ) throws Exception {
         return new CbsAuthorized(
-            new RtEither(
-                new RtAdmin(this.actor), new RtSchoolMember(this.actor, this.school)
-            ).permit(this.origin).selection(
+            this.operations.operation("Cabinets.selection")
+                .permission(this.actor, this.school)
+                .permit(this.origin).selection(
                 filters, page, sorts
-            ), this.school, this.actor
+            ), this.school, this.actor, this.operations
         );
     }
 
     @Override
     public Iterable<Cabinet> iterate() {
         return StreamSupport.stream(
-            new RtEither(
-                new RtAdmin(this.actor), new RtSchoolMember(this.actor, this.school)
-            ).permit(this.origin).iterate().spliterator(), false
+            this.operations.operation("Cabinets.selection")
+                .permission(this.actor, this.school)
+                .permit(this.origin).iterate().spliterator(), false
         ).<Cabinet>map(
-            cabinet -> new CbAuthorized(cabinet, this.school, this.actor)
+            cabinet -> new CbAuthorized(cabinet, this.school, this.actor, this.operations)
         ).toList();
     }
 
     @Override
     public void remove(final long id) throws Exception {
-        new RtEither(
-            new RtAdmin(this.actor), new RtDirectorOrDeputy(this.actor, this.school)
-        ).permit(this.origin).remove(id);
+        this.operations.operation("Cabinets.remove")
+            .permission(this.actor, this.school)
+            .permit(this.origin).remove(id);
     }
 
     @Override
     public <T> Media<T> print(final Media<T> media) throws Exception {
-        return new RtEither(
-            new RtAdmin(this.actor), new RtSchoolMember(this.actor, this.school)
-        ).permit(this.origin).print(media);
+        return this.operations.operation("Cabinets.selection")
+            .permission(this.actor, this.school)
+            .permit(this.origin).print(media);
     }
 }

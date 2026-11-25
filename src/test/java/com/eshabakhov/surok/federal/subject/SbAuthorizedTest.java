@@ -10,6 +10,7 @@ import com.eshabakhov.surok.federal.subject.input.SbInputName;
 import com.eshabakhov.surok.school.SlsPostgres;
 import com.eshabakhov.surok.school.input.SlInput;
 import com.eshabakhov.surok.school.input.SlInputName;
+import com.eshabakhov.surok.security.OaYaml;
 import com.eshabakhov.surok.user.Roles;
 import com.eshabakhov.surok.user.UrsPostgres;
 import java.util.UUID;
@@ -59,7 +60,7 @@ final class SbAuthorizedTest {
                 new SbFake(27L, "Краеведение"),
                 new SlsPostgres(ctx).create(
                     new SlInputName(new SlInput(), "Чужая школа администратора")
-                ), actor
+                ), actor, new OaYaml().operations()
             ).name(), Matchers.is("Краеведение")
         );
     }
@@ -81,7 +82,7 @@ final class SbAuthorizedTest {
         );
         final Subject subject = new SbAuthorized(
             school.subjects().create(new SbInputName(new SbInput(), "Робототехника")),
-            school, actor
+            school, actor, new OaYaml().operations()
         );
         school.users().roles(actor).revoke(school.users().roles(actor).list().getFirst().uid());
         school.users().roles(actor).grant(Roles.RoleEnum.DEPUTY_DIRECTOR);

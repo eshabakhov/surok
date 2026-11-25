@@ -5,16 +5,19 @@ package com.eshabakhov.surok.federal.curriculum.requirement;
 
 import com.eshabakhov.surok.Media;
 import com.eshabakhov.surok.UrAccount;
-import com.eshabakhov.surok.security.right.RtAdmin;
+import com.eshabakhov.surok.security.Operations;
 
 /**
  * Federal requirement whose revision requires an administrator.
- * For example, {@code new RqAuthorized(requirement, user).revise(input)}
+ * For example, {@code new RqAuthorized(requirement, user, operations).revise(input)}
  * checks the user's current global role before changing the requirement.
  *
  * @since 0.0.1
  */
 public final class RqAuthorized implements Requirement {
+
+    /** Shared operation declarations. */
+    private final Operations operations;
 
     /** Underlying requirement. */
     private final Requirement origin;
@@ -23,14 +26,19 @@ public final class RqAuthorized implements Requirement {
     private final UrAccount actor;
 
     /**
-     * New protected requirement.
+     * New protected object with shared operation declarations.
      *
-     * @param origin Underlying requirement
+     * @param origin Underlying origin
      * @param actor Acting user
+     * @param operations Shared operation declarations
      */
-    public RqAuthorized(final Requirement origin, final UrAccount actor) {
+    public RqAuthorized(
+        final Requirement origin, final UrAccount actor,
+        final Operations operations
+    ) {
         this.origin = origin;
         this.actor = actor;
+        this.operations = operations;
     }
 
     @Override
@@ -41,12 +49,16 @@ public final class RqAuthorized implements Requirement {
     @Override
     public Requirement revise(final RequirementInput input) throws Exception {
         return new RqAuthorized(
-            new RtAdmin(this.actor).permit(this.origin).revise(input), this.actor
+            this.operations.operation("Requirements.revise")
+                .permission(this.actor)
+                .permit(this.origin).revise(input), this.actor, this.operations
         );
     }
 
     @Override
     public <T> Media<T> print(final Media<T> media) throws Exception {
-        return this.origin.print(media);
+        return this.operations.operation("Requirements.requirement")
+            .permission(this.actor)
+            .permit(this.origin).print(media);
     }
 }

@@ -10,6 +10,7 @@ import com.eshabakhov.surok.school.input.SlInput;
 import com.eshabakhov.surok.school.input.SlInputName;
 import com.eshabakhov.surok.school.schedule.input.SdInput;
 import com.eshabakhov.surok.school.schedule.input.SdInputName;
+import com.eshabakhov.surok.security.OaYaml;
 import com.eshabakhov.surok.user.Roles;
 import com.eshabakhov.surok.user.UrsPostgres;
 import java.util.UUID;
@@ -60,7 +61,7 @@ final class SdAuthorizedTest {
         );
         final Schedule schedule = new SdAuthorized(
             school.schedules().create(new SdInputName(new SdInput(), "Учебный год")),
-            school, actor
+            school, actor, new OaYaml().operations()
         );
         school.users().roles(actor).revoke(school.users().roles(actor).list().getFirst().uid());
         Assertions.assertThrows(
@@ -91,7 +92,7 @@ final class SdAuthorizedTest {
         );
         MatcherAssert.assertThat(
             "An administrator could not revise a schedule without school membership",
-            new SdAuthorized(schedule, school, actor).revise(
+            new SdAuthorized(schedule, school, actor, new OaYaml().operations()).revise(
                 new SdInputName(new SdInput(), "Новый учебный год")
             ).uid(), Matchers.equalTo(schedule.uid())
         );
@@ -115,7 +116,7 @@ final class SdAuthorizedTest {
         );
         final Schedule selected = new SdAuthorized(
             school.schedules().create(new SdInputName(new SdInput(), "Учебный год")),
-            school, actor
+            school, actor, new OaYaml().operations()
         );
         school.users().remove(actor.uid());
         Assertions.assertThrows(
@@ -142,7 +143,7 @@ final class SdAuthorizedTest {
         );
         final Schedule selected = new SdAuthorized(
             school.schedules().create(new SdInputName(new SdInput(), "Учебный год")),
-            school, actor
+            school, actor, new OaYaml().operations()
         );
         school.users().remove(actor.uid());
         Assertions.assertThrows(

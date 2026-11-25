@@ -19,14 +19,18 @@ import com.eshabakhov.surok.media.XsClasspath;
 import com.eshabakhov.surok.school.input.SchoolInputException;
 import com.eshabakhov.surok.school.input.SlInputHttp;
 import com.eshabakhov.surok.security.CsToken;
+import com.eshabakhov.surok.security.OaYaml;
+import com.eshabakhov.surok.security.Operations;
 import com.eshabakhov.surok.user.UrAcAuthorized;
 import com.eshabakhov.surok.user.UrAcBrief;
 import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.servlet.http.HttpServletRequest;
+import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import org.jooq.DSLContext;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -68,16 +72,32 @@ public class SlsHttp {
     /** HTML representation containing only the results. */
     private static final String FRAGMENT = "text/vnd.surok.schools-fragment+html";
 
+    /** Shared operation declarations. */
+    private final Operations operations;
+
     /** Database context. */
     private final DSLContext ctx;
 
     /**
-     * New school resource.
+     * New resource with explicitly constructed YAML operations.
      *
      * @param ctx Database context
+     * @throws IOException If the API description cannot be read
      */
-    public SlsHttp(final DSLContext ctx) {
+    @Autowired
+    public SlsHttp(final DSLContext ctx) throws IOException {
+        this(ctx, new OaYaml().operations());
+    }
+
+    /**
+     * New controller using the application operation catalog.
+     *
+     * @param ctx Database context
+     * @param operations Shared operation declarations
+     */
+    public SlsHttp(final DSLContext ctx, final Operations operations) {
         this.ctx = ctx;
+        this.operations = operations;
     }
 
     /**
@@ -107,7 +127,7 @@ public class SlsHttp {
             )
         ).type();
         final Schools selected = new UrAcAuthorized(
-            user, new SlsPostgres(this.ctx)
+            user, this.operations
         ).schools().selection(filters, page, sorts);
         return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8))
             .varyBy(HttpHeaders.ACCEPT).body(
@@ -137,16 +157,22 @@ public class SlsHttp {
      * Prints the browser form for creating a school.
      *
      * @param request HTTP request
+     * @param user Acting user
      * @return HTML creation form
      * @throws Exception If rendering fails
      */
     @GetMapping(value = "/create", produces = MediaType.TEXT_HTML_VALUE)
-    public ResponseEntity<String> form(final HttpServletRequest request) throws Exception {
+    public ResponseEntity<String> form(
+        final HttpServletRequest request, @AuthenticationPrincipal final UrAccount user
+    ) throws Exception {
         return ResponseEntity.ok().contentType(
             new MediaType(MediaType.TEXT_HTML, StandardCharsets.UTF_8)
         ).body(
             this.web(
-                request, "xslt/schools.xsl", "create", new SlsBrief(new SlsPostgres(this.ctx))
+                request, "xslt/schools.xsl", "create", new SlsBrief(
+                    this.operations.operation("Schools.form").permission(user)
+                        .permit(new SlsPostgres(this.ctx))
+                )
             ).print()
         );
     }
@@ -170,8 +196,17 @@ public class SlsHttp {
         @AuthenticationPrincipal final UrAccount user
     ) throws Exception {
         final MediaType type = new AcHttp(request, "school-v1").type();
-        final Schools origin = new UrAcAuthorized(user, new SlsPostgres(this.ctx)).schools();
-        final School selected = origin.school(school);
+        final Schools origin = new UrAcAuthorized(
+            user, this.operations
+        ).schools();
+        final String operation;
+        if (request.getRequestURI().endsWith("/edit")) {
+            operation = "Schools.edit";
+        } else {
+            operation = "Schools.school";
+        }
+        final School selected = this.operations.operation(operation)
+            .permission(user, school).permit(origin).school(school);
         return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8)).body(
             switch (type.toString()) {
                 case MediaType.TEXT_HTML_VALUE -> {
@@ -268,7 +303,9 @@ public class SlsHttp {
         @PathVariable final long school,
         @AuthenticationPrincipal final UrAccount user
     ) throws Exception {
-        new UrAcAuthorized(user, new SlsPostgres(this.ctx)).schools().remove(school);
+        new UrAcAuthorized(
+            user, this.operations
+        ).schools().remove(school);
         return ResponseEntity.noContent().build();
     }
 
@@ -294,12 +331,12 @@ public class SlsHttp {
             final HttpStatus status;
             if (creation) {
                 selected = new UrAcAuthorized(
-                    user, new SlsPostgres(this.ctx)
+                    user, this.operations
                 ).schools().create(input);
                 status = HttpStatus.CREATED;
             } else {
                 selected = new UrAcAuthorized(
-                    user, new SlsPostgres(this.ctx)
+                    user, this.operations
                 ).schools().revise(id, input);
                 status = HttpStatus.OK;
             }

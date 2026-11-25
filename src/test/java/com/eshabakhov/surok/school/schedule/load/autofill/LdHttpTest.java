@@ -22,6 +22,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 import org.springframework.test.annotation.DirtiesContext;
@@ -889,23 +890,19 @@ final class LdHttpTest {
     }
 
     @Test
-    void rendersReadOnlyPlanningForMakersWithoutSchoolRole(
+    void deniesPlanningForMakersWithoutSchoolRole(
         @Autowired final MockMvc mvc, @Autowired final DSLContext ctx
     ) throws Exception {
         MatcherAssert.assertThat(
-            "A maker without a school role received draft editing controls",
+            "A tariff without a school role granted access to the draft",
             mvc.perform(
                 MockMvcRequestBuilders.get("/schools/1/schedules/101/loads/draft").with(
                     SecurityMockMvcRequestPostProcessors.user(
                         new UrAcAuth(new UrAcPostgres(ctx, 49L))
                     )
                 ).accept("text/html")
-            ).andReturn().getResponse().getContentAsString(),
-            Matchers.allOf(
-                Matchers.containsString("data-editable=\"false\""),
-                Matchers.not(Matchers.containsString("id=\"draft-save\"")),
-                Matchers.not(Matchers.containsString("id=\"draft-apply\""))
-            )
+            ).andReturn().getResponse().getStatus(),
+            Matchers.is(HttpStatus.FORBIDDEN.value())
         );
     }
 

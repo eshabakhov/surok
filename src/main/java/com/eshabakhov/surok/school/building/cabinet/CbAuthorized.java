@@ -6,19 +6,19 @@ package com.eshabakhov.surok.school.building.cabinet;
 import com.eshabakhov.surok.Media;
 import com.eshabakhov.surok.School;
 import com.eshabakhov.surok.UrAccount;
-import com.eshabakhov.surok.security.right.RtAdmin;
-import com.eshabakhov.surok.security.right.RtDirectorOrDeputy;
-import com.eshabakhov.surok.security.right.RtEither;
-import com.eshabakhov.surok.security.right.RtSchoolMember;
+import com.eshabakhov.surok.security.Operations;
 
 /**
  * Cabinet that checks the acting user's school role for each operation.
- * For example, {@code new CbAuthorized(cabinet, school, actor).revise(input)}
+ * For example, {@code new CbAuthorized(cabinet, school, actor, operations).revise(input)}
  * rejects a user who no longer has an editing role.
  *
  * @since 0.0.1
  */
 public final class CbAuthorized implements Cabinet {
+
+    /** Shared operation declarations. */
+    private final Operations operations;
 
     /** Underlying cabinet. */
     private final Cabinet origin;
@@ -30,16 +30,21 @@ public final class CbAuthorized implements Cabinet {
     private final UrAccount actor;
 
     /**
-     * New protected cabinet.
+     * New protected object with shared operation declarations.
      *
-     * @param origin Underlying cabinet
-     * @param school School that owns it
+     * @param origin Underlying origin
+     * @param school Underlying school
      * @param actor Acting user
+     * @param operations Shared operation declarations
      */
-    public CbAuthorized(final Cabinet origin, final School school, final UrAccount actor) {
+    public CbAuthorized(
+        final Cabinet origin, final School school, final UrAccount actor,
+        final Operations operations
+    ) {
         this.origin = origin;
         this.school = school;
         this.actor = actor;
+        this.operations = operations;
     }
 
     @Override
@@ -50,17 +55,17 @@ public final class CbAuthorized implements Cabinet {
     @Override
     public Cabinet revise(final CabinetInput input) throws Exception {
         return new CbAuthorized(
-            new RtEither(
-                new RtAdmin(this.actor), new RtDirectorOrDeputy(this.actor, this.school)
-            ).permit(this.origin).revise(input),
-            this.school, this.actor
+            this.operations.operation("Cabinets.revise")
+                .permission(this.actor, this.school)
+                .permit(this.origin).revise(input),
+            this.school, this.actor, this.operations
         );
     }
 
     @Override
     public <T> Media<T> print(final Media<T> media) throws Exception {
-        return new RtEither(
-            new RtAdmin(this.actor), new RtSchoolMember(this.actor, this.school)
-        ).permit(this.origin).print(media);
+        return this.operations.operation("Cabinets.cabinet")
+            .permission(this.actor, this.school)
+            .permit(this.origin).print(media);
     }
 }

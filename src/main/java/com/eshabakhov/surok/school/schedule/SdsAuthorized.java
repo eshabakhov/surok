@@ -9,10 +9,7 @@ import com.eshabakhov.surok.Page;
 import com.eshabakhov.surok.School;
 import com.eshabakhov.surok.Sorts;
 import com.eshabakhov.surok.UrAccount;
-import com.eshabakhov.surok.security.right.RtAdmin;
-import com.eshabakhov.surok.security.right.RtDirectorOrDeputy;
-import com.eshabakhov.surok.security.right.RtEither;
-import com.eshabakhov.surok.security.right.RtSchoolMember;
+import com.eshabakhov.surok.security.Operations;
 import java.util.stream.StreamSupport;
 
 /**
@@ -22,6 +19,9 @@ import java.util.stream.StreamSupport;
  * @since 0.0.1
  */
 public final class SdsAuthorized implements Schedules {
+
+    /** Shared operation declarations. */
+    private final Operations operations;
 
     /** Underlying schedules. */
     private final Schedules origin;
@@ -33,35 +33,40 @@ public final class SdsAuthorized implements Schedules {
     private final UrAccount actor;
 
     /**
-     * New protected schedules.
+     * New protected object with shared operation declarations.
      *
-     * @param origin Underlying schedules
-     * @param school Owning school
+     * @param origin Underlying origin
+     * @param school Underlying school
      * @param actor Acting user
+     * @param operations Shared operation declarations
      */
-    public SdsAuthorized(final Schedules origin, final School school, final UrAccount actor) {
+    public SdsAuthorized(
+        final Schedules origin, final School school, final UrAccount actor,
+        final Operations operations
+    ) {
         this.origin = origin;
         this.school = school;
         this.actor = actor;
+        this.operations = operations;
     }
 
     @Override
     public Schedule create(final ScheduleInput input) throws Exception {
         return new SdAuthorized(
-            new RtEither(
-                new RtAdmin(this.actor), new RtDirectorOrDeputy(this.actor, this.school)
-            ).permit(this.origin).create(input),
-            this.school, this.actor
+            this.operations.operation("Schedules.create")
+                .permission(this.actor, this.school)
+                .permit(this.origin).create(input),
+            this.school, this.actor, this.operations
         );
     }
 
     @Override
     public Schedule schedule(final long id) throws Exception {
         return new SdAuthorized(
-            new RtEither(
-                new RtAdmin(this.actor), new RtSchoolMember(this.actor, this.school)
-            ).permit(this.origin).schedule(id),
-            this.school, this.actor
+            this.operations.operation("Schedules.schedule")
+                .permission(this.actor, this.school)
+                .permit(this.origin).schedule(id),
+            this.school, this.actor, this.operations
         );
     }
 
@@ -70,35 +75,35 @@ public final class SdsAuthorized implements Schedules {
         final Filters filters, final Page page, final Sorts sorts
     ) throws Exception {
         return new SdsAuthorized(
-            new RtEither(
-                new RtAdmin(this.actor), new RtSchoolMember(this.actor, this.school)
-            ).permit(this.origin).selection(filters, page, sorts),
-            this.school, this.actor
+            this.operations.operation("Schedules.selection")
+                .permission(this.actor, this.school)
+                .permit(this.origin).selection(filters, page, sorts),
+            this.school, this.actor, this.operations
         );
     }
 
     @Override
     public Iterable<Schedule> iterate() {
         return StreamSupport.stream(
-            new RtEither(
-                new RtAdmin(this.actor), new RtSchoolMember(this.actor, this.school)
-            ).permit(this.origin).iterate().spliterator(), false
+            this.operations.operation("Schedules.selection")
+                .permission(this.actor, this.school)
+                .permit(this.origin).iterate().spliterator(), false
         ).<Schedule>map(
-            schedule -> new SdAuthorized(schedule, this.school, this.actor)
+            schedule -> new SdAuthorized(schedule, this.school, this.actor, this.operations)
         ).toList();
     }
 
     @Override
     public void remove(final long id) throws Exception {
-        new RtEither(
-            new RtAdmin(this.actor), new RtDirectorOrDeputy(this.actor, this.school)
-        ).permit(this.origin).remove(id);
+        this.operations.operation("Schedules.remove")
+            .permission(this.actor, this.school)
+            .permit(this.origin).remove(id);
     }
 
     @Override
     public <T> Media<T> print(final Media<T> media) throws Exception {
-        return new RtEither(
-            new RtAdmin(this.actor), new RtSchoolMember(this.actor, this.school)
-        ).permit(this.origin).print(media);
+        return this.operations.operation("Schedules.selection")
+            .permission(this.actor, this.school)
+            .permit(this.origin).print(media);
     }
 }

@@ -5,10 +5,7 @@ package com.eshabakhov.surok.user;
 
 import com.eshabakhov.surok.School;
 import com.eshabakhov.surok.UrAccount;
-import com.eshabakhov.surok.security.right.RtAdmin;
-import com.eshabakhov.surok.security.right.RtEither;
-import com.eshabakhov.surok.security.right.RtSchoolDirector;
-import com.eshabakhov.surok.security.right.RtSchoolMember;
+import com.eshabakhov.surok.security.Operations;
 import java.util.List;
 
 /**
@@ -18,6 +15,9 @@ import java.util.List;
  * @since 0.0.1
  */
 public final class RlsAuthorized implements Roles {
+
+    /** Shared operation declarations. */
+    private final Operations operations;
 
     /** Underlying assigned roles. */
     private final Roles origin;
@@ -29,43 +29,48 @@ public final class RlsAuthorized implements Roles {
     private final UrAccount actor;
 
     /**
-     * New protected school role assignments.
+     * New protected object with shared operation declarations.
      *
-     * @param origin Underlying roles
-     * @param school School whose roles are assigned
+     * @param origin Underlying origin
+     * @param school Underlying school
      * @param actor Acting user
+     * @param operations Shared operation declarations
      */
-    public RlsAuthorized(final Roles origin, final School school, final UrAccount actor) {
+    public RlsAuthorized(
+        final Roles origin, final School school, final UrAccount actor,
+        final Operations operations
+    ) {
         this.origin = origin;
         this.school = school;
         this.actor = actor;
+        this.operations = operations;
     }
 
     @Override
     public boolean contains(final RoleEnum role) {
-        return new RtEither(
-            new RtAdmin(this.actor), new RtSchoolMember(this.actor, this.school)
-        ).permit(this.origin).contains(role);
+        return this.operations.operation("SchoolRoles.list")
+            .permission(this.actor, this.school)
+            .permit(this.origin).contains(role);
     }
 
     @Override
     public Role grant(final RoleEnum role) throws Exception {
-        return new RtEither(
-            new RtAdmin(this.actor), new RtSchoolDirector(this.actor, this.school)
-        ).permit(this.origin).grant(role);
+        return this.operations.operation("SchoolRoles.grant")
+            .permission(this.actor, this.school)
+            .permit(this.origin).grant(role);
     }
 
     @Override
     public List<Role> list() {
-        return new RtEither(
-            new RtAdmin(this.actor), new RtSchoolMember(this.actor, this.school)
-        ).permit(this.origin).list();
+        return this.operations.operation("SchoolRoles.list")
+            .permission(this.actor, this.school)
+            .permit(this.origin).list();
     }
 
     @Override
     public void revoke(final long identity) throws Exception {
-        new RtEither(
-            new RtAdmin(this.actor), new RtSchoolDirector(this.actor, this.school)
-        ).permit(this.origin).revoke(identity);
+        this.operations.operation("SchoolRoles.revoke")
+            .permission(this.actor, this.school)
+            .permit(this.origin).revoke(identity);
     }
 }

@@ -10,6 +10,7 @@ import com.eshabakhov.surok.media.MdJson;
 import com.eshabakhov.surok.page.PageRequest;
 import com.eshabakhov.surok.school.input.SlInput;
 import com.eshabakhov.surok.school.input.SlInputName;
+import com.eshabakhov.surok.security.OaYaml;
 import com.eshabakhov.surok.sort.SortsRequest;
 import com.eshabakhov.surok.user.Roles;
 import com.eshabakhov.surok.user.UrsPostgres;
@@ -61,7 +62,7 @@ final class SlsAuthorizedTest {
         new SlsPostgres(ctx).create(new SlInputName(new SlInput(), "Чужая школа"));
         MatcherAssert.assertThat(
             "School selection exposed an unrelated school",
-            new SlsAuthorized(actor.schools(), actor).selection(
+            new SlsAuthorized(actor.schools(), actor, new OaYaml().operations()).selection(
                 new FiltersRequest(Set.of()), new PageRequest(20, 1),
                 new SortsRequest(List.of())
             ).iterate(),
@@ -83,7 +84,7 @@ final class SlsAuthorizedTest {
         );
         MatcherAssert.assertThat(
             "Protected creation did not assign the school director",
-            new SlsAuthorized(actor.schools(), actor).create(
+            new SlsAuthorized(actor.schools(), actor, new OaYaml().operations()).create(
                 new SlInputName(new SlInput(), "Новая школа")
             ).users().roles(actor).contains(Roles.RoleEnum.DIRECTOR),
             Matchers.is(true)
@@ -107,7 +108,7 @@ final class SlsAuthorizedTest {
         ).uid();
         Assertions.assertThrows(
             AccessDeniedException.class,
-            () -> new SlsAuthorized(actor.schools(), actor).remove(id),
+            () -> new SlsAuthorized(actor.schools(), actor, new OaYaml().operations()).remove(id),
             "A school director removed a school"
         );
     }
@@ -129,7 +130,7 @@ final class SlsAuthorizedTest {
         ).uid();
         Assertions.assertThrows(
             AccessDeniedException.class,
-            () -> new SlsAuthorized(actor.schools(), actor).school(id),
+            () -> new SlsAuthorized(actor.schools(), actor, new OaYaml().operations()).school(id),
             "A school member accessed an unrelated school"
         );
     }
@@ -150,7 +151,7 @@ final class SlsAuthorizedTest {
         final long id = new SlsPostgres(ctx).create(
             new SlInputName(new SlInput(), "Школа администратора")
         ).uid();
-        new SlsAuthorized(new SlsPostgres(ctx), actor).remove(id);
+        new SlsAuthorized(new SlsPostgres(ctx), actor, new OaYaml().operations()).remove(id);
         MatcherAssert.assertThat(
             "An administrator could not remove a school",
             new SlsPostgres(ctx).contains(id), Matchers.is(false)
@@ -173,7 +174,9 @@ final class SlsAuthorizedTest {
         actor.schools().create(new SlInputName(new SlInput(), "Своя школа"));
         new SlsPostgres(ctx).create(new SlInputName(new SlInput(), "Чужая школа"));
         final long role = actor.roles().grant(Roles.RoleEnum.ADMIN).uid();
-        final Schools selected = new SlsAuthorized(new SlsPostgres(ctx), actor);
+        final Schools selected = new SlsAuthorized(
+            actor.schools(), actor, new OaYaml().operations()
+        );
         actor.roles().revoke(role);
         MatcherAssert.assertThat(
             "Revoked administrator selected unrelated schools",
@@ -198,7 +201,9 @@ final class SlsAuthorizedTest {
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
         );
-        final Schools selected = new SlsAuthorized(new SlsPostgres(ctx), actor);
+        final Schools selected = new SlsAuthorized(
+            new SlsPostgres(ctx), actor, new OaYaml().operations()
+        );
         actor.schools().create(
             new SlInputName(new SlInput(), "Школа с отозванным доступом")
         ).users().remove(actor.uid());

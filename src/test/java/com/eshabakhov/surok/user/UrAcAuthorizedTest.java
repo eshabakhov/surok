@@ -10,6 +10,7 @@ import com.eshabakhov.surok.school.building.input.BdInput;
 import com.eshabakhov.surok.school.building.input.BdInputName;
 import com.eshabakhov.surok.school.input.SlInput;
 import com.eshabakhov.surok.school.input.SlInputName;
+import com.eshabakhov.surok.security.OaYaml;
 import java.util.UUID;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
@@ -51,7 +52,7 @@ final class UrAcAuthorizedTest {
         }
         MatcherAssert.assertThat(
             "An account without roles did not become director of its new school",
-            new UrAcAuthorized(actor, new SlsPostgres(ctx)).schools().create(
+            new UrAcAuthorized(actor, new OaYaml().operations()).schools().create(
                 new SlInputName(new SlInput(), "Новая школа")
             ).users().roles(actor).contains(Roles.RoleEnum.DIRECTOR), Matchers.is(true)
         );
@@ -71,7 +72,9 @@ final class UrAcAuthorizedTest {
         school.users().roles(actor).grant(Roles.RoleEnum.STUDENT);
         Assertions.assertThrows(
             AccessDeniedException.class,
-            () -> new UrAcAuthorized(actor, new SlsPostgres(ctx)).schools().school(school.uid())
+            () -> new UrAcAuthorized(
+                actor, new OaYaml().operations()
+            ).schools().school(school.uid())
                 .buildings().create(new BdInputName(new BdInput(), "Закрытый корпус")),
             "A director changed a school where their role was student"
         );
@@ -84,7 +87,9 @@ final class UrAcAuthorizedTest {
             UUID.randomUUID().toString(), "ValidPassword1!",
             String.format("%s@example.com", UUID.randomUUID()), false
         );
-        final School school = new UrAcAuthorized(actor, new SlsPostgres(ctx)).schools().create(
+        final School school = new UrAcAuthorized(
+            actor, new OaYaml().operations()
+        ).schools().create(
             new SlInputName(new SlInput(), "Школа с изменяемыми правами")
         );
         for (final Role role : actor.schools().school(school.uid()).users().roles(actor).list()) {

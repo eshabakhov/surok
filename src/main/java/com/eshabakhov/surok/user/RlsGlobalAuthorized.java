@@ -4,17 +4,20 @@
 package com.eshabakhov.surok.user;
 
 import com.eshabakhov.surok.UrAccount;
-import com.eshabakhov.surok.security.right.RtAdmin;
+import com.eshabakhov.surok.security.Operations;
 import java.util.List;
 
 /**
  * Global role assignments protected by the actor's current administrator role.
- * For example, {@code new RlsGlobalAuthorized(roles, actor).grant(role)}
+ * For example, {@code new RlsGlobalAuthorized(roles, actor, operations).grant(role)}
  * refuses an actor whose administrator role has been revoked.
  *
  * @since 0.0.1
  */
 public final class RlsGlobalAuthorized implements Roles {
+
+    /** Shared operation declarations. */
+    private final Operations operations;
 
     /** Underlying roles. */
     private final Roles origin;
@@ -23,33 +26,46 @@ public final class RlsGlobalAuthorized implements Roles {
     private final UrAccount actor;
 
     /**
-     * New protected roles.
+     * New protected object with shared operation declarations.
      *
-     * @param origin Underlying global roles
+     * @param origin Underlying origin
      * @param actor Acting user
+     * @param operations Shared operation declarations
      */
-    public RlsGlobalAuthorized(final Roles origin, final UrAccount actor) {
+    public RlsGlobalAuthorized(
+        final Roles origin, final UrAccount actor,
+        final Operations operations
+    ) {
         this.origin = origin;
         this.actor = actor;
+        this.operations = operations;
     }
 
     @Override
     public boolean contains(final RoleEnum role) {
-        return new RtAdmin(this.actor).permit(this.origin).contains(role);
+        return this.operations.operation("UserRoles.list")
+            .permission(this.actor)
+            .permit(this.origin).contains(role);
     }
 
     @Override
     public Role grant(final RoleEnum role) throws Exception {
-        return new RtAdmin(this.actor).permit(this.origin).grant(role);
+        return this.operations.operation("UserRoles.grant")
+            .permission(this.actor)
+            .permit(this.origin).grant(role);
     }
 
     @Override
     public List<Role> list() {
-        return new RtAdmin(this.actor).permit(this.origin).list();
+        return this.operations.operation("UserRoles.list")
+            .permission(this.actor)
+            .permit(this.origin).list();
     }
 
     @Override
     public void revoke(final long identity) throws Exception {
-        new RtAdmin(this.actor).permit(this.origin).revoke(identity);
+        this.operations.operation("UserRoles.revoke")
+            .permission(this.actor)
+            .permit(this.origin).revoke(identity);
     }
 }

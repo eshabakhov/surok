@@ -9,10 +9,7 @@ import com.eshabakhov.surok.UrAccount;
 import com.eshabakhov.surok.federal.curriculum.Curriculum;
 import com.eshabakhov.surok.federal.subject.Subject;
 import com.eshabakhov.surok.school.schedule.load.hours.WeeklyHours;
-import com.eshabakhov.surok.security.right.RtAdmin;
-import com.eshabakhov.surok.security.right.RtDirectorOrDeputy;
-import com.eshabakhov.surok.security.right.RtEither;
-import com.eshabakhov.surok.security.right.RtSchoolMember;
+import com.eshabakhov.surok.security.Operations;
 import java.util.Map;
 
 /**
@@ -22,6 +19,9 @@ import java.util.Map;
  * @since 0.0.1
  */
 public final class LdAuthorized implements LoadDraft {
+
+    /** Shared operation declarations. */
+    private final Operations operations;
 
     /** Underlying draft. */
     private final LoadDraft origin;
@@ -33,66 +33,71 @@ public final class LdAuthorized implements LoadDraft {
     private final UrAccount actor;
 
     /**
-     * New protected draft.
+     * New protected object with shared operation declarations.
      *
-     * @param origin Underlying draft
-     * @param school Owning school
+     * @param origin Underlying origin
+     * @param school Underlying school
      * @param actor Acting user
+     * @param operations Shared operation declarations
      */
-    public LdAuthorized(final LoadDraft origin, final School school, final UrAccount actor) {
+    public LdAuthorized(
+        final LoadDraft origin, final School school, final UrAccount actor,
+        final Operations operations
+    ) {
         this.origin = origin;
         this.school = school;
         this.actor = actor;
+        this.operations = operations;
     }
 
     @Override
     public void save(final LoadDraftInput input) throws Exception {
-        new RtEither(
-            new RtAdmin(this.actor), new RtDirectorOrDeputy(this.actor, this.school)
-        ).permit(this.origin).save(input);
+        this.operations.operation("LoadDraft.save")
+            .permission(this.actor, this.school)
+            .permit(this.origin).save(input);
     }
 
     @Override
     public void save(
         final Curriculum curriculum, final Map<Integer, Map<Subject, WeeklyHours>> additions
     ) throws Exception {
-        new RtEither(
-            new RtAdmin(this.actor), new RtDirectorOrDeputy(this.actor, this.school)
-        ).permit(this.origin).save(curriculum, additions);
+        this.operations.operation("LoadDraft.save")
+            .permission(this.actor, this.school)
+            .permit(this.origin).save(curriculum, additions);
     }
 
     @Override
     public void revise(final LoadDraftInput input) throws Exception {
-        new RtEither(
-            new RtAdmin(this.actor), new RtDirectorOrDeputy(this.actor, this.school)
-        ).permit(this.origin).revise(input);
+        this.operations.operation("LoadDraft.revise")
+            .permission(this.actor, this.school)
+            .permit(this.origin).revise(input);
     }
 
     @Override
     public void revise(final Curriculum curriculum) throws Exception {
-        new RtEither(
-            new RtAdmin(this.actor), new RtDirectorOrDeputy(this.actor, this.school)
-        ).permit(this.origin).revise(curriculum);
+        this.operations.operation("LoadDraft.revise")
+            .permission(this.actor, this.school)
+            .permit(this.origin).revise(curriculum);
     }
 
     @Override
     public Curriculum curriculum() throws Exception {
-        return new RtEither(
-            new RtAdmin(this.actor), new RtSchoolMember(this.actor, this.school)
-        ).permit(this.origin).curriculum();
+        return this.operations.operation("LoadDraft.read")
+            .permission(this.actor, this.school)
+            .permit(this.origin).curriculum();
     }
 
     @Override
     public void apply() throws Exception {
-        new RtEither(
-            new RtAdmin(this.actor), new RtDirectorOrDeputy(this.actor, this.school)
-        ).permit(this.origin).apply();
+        this.operations.operation("LoadDraft.apply")
+            .permission(this.actor, this.school)
+            .permit(this.origin).apply();
     }
 
     @Override
     public <T> Media<T> print(final Media<T> media) throws Exception {
-        return new RtEither(
-            new RtAdmin(this.actor), new RtSchoolMember(this.actor, this.school)
-        ).permit(this.origin).print(media);
+        return this.operations.operation("LoadDraft.read")
+            .permission(this.actor, this.school)
+            .permit(this.origin).print(media);
     }
 }

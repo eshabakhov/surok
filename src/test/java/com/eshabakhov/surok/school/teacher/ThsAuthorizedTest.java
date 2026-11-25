@@ -12,6 +12,7 @@ import com.eshabakhov.surok.school.input.SlInput;
 import com.eshabakhov.surok.school.input.SlInputName;
 import com.eshabakhov.surok.school.teacher.input.ThInput;
 import com.eshabakhov.surok.school.teacher.input.ThInputName;
+import com.eshabakhov.surok.security.OaYaml;
 import com.eshabakhov.surok.sort.SortsRequest;
 import com.eshabakhov.surok.user.Roles;
 import com.eshabakhov.surok.user.UrsPostgres;
@@ -63,7 +64,9 @@ final class ThsAuthorizedTest {
         final School school = actor.schools().create(
             new SlInputName(new SlInput(), "Школа отозванного директора")
         );
-        final Teachers teachers = new ThsAuthorized(school.teachers(), school, actor);
+        final Teachers teachers = new ThsAuthorized(
+            school.teachers(), school, actor, new OaYaml().operations()
+        );
         school.users().roles(actor).revoke(school.users().roles(actor).list().getFirst().uid());
         Assertions.assertThrows(
             AccessDeniedException.class,
@@ -90,7 +93,7 @@ final class ThsAuthorizedTest {
         );
         MatcherAssert.assertThat(
             "An administrator could not create a teacher without school membership",
-            new ThsAuthorized(school.teachers(), school, actor).create(
+            new ThsAuthorized(school.teachers(), school, actor, new OaYaml().operations()).create(
                 new ThInputName(new ThInput(), "Учитель Яна")
             ).uid(), Matchers.greaterThan(0L)
         );
@@ -117,7 +120,9 @@ final class ThsAuthorizedTest {
         ).uid();
         Assertions.assertThrows(
             AccessDeniedException.class,
-            () -> new ThsAuthorized(school.teachers(), school, actor).teacher(id),
+            () -> new ThsAuthorized(
+                school.teachers(), school, actor, new OaYaml().operations()
+            ).teacher(id),
             "An outsider read a teacher in another school"
         );
     }
@@ -139,7 +144,7 @@ final class ThsAuthorizedTest {
             new SlInputName(new SlInput(), "Школа с отзывом доступа")
         );
         final Teachers selected = new ThsAuthorized(
-            school.teachers(), school, actor
+            school.teachers(), school, actor, new OaYaml().operations()
         ).selection(
             new FiltersRequest(Set.of()), new PageRequest(20, 1),
             new SortsRequest(List.of())

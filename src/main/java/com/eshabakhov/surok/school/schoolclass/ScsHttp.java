@@ -24,10 +24,13 @@ import com.eshabakhov.surok.school.SlsPostgres;
 import com.eshabakhov.surok.school.schoolclass.input.ScInputHttp;
 import com.eshabakhov.surok.school.schoolclass.input.SchoolClassInputException;
 import com.eshabakhov.surok.security.CsToken;
+import com.eshabakhov.surok.security.OaYaml;
+import com.eshabakhov.surok.security.Operations;
 import com.eshabakhov.surok.user.UrAcAuthorized;
 import com.eshabakhov.surok.user.UrAcBrief;
 import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.servlet.http.HttpServletRequest;
+import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashSet;
@@ -35,6 +38,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 import org.jooq.DSLContext;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -75,16 +79,32 @@ public class ScsHttp {
     /** HTML representation containing only the class results. */
     private static final String FRAGMENT = "text/vnd.surok.school-classes-fragment+html";
 
+    /** Shared operation declarations. */
+    private final Operations operations;
+
     /** Database context. */
     private final DSLContext ctx;
 
     /**
-     * New resource.
+     * New resource with explicitly constructed YAML operations.
      *
      * @param ctx Database context
+     * @throws IOException If the API description cannot be read
      */
-    public ScsHttp(final DSLContext ctx) {
+    @Autowired
+    public ScsHttp(final DSLContext ctx) throws IOException {
+        this(ctx, new OaYaml().operations());
+    }
+
+    /**
+     * New controller using the application operation catalog.
+     *
+     * @param ctx Database context
+     * @param operations Shared operation declarations
+     */
+    public ScsHttp(final DSLContext ctx, final Operations operations) {
         this.ctx = ctx;
+        this.operations = operations;
     }
 
     /**
@@ -118,7 +138,7 @@ public class ScsHttp {
             )
         ).type();
         final School sch = new UrAcAuthorized(
-            actor, new SlsPostgres(this.ctx)
+            actor, this.operations
         ).schools().school(school);
         final Set<Filter> requested = new LinkedHashSet<>(filters.filters());
         requested.addAll(
@@ -173,9 +193,10 @@ public class ScsHttp {
             )
         ).body(
             this.web(
-                request, new UrAcAuthorized(
-                    actor, new SlsPostgres(this.ctx)
-                ).schools().school(school),
+                request, this.operations.operation("SchoolClasses.form")
+                    .permission(actor, school).permit(
+                        new UrAcAuthorized(actor, this.operations)
+                    ).schools().school(school),
                 "create"
             ).print()
         );
@@ -207,10 +228,17 @@ public class ScsHttp {
     ) throws Exception {
         final MediaType type = new AcHttp(request, "school-class-v1").type();
         final School sch = new UrAcAuthorized(
-            actor, new SlsPostgres(this.ctx)
+            actor, this.operations
         ).schools().school(school);
         final SchoolClasses origin = sch.schoolClasses();
-        final SchoolClass selected = origin.clazz(clazz);
+        final String operation;
+        if (request.getRequestURI().endsWith("/edit")) {
+            operation = "SchoolClasses.edit";
+        } else {
+            operation = "SchoolClasses.clazz";
+        }
+        final SchoolClass selected = this.operations.operation(operation)
+            .permission(actor, sch).permit(origin).clazz(clazz);
         return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8)).body(
             switch (type.toString()) {
                 case MediaType.TEXT_HTML_VALUE -> {
@@ -332,7 +360,7 @@ public class ScsHttp {
     ) throws Exception {
         final MediaType type = new AcHttp(request, "school-class-v1").type();
         final SchoolClass revised = new UrAcAuthorized(
-            actor, new SlsPostgres(this.ctx)
+            actor, this.operations
         ).schools().school(school).schoolClasses().revise(clazz, new ScInputHttp(json));
         return ScsHttp.result(
             type, revised, HttpStatus.OK, String.format("/schools/%d/classes", school),
@@ -355,7 +383,7 @@ public class ScsHttp {
         @PathVariable final long clazz,
         @AuthenticationPrincipal final UrAccount actor
     ) throws Exception {
-        new UrAcAuthorized(actor, new SlsPostgres(this.ctx)).schools()
+        new UrAcAuthorized(actor, this.operations).schools()
             .school(school).schoolClasses().remove(clazz);
         return ResponseEntity.noContent().build();
     }
@@ -368,7 +396,7 @@ public class ScsHttp {
         return ScsHttp.result(
             type,
             new UrAcAuthorized(
-                actor, new SlsPostgres(this.ctx)
+                actor, this.operations
             ).schools().school(school).schoolClasses()
                 .create(input),
             HttpStatus.CREATED, base, base

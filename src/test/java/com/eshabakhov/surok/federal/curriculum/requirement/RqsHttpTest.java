@@ -8,6 +8,7 @@ import com.eshabakhov.surok.Sort;
 import com.eshabakhov.surok.UrAccount;
 import com.eshabakhov.surok.filter.FiltersRequest;
 import com.eshabakhov.surok.page.PageRequest;
+import com.eshabakhov.surok.security.OaYaml;
 import com.eshabakhov.surok.sort.SortsRequest;
 import com.eshabakhov.surok.user.Roles;
 import com.eshabakhov.surok.user.UrAcPostgres;
@@ -62,11 +63,13 @@ import org.testcontainers.junit.jupiter.Testcontainers;
         ON CONFLICT DO NOTHING;
         """
 )
-@SuppressWarnings({
-    "PMD.UnitTestContainsTooManyAsserts",
-    "PMD.UnusedPrivateMethod",
-    "UnusedMethod"
-})
+@SuppressWarnings(
+    {
+        "PMD.UnitTestContainsTooManyAsserts",
+        "PMD.UnusedPrivateMethod",
+        "UnusedMethod"
+    }
+)
 final class RqsHttpTest {
 
     /** Postgres container. */
@@ -177,7 +180,7 @@ final class RqsHttpTest {
         );
         MatcherAssert.assertThat(
             "HTML request must return the complete requirements page",
-            (String) new RqsHttp(this.ctx).selection(
+            (String) new RqsHttp(this.ctx, new OaYaml().operations()).selection(
                 1L,
                 new FiltersRequest(Set.<Filter>of()),
                 new PageRequest(15, 1),
@@ -224,7 +227,7 @@ final class RqsHttpTest {
         );
         MatcherAssert.assertThat(
             "Fragment request must return only requirement results",
-            (String) new RqsHttp(this.ctx).selection(
+            (String) new RqsHttp(this.ctx, new OaYaml().operations()).selection(
                 1L,
                 new FiltersRequest(Set.<Filter>of()),
                 new PageRequest(15, 1),
@@ -265,7 +268,7 @@ final class RqsHttpTest {
         );
         MatcherAssert.assertThat(
             "Null request URI must select the complete requirements page",
-            (String) new RqsHttp(this.ctx).selection(
+            (String) new RqsHttp(this.ctx, new OaYaml().operations()).selection(
                 1L,
                 new FiltersRequest(Set.<Filter>of()),
                 new PageRequest(15, 1),
@@ -284,7 +287,9 @@ final class RqsHttpTest {
             HttpHeaders.ACCEPT,
             "application/vnd.surok.federal-curriculum-requirements.v1+json"
         );
-        final ObjectNode response = (ObjectNode) new RqsHttp(this.ctx).selection(
+        final ObjectNode response = (ObjectNode) new RqsHttp(
+            this.ctx, new OaYaml().operations()
+        ).selection(
             1L,
             new FiltersRequest(Set.<Filter>of()),
             new PageRequest(15, 1),
@@ -313,7 +318,7 @@ final class RqsHttpTest {
         );
         MatcherAssert.assertThat(
             "XML requirements must use the collection root",
-            (String) new RqsHttp(this.ctx).selection(
+            (String) new RqsHttp(this.ctx, new OaYaml().operations()).selection(
                 1L,
                 new FiltersRequest(Set.<Filter>of()),
                 new PageRequest(15, 1),
@@ -330,14 +335,14 @@ final class RqsHttpTest {
     }
 
     @Test
-    void rejectsUnsupportedRequirementsAccept() {
+    void rejectsUnsupportedRequirementsAccept() throws Exception {
         final MockHttpServletRequest request = new MockHttpServletRequest();
         request.addHeader(HttpHeaders.ACCEPT, "application/json");
         MatcherAssert.assertThat(
             "Unsupported Accept must result in 406",
             Assertions.assertThrows(
                 ResponseStatusException.class,
-                () -> new RqsHttp(this.ctx).selection(
+                () -> new RqsHttp(this.ctx, new OaYaml().operations()).selection(
                     1L,
                     new FiltersRequest(Set.<Filter>of()),
                     new PageRequest(15, 1),
@@ -359,8 +364,11 @@ final class RqsHttpTest {
         );
         MatcherAssert.assertThat(
             "JSON requirement must contain its identity",
-            ((ObjectNode) new RqsHttp(this.ctx).requirement(1L, 7L, request, this.actor).getBody())
-                .path("id").longValue(),
+            (
+                (ObjectNode) new RqsHttp(
+                    this.ctx, new OaYaml().operations()
+                ).requirement(1L, 7L, request, this.actor).getBody()
+            ).path("id").longValue(),
             Matchers.is(7L)
         );
     }
@@ -374,7 +382,9 @@ final class RqsHttpTest {
         );
         MatcherAssert.assertThat(
             "XML requirement must use the entity root",
-            (String) new RqsHttp(this.ctx).requirement(1L, 7L, request, this.actor).getBody(),
+            (String) new RqsHttp(
+                this.ctx, new OaYaml().operations()
+            ).requirement(1L, 7L, request, this.actor).getBody(),
             Matchers.allOf(
                 Matchers.startsWith("<requirement>"),
                 Matchers.containsString("<id>7</id>"),
@@ -386,21 +396,24 @@ final class RqsHttpTest {
     @Test
     void defaultsToRequirementJsonWithoutAccept() throws Exception {
         MatcherAssert.assertThat(
-            ((ObjectNode) new RqsHttp(this.ctx).requirement(
-                1L, 7L, new MockHttpServletRequest(), this.actor
-            ).getBody())
-                .path("id").longValue(),
+            (
+                (ObjectNode) new RqsHttp(this.ctx, new OaYaml().operations()).requirement(
+                    1L, 7L, new MockHttpServletRequest(), this.actor
+                ).getBody()
+            ).path("id").longValue(),
             Matchers.is(7L)
         );
     }
 
     @Test
-    void rejectsUnsupportedRequirementAccept() {
+    void rejectsUnsupportedRequirementAccept() throws Exception {
         final MockHttpServletRequest request = new MockHttpServletRequest();
         request.addHeader(HttpHeaders.ACCEPT, "application/xml");
         Assertions.assertThrows(
             ResponseStatusException.class,
-            () -> new RqsHttp(this.ctx).requirement(1L, 7L, request, this.actor)
+            () -> new RqsHttp(
+                this.ctx, new OaYaml().operations()
+            ).requirement(1L, 7L, request, this.actor)
         );
     }
 
@@ -418,7 +431,7 @@ final class RqsHttpTest {
         parameters.add("subjectId", "507");
         parameters.add("hours", "2");
         parameters.add("partType", "MANDATORY");
-        final ResponseEntity<?> response = new RqsHttp(this.ctx).create(
+        final ResponseEntity<?> response = new RqsHttp(this.ctx, new OaYaml().operations()).create(
             1L, parameters, request, this.actor
         );
         MatcherAssert.assertThat(
@@ -446,7 +459,7 @@ final class RqsHttpTest {
         parameters.add("subjectId", "507");
         parameters.add("hours", "2");
         parameters.add("partType", "MANDATORY");
-        final ResponseEntity<?> response = new RqsHttp(this.ctx).create(
+        final ResponseEntity<?> response = new RqsHttp(this.ctx, new OaYaml().operations()).create(
             1L,
             parameters,
             request,
@@ -479,7 +492,7 @@ final class RqsHttpTest {
         parameters.add("subjectId", "507");
         parameters.add("hours", "2");
         parameters.add("partType", "MANDATORY");
-        final ResponseEntity<?> response = new RqsHttp(this.ctx).create(
+        final ResponseEntity<?> response = new RqsHttp(this.ctx, new OaYaml().operations()).create(
             1L, parameters, request, this.actor
         );
         MatcherAssert.assertThat(
@@ -497,7 +510,7 @@ final class RqsHttpTest {
     }
 
     @Test
-    void rejectsUnsupportedCreationAccept() {
+    void rejectsUnsupportedCreationAccept() throws Exception {
         final MockHttpServletRequest request = new MockHttpServletRequest();
         request.addHeader(HttpHeaders.ACCEPT, "application/json");
         final MultiValueMap<String, String> parameters =
@@ -508,7 +521,9 @@ final class RqsHttpTest {
         parameters.add("partType", "MANDATORY");
         Assertions.assertThrows(
             ResponseStatusException.class,
-            () -> new RqsHttp(this.ctx).create(1L, parameters, request, this.actor)
+            () -> new RqsHttp(
+                this.ctx, new OaYaml().operations()
+            ).create(1L, parameters, request, this.actor)
         );
     }
 
@@ -526,7 +541,7 @@ final class RqsHttpTest {
         parameters.add("subjectId", "502");
         parameters.add("hours", "4");
         parameters.add("partType", "MANDATORY");
-        final ResponseEntity<?> response = new RqsHttp(this.ctx).update(
+        final ResponseEntity<?> response = new RqsHttp(this.ctx, new OaYaml().operations()).update(
             1L, 7L, parameters.toSingleValueMap(), request, this.actor
         );
         MatcherAssert.assertThat(
@@ -556,10 +571,11 @@ final class RqsHttpTest {
         parameters.add("partType", "MANDATORY");
         MatcherAssert.assertThat(
             "JSON revision must return revised fields",
-            ((ObjectNode) new RqsHttp(this.ctx).update(
-                1L, 7L, parameters.toSingleValueMap(), request, this.actor
-            ).getBody())
-                .path("subject").path("name").asText(),
+            (
+                (ObjectNode) new RqsHttp(this.ctx, new OaYaml().operations()).update(
+                    1L, 7L, parameters.toSingleValueMap(), request, this.actor
+                ).getBody()
+            ).path("subject").path("name").asText(),
             Matchers.is("Algebra")
         );
     }
@@ -579,7 +595,7 @@ final class RqsHttpTest {
         parameters.add("partType", "MANDATORY");
         MatcherAssert.assertThat(
             "XML revision must return revised fields",
-            (String) new RqsHttp(this.ctx).update(
+            (String) new RqsHttp(this.ctx, new OaYaml().operations()).update(
                 1L, 7L, parameters.toSingleValueMap(), request, this.actor
             ).getBody(),
             Matchers.containsString(
@@ -589,7 +605,7 @@ final class RqsHttpTest {
     }
 
     @Test
-    void rejectsUnsupportedRevisionAccept() {
+    void rejectsUnsupportedRevisionAccept() throws Exception {
         final MockHttpServletRequest request = new MockHttpServletRequest();
         request.addHeader(HttpHeaders.ACCEPT, "application/xml");
         final MultiValueMap<String, String> parameters =
@@ -600,7 +616,7 @@ final class RqsHttpTest {
         parameters.add("partType", "MANDATORY");
         Assertions.assertThrows(
             ResponseStatusException.class,
-            () -> new RqsHttp(this.ctx).update(
+            () -> new RqsHttp(this.ctx, new OaYaml().operations()).update(
                 1L, 7L, parameters.toSingleValueMap(), request, this.actor
             )
         );
@@ -608,7 +624,9 @@ final class RqsHttpTest {
 
     @Test
     void removesRequirement() throws Exception {
-        new RqsHttp(this.ctx).remove(1L, 7L, new MockHttpServletRequest(), this.actor);
+        new RqsHttp(
+            this.ctx, new OaYaml().operations()
+        ).remove(1L, 7L, new MockHttpServletRequest(), this.actor);
         MatcherAssert.assertThat(
             "HTTP removal must mark the requirement as deleted",
             this.ctx.resultQuery(

@@ -6,10 +6,7 @@ package com.eshabakhov.surok.school.teacher;
 import com.eshabakhov.surok.Media;
 import com.eshabakhov.surok.School;
 import com.eshabakhov.surok.UrAccount;
-import com.eshabakhov.surok.security.right.RtAdmin;
-import com.eshabakhov.surok.security.right.RtDirectorOrDeputy;
-import com.eshabakhov.surok.security.right.RtEither;
-import com.eshabakhov.surok.security.right.RtSchoolMember;
+import com.eshabakhov.surok.security.Operations;
 
 /**
  * School teacher that checks the acting user's role for each operation.
@@ -18,6 +15,9 @@ import com.eshabakhov.surok.security.right.RtSchoolMember;
  * @since 0.0.1
  */
 public final class ThAuthorized implements Teacher {
+
+    /** Shared operation declarations. */
+    private final Operations operations;
 
     /** Underlying teacher. */
     private final Teacher origin;
@@ -29,16 +29,21 @@ public final class ThAuthorized implements Teacher {
     private final UrAccount actor;
 
     /**
-     * New protected school teacher.
+     * New protected object with shared operation declarations.
      *
-     * @param origin Underlying teacher
-     * @param school School that owns it
+     * @param origin Underlying origin
+     * @param school Underlying school
      * @param actor Acting user
+     * @param operations Shared operation declarations
      */
-    public ThAuthorized(final Teacher origin, final School school, final UrAccount actor) {
+    public ThAuthorized(
+        final Teacher origin, final School school, final UrAccount actor,
+        final Operations operations
+    ) {
         this.origin = origin;
         this.school = school;
         this.actor = actor;
+        this.operations = operations;
     }
 
     @Override
@@ -49,17 +54,17 @@ public final class ThAuthorized implements Teacher {
     @Override
     public Teacher revise(final TeacherInput input) throws Exception {
         return new ThAuthorized(
-            new RtEither(
-                new RtAdmin(this.actor), new RtDirectorOrDeputy(this.actor, this.school)
-            ).permit(this.origin).revise(input),
-            this.school, this.actor
+            this.operations.operation("Teachers.revise")
+                .permission(this.actor, this.school)
+                .permit(this.origin).revise(input),
+            this.school, this.actor, this.operations
         );
     }
 
     @Override
     public <T> Media<T> print(final Media<T> media) throws Exception {
-        return new RtEither(
-            new RtAdmin(this.actor), new RtSchoolMember(this.actor, this.school)
-        ).permit(this.origin).print(media);
+        return this.operations.operation("Teachers.teacher")
+            .permission(this.actor, this.school)
+            .permit(this.origin).print(media);
     }
 }

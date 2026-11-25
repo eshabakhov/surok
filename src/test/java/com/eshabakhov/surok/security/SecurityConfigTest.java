@@ -147,9 +147,10 @@ final class SecurityConfigTest {
             List.of(
                 paths.path("/federal/curriculums").has("get"),
                 paths.path("/federal/curriculums").has("post"),
-                paths.path("/federal/subjects").has("post"), paths.has("/schools")
+                paths.path("/federal/subjects").has("post"), paths.has("/schools"),
+                paths.has("/schools/{school}/buildings")
             ),
-            Matchers.contains(true, false, false, true)
+            Matchers.contains(true, false, false, true, false)
         );
     }
 
@@ -183,10 +184,14 @@ final class SecurityConfigTest {
                 paths.path("/schools/{school}/subjects").has("get"),
                 paths.path("/schools/{school}/subjects").has("post"),
                 paths.path("/federal/subjects").has("post"),
-                paths.path("/schools/{school}/schedules/{schedule}/loads/draft").has("put")
+                paths.path("/schools/{school}/schedules/{schedule}/loads/draft").has("put"),
+                paths.path("/schools/{school}/buildings/create").has("get"),
+                paths.path("/schools/{school}/buildings/{building}/edit").has("get"),
+                paths.path("/schools/{school}/buildings").has("post")
             ),
             Matchers.contains(
-                true, role == Roles.RoleEnum.DIRECTOR, false, role == Roles.RoleEnum.DIRECTOR
+                true, role == Roles.RoleEnum.DIRECTOR, false, role == Roles.RoleEnum.DIRECTOR,
+                true, true, role == Roles.RoleEnum.DIRECTOR
             )
         );
     }

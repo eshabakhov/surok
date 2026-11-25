@@ -12,6 +12,7 @@ import com.eshabakhov.surok.school.input.SlInput;
 import com.eshabakhov.surok.school.input.SlInputName;
 import com.eshabakhov.surok.school.schedule.input.SdInput;
 import com.eshabakhov.surok.school.schedule.input.SdInputName;
+import com.eshabakhov.surok.security.OaYaml;
 import com.eshabakhov.surok.sort.SortsRequest;
 import com.eshabakhov.surok.user.Roles;
 import com.eshabakhov.surok.user.UrsPostgres;
@@ -63,7 +64,9 @@ final class SdsAuthorizedTest {
         final School school = actor.schools().create(
             new SlInputName(new SlInput(), "Школа расписаний")
         );
-        final Schedules schedules = new SdsAuthorized(school.schedules(), school, actor);
+        final Schedules schedules = new SdsAuthorized(
+            school.schedules(), school, actor, new OaYaml().operations()
+        );
         school.users().roles(actor).revoke(school.users().roles(actor).list().getFirst().uid());
         Assertions.assertThrows(
             AccessDeniedException.class,
@@ -90,7 +93,7 @@ final class SdsAuthorizedTest {
         );
         MatcherAssert.assertThat(
             "An administrator could not create a schedule without school membership",
-            new SdsAuthorized(school.schedules(), school, actor).create(
+            new SdsAuthorized(school.schedules(), school, actor, new OaYaml().operations()).create(
                 new SdInputName(new SdInput(), "Учебный год администратора")
             ).uid(), Matchers.greaterThan(0L)
         );
@@ -117,7 +120,9 @@ final class SdsAuthorizedTest {
         ).uid();
         Assertions.assertThrows(
             AccessDeniedException.class,
-            () -> new SdsAuthorized(school.schedules(), school, actor).schedule(id),
+            () -> new SdsAuthorized(
+                school.schedules(), school, actor, new OaYaml().operations()
+            ).schedule(id),
             "An outsider read a schedule in another school"
         );
     }
@@ -139,7 +144,7 @@ final class SdsAuthorizedTest {
             new SlInputName(new SlInput(), "Школа с отзывом доступа")
         );
         final Schedules selected = new SdsAuthorized(
-            school.schedules(), school, actor
+            school.schedules(), school, actor, new OaYaml().operations()
         ).selection(
             new FiltersRequest(Set.of()), new PageRequest(20, 1),
             new SortsRequest(List.of())

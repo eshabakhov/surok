@@ -4,22 +4,14 @@
 package com.eshabakhov.surok.security;
 
 import com.eshabakhov.surok.UrAccount;
-import com.eshabakhov.surok.security.permission.Permissions;
-import com.eshabakhov.surok.security.permission.PsSpring;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.swagger.v3.core.util.Json;
-import io.swagger.v3.core.util.Yaml;
+import com.eshabakhov.surok.user.UrAnonymous;
 import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
-import java.util.List;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 
 /**
  * Serves the OpenAPI description for the current caller.
@@ -34,27 +26,22 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandl
 public final class OaHttp {
 
     /** Source of the canonical description. */
-    private final ApiDescription description;
+    private final OpenApi description;
 
-    /** Registered controllers. */
-    private final RequestMappingHandlerMapping mappings;
-
-    /** Public paths shared with the filter chains. */
-    private final List<String> anonymous;
+    /**
+     * New resource with an explicitly constructed YAML description.
+     */
+    public OaHttp() {
+        this(new OaYaml());
+    }
 
     /**
      * New documentation endpoint.
      *
-     * @param mappings Registered MVC mappings
-     * @param anonymous Public paths
+     * @param description Canonical API description
      */
-    public OaHttp(
-        @Qualifier("requestMappingHandlerMapping") final RequestMappingHandlerMapping mappings,
-        @Qualifier("publicPaths") final List<String> anonymous
-    ) {
-        this.description = new OaYaml(new ClassPathResource("openapi.yml"));
-        this.mappings = mappings;
-        this.anonymous = anonymous;
+    public OaHttp(final OpenApi description) {
+        this.description = description;
     }
 
     /**
@@ -70,7 +57,7 @@ public final class OaHttp {
         final HttpServletRequest request,
         @AuthenticationPrincipal final UrAccount actor
     ) throws IOException {
-        return Json.mapper().writeValueAsBytes(this.describe(request, actor));
+        return this.describe(request, actor).json();
     }
 
     /**
@@ -86,33 +73,26 @@ public final class OaHttp {
         final HttpServletRequest request,
         @AuthenticationPrincipal final UrAccount actor
     ) throws IOException {
-        return Yaml.mapper().writeValueAsBytes(this.describe(request, actor));
+        return this.describe(request, actor).yaml();
     }
 
     /*
      * Resolve the default same-origin server against the servlet context path.
      */
-    private ObjectNode describe(
+    private OpenApi describe(
         final HttpServletRequest request,
         final UrAccount actor
     ) throws IOException {
-        final Permissions permissions = new PsSpring(
-            this.mappings, this.anonymous, request.getLocale()
-        );
-        final Permissions access;
+        final OpenApi selected;
         if (actor == null || request.getUserPrincipal() == null) {
-            access = permissions;
+            selected = this.description.selection(
+                operation -> operation.permission(new UrAnonymous()).allows()
+            );
         } else {
-            access = permissions.selection(actor);
+            selected = this.description.selection(
+                operation -> operation.permission(actor, actor.schools()).allows()
+            );
         }
-        final ObjectNode document = new OaComponents(
-            new OaAccessible(this.description, access)
-        ).read();
-        final String path = request.getContextPath();
-        final ObjectNode server = document.withObject("/servers/0");
-        if (!path.isEmpty() && "/".equals(server.path("url").asText())) {
-            server.put("url", path);
-        }
-        return document;
+        return selected.relative(request.getContextPath());
     }
 }

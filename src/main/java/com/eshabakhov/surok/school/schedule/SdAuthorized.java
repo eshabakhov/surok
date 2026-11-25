@@ -10,10 +10,7 @@ import com.eshabakhov.surok.school.schedule.load.ClassLoads;
 import com.eshabakhov.surok.school.schedule.load.ClsAuthorized;
 import com.eshabakhov.surok.school.schedule.load.autofill.LdAuthorized;
 import com.eshabakhov.surok.school.schedule.load.autofill.LoadDraft;
-import com.eshabakhov.surok.security.right.RtAdmin;
-import com.eshabakhov.surok.security.right.RtDirectorOrDeputy;
-import com.eshabakhov.surok.security.right.RtEither;
-import com.eshabakhov.surok.security.right.RtSchoolMember;
+import com.eshabakhov.surok.security.Operations;
 
 /**
  * Schedule that checks the acting user's current school role.
@@ -22,6 +19,9 @@ import com.eshabakhov.surok.security.right.RtSchoolMember;
  * @since 0.0.1
  */
 public final class SdAuthorized implements Schedule {
+
+    /** Shared operation declarations. */
+    private final Operations operations;
 
     /** Underlying schedule. */
     private final Schedule origin;
@@ -33,16 +33,21 @@ public final class SdAuthorized implements Schedule {
     private final UrAccount actor;
 
     /**
-     * New protected schedule.
+     * New protected object with shared operation declarations.
      *
-     * @param origin Underlying schedule
-     * @param school Owning school
+     * @param origin Underlying origin
+     * @param school Underlying school
      * @param actor Acting user
+     * @param operations Shared operation declarations
      */
-    public SdAuthorized(final Schedule origin, final School school, final UrAccount actor) {
+    public SdAuthorized(
+        final Schedule origin, final School school, final UrAccount actor,
+        final Operations operations
+    ) {
         this.origin = origin;
         this.school = school;
         this.actor = actor;
+        this.operations = operations;
     }
 
     @Override
@@ -53,37 +58,37 @@ public final class SdAuthorized implements Schedule {
     @Override
     public Schedule revise(final ScheduleInput input) throws Exception {
         return new SdAuthorized(
-            new RtEither(
-                new RtAdmin(this.actor), new RtDirectorOrDeputy(this.actor, this.school)
-            ).permit(this.origin).revise(input),
-            this.school, this.actor
+            this.operations.operation("Schedules.revise")
+                .permission(this.actor, this.school)
+                .permit(this.origin).revise(input),
+            this.school, this.actor, this.operations
         );
     }
 
     @Override
     public ClassLoads loads() {
         return new ClsAuthorized(
-            new RtEither(
-                new RtAdmin(this.actor), new RtSchoolMember(this.actor, this.school)
-            ).permit(this.origin).loads(),
-            this.school, this.actor
+            this.operations.operation("ClassLoads.selection")
+                .permission(this.actor, this.school)
+                .permit(this.origin).loads(),
+            this.school, this.actor, this.operations
         );
     }
 
     @Override
     public LoadDraft draft() {
         return new LdAuthorized(
-            new RtEither(
-                new RtAdmin(this.actor), new RtSchoolMember(this.actor, this.school)
-            ).permit(this.origin).draft(),
-            this.school, this.actor
+            this.operations.operation("LoadDraft.read")
+                .permission(this.actor, this.school)
+                .permit(this.origin).draft(),
+            this.school, this.actor, this.operations
         );
     }
 
     @Override
     public <T> Media<T> print(final Media<T> media) throws Exception {
-        return new RtEither(
-            new RtAdmin(this.actor), new RtSchoolMember(this.actor, this.school)
-        ).permit(this.origin).print(media);
+        return this.operations.operation("Schedules.schedule")
+            .permission(this.actor, this.school)
+            .permit(this.origin).print(media);
     }
 }
