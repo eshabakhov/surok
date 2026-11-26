@@ -19,6 +19,7 @@ import com.eshabakhov.surok.media.MdXslt;
 import com.eshabakhov.surok.media.SrWeb;
 import com.eshabakhov.surok.media.XsClasspath;
 import com.eshabakhov.surok.school.SlBrief;
+import com.eshabakhov.surok.school.SlPostgres;
 import com.eshabakhov.surok.school.SlsBrief;
 import com.eshabakhov.surok.school.SlsPostgres;
 import com.eshabakhov.surok.school.building.input.BdInputHttp;
@@ -136,7 +137,9 @@ public class BdsHttp {
                 MediaType.valueOf(BdsHttp.FRAGMENT)
             )
         ).type();
-        final School sch = new SlsPostgres(this.ctx).school(school);
+        final School sch = this.operations.operation("Buildings.selection")
+            .permission(user, new SlPostgres(this.ctx, school)).permit(user)
+            .schools().school(school);
         final Set<Filter> requested = new LinkedHashSet<>(filters.filters());
         requested.addAll(
             Stream.of("name", "name_ct")
@@ -144,11 +147,7 @@ public class BdsHttp {
                 .map(name -> new FilterRequest(name, request.getParameter(name))).toList()
         );
         final Filters applied = new FiltersRequest(requested);
-        final Buildings selected = new BdsAuthorized(
-            sch.buildings(), sch, user, this.operations
-        ).selection(
-            applied, page, sorts
-        );
+        final Buildings selected = sch.buildings().selection(applied, page, sorts);
         return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8))
             .varyBy(HttpHeaders.ACCEPT).body(
                 switch (type.toString()) {
@@ -186,7 +185,6 @@ public class BdsHttp {
         @PathVariable final long school, final HttpServletRequest request,
         @AuthenticationPrincipal final UrAccount user
     ) throws Exception {
-        final School target = new SlsPostgres(this.ctx).school(school);
         return ResponseEntity.ok().contentType(
             new MediaType(
                 new AcHttp(request, List.of(MediaType.TEXT_HTML)).type(), StandardCharsets.UTF_8
@@ -194,7 +192,8 @@ public class BdsHttp {
         ).body(
             this.web(
                 request, this.operations.operation("Buildings.form")
-                    .permission(user, target).permit(target), "create"
+                    .permission(user, new SlPostgres(this.ctx, school)).permit(user)
+                    .schools().school(school), "create"
             ).print()
         );
     }
@@ -233,10 +232,11 @@ public class BdsHttp {
             operation = "Buildings.building";
             view = "details";
         }
-        final School sch = new SlsPostgres(this.ctx).school(school);
-        final Buildings origin = new BdsAuthorized(sch.buildings(), sch, user, this.operations);
-        final Building selected = this.operations.operation(operation).permission(user, sch)
-            .permit(origin).building(building);
+        final School sch = this.operations.operation(operation)
+            .permission(user, new SlPostgres(this.ctx, school)).permit(user)
+            .schools().school(school);
+        final Buildings origin = sch.buildings();
+        final Building selected = origin.building(building);
         return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8)).body(
             switch (type.toString()) {
                 case MediaType.TEXT_HTML_VALUE -> this.web(request, sch, view).with(
@@ -278,9 +278,16 @@ public class BdsHttp {
         @AuthenticationPrincipal final UrAccount user
     ) throws Exception {
         final MediaType type = new AcHttp(request, "building-v1").type();
+        final School target = this.operations.operation("Buildings.create")
+            .permission(user, new SlPostgres(this.ctx, school)).permit(user)
+            .schools().school(school);
+        final String base = String.format("/schools/%d/buildings", school);
         ResponseEntity<?> response;
         try {
-            response = this.create(type, school, new BdInputHttp(parameters), user);
+            response = BdsHttp.result(
+                type, target.buildings().create(new BdInputHttp(parameters)),
+                HttpStatus.CREATED, base, base
+            );
         } catch (final BuildingInputException exception) {
             if (!MediaType.TEXT_HTML.equals(type)) {
                 throw exception;
@@ -316,8 +323,13 @@ public class BdsHttp {
         final HttpServletRequest request,
         @AuthenticationPrincipal final UrAccount user
     ) throws Exception {
-        return this.create(
-            new AcHttp(request, "building-v1").type(), school, new BdInputHttp(json), user
+        final MediaType type = new AcHttp(request, "building-v1").type();
+        final String base = String.format("/schools/%d/buildings", school);
+        return BdsHttp.result(
+            type, this.operations.operation("Buildings.create")
+                .permission(user, new SlPostgres(this.ctx, school)).permit(user)
+                .schools().school(school).buildings().create(new BdInputHttp(json)),
+            HttpStatus.CREATED, base, base
         );
     }
 
@@ -349,10 +361,9 @@ public class BdsHttp {
         @AuthenticationPrincipal final UrAccount user
     ) throws Exception {
         final MediaType type = new AcHttp(request, "building-v1").type();
-        final School target = new SlsPostgres(this.ctx).school(school);
-        final Building revised = new BdsAuthorized(
-            target.buildings(), target, user, this.operations
-        ).revise(building, new BdInputHttp(json));
+        final Building revised = this.operations.operation("Building.revise")
+            .permission(user, new SlPostgres(this.ctx, school)).permit(user)
+            .schools().school(school).buildings().revise(building, new BdInputHttp(json));
         return BdsHttp.result(
             type, revised, HttpStatus.OK, String.format("/schools/%d/buildings", school),
             String.format("/schools/%d/buildings/%d", school, revised.uid())
@@ -374,21 +385,10 @@ public class BdsHttp {
         @PathVariable final long building,
         @AuthenticationPrincipal final UrAccount user
     ) throws Exception {
-        final School target = new SlsPostgres(this.ctx).school(school);
-        new BdsAuthorized(target.buildings(), target, user, this.operations).remove(building);
+        this.operations.operation("Buildings.remove")
+            .permission(user, new SlPostgres(this.ctx, school)).permit(user)
+            .schools().school(school).buildings().remove(building);
         return ResponseEntity.noContent().build();
-    }
-
-    private ResponseEntity<?> create(
-        final MediaType type, final long school, final BuildingInput input, final UrAccount user
-    ) throws Exception {
-        final String base = String.format("/schools/%d/buildings", school);
-        final School target = new SlsPostgres(this.ctx).school(school);
-        return BdsHttp.result(
-            type,
-            new BdsAuthorized(target.buildings(), target, user, this.operations).create(input),
-            HttpStatus.CREATED, base, base
-        );
     }
 
     private static ResponseEntity<?> result(

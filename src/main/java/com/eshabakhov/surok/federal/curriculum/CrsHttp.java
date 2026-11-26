@@ -123,9 +123,8 @@ public class CrsHttp {
             new AcHttp(
                 request, "federal-curriculum-v1", "federal-curriculum-v2"
             ).type(),
-            new CrsAuthorized(
-                this.origin, actor, this.operations
-            ).create(new CrInputHttp(parameters)),
+            this.operations.operation("Curriculums.create").permission(actor)
+                .permit(this.origin).create(new CrInputHttp(parameters)),
             HttpStatus.CREATED
         );
     }
@@ -159,7 +158,8 @@ public class CrsHttp {
     ) throws Exception {
         return CrsHttp.result(
             new AcHttp(request, "federal-curriculum-v1", "federal-curriculum-v2").type(),
-            new CrsAuthorized(this.origin, actor, this.operations).create(new CrInputHttp(fields)),
+            this.operations.operation("Curriculums.create").permission(actor)
+                .permit(this.origin).create(new CrInputHttp(fields)),
             HttpStatus.CREATED
         );
     }
@@ -191,7 +191,8 @@ public class CrsHttp {
         final MediaType type = new AcHttp(
             request, "federal-curriculum-v1", "federal-curriculum-v2"
         ).type();
-        final Curriculums curriculums = new CrsAuthorized(this.origin, actor, this.operations);
+        final Curriculums curriculums = this.operations.operation("Curriculums.curriculum")
+            .permission(actor).permit(this.origin);
         final Curriculum selected = curriculums.curriculum(curriculum);
         return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8)).body(
             switch (type.toString()) {
@@ -230,11 +231,8 @@ public class CrsHttp {
         @AuthenticationPrincipal final UrAccount actor
     ) throws Exception {
         final MediaType type = new AcHttp(request, List.of(MediaType.TEXT_HTML)).type();
-        final Curriculums curriculums = new CrsAuthorized(
-            this.operations.operation("Curriculums.edit")
-                .permission(actor)
-                .permit(this.origin), actor, this.operations
-        );
+        final Curriculums curriculums = this.operations.operation("Curriculums.edit")
+            .permission(actor).permit(this.origin);
         return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8)).body(
             this.web(request, "xslt/federal-curriculum.xsl", "edit").with(
                 "curriculums", new CrsSingle(curriculums, curriculums.curriculum(curriculum))
@@ -276,9 +274,10 @@ public class CrsHttp {
             new AcHttp(
                 request, "federal-curriculum-v1", "federal-curriculum-v2"
             ).type(),
-            new CrsAuthorized(this.origin, actor, this.operations).revise(
-                curriculum, new CrInputHttp(fields)
-            ), HttpStatus.OK
+            this.operations.operation("Curriculums.revise").permission(actor)
+                .permit(this.origin).revise(
+                    curriculum, new CrInputHttp(fields)
+                ), HttpStatus.OK
         );
     }
 
@@ -318,11 +317,8 @@ public class CrsHttp {
                 MediaType.valueOf(CrsHttp.FRAGMENT)
             )
         ).type();
-        final Curriculums selected = new CrsAuthorized(
-            this.origin, actor, this.operations
-        ).selection(
-            filters, page, sorts
-        );
+        final Curriculums selected = this.operations.operation("Curriculums.selection")
+            .permission(actor).permit(this.origin).selection(filters, page, sorts);
         return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8))
             .varyBy(HttpHeaders.ACCEPT).body(
                 switch (type.toString()) {
@@ -385,7 +381,8 @@ public class CrsHttp {
         @PathVariable(name = "curriculum") final long id,
         @AuthenticationPrincipal final UrAccount actor
     ) throws Exception {
-        new CrsAuthorized(this.origin, actor, this.operations).remove(id);
+        this.operations.operation("Curriculums.remove").permission(actor)
+            .permit(this.origin).remove(id);
         return ResponseEntity.noContent().build();
     }
 

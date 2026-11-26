@@ -6,14 +6,19 @@ package com.eshabakhov.surok.school;
 import com.eshabakhov.surok.UrAccount;
 import com.eshabakhov.surok.school.input.SlInput;
 import com.eshabakhov.surok.school.input.SlInputName;
+import com.eshabakhov.surok.security.OaYaml;
+import com.eshabakhov.surok.security.Operations;
 import com.eshabakhov.surok.user.Roles;
 import com.eshabakhov.surok.user.UrAcAuth;
 import com.eshabakhov.surok.user.UrAcPostgres;
 import com.eshabakhov.surok.user.UrsPostgres;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.jooq.DSLContext;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -24,6 +29,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 import org.springframework.test.annotation.DirtiesContext;
@@ -458,6 +464,30 @@ final class SlsHttpTest {
         ).andExpect(MockMvcResultMatchers.status().isNoContent());
     }
 
+    /**
+     * Rejects deletion by school staff or subscribers before changing stored data.
+     *
+     * @param role Acting role
+     * @throws Exception If the request fails
+     */
+    @ParameterizedTest
+    @CsvSource({"DIRECTOR", "DEPUTY_DIRECTOR", "STUDENT", "BASIC_MAKER"})
+    void preservesSchoolsWhenRemovalIsForbidden(final Roles.RoleEnum role) throws Exception {
+        this.prepare();
+        MatcherAssert.assertThat(
+            "A non-administrator removed a school",
+            List.of(
+                this.mvc.perform(
+                    MockMvcRequestBuilders.delete("/schools/3")
+                        .with(SecurityMockMvcRequestPostProcessors.csrf()).with(
+                            SecurityMockMvcRequestPostProcessors.user(this.principal(role))
+                        )
+                ).andReturn().getResponse().getStatus(),
+                new SlsPostgres(this.ctx).contains(3L)
+            ), Matchers.contains(403, true)
+        );
+    }
+
     /** A director can add an existing account, assign a role, and remove membership. */
     @Test
     void managesExistingSchoolMembers() throws Exception {
@@ -690,7 +720,10 @@ final class SlsHttpTest {
             ).fetchSingle("id", Long.class)
         );
         new UrsPostgres(this.ctx, 3L).add(user);
-        if (role == Roles.RoleEnum.ADMIN) {
+        if (List.of(
+            Roles.RoleEnum.ADMIN, Roles.RoleEnum.BASIC_MAKER,
+            Roles.RoleEnum.ADVANCED_MAKER, Roles.RoleEnum.PRO_MAKER
+        ).contains(role)) {
             user.roles().grant(role);
         } else {
             new UrsPostgres(this.ctx, 3L).roles(user).grant(role);
@@ -709,5 +742,52 @@ final class SlsHttpTest {
         registry.add("spring.datasource.url", SlsHttpTest.POSTGRES::getJdbcUrl);
         registry.add("spring.datasource.username", SlsHttpTest.POSTGRES::getUsername);
         registry.add("spring.datasource.password", SlsHttpTest.POSTGRES::getPassword);
+    }
+
+    /**
+     * Checks authorization before resource navigation and rendering.
+     *
+     * @since 0.0.1
+     */
+    @Nested
+    final class Authorization {
+
+        /**
+         * Evaluates the requested operation once for either API representation.
+         *
+         * @param format Response format
+         * @throws Exception If the request fails
+         */
+        @ParameterizedTest
+        @ValueSource(strings = {"json", "xml"})
+        void authorizesOnlyOnce(final String format) throws Exception {
+            SlsHttpTest.this.prepare();
+            final UrAccount actor = new UrsPostgres(SlsHttpTest.this.ctx).register(
+                UUID.randomUUID().toString(), "ValidPassword1!",
+                String.format("%s@example.org", UUID.randomUUID()), false
+            );
+            final UrsPostgres members = new UrsPostgres(SlsHttpTest.this.ctx, 3L);
+            members.add(actor);
+            members.roles(actor).grant(Roles.RoleEnum.DIRECTOR);
+            final Operations catalog = new OaYaml().operations();
+            final List<String> checks = new ArrayList<>(1);
+            final MockHttpServletRequest request = new MockHttpServletRequest(
+                "GET", "/schools/3"
+            );
+            request.addHeader(
+                HttpHeaders.ACCEPT,
+                String.format("application/vnd.surok.school-v1+%s", format)
+            );
+            new SlsHttp(
+                SlsHttpTest.this.ctx, () -> {
+                    checks.add("permission");
+                    return catalog.iterate();
+                }
+            ).school(3L, request, actor);
+            MatcherAssert.assertThat(
+                "The controller repeated authorization while rendering the school",
+                checks.size(), Matchers.is(1)
+            );
+        }
     }
 }

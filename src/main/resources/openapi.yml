@@ -10,19 +10,11 @@ info:
     School roles apply in the school identified by the path.
     An empty list requires no specific role.
     Authentication is defined by security.
-    The x-operations extension declares internal domain operations without HTTP routes.
     The x-resource label groups permission matrix rows independently of Swagger tags.
 servers:
   - url: /
 security:
   - Basic auth: []
-x-operations:
-  - operationId: Users.read
-    x-roles: [ADMIN]
-  - operationId: Users.add
-    x-roles: [ADMIN]
-  - operationId: Users.register
-    x-roles: [ADMIN]
 paths:
   /:
     get:

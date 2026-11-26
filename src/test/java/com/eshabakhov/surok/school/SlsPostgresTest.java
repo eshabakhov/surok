@@ -192,6 +192,47 @@ final class SlsPostgresTest {
         );
     }
 
+    /**
+     * Leaves permission decisions to the caller while retaining collection ownership.
+     *
+     * @throws Exception If persistence fails
+     */
+    @Test
+    void removesSchoolWithinTheScopedCollection() throws Exception {
+        final UrAccount actor = new UrsPostgres(this.ctx).register(
+            UUID.randomUUID().toString(), "ValidPassword1!",
+            String.format("%s@example.org", UUID.randomUUID()), false
+        );
+        final School school = actor.schools().create(
+            new SlInputName(new SlInput(), "Школа в коллекции")
+        );
+        actor.schools().remove(school.uid());
+        MatcherAssert.assertThat(
+            "The scoped repository did not remove its school",
+            this.collection().contains(school.uid()), Matchers.is(false)
+        );
+    }
+
+    /**
+     * Preserves the collection boundary even without operation-level authorization.
+     *
+     * @throws Exception If setup fails
+     */
+    @Test
+    void rejectsRemovalOutsideTheScopedCollection() throws Exception {
+        final UrAccount actor = new UrsPostgres(this.ctx).register(
+            UUID.randomUUID().toString(), "ValidPassword1!",
+            String.format("%s@example.org", UUID.randomUUID()), false
+        );
+        final School school = this.collection().create(
+            new SlInputName(new SlInput(), "Чужая школа")
+        );
+        Assertions.assertThrows(
+            SchoolNotFoundException.class, () -> actor.schools().remove(school.uid()),
+            "The scoped repository allowed removing an unrelated school"
+        );
+    }
+
     /** Checks iteration consistently hides deleted schools. */
     @Test
     void iteratesOnlyActiveSchools() throws Exception {

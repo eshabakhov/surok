@@ -21,7 +21,6 @@ import com.eshabakhov.surok.school.input.SlInputHttp;
 import com.eshabakhov.surok.security.CsToken;
 import com.eshabakhov.surok.security.OaYaml;
 import com.eshabakhov.surok.security.Operations;
-import com.eshabakhov.surok.user.UrAcAuthorized;
 import com.eshabakhov.surok.user.UrAcBrief;
 import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.servlet.http.HttpServletRequest;
@@ -126,9 +125,8 @@ public class SlsHttp {
                 MediaType.valueOf(SlsHttp.FRAGMENT)
             )
         ).type();
-        final Schools selected = new UrAcAuthorized(
-            user, this.operations
-        ).schools().selection(filters, page, sorts);
+        final Schools selected = this.operations.operation("Schools.selection").permission(user)
+            .permit(user).schools().selection(filters, page, sorts);
         return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8))
             .varyBy(HttpHeaders.ACCEPT).body(
                 switch (type.toString()) {
@@ -171,7 +169,7 @@ public class SlsHttp {
             this.web(
                 request, "xslt/schools.xsl", "create", new SlsBrief(
                     this.operations.operation("Schools.form").permission(user)
-                        .permit(new SlsPostgres(this.ctx))
+                        .permit(user).schools()
                 )
             ).print()
         );
@@ -196,17 +194,15 @@ public class SlsHttp {
         @AuthenticationPrincipal final UrAccount user
     ) throws Exception {
         final MediaType type = new AcHttp(request, "school-v1").type();
-        final Schools origin = new UrAcAuthorized(
-            user, this.operations
-        ).schools();
         final String operation;
         if (request.getRequestURI().endsWith("/edit")) {
             operation = "Schools.edit";
         } else {
             operation = "Schools.school";
         }
-        final School selected = this.operations.operation(operation)
-            .permission(user, school).permit(origin).school(school);
+        final Schools origin = this.operations.operation(operation)
+            .permission(user, new SlPostgres(this.ctx, school)).permit(user).schools();
+        final School selected = origin.school(school);
         return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8)).body(
             switch (type.toString()) {
                 case MediaType.TEXT_HTML_VALUE -> {
@@ -246,7 +242,10 @@ public class SlsHttp {
         final HttpServletRequest request,
         @AuthenticationPrincipal final UrAccount user
     ) throws Exception {
-        return this.save(request, new SlInputHttp(parameters), 0L, true, user);
+        return this.save(
+            request, new SlInputHttp(parameters), 0L, true,
+            this.operations.operation("Schools.create").permission(user).permit(user)
+        );
     }
 
     /**
@@ -265,7 +264,10 @@ public class SlsHttp {
         @RequestBody final JsonNode json, final HttpServletRequest request,
         @AuthenticationPrincipal final UrAccount user
     ) throws Exception {
-        return this.save(request, new SlInputHttp(json), 0L, true, user);
+        return this.save(
+            request, new SlInputHttp(json), 0L, true,
+            this.operations.operation("Schools.create").permission(user).permit(user)
+        );
     }
 
     /**
@@ -287,7 +289,11 @@ public class SlsHttp {
         final HttpServletRequest request,
         @AuthenticationPrincipal final UrAccount user
     ) throws Exception {
-        return this.save(request, new SlInputHttp(json), school, false, user);
+        return this.save(
+            request, new SlInputHttp(json), school, false,
+            this.operations.operation("Schools.revise")
+                .permission(user, new SlPostgres(this.ctx, school)).permit(user)
+        );
     }
 
     /**
@@ -303,9 +309,9 @@ public class SlsHttp {
         @PathVariable final long school,
         @AuthenticationPrincipal final UrAccount user
     ) throws Exception {
-        new UrAcAuthorized(
-            user, this.operations
-        ).schools().remove(school);
+        this.operations.operation("Schools.remove")
+            .permission(user, new SlPostgres(this.ctx, school)).permit(user)
+            .schools().remove(school);
         return ResponseEntity.noContent().build();
     }
 
@@ -330,14 +336,10 @@ public class SlsHttp {
             final School selected;
             final HttpStatus status;
             if (creation) {
-                selected = new UrAcAuthorized(
-                    user, this.operations
-                ).schools().create(input);
+                selected = user.schools().create(input);
                 status = HttpStatus.CREATED;
             } else {
-                selected = new UrAcAuthorized(
-                    user, this.operations
-                ).schools().revise(id, input);
+                selected = user.schools().revise(id, input);
                 status = HttpStatus.OK;
             }
             final URI location = URI.create(String.format("/schools/%d", selected.uid()));

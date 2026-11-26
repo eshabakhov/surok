@@ -9,10 +9,13 @@ import com.eshabakhov.surok.UrAccount;
 import com.eshabakhov.surok.filter.FiltersRequest;
 import com.eshabakhov.surok.page.PageRequest;
 import com.eshabakhov.surok.security.OaYaml;
+import com.eshabakhov.surok.security.Operations;
 import com.eshabakhov.surok.sort.SortsRequest;
 import com.eshabakhov.surok.user.Roles;
 import com.eshabakhov.surok.user.UrAcPostgres;
+import com.eshabakhov.surok.user.UrsPostgres;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -22,6 +25,7 @@ import org.jooq.DSLContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullSource;
@@ -660,5 +664,49 @@ final class RqsHttpTest {
             RqsHttpTest.POSTGRES::getPassword
         );
         registry.add("spring.liquibase.enabled", () -> true);
+    }
+
+    /**
+     * Checks authorization before resource navigation and rendering.
+     *
+     * @since 0.0.1
+     */
+    @Nested
+    final class Authorization {
+
+        /**
+         * Evaluates the requested operation once for either API representation.
+         *
+         * @param format Response format
+         * @throws Exception If the request fails
+         */
+        @ParameterizedTest
+        @ValueSource(strings = {"json", "xml"})
+        void authorizesOnlyOnce(final String format) throws Exception {
+            final UrAccount caller = new UrsPostgres(RqsHttpTest.this.ctx).register(
+                UUID.randomUUID().toString(), "ValidPassword1!",
+                String.format("%s@example.org", UUID.randomUUID()), false
+            );
+            caller.roles().grant(Roles.RoleEnum.ADMIN);
+            final Operations catalog = new OaYaml().operations();
+            final List<String> checks = new ArrayList<>(1);
+            final MockHttpServletRequest request = new MockHttpServletRequest(
+                "GET", "/federal/curriculums/1/requirements/7"
+            );
+            request.addHeader(
+                HttpHeaders.ACCEPT,
+                String.format("application/vnd.surok.federal-curriculum-requirement-v1+%s", format)
+            );
+            new RqsHttp(
+                RqsHttpTest.this.ctx, () -> {
+                    checks.add("permission");
+                    return catalog.iterate();
+                }
+            ).requirement(1L, 7L, request, caller);
+            MatcherAssert.assertThat(
+                "The controller repeated authorization while rendering the requirement",
+                checks.size(), Matchers.is(1)
+            );
+        }
     }
 }

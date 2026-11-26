@@ -14,6 +14,7 @@ import com.eshabakhov.surok.media.MdXslt;
 import com.eshabakhov.surok.media.SrWeb;
 import com.eshabakhov.surok.media.XsClasspath;
 import com.eshabakhov.surok.school.SlBrief;
+import com.eshabakhov.surok.school.SlPostgres;
 import com.eshabakhov.surok.school.SlsBrief;
 import com.eshabakhov.surok.school.SlsPostgres;
 import com.eshabakhov.surok.school.schedule.Schedule;
@@ -21,7 +22,6 @@ import com.eshabakhov.surok.school.schedule.SdBrief;
 import com.eshabakhov.surok.security.CsToken;
 import com.eshabakhov.surok.security.OaYaml;
 import com.eshabakhov.surok.security.Operations;
-import com.eshabakhov.surok.user.UrAcAuthorized;
 import com.eshabakhov.surok.user.UrAcBrief;
 import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
@@ -107,9 +107,9 @@ public class ClsHttp {
         @AuthenticationPrincipal final UrAccount actor
     ) throws Exception {
         final MediaType type = new AcHttp(request, "class-loads.v1").type();
-        final School sch = new UrAcAuthorized(
-            actor, this.operations
-        ).schools().school(school);
+        final School sch = this.operations.operation("ClassLoads.selection")
+            .permission(actor, new SlPostgres(this.ctx, school)).permit(actor)
+            .schools().school(school);
         final Schedule sched = sch.schedules().schedule(schedule);
         final ClassLoads selected = sched.loads().selection(page);
         return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8)).body(
@@ -161,9 +161,9 @@ public class ClsHttp {
         @AuthenticationPrincipal final UrAccount actor
     ) throws Exception {
         final MediaType type = new AcHttp(request, "class-load-v1").type();
-        final School sch = new UrAcAuthorized(
-            actor, this.operations
-        ).schools().school(school);
+        final School sch = this.operations.operation("ClassLoads.load")
+            .permission(actor, new SlPostgres(this.ctx, school)).permit(actor)
+            .schools().school(school);
         final Schedule sched = sch.schedules().schedule(schedule);
         final ClassLoads origin = sched.loads();
         final ClassLoad selected = origin.load(load);

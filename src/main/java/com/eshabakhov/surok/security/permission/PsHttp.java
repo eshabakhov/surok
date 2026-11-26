@@ -88,9 +88,8 @@ public class PsHttp {
         @AuthenticationPrincipal final UrAcAuth user, final HttpServletRequest request
     ) throws Exception {
         final MediaType type = new AcHttp(request, "permissions.v1").type();
-        final Permissions permissions = new PsAuthorized(
-            new PsSpring(this.catalog, request.getLocale()), user, this.catalog
-        );
+        final Permissions permissions = this.catalog.operation("Permissions.read").permission(user)
+            .permit(new PsSpring(this.catalog, request.getLocale()));
         return ResponseEntity.ok().cacheControl(CacheControl.noStore())
             .contentType(new MediaType(type, StandardCharsets.UTF_8)).body(
                 switch (type.toString()) {

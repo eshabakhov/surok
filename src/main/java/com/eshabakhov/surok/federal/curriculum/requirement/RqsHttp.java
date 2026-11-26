@@ -9,7 +9,6 @@ import com.eshabakhov.surok.Page;
 import com.eshabakhov.surok.Sorts;
 import com.eshabakhov.surok.UrAccount;
 import com.eshabakhov.surok.federal.curriculum.CrWithRequirements;
-import com.eshabakhov.surok.federal.curriculum.CrsAuthorized;
 import com.eshabakhov.surok.federal.curriculum.CrsPostgres;
 import com.eshabakhov.surok.federal.curriculum.CrsSingle;
 import com.eshabakhov.surok.federal.curriculum.Curriculum;
@@ -140,9 +139,8 @@ public class RqsHttp {
                 MediaType.valueOf(RqsHttp.FRAGMENT)
             )
         ).type();
-        final Curriculum curriculum = new CrsAuthorized(
-            new CrsPostgres(this.ctx), actor, this.operations
-        ).curriculum(current);
+        final Curriculum curriculum = this.operations.operation("Requirements.selection")
+            .permission(actor).permit(new CrsPostgres(this.ctx)).curriculum(current);
         final Requirements selected = curriculum.requirements().selection(filters, page, sorts);
         return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8))
             .varyBy(HttpHeaders.ACCEPT).body(
@@ -214,9 +212,8 @@ public class RqsHttp {
                 )
             )
         ).type();
-        final Requirement selected = new RqsAuthorized(
-            new RqsPostgres(this.ctx, current), actor, this.operations
-        ).requirement(requirement);
+        final Requirement selected = this.operations.operation("Requirements.requirement")
+            .permission(actor).permit(new RqsPostgres(this.ctx, current)).requirement(requirement);
         return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8)).body(
             switch (type.toString()) {
                 case "application/vnd.surok.federal-curriculum-requirement-v1+json" ->
@@ -256,9 +253,10 @@ public class RqsHttp {
     ) throws Exception {
         return RqsHttp.result(
             new AcHttp(request, "federal-curriculum-requirement-v1").type(),
-            new RqsAuthorized(new RqsPostgres(this.ctx, current), actor, this.operations).create(
-                new RqInputForm(parameters.toSingleValueMap())
-            ),
+            this.operations.operation("Requirements.create").permission(actor)
+                .permit(new RqsPostgres(this.ctx, current)).create(
+                    new RqInputForm(parameters.toSingleValueMap())
+                ),
             HttpStatus.CREATED, current
         );
     }
@@ -289,9 +287,8 @@ public class RqsHttp {
     ) throws Exception {
         return RqsHttp.result(
             new AcHttp(request, "federal-curriculum-requirement-v1").type(),
-            new RqsAuthorized(new RqsPostgres(this.ctx, current), actor, this.operations).create(
-                new RqInputHttp(fields)
-            ),
+            this.operations.operation("Requirements.create").permission(actor)
+                .permit(new RqsPostgres(this.ctx, current)).create(new RqInputHttp(fields)),
             HttpStatus.CREATED, current
         );
     }
@@ -325,9 +322,10 @@ public class RqsHttp {
     ) throws Exception {
         return RqsHttp.result(
             new AcHttp(request, "federal-curriculum-requirement-v1").type(),
-            new RqsAuthorized(new RqsPostgres(this.ctx, current), actor, this.operations).revise(
-                requirement, new RqInputHttp(fields)
-            ),
+            this.operations.operation("Requirements.revise").permission(actor)
+                .permit(new RqsPostgres(this.ctx, current)).revise(
+                    requirement, new RqInputHttp(fields)
+                ),
             HttpStatus.OK, current
         );
     }
@@ -350,9 +348,8 @@ public class RqsHttp {
         @AuthenticationPrincipal final UrAccount actor
     ) throws Exception {
         new AcHttp(request, "federal-curriculum-requirement-v1").type();
-        new RqsAuthorized(
-            new RqsPostgres(this.ctx, current), actor, this.operations
-        ).remove(requirement);
+        this.operations.operation("Requirements.remove").permission(actor)
+            .permit(new RqsPostgres(this.ctx, current)).remove(requirement);
         return ResponseEntity.noContent().build();
     }
 

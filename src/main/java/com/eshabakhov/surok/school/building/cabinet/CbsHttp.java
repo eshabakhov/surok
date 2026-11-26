@@ -18,6 +18,7 @@ import com.eshabakhov.surok.media.MdXslt;
 import com.eshabakhov.surok.media.SrWeb;
 import com.eshabakhov.surok.media.XsClasspath;
 import com.eshabakhov.surok.school.SlBrief;
+import com.eshabakhov.surok.school.SlPostgres;
 import com.eshabakhov.surok.school.SlsBrief;
 import com.eshabakhov.surok.school.SlsPostgres;
 import com.eshabakhov.surok.school.building.Building;
@@ -26,7 +27,6 @@ import com.eshabakhov.surok.school.building.cabinet.input.CbInputHttp;
 import com.eshabakhov.surok.security.CsToken;
 import com.eshabakhov.surok.security.OaYaml;
 import com.eshabakhov.surok.security.Operations;
-import com.eshabakhov.surok.user.UrAcAuthorized;
 import com.eshabakhov.surok.user.UrAcBrief;
 import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.servlet.http.HttpServletRequest;
@@ -139,9 +139,9 @@ public class CbsHttp {
                 MediaType.valueOf(CbsHttp.FRAGMENT)
             )
         ).type();
-        final School sch = new UrAcAuthorized(
-            user, this.operations
-        ).schools().school(school);
+        final School sch = this.operations.operation("Cabinets.selection")
+            .permission(user, new SlPostgres(this.ctx, school)).permit(user)
+            .schools().school(school);
         final Building build = sch.buildings().building(building);
         final Filters applied = new FiltersRequest(
             Stream.concat(
@@ -193,9 +193,8 @@ public class CbsHttp {
     ) throws Exception {
         final MediaType type = new AcHttp(request, List.of(MediaType.TEXT_HTML)).type();
         final School sch = this.operations.operation("Cabinets.form")
-            .permission(user, school).permit(
-                new UrAcAuthorized(user, this.operations)
-            ).schools().school(school);
+            .permission(user, new SlPostgres(this.ctx, school)).permit(user)
+            .schools().school(school);
         return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8)).body(
             this.web(request, sch, "create")
                 .with("building", sch.buildings().building(building)).print()
@@ -229,19 +228,18 @@ public class CbsHttp {
         @AuthenticationPrincipal final UrAccount user
     ) throws Exception {
         final MediaType type = new AcHttp(request, "cabinet-v1").type();
-        final School sch = new UrAcAuthorized(
-            user, this.operations
-        ).schools().school(school);
-        final Building build = sch.buildings().building(building);
-        final Cabinets origin = build.cabinets();
         final String operation;
         if (request.getRequestURI().endsWith("/edit")) {
             operation = "Cabinets.edit";
         } else {
             operation = "Cabinets.cabinet";
         }
-        final Cabinet selected = this.operations.operation(operation)
-            .permission(user, sch).permit(origin).cabinet(cabinet);
+        final School sch = this.operations.operation(operation)
+            .permission(user, new SlPostgres(this.ctx, school)).permit(user)
+            .schools().school(school);
+        final Building build = sch.buildings().building(building);
+        final Cabinets origin = build.cabinets();
+        final Cabinet selected = origin.cabinet(cabinet);
         return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8)).body(
             switch (type.toString()) {
                 case MediaType.TEXT_HTML_VALUE -> {
@@ -293,9 +291,16 @@ public class CbsHttp {
         @AuthenticationPrincipal final UrAccount user
     ) throws Exception {
         final MediaType type = new AcHttp(request, "cabinet-v1").type();
+        final School target = this.operations.operation("Cabinets.create")
+            .permission(user, new SlPostgres(this.ctx, school)).permit(user)
+            .schools().school(school);
+        final String base = String.format("/schools/%d/buildings/%d/cabinets", school, building);
         ResponseEntity<?> response;
         try {
-            response = this.create(type, school, building, new CbInputHttp(parameters), user);
+            response = CbsHttp.result(
+                type, target.buildings().building(building).cabinets()
+                    .create(new CbInputHttp(parameters)), HttpStatus.CREATED, base, base
+            );
         } catch (final CabinetInputException exception) {
             if (!MediaType.TEXT_HTML.equals(type)) {
                 throw exception;
@@ -333,8 +338,13 @@ public class CbsHttp {
         final HttpServletRequest request,
         @AuthenticationPrincipal final UrAccount user
     ) throws Exception {
-        return this.create(
-            new AcHttp(request, "cabinet-v1").type(), school, building, new CbInputHttp(json), user
+        final MediaType type = new AcHttp(request, "cabinet-v1").type();
+        final String base = String.format("/schools/%d/buildings/%d/cabinets", school, building);
+        return CbsHttp.result(
+            type, this.operations.operation("Cabinets.create")
+                .permission(user, new SlPostgres(this.ctx, school)).permit(user)
+                .schools().school(school).buildings().building(building).cabinets()
+                .create(new CbInputHttp(json)), HttpStatus.CREATED, base, base
         );
     }
 
@@ -368,10 +378,9 @@ public class CbsHttp {
         @AuthenticationPrincipal final UrAccount user
     ) throws Exception {
         final MediaType type = new AcHttp(request, "cabinet-v1").type();
-        final Cabinet revised = new UrAcAuthorized(
-            user, this.operations
-        ).schools()
-            .school(school).buildings().building(building).cabinets()
+        final Cabinet revised = this.operations.operation("Cabinets.revise")
+            .permission(user, new SlPostgres(this.ctx, school)).permit(user)
+            .schools().school(school).buildings().building(building).cabinets()
             .revise(cabinet, new CbInputHttp(json));
         return CbsHttp.result(
             type, revised, HttpStatus.OK,
@@ -397,23 +406,10 @@ public class CbsHttp {
         @PathVariable final long cabinet,
         @AuthenticationPrincipal final UrAccount user
     ) throws Exception {
-        new UrAcAuthorized(user, this.operations).schools()
+        this.operations.operation("Cabinets.remove")
+            .permission(user, new SlPostgres(this.ctx, school)).permit(user).schools()
             .school(school).buildings().building(building).cabinets().remove(cabinet);
         return ResponseEntity.noContent().build();
-    }
-
-    private ResponseEntity<?> create(
-        final MediaType type, final long school, final long building,
-        final CabinetInput input, final UrAccount user
-    ) throws Exception {
-        final String base = String.format("/schools/%d/buildings/%d/cabinets", school, building);
-        return CbsHttp.result(
-            type,
-            new UrAcAuthorized(user, this.operations).schools()
-                .school(school).buildings().building(building).cabinets()
-                .create(input),
-            HttpStatus.CREATED, base, base
-        );
     }
 
     private static ResponseEntity<?> result(

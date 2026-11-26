@@ -23,7 +23,6 @@ import org.jooq.Condition;
 import org.jooq.DSLContext;
 import org.jooq.Record;
 import org.jooq.impl.DSL;
-import org.springframework.security.access.AccessDeniedException;
 
 /**
  * Postgres implementation of {@link Schools}.
@@ -183,15 +182,7 @@ public final class SlsPostgres implements Schools {
 
     @Override
     public void remove(final long sid) throws Exception {
-        if (this.actor != null && !this.actor.roles().contains(Roles.RoleEnum.ADMIN)) {
-            throw new AccessDeniedException("Only an administrator can delete a school");
-        }
-        final Record selected = this.ctx.resultQuery(
-            new ClasspathSql("school/find-by-id.sql").text(),
-            sid,
-            false
-        ).fetchOne();
-        if (selected == null) {
+        if (!this.contains(sid)) {
             throw new SchoolNotFoundException(String.format("School with id=%d not found", sid));
         }
         this.ctx.transaction(
