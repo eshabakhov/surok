@@ -9,6 +9,7 @@ import com.eshabakhov.surok.Media;
 import com.eshabakhov.surok.Page;
 import com.eshabakhov.surok.Sorts;
 import com.eshabakhov.surok.UrAccount;
+import com.eshabakhov.surok.federal.subject.input.SbInput;
 import com.eshabakhov.surok.federal.subject.input.SbInputHttp;
 import com.eshabakhov.surok.federal.subject.input.SubjectInputException;
 import com.eshabakhov.surok.filter.FilterRequest;
@@ -190,15 +191,19 @@ public class SbsHttp {
     ) throws Exception {
         final MediaType type = new AcHttp(request, List.of(MediaType.TEXT_HTML)).type();
         final UrAccount user;
+        final Subject.Origin origin;
         if (school == null) {
             user = this.operations.operation("FederalSubjects.form")
                 .permission(actor).permit(actor);
+            origin = Subject.Origin.FEDERAL;
         } else {
             user = this.operations.operation("SchoolSubjects.form")
                 .permission(actor, new SlPostgres(this.ctx, school)).permit(actor);
+            origin = Subject.Origin.SCHOOL;
         }
         return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8)).body(
-            this.web(request, school, "create", user).print()
+            this.web(request, school, "create", user)
+                .with("subject", new SbDraft(new SbInput(), origin)).print()
         );
     }
 
@@ -241,7 +246,7 @@ public class SbsHttp {
             switch (type.toString()) {
                 case MediaType.TEXT_HTML_VALUE ->
                     this.web(request, school, "details", actor).with(
-                        "subjects", new SbsSingle(origin, selected)
+                        "subject", selected
                     ).print();
                 case "application/vnd.surok.subject-v1+json" ->
                     new SbV1(selected).print(new MdJson()).print();
@@ -287,7 +292,7 @@ public class SbsHttp {
         }
         return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8)).body(
             this.web(request, school, "edit", actor).with(
-                "subjects", new SbsSingle(origin, selected)
+                "subject", selected
             ).print()
         );
     }

@@ -23,6 +23,7 @@ import com.eshabakhov.surok.school.SlPostgres;
 import com.eshabakhov.surok.school.SlsBrief;
 import com.eshabakhov.surok.school.SlsPostgres;
 import com.eshabakhov.surok.school.teacher.input.TeacherInputException;
+import com.eshabakhov.surok.school.teacher.input.ThInput;
 import com.eshabakhov.surok.school.teacher.input.ThInputHttp;
 import com.eshabakhov.surok.security.CsToken;
 import com.eshabakhov.surok.security.OaYaml;
@@ -195,7 +196,7 @@ public class ThsHttp {
                     .permission(actor, new SlPostgres(this.ctx, school)).permit(actor)
                     .schools().school(school),
                 "create"
-            ).print()
+            ).with("teacher", new ThDraft(new ThInput())).print()
         );
     }
 
@@ -233,8 +234,7 @@ public class ThsHttp {
         final School sch = this.operations.operation(operation)
             .permission(actor, new SlPostgres(this.ctx, school)).permit(actor)
             .schools().school(school);
-        final Teachers origin = sch.teachers();
-        final Teacher selected = origin.teacher(teacher);
+        final Teacher selected = sch.teachers().teacher(teacher);
         return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8)).body(
             switch (type.toString()) {
                 case MediaType.TEXT_HTML_VALUE -> {
@@ -245,7 +245,7 @@ public class ThsHttp {
                         view = "details";
                     }
                     yield this.web(request, sch, view).with(
-                        "teachers", new ThsSingle(origin, selected)
+                        "teacher", selected
                     ).print();
                 }
                 case "application/vnd.surok.teacher-v1+json" ->

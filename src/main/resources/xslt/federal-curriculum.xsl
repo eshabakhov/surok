@@ -21,7 +21,7 @@
                 <xsl:text>Редактировать федеральный учебный план</xsl:text>
             </xsl:when>
             <xsl:otherwise>
-                <xsl:value-of select="/surok/curriculums/curriculum/title"/>
+                <xsl:value-of select="/surok/curriculum/title"/>
             </xsl:otherwise>
         </xsl:choose>
     </xsl:template>
@@ -52,7 +52,7 @@
 
     <xsl:template name="details">
         <xsl:variable name="curriculum"
-                      select="/surok/curriculums/curriculum"/>
+                      select="/surok/curriculum"/>
         <nav class="breadcrumbs" aria-label="Навигационная цепочка">
             <a class="breadcrumb-link"
                href="/federal/curriculums"

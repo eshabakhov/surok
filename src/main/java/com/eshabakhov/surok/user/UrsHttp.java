@@ -28,6 +28,7 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.StreamSupport;
 import org.jooq.DSLContext;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -111,7 +112,8 @@ public final class UrsHttp {
             new MediaType(MediaType.TEXT_HTML, StandardCharsets.UTF_8)
         ).body(
             this.operations.operation(operation)
-                .permission(actor).permit(UrsHttp.authentication(request, view)).print()
+                .permission(actor).permit(UrsHttp.authentication(request, view))
+                .with("registration", new UrDraft("", "")).print()
         );
     }
 
@@ -144,9 +146,12 @@ public final class UrsHttp {
             response = ResponseEntity.badRequest().contentType(
                 new MediaType(MediaType.TEXT_HTML, StandardCharsets.UTF_8)
             ).body(
-                page.with("message", exception.getMessage())
-                    .with("username", parameters.getFirst("username"))
-                    .with("email", parameters.getFirst("email")).print()
+                page.with("message", exception.getMessage()).with(
+                    "registration", new UrDraft(
+                        Objects.toString(parameters.getFirst("username"), ""),
+                        Objects.toString(parameters.getFirst("email"), "")
+                    )
+                ).print()
             );
         }
         return response;

@@ -23,6 +23,7 @@ import com.eshabakhov.surok.school.SlsBrief;
 import com.eshabakhov.surok.school.SlsPostgres;
 import com.eshabakhov.surok.school.building.Building;
 import com.eshabakhov.surok.school.building.cabinet.input.CabinetInputException;
+import com.eshabakhov.surok.school.building.cabinet.input.CbInput;
 import com.eshabakhov.surok.school.building.cabinet.input.CbInputHttp;
 import com.eshabakhov.surok.security.CsToken;
 import com.eshabakhov.surok.security.OaYaml;
@@ -197,7 +198,8 @@ public class CbsHttp {
             .schools().school(school);
         return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8)).body(
             this.web(request, sch, "create")
-                .with("building", sch.buildings().building(building)).print()
+                .with("building", sch.buildings().building(building))
+                .with("cabinet", new CbDraft(new CbInput())).print()
         );
     }
 
@@ -238,8 +240,7 @@ public class CbsHttp {
             .permission(user, new SlPostgres(this.ctx, school)).permit(user)
             .schools().school(school);
         final Building build = sch.buildings().building(building);
-        final Cabinets origin = build.cabinets();
-        final Cabinet selected = origin.cabinet(cabinet);
+        final Cabinet selected = build.cabinets().cabinet(cabinet);
         return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8)).body(
             switch (type.toString()) {
                 case MediaType.TEXT_HTML_VALUE -> {
@@ -250,7 +251,7 @@ public class CbsHttp {
                         view = "details";
                     }
                     yield this.web(request, sch, view).with("building", build).with(
-                        "cabinets", new CbsSingle(origin, selected)
+                        "cabinet", selected
                     ).print();
                 }
                 case "application/vnd.surok.cabinet-v1+json" ->

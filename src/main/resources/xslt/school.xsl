@@ -7,7 +7,7 @@
     <xsl:template match="/"><xsl:call-template name="page"/></xsl:template>
     <xsl:template name="page-title"><xsl:choose>
         <xsl:when test="$view = 'edit'">Редактировать школу</xsl:when>
-        <xsl:otherwise><xsl:value-of select="/surok/schools/school/name"/></xsl:otherwise>
+        <xsl:otherwise><xsl:value-of select="/surok/school/name"/></xsl:otherwise>
     </xsl:choose></xsl:template>
     <xsl:template name="styles"><link rel="stylesheet" href="/css/school/school.css"/></xsl:template>
     <xsl:template name="scripts">
@@ -27,7 +27,7 @@
         <xsl:otherwise><xsl:call-template name="details"/></xsl:otherwise>
     </xsl:choose></xsl:template>
     <xsl:template name="details">
-        <xsl:variable name="selected" select="/surok/schools/school"/>
+        <xsl:variable name="selected" select="/surok/school"/>
         <div class="page-title-row"><div><h1 class="title-with-action">
             <span><xsl:value-of select="$selected/name"/></span>
             <xsl:if test="/surok/user/admin = 'true'">

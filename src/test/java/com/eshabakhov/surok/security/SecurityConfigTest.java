@@ -154,6 +154,40 @@ final class SecurityConfigTest {
         );
     }
 
+    /**
+     * Authentication supplies the catalog needed for user-rooted building access.
+     *
+     * @param mvc HTTP client
+     * @param ctx Database context
+     * @throws Exception If authentication or school navigation fails
+     */
+    @Test
+    void allowsSchoolNavigationAfterBasicAuthentication(
+        @Autowired final MockMvc mvc, @Autowired final DSLContext ctx
+    ) throws Exception {
+        final UrAccount user = new UrsPostgres(ctx).register(
+            UUID.randomUUID().toString(), "SchoolPassword1!",
+            String.format("%s@example.org", UUID.randomUUID()), false
+        );
+        MatcherAssert.assertThat(
+            "The authenticated user could not navigate to the school's buildings",
+            new ObjectMapper().readTree(
+                mvc.perform(
+                    MockMvcRequestBuilders.get(
+                        "/schools/{school}/buildings", new SlsPostgres(ctx, user).create(
+                            new SlInputName(new SlInput(), "Школа текущего пользователя")
+                        ).uid()
+                    ).accept("application/vnd.surok.buildings.v1+json").with(
+                        SecurityMockMvcRequestPostProcessors.httpBasic(
+                            user.account().username(), "SchoolPassword1!"
+                        )
+                    )
+                ).andReturn().getResponse().getContentAsString()
+            ).path("items").isArray(),
+            Matchers.is(true)
+        );
+    }
+
     @ParameterizedTest
     @EnumSource(value = Roles.RoleEnum.class, names = {"DIRECTOR", "STUDENT"})
     void distinguishesSchoolAndFederalPermissions(

@@ -135,7 +135,7 @@
                     <div class="field">
                         <label for="username">Логин</label>
                         <input id="username"
-                               name="username" value="{/surok/username}"
+                               name="username" value="{/surok/registration/username}"
                                type="text"
                                autofocus="autofocus"
                                minlength="3"
@@ -145,7 +145,7 @@
                     <div class="field">
                         <label for="email">Email</label>
                         <input id="email"
-                               name="email" value="{/surok/email}"
+                               name="email" value="{/surok/registration/email}"
                                type="email"
                                placeholder="email@example.com"
                                required="required"/>

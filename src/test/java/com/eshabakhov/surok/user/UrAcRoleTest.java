@@ -9,9 +9,11 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.springframework.security.access.AccessDeniedException;
 
 /**
  * Representative accounts evaluated by the ordinary domain permissions.
@@ -20,6 +22,48 @@ import org.junit.jupiter.params.provider.EnumSource;
  * @since 0.0.1
  */
 final class UrAcRoleTest {
+
+    /**
+     * Permits global administration through the account contract.
+     *
+     * @throws Exception If the operation catalog cannot be read
+     */
+    @Test
+    void permitsAGlobalOperationForTheAdministratorRole() throws Exception {
+        final UrAccount actor = new UrAcRole(Roles.RoleEnum.ADMIN);
+        MatcherAssert.assertThat(
+            "The representative administrator lost its permitted account",
+            actor.permit("Curriculums.create"), Matchers.sameInstance(actor)
+        );
+    }
+
+    /**
+     * A representative school role applies to its own school only.
+     *
+     * @throws Exception If the school cannot be read
+     */
+    @Test
+    void permitsTheDirectorRoleWithinItsSchool() throws Exception {
+        final UrAccount actor = new UrAcRole(67L, Roles.RoleEnum.DIRECTOR);
+        MatcherAssert.assertThat(
+            "The representative director could not access its own school",
+            actor.permit("Buildings.create", actor.schools().school(67L)),
+            Matchers.sameInstance(actor)
+        );
+    }
+
+    /** Does not grant a school role outside its own school. */
+    @Test
+    void deniesTheDirectorRoleInAnotherSchool() {
+        final UrAccount actor = new UrAcRole(71L, Roles.RoleEnum.DIRECTOR);
+        Assertions.assertThrows(
+            AccessDeniedException.class,
+            () -> actor.permit(
+                "Buildings.create", new UrAcRole(73L, Roles.RoleEnum.DIRECTOR).schools().school(73L)
+            ),
+            "The representative director gained permission in another school"
+        );
+    }
 
     @ParameterizedTest
     @EnumSource(

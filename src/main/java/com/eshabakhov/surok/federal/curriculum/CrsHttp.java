@@ -9,6 +9,7 @@ import com.eshabakhov.surok.Page;
 import com.eshabakhov.surok.PrItems;
 import com.eshabakhov.surok.Sorts;
 import com.eshabakhov.surok.UrAccount;
+import com.eshabakhov.surok.federal.curriculum.input.CrInput;
 import com.eshabakhov.surok.federal.curriculum.input.CrInputHttp;
 import com.eshabakhov.surok.media.AcHttp;
 import com.eshabakhov.surok.media.MdJson;
@@ -191,14 +192,13 @@ public class CrsHttp {
         final MediaType type = new AcHttp(
             request, "federal-curriculum-v1", "federal-curriculum-v2"
         ).type();
-        final Curriculums curriculums = this.operations.operation("Curriculums.curriculum")
-            .permission(actor).permit(this.origin);
-        final Curriculum selected = curriculums.curriculum(curriculum);
+        final Curriculum selected = this.operations.operation("Curriculums.curriculum")
+            .permission(actor).permit(this.origin).curriculum(curriculum);
         return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8)).body(
             switch (type.toString()) {
                 case MediaType.TEXT_HTML_VALUE ->
                     this.web(request, "xslt/federal-curriculum.xsl", "details").with(
-                        "curriculums", new CrsSingle(curriculums, selected)
+                        "curriculum", selected
                     ).print();
                 case "application/vnd.surok.federal-curriculum-v1+json" ->
                     new CrV1(selected).print(new MdJson()).print();
@@ -230,12 +230,16 @@ public class CrsHttp {
         final HttpServletRequest request,
         @AuthenticationPrincipal final UrAccount actor
     ) throws Exception {
-        final MediaType type = new AcHttp(request, List.of(MediaType.TEXT_HTML)).type();
-        final Curriculums curriculums = this.operations.operation("Curriculums.edit")
-            .permission(actor).permit(this.origin);
-        return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8)).body(
+        return this.operations.operation("Curriculums.edit").permission(actor).permit(
+            ResponseEntity.ok().contentType(
+                new MediaType(
+                    new AcHttp(request, List.of(MediaType.TEXT_HTML)).type(),
+                    StandardCharsets.UTF_8
+                )
+            )
+        ).body(
             this.web(request, "xslt/federal-curriculum.xsl", "edit").with(
-                "curriculums", new CrsSingle(curriculums, curriculums.curriculum(curriculum))
+                "curriculum", this.origin.curriculum(curriculum)
             ).print()
         );
     }
@@ -364,7 +368,7 @@ public class CrsHttp {
         ).body(
             this.operations.operation("Curriculums.form").permission(actor).permit(
                 this.web(request, "xslt/federal-curriculums.xsl", "create")
-            ).print()
+            ).with("curriculum", new CrDraft(new CrInput())).print()
         );
     }
 

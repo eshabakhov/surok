@@ -108,7 +108,7 @@ final class XsSchedulesTest {
     void printsSortingAndPagination(final String direction, final String icon) {
         MatcherAssert.assertThat(
             new XsClasspath("xslt/schedules.xsl", "list-fragment").transform(
-                XsSchedulesTest.document().replace(
+                XsSchedulesTest.document("list-fragment").replace(
                     "<direction>NONE", String.format("<direction>%s", direction)
                 )
             ),
@@ -128,7 +128,9 @@ final class XsSchedulesTest {
     void escapesScheduleNames() {
         MatcherAssert.assertThat(
             new XsClasspath("xslt/schedules.xsl", "list-fragment").transform(
-                XsSchedulesTest.document().replace("Учебный год", "Учебный год&lt;script&gt;")
+                XsSchedulesTest.document("list-fragment").replace(
+                    "Учебный год", "Учебный год&lt;script&gt;"
+                )
             ),
             Matchers.allOf(
                 Matchers.containsString("Учебный год&lt;script&gt;"),
@@ -141,12 +143,13 @@ final class XsSchedulesTest {
 
     private static String page(final String view) {
         return new XsClasspath("xslt/schedules.xsl", view)
-            .transform(XsSchedulesTest.document());
+            .transform(XsSchedulesTest.document(view));
     }
 
-    private static String document() {
-        return """
-            <surok>
+    private static String document(final String view) {
+        return String.format(
+            """
+            <surok>%s
                 <school><id>3</id><name>Школа</name><schedules><schedule>
                     <id>9</id><name>Учебный год</name>
                 </schedule></schedules></school>
@@ -160,6 +163,12 @@ final class XsSchedulesTest {
                     <totalPages>4</totalPages><hasNext>true</hasNext><hasPrev>false</hasPrev>
                 </page></schedules>
             </surok>
-            """;
+            """, switch (view) {
+                case "create" -> "<schedule><name/></schedule>";
+                case "edit", "details" ->
+                    "<schedule><id>7</id><name>Учебный год</name></schedule>";
+                case null, default -> "";
+            }
+        );
     }
 }

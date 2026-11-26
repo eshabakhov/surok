@@ -7,6 +7,9 @@ import com.eshabakhov.surok.PrItems;
 import com.eshabakhov.surok.federal.curriculum.Curriculum;
 import com.eshabakhov.surok.federal.curriculum.LvLocalized;
 import com.eshabakhov.surok.federal.curriculum.WkLocalized;
+import com.eshabakhov.surok.school.building.BdDraft;
+import com.eshabakhov.surok.school.building.input.BdInput;
+import com.eshabakhov.surok.school.building.input.BdInputName;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
@@ -60,7 +63,7 @@ final class XsClasspathTest {
      */
     @ParameterizedTest
     @CsvSource({
-        "create, federal-curriculums, ''",
+        "create, federal-curriculums, ' selected=\"\"'",
         "edit, federal-curriculum, ' selected=\"\"'"
     })
     void displaysRussianLevelsInCurriculumForms(
@@ -80,8 +83,7 @@ final class XsClasspathTest {
                 ).print().replace(
                     "</surok>",
                     """
-                    <curriculums><curriculum><id>17</id><level>BASIC</level>
-                    </curriculum></curriculums></surok>
+                    <curriculum><id>17</id><level>BASIC</level></curriculum></surok>
                     """
                 )
             ),
@@ -107,7 +109,7 @@ final class XsClasspathTest {
      */
     @ParameterizedTest
     @CsvSource({
-        "create, federal-curriculums, ''",
+        "create, federal-curriculums, ' selected=\"\"'",
         "edit, federal-curriculum, ' selected=\"\"'"
     })
     void displaysRussianWeeksInCurriculumForms(
@@ -127,8 +129,7 @@ final class XsClasspathTest {
                 ).print().replace(
                     "</surok>",
                     """
-                    <curriculums><curriculum><id>17</id><week>SIX_DAYS</week>
-                    </curriculum></curriculums></surok>
+                    <curriculum><id>17</id><week>SIX_DAYS</week></curriculum></surok>
                     """
                 )
             ),
@@ -226,7 +227,7 @@ final class XsClasspathTest {
                 """
                 <surok>
                     <csrf><header>X-XSRF-TOKEN</header><token>токен</token></csrf>
-                    <schools><school><id>7</id><name>Лицей</name></school></schools>
+                    <school><id>7</id><name>Лицей</name></school>
                 </surok>
                 """
             ),
@@ -303,6 +304,55 @@ final class XsClasspathTest {
                 Matchers.containsString("value=\"\""),
                 Matchers.not(Matchers.containsString("value=\"Южный зал\"")),
                 Matchers.not(Matchers.containsString("class=\"error-message\""))
+            )
+        );
+    }
+
+    /**
+     * Uses the supplied building fields even before the building is saved.
+     *
+     * @throws Exception If the building cannot be printed
+     */
+    @Test
+    void fillsTheCreationFormFromTheBuilding() throws Exception {
+        MatcherAssert.assertThat(
+            "The creation form ignored the supplied building or exposed its name as markup",
+            new MdXslt(new MdXml("surok"), new XsClasspath("xslt/buildings.xsl", "create"))
+                .with("building", new BdDraft(new BdInputName(new BdInput(), "Флигель \"В\" & Б")))
+                .print(),
+            Matchers.containsString("value=\"Флигель &quot;В&quot; &amp; Б\"")
+        );
+    }
+
+    /**
+     * Uses a single object for form fields even when collection rows are present.
+     *
+     * @param entity Single entity element
+     * @param stylesheet Form stylesheet
+     * @param field Entered field
+     */
+    @ParameterizedTest
+    @CsvSource({
+        "school, schools, name", "cabinet, cabinets, name", "teacher, teachers, name",
+        "schedule, schedules, name", "subject, subjects, name",
+        "school-class, school-classes, litera", "curriculum, federal-curriculums, title"
+    })
+    void fillsCreationFieldsFromTheSingleObject(
+        final String entity, final String stylesheet, final String field
+    ) {
+        MatcherAssert.assertThat(
+            "The creation form ignored the single object or copied a collection row",
+            new XsClasspath(String.format("xslt/%s.xsl", stylesheet), "create").transform(
+                String.format(
+                    """
+                    <surok><%1$s><%2$s>Новые данные</%2$s></%1$s>
+                    <%1$ss><%1$s><%2$s>Чужие данные</%2$s></%1$s></%1$ss></surok>
+                    """, entity, field
+                )
+            ),
+            Matchers.allOf(
+                Matchers.containsString("value=\"Новые данные\""),
+                Matchers.not(Matchers.containsString("value=\"Чужие данные\""))
             )
         );
     }
@@ -394,7 +444,7 @@ final class XsClasspathTest {
         for (final String view : List.of("list", "list-fragment")) {
             MatcherAssert.assertThat(
                 new XsClasspath(String.format("xslt/%ss.xsl", entity), view).transform(
-                    XsClasspathTest.document(entity, false).replace(
+                    XsClasspathTest.document(entity, view, false).replace(
                         String.format("</%ss>", entity),
                         String.format(
                             """
@@ -426,17 +476,21 @@ final class XsClasspathTest {
         MatcherAssert.assertThat(
             "A reader page exposed federal editing controls or lost the standard navigation",
             new XsClasspath(String.format("xslt/%s.xsl", stylesheet), "list").transform(
-                """
-                <surok><user><admin>false</admin></user>
-                <curriculums><curriculum><id>17</id><title>Основной план</title>
-                <requirements><requirement><id>23</id><grade>5</grade>
-                <subject><id>1</id><name>Математика</name><origin>FEDERAL</origin></subject>
-                <hours>5</hours>
-                <partType>MANDATORY</partType></requirement></requirements>
-                </curriculum></curriculums></surok>
-                """
+                String.format(
+                    """
+                    <surok><user><admin>false</admin></user>%1$s
+                    <curriculums>%1$s</curriculums></surok>
+                    """, """
+                    <curriculum><id>17</id><title>Основной план</title>
+                    <requirements><requirement><id>23</id><grade>5</grade>
+                    <subject><id>1</id><name>Математика</name><origin>FEDERAL</origin></subject>
+                    <hours>5</hours><partType>MANDATORY</partType></requirement></requirements>
+                    </curriculum>
+                    """
+                )
             ),
             Matchers.allOf(
+                Matchers.containsString("Основной план"),
                 Matchers.containsString("Федеральный стандарт"),
                 Matchers.containsString("href=\"/federal/curriculums\""),
                 Matchers.containsString("href=\"/federal/subjects\""),
@@ -459,8 +513,9 @@ final class XsClasspathTest {
                 <csrf><parameter>_csrf</parameter><token>защита</token></csrf>
                 <subjects><subject><id>29</id><name>Физика</name></subject></subjects>
                 <firstGrade>5</firstGrade><lastGrade>9</lastGrade>
-                <curriculums><curriculum><id>17</id><title>План</title>
-                <requirements/></curriculum></curriculums></surok>
+                <curriculum><id>17</id><title>План</title><requirements/></curriculum>
+                <requirement><grade/><hours/><partType>MANDATORY</partType></requirement>
+                </surok>
                 """
             ),
             Matchers.allOf(
@@ -498,10 +553,12 @@ final class XsClasspathTest {
 
     private static String page(final String entity, final String view, final boolean error) {
         return new XsClasspath(String.format("xslt/%ss.xsl", entity), view)
-            .transform(XsClasspathTest.document(entity, error));
+            .transform(XsClasspathTest.document(entity, view, error));
     }
 
-    private static String document(final String entity, final boolean error) {
+    private static String document(
+        final String entity, final String view, final boolean error
+    ) {
         String building = "";
         if ("cabinet".equals(entity)) {
             building = "<building><id>4</id><name>Учебный корпус</name></building>";
@@ -511,7 +568,7 @@ final class XsClasspathTest {
             <surok>
                 <school><id>3</id><name>Школа</name><schedules><schedule>
                 <id>5</id><name>Первое полугодие</name></schedule></schedules></school>
-                %2$s<error>%3$s</error>
+                %2$s%4$s<error>%3$s</error>
                 <csrf><parameter>_csrf</parameter><token>token</token>
                     <header>X-XSRF-TOKEN</header></csrf>
                 <%1$ss><%1$s><id>7</id><name>Южный зал</name></%1$s>
@@ -519,7 +576,14 @@ final class XsClasspathTest {
                 <totalPages>10</totalPages><hasNext>true</hasNext>
                 <hasPrev>true</hasPrev></page></%1$ss>
             </surok>
-            """, entity, building, error
+            """, entity, building, error,
+            switch (view) {
+                case "create" -> String.format("<%1$s><name></name></%1$s>", entity);
+                case "details", "edit" -> String.format(
+                    "<%1$s><id>7</id><name>Южный зал</name></%1$s>", entity
+                );
+                case null, default -> "";
+            }
         );
     }
 }

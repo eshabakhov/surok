@@ -4,9 +4,12 @@
 package com.eshabakhov.surok.user;
 
 import com.eshabakhov.surok.Media;
+import com.eshabakhov.surok.School;
 import com.eshabakhov.surok.Schools;
 import com.eshabakhov.surok.UrAccount;
 import com.eshabakhov.surok.school.SlsPostgres;
+import com.eshabakhov.surok.security.OaYaml;
+import java.io.IOException;
 import org.jooq.DSLContext;
 
 /**
@@ -31,6 +34,16 @@ public final class UrAcPostgres implements UrAccount {
     public UrAcPostgres(final DSLContext ctx, final long id) {
         this.ctx = ctx;
         this.id = id;
+    }
+
+    @Override
+    public UrAccount permit(final String operation) throws IOException {
+        return new OaYaml().operations().operation(operation).permission(this).permit(this);
+    }
+
+    @Override
+    public UrAccount permit(final String operation, final School school) throws IOException {
+        return new OaYaml().operations().operation(operation).permission(this, school).permit(this);
     }
 
     @Override

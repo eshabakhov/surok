@@ -306,20 +306,19 @@ final class BdsHttpTest {
         );
     }
 
-    @Test
-    void rendersBuildingAndCabinetPages() throws Exception {
-        for (final String path : List.of(
-            "", "/create", "/10", "/10/edit",
-            "/10/cabinets", "/10/cabinets/create", "/10/cabinets/30",
-            "/10/cabinets/30/edit"
-        )) {
-            this.mvc.perform(
-                MockMvcRequestBuilders.get(String.format("/schools/1/buildings%s", path))
-                    .session(this.session(Roles.RoleEnum.DIRECTOR, 1L))
-            ).andExpect(MockMvcResultMatchers.status().isOk()).andExpect(
-                MockMvcResultMatchers.content().string(Matchers.not(Matchers.emptyString()))
-            );
-        }
+    @ParameterizedTest
+    @CsvSource({
+        "'', Корпусы", "/create, 'value=\"\"'", "/10, North", "/10/edit, 'value=\"North\"'",
+        "/10/cabinets, Room", "/10/cabinets/create, 'value=\"\"'",
+        "/10/cabinets/30, Room", "/10/cabinets/30/edit, 'value=\"Room\"'"
+    })
+    void rendersBuildingAndCabinetPages(final String path, final String content) throws Exception {
+        this.mvc.perform(
+            MockMvcRequestBuilders.get(String.format("/schools/1/buildings%s", path))
+                .session(this.session(Roles.RoleEnum.DIRECTOR, 1L))
+        ).andExpect(MockMvcResultMatchers.status().isOk()).andExpect(
+            MockMvcResultMatchers.content().string(Matchers.containsString(content))
+        );
     }
 
     /** Verifies a blank name is still reported on the native creation form. */
@@ -967,12 +966,14 @@ final class BdsHttpTest {
             request.addHeader(
                 HttpHeaders.ACCEPT, String.format("application/vnd.surok.building-v1+%s", format)
             );
-            new BdsHttp(
-                BdsHttpTest.this.ctx, () -> {
-                    checks.add("permission");
-                    return catalog.iterate();
-                }
-            ).building(1L, 10L, request, actor);
+            new BdsHttp(BdsHttpTest.this.ctx).building(
+                1L, 10L, request, new UrAcAuth(
+                    actor, () -> {
+                        checks.add("permission");
+                        return catalog.iterate();
+                    }
+                )
+            );
             MatcherAssert.assertThat(
                 "The controller repeated authorization while rendering the building",
                 checks.size(), Matchers.is(1)

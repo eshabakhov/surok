@@ -10,8 +10,8 @@ import com.eshabakhov.surok.Sorts;
 import com.eshabakhov.surok.UrAccount;
 import com.eshabakhov.surok.federal.curriculum.CrWithRequirements;
 import com.eshabakhov.surok.federal.curriculum.CrsPostgres;
-import com.eshabakhov.surok.federal.curriculum.CrsSingle;
 import com.eshabakhov.surok.federal.curriculum.Curriculum;
+import com.eshabakhov.surok.federal.curriculum.requirement.input.RqInput;
 import com.eshabakhov.surok.federal.curriculum.requirement.input.RqInputForm;
 import com.eshabakhov.surok.federal.curriculum.requirement.input.RqInputHttp;
 import com.eshabakhov.surok.federal.subject.SbsFederal;
@@ -157,14 +157,12 @@ public class RqsHttp {
                         ).with("firstGrade", curriculum.grades().getFirst()).with(
                             "lastGrade", curriculum.grades().getLast()
                         ).with(
-                            "curriculums",
-                            new CrsSingle(
-                                new CrsPostgres(this.ctx),
-                                new CrWithRequirements(
-                                    curriculum,
-                                    new RqsWeb(selected, filters, sorts)
-                                )
+                            "curriculum",
+                            new CrWithRequirements(
+                                curriculum, new RqsWeb(selected, filters, sorts)
                             )
+                        ).with(
+                            "requirement", new RqDraft(new RqInput(), new SbsFederal(this.ctx))
                         ).print();
                     }
                     case "application/vnd.surok.federal-curriculum-requirements.v1+json" ->

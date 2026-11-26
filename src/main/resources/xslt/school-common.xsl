@@ -2,11 +2,11 @@
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
     <xsl:import href="federal-common.xsl"/>
     <xsl:variable name="school" select="/surok/school"/>
-    <xsl:variable name="building" select="/surok/building | /surok/buildings/building[$view = 'details' or $view = 'edit']"/>
-    <xsl:variable name="cabinet" select="/surok/cabinets/cabinet[$view = 'details' or $view = 'edit']"/>
-    <xsl:variable name="clazz" select="/surok/classes/school-class[not(/surok/loads) and ($view = 'details' or $view = 'edit')]"/>
-    <xsl:variable name="teacher" select="/surok/teachers/teacher[$view = 'details' or $view = 'edit']"/>
-    <xsl:variable name="subject" select="/surok/subjects/subject[not(/surok/loads) and ($view = 'details' or $view = 'edit')]"/>
+    <xsl:variable name="building" select="/surok/building"/>
+    <xsl:variable name="cabinet" select="/surok/cabinet"/>
+    <xsl:variable name="clazz" select="/surok/school-class"/>
+    <xsl:variable name="teacher" select="/surok/teacher"/>
+    <xsl:variable name="subject" select="/surok/subject"/>
     <xsl:variable name="school-path" select="concat('/schools/', $school/id)"/>
 
     <xsl:template name="school-navigation">

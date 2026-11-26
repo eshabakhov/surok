@@ -23,6 +23,7 @@ import com.eshabakhov.surok.school.SlPostgres;
 import com.eshabakhov.surok.school.SlsBrief;
 import com.eshabakhov.surok.school.SlsPostgres;
 import com.eshabakhov.surok.school.schedule.input.ScheduleInputException;
+import com.eshabakhov.surok.school.schedule.input.SdInput;
 import com.eshabakhov.surok.school.schedule.input.SdInputHttp;
 import com.eshabakhov.surok.security.CsToken;
 import com.eshabakhov.surok.security.OaYaml;
@@ -195,7 +196,7 @@ public class SdsHttp {
                     .permission(actor, new SlPostgres(this.ctx, school)).permit(actor)
                     .schools().school(school),
                 "create"
-            ).print()
+            ).with("schedule", new SdDraft(new SdInput())).print()
         );
     }
 
@@ -233,8 +234,7 @@ public class SdsHttp {
         final School sch = this.operations.operation(operation)
             .permission(actor, new SlPostgres(this.ctx, school)).permit(actor)
             .schools().school(school);
-        final Schedules origin = sch.schedules();
-        final Schedule selected = origin.schedule(schedule);
+        final Schedule selected = sch.schedules().schedule(schedule);
         return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8)).body(
             switch (type.toString()) {
                 case MediaType.TEXT_HTML_VALUE -> {
@@ -244,9 +244,7 @@ public class SdsHttp {
                     } else {
                         view = "details";
                     }
-                    yield this.web(request, sch, view).with(
-                        "schedules", new SdsSingle(origin, selected)
-                    ).with("schedule", new SdBrief(selected)).with(
+                    yield this.web(request, sch, view).with("schedule", selected).with(
                         "summary", new SdSummary(this.ctx, sch.uid(), selected.uid())
                     ).print();
                 }

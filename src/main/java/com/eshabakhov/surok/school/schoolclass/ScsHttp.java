@@ -22,6 +22,7 @@ import com.eshabakhov.surok.school.SlBrief;
 import com.eshabakhov.surok.school.SlPostgres;
 import com.eshabakhov.surok.school.SlsBrief;
 import com.eshabakhov.surok.school.SlsPostgres;
+import com.eshabakhov.surok.school.schoolclass.input.ScInput;
 import com.eshabakhov.surok.school.schoolclass.input.ScInputHttp;
 import com.eshabakhov.surok.school.schoolclass.input.SchoolClassInputException;
 import com.eshabakhov.surok.security.CsToken;
@@ -197,7 +198,7 @@ public class ScsHttp {
                     .permission(actor, new SlPostgres(this.ctx, school)).permit(actor)
                     .schools().school(school),
                 "create"
-            ).print()
+            ).with("school-class", new ScDraft(new ScInput())).print()
         );
     }
 
@@ -235,8 +236,7 @@ public class ScsHttp {
         final School sch = this.operations.operation(operation)
             .permission(actor, new SlPostgres(this.ctx, school)).permit(actor)
             .schools().school(school);
-        final SchoolClasses origin = sch.schoolClasses();
-        final SchoolClass selected = origin.clazz(clazz);
+        final SchoolClass selected = sch.schoolClasses().clazz(clazz);
         return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8)).body(
             switch (type.toString()) {
                 case MediaType.TEXT_HTML_VALUE -> {
@@ -247,7 +247,7 @@ public class ScsHttp {
                         view = "details";
                     }
                     yield this.web(request, sch, view).with(
-                        "classes", new ScsSingle(origin, selected)
+                        "school-class", selected
                     ).print();
                 }
                 case "application/vnd.surok.school-class-v1+json" ->

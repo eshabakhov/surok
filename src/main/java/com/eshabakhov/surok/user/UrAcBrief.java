@@ -4,6 +4,7 @@
 package com.eshabakhov.surok.user;
 
 import com.eshabakhov.surok.Media;
+import com.eshabakhov.surok.School;
 import com.eshabakhov.surok.Schools;
 import com.eshabakhov.surok.UrAccount;
 
@@ -24,6 +25,16 @@ public final class UrAcBrief implements UrAccount {
      */
     public UrAcBrief(final UrAccount origin) {
         this.origin = origin;
+    }
+
+    @Override
+    public UrAccount permit(final String operation) throws Exception {
+        return new UrAcBrief(this.origin.permit(operation));
+    }
+
+    @Override
+    public UrAccount permit(final String operation, final School school) throws Exception {
+        return new UrAcBrief(this.origin.permit(operation, school));
     }
 
     @Override

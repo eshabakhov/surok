@@ -24,7 +24,7 @@
 
     <xsl:template name="page-title">
         <xsl:text>Требования: </xsl:text>
-        <xsl:value-of select="/surok/curriculums/curriculum/title"/>
+        <xsl:value-of select="/surok/curriculum/title"/>
     </xsl:template>
 
     <xsl:template name="styles">
@@ -43,7 +43,7 @@
 
     <xsl:template name="requirements">
         <xsl:variable name="curriculum"
-                      select="/surok/curriculums/curriculum"/>
+                      select="/surok/curriculum"/>
         <nav class="breadcrumbs" aria-label="Навигационная цепочка">
             <a class="breadcrumb-link"
                href="/federal/curriculums"
@@ -84,20 +84,29 @@
                                for="grade-number">
                             <select id="grade-number" name="grade" required="required">
                                 <option value="">Класс</option>
-                                <xsl:call-template name="grade-options"/>
+                                <xsl:call-template name="grade-options">
+                                    <xsl:with-param name="selected" select="/surok/requirement/grade"/>
+                                </xsl:call-template>
                             </select>
                         </label>
                         <label class="requirements-field" for="subject-name">
                             <select id="subject-name" name="selection" required="required">
                                 <option value="">Выберите предмет</option>
-                                <option value="OPTIONAL">Дополнительные предметы</option>
-                                <xsl:call-template name="subject-options"/>
+                                <option value="OPTIONAL">
+                                    <xsl:if test="/surok/requirement/partType = 'OPTIONAL'">
+                                        <xsl:attribute name="selected">selected</xsl:attribute>
+                                    </xsl:if>
+                                    <xsl:text>Дополнительные предметы</xsl:text>
+                                </option>
+                                <xsl:call-template name="subject-options">
+                                    <xsl:with-param name="selected" select="/surok/requirement/subject/id"/>
+                                </xsl:call-template>
                             </select>
                         </label>
                         <label class="requirements-field requirements-field-hours"
                                for="requirement-hours">
                             <input id="requirement-hours" name="hours" type="number" min="0"
-                                   step="1" placeholder="Часов/нед." required="required"
+                                   step="1" placeholder="Часов/нед." required="required" value="{/surok/requirement/hours}"
                                    aria-label="Часов в неделю" aria-describedby="requirement-hours-hint"/>
                         </label>
                         <button class="btn-primary" type="submit">Сохранить</button>
@@ -138,7 +147,7 @@
 
     <xsl:template name="requirements-results">
         <xsl:variable name="curriculum"
-                      select="/surok/curriculums/curriculum"/>
+                      select="/surok/curriculum"/>
         <xsl:variable name="requirements"
                       select="$curriculum/requirements"/>
         <div id="requirements-results">

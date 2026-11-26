@@ -17,6 +17,7 @@ import com.eshabakhov.surok.media.MdXslt;
 import com.eshabakhov.surok.media.SrWeb;
 import com.eshabakhov.surok.media.XsClasspath;
 import com.eshabakhov.surok.school.input.SchoolInputException;
+import com.eshabakhov.surok.school.input.SlInput;
 import com.eshabakhov.surok.school.input.SlInputHttp;
 import com.eshabakhov.surok.security.CsToken;
 import com.eshabakhov.surok.security.OaYaml;
@@ -171,7 +172,7 @@ public class SlsHttp {
                     this.operations.operation("Schools.form").permission(user)
                         .permit(user).schools()
                 )
-            ).print()
+            ).with("school", new SlDraft(new SlInput())).print()
         );
     }
 
@@ -213,7 +214,7 @@ public class SlsHttp {
                         view = "details";
                     }
                     yield this.web(
-                        request, "xslt/school.xsl", view, new SlsSingle(origin, selected)
+                        request, "xslt/school.xsl", view, new SlsBrief(origin)
                     ).with("school", new SlBrief(selected)).print();
                 }
                 case "application/vnd.surok.school-v1+json" ->
