@@ -45,7 +45,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -161,7 +160,7 @@ public class SdsHttp {
                         } else {
                             view = "list-fragment";
                         }
-                        yield this.web(request, sch, view).with(
+                        yield this.web(request, sch, view, actor).with(
                             "schedules", new SdsWeb(selected, applied, sorts)
                         ).print();
                     }
@@ -195,7 +194,7 @@ public class SdsHttp {
                 request, this.operations.operation("Schedules.form")
                     .permission(actor, new SlPostgres(this.ctx, school)).permit(actor)
                     .schools().school(school),
-                "create"
+                "create", actor
             ).with("schedule", new SdDraft(new SdInput())).print()
         );
     }
@@ -244,7 +243,7 @@ public class SdsHttp {
                     } else {
                         view = "details";
                     }
-                    yield this.web(request, sch, view).with("schedule", selected).with(
+                    yield this.web(request, sch, view, actor).with("schedule", selected).with(
                         "summary", new SdSummary(this.ctx, sch.uid(), selected.uid())
                     ).print();
                 }
@@ -440,12 +439,11 @@ public class SdsHttp {
     private Media<String> web(
         final HttpServletRequest request,
         final School school,
-        final String view
+        final String view,
+        final UrAccount actor
     ) throws Exception {
         return new SrWeb(
-            new UrAcBrief(
-                (UrAccount) SecurityContextHolder.getContext().getAuthentication().getPrincipal()
-            ),
+            new UrAcBrief(actor),
             new SlsBrief(new SlsPostgres(this.ctx)),
             new CsToken((CsrfToken) request.getAttribute(CsrfToken.class.getName()))
         ).print(

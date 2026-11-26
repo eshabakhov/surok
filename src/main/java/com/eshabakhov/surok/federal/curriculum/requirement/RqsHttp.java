@@ -40,7 +40,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -152,7 +151,7 @@ public class RqsHttp {
                         } else {
                             view = "list-fragment";
                         }
-                        yield this.web(request, view).with(
+                        yield this.web(request, view, actor).with(
                             "subjects", new SbsFederal(this.ctx)
                         ).with("firstGrade", curriculum.grades().getFirst()).with(
                             "lastGrade", curriculum.grades().getLast()
@@ -376,12 +375,11 @@ public class RqsHttp {
         };
     }
 
-    private Media<String> web(final HttpServletRequest request, final String view)
-        throws Exception {
+    private Media<String> web(
+        final HttpServletRequest request, final String view, final UrAccount actor
+    ) throws Exception {
         return new SrWeb(
-            new UrAcBrief(
-                (UrAccount) SecurityContextHolder.getContext().getAuthentication().getPrincipal()
-            ),
+            new UrAcBrief(actor),
             new SlsBrief(new SlsPostgres(this.ctx)),
             new CsToken((CsrfToken) request.getAttribute(CsrfToken.class.getName()))
         ).print(

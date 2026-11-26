@@ -110,11 +110,7 @@ final class CbsHttpTest {
 
     @AfterEach
     void truncateSchools() {
-        this.ctx.resultQuery(
-            """
-                TRUNCATE TABLE public.school, subject RESTART IDENTITY CASCADE
-                """
-        ).execute();
+        this.ctx.execute("TRUNCATE TABLE public.school, subject RESTART IDENTITY CASCADE");
     }
 
     @Test
@@ -961,14 +957,20 @@ final class CbsHttpTest {
     final class Authorization {
 
         /**
-         * Authorizes a resource once, including its navigation and response printing.
+         * Renders views using the supplied account without a security context.
          *
          * @param suffix Resource view
          * @param format Response format
          * @throws Exception If the request fails
          */
         @ParameterizedTest
-        @CsvSource({"'', json", "'', xml", "/edit, json", "/edit, xml"})
+        @CsvSource({
+            "'', text/html", "/edit, text/html",
+            "'', application/vnd.surok.cabinet-v1+json",
+            "'', application/vnd.surok.cabinet-v1+xml",
+            "/edit, application/vnd.surok.cabinet-v1+json",
+            "/edit, application/vnd.surok.cabinet-v1+xml"
+        })
         void authorizesOnlyOnce(final String suffix, final String format) throws Exception {
             final UrAccount actor = new UrsPostgres(CbsHttpTest.this.ctx).register(
                 UUID.randomUUID().toString(), "ValidPassword1!",
@@ -982,9 +984,7 @@ final class CbsHttpTest {
             final MockHttpServletRequest request = new MockHttpServletRequest(
                 "GET", String.format("/schools/1/buildings/10/cabinets/30%s", suffix)
             );
-            request.addHeader(
-                HttpHeaders.ACCEPT, String.format("application/vnd.surok.cabinet-v1+%s", format)
-            );
+            request.addHeader(HttpHeaders.ACCEPT, format);
             new CbsHttp(
                 CbsHttpTest.this.ctx, () -> {
                     checks.add("permission");

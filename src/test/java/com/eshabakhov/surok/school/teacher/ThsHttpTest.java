@@ -878,13 +878,19 @@ final class ThsHttpTest {
     final class Authorization {
 
         /**
-         * Evaluates the requested operation once for either API representation.
+         * Renders every representation using the supplied account without a security context.
          *
          * @param format Response format
          * @throws Exception If the request fails
          */
         @ParameterizedTest
-        @ValueSource(strings = {"json", "xml"})
+        @ValueSource(
+            strings = {
+                "text/html",
+                "application/vnd.surok.teacher-v1+json",
+                "application/vnd.surok.teacher-v1+xml"
+            }
+        )
         void authorizesOnlyOnce(final String format) throws Exception {
             final UrAccount actor = new UrsPostgres(ThsHttpTest.this.ctx).register(
                 UUID.randomUUID().toString(), "ValidPassword1!",
@@ -898,10 +904,7 @@ final class ThsHttpTest {
             final MockHttpServletRequest request = new MockHttpServletRequest(
                 "GET", "/schools/1/teachers/10"
             );
-            request.addHeader(
-                HttpHeaders.ACCEPT,
-                String.format("application/vnd.surok.teacher-v1+%s", format)
-            );
+            request.addHeader(HttpHeaders.ACCEPT, format);
             new ThsHttp(
                 ThsHttpTest.this.ctx, () -> {
                     checks.add("permission");

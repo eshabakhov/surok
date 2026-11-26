@@ -36,7 +36,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -197,7 +196,7 @@ public class CrsHttp {
         return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8)).body(
             switch (type.toString()) {
                 case MediaType.TEXT_HTML_VALUE ->
-                    this.web(request, "xslt/federal-curriculum.xsl", "details").with(
+                    this.web(request, "xslt/federal-curriculum.xsl", "details", actor).with(
                         "curriculum", selected
                     ).print();
                 case "application/vnd.surok.federal-curriculum-v1+json" ->
@@ -238,7 +237,7 @@ public class CrsHttp {
                 )
             )
         ).body(
-            this.web(request, "xslt/federal-curriculum.xsl", "edit").with(
+            this.web(request, "xslt/federal-curriculum.xsl", "edit", actor).with(
                 "curriculum", this.origin.curriculum(curriculum)
             ).print()
         );
@@ -333,7 +332,7 @@ public class CrsHttp {
                         } else {
                             view = "list-fragment";
                         }
-                        yield this.web(request, "xslt/federal-curriculums.xsl", view).with(
+                        yield this.web(request, "xslt/federal-curriculums.xsl", view, actor).with(
                             "curriculums", new CrsWeb(selected, filters, sorts)
                         ).print();
                     }
@@ -367,7 +366,7 @@ public class CrsHttp {
             )
         ).body(
             this.operations.operation("Curriculums.form").permission(actor).permit(
-                this.web(request, "xslt/federal-curriculums.xsl", "create")
+                this.web(request, "xslt/federal-curriculums.xsl", "create", actor)
             ).with("curriculum", new CrDraft(new CrInput())).print()
         );
     }
@@ -419,12 +418,11 @@ public class CrsHttp {
     }
 
     private Media<String> web(
-        final HttpServletRequest request, final String stylesheet, final String view
+        final HttpServletRequest request, final String stylesheet,
+        final String view, final UrAccount actor
     ) throws Exception {
         return new SrWeb(
-            new UrAcBrief(
-                (UrAccount) SecurityContextHolder.getContext().getAuthentication().getPrincipal()
-            ),
+            new UrAcBrief(actor),
             new SlsBrief(new SlsPostgres(this.ctx)),
             new CsToken((CsrfToken) request.getAttribute(CsrfToken.class.getName()))
         ).print(

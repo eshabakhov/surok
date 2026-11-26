@@ -36,8 +36,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockHttpServletRequest;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -139,14 +137,10 @@ final class RqsHttpTest {
             ).fetchSingle("id", Long.class)
         );
         this.actor.roles().grant(Roles.RoleEnum.ADMIN);
-        SecurityContextHolder.getContext().setAuthentication(
-            new UsernamePasswordAuthenticationToken(this.actor, null, List.of())
-        );
     }
 
     @AfterEach
-    void cleanContextAndCurriculums() {
-        SecurityContextHolder.clearContext();
+    void cleanCurriculums() {
         this.ctx.resultQuery(
             """
                 TRUNCATE TABLE public.federal_curriculum RESTART IDENTITY CASCADE
@@ -163,25 +157,6 @@ final class RqsHttpTest {
             request.addHeader(HttpHeaders.ACCEPT, accept);
         }
         request.setRequestURI("/federal/curriculums/1/requirements");
-        final UrAccount user = new UrAcPostgres(
-            this.ctx,
-            this.ctx.resultQuery(
-                """
-                INSERT INTO public."user" (username, password, email, corporate)
-                VALUES (?, 'secret', ?, true) RETURNING id
-                """,
-                UUID.randomUUID().toString(),
-                String.format("%s@example.org", UUID.randomUUID())
-            ).fetchSingle("id", Long.class)
-        );
-        user.roles().grant(Roles.RoleEnum.ADMIN);
-        SecurityContextHolder.getContext().setAuthentication(
-            new UsernamePasswordAuthenticationToken(
-                user,
-                null,
-                List.of()
-            )
-        );
         MatcherAssert.assertThat(
             "HTML request must return the complete requirements page",
             (String) new RqsHttp(this.ctx, new OaYaml().operations()).selection(
@@ -194,6 +169,7 @@ final class RqsHttpTest {
             ).getBody(),
             Matchers.allOf(
                 Matchers.containsString("<html lang=\"ru\">"),
+                Matchers.containsString(this.actor.account().username()),
                 Matchers.containsString("Basic plan"),
                 Matchers.containsString("Mathematics")
             )
@@ -209,25 +185,6 @@ final class RqsHttpTest {
         );
         request.setRequestURI(
             "/federal/curriculums/1/requirements"
-        );
-        final UrAccount user = new UrAcPostgres(
-            this.ctx,
-            this.ctx.resultQuery(
-                """
-                INSERT INTO public."user" (username, password, email, corporate)
-                VALUES (?, 'secret', ?, true) RETURNING id
-                """,
-                UUID.randomUUID().toString(),
-                String.format("%s@example.org", UUID.randomUUID())
-            ).fetchSingle("id", Long.class)
-        );
-        user.roles().grant(Roles.RoleEnum.ADMIN);
-        SecurityContextHolder.getContext().setAuthentication(
-            new UsernamePasswordAuthenticationToken(
-                user,
-                null,
-                List.of()
-            )
         );
         MatcherAssert.assertThat(
             "Fragment request must return only requirement results",
@@ -251,25 +208,6 @@ final class RqsHttpTest {
         final MockHttpServletRequest request = new MockHttpServletRequest();
         request.addHeader(HttpHeaders.ACCEPT, "text/html");
         request.setRequestURI(null);
-        final UrAccount user = new UrAcPostgres(
-            this.ctx,
-            this.ctx.resultQuery(
-                """
-                INSERT INTO public."user" (username, password, email, corporate)
-                VALUES (?, 'secret', ?, true) RETURNING id
-                """,
-                UUID.randomUUID().toString(),
-                String.format("%s@example.org", UUID.randomUUID())
-            ).fetchSingle("id", Long.class)
-        );
-        user.roles().grant(Roles.RoleEnum.ADMIN);
-        SecurityContextHolder.getContext().setAuthentication(
-            new UsernamePasswordAuthenticationToken(
-                user,
-                null,
-                List.of()
-            )
-        );
         MatcherAssert.assertThat(
             "Null request URI must select the complete requirements page",
             (String) new RqsHttp(this.ctx, new OaYaml().operations()).selection(

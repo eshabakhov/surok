@@ -663,13 +663,19 @@ final class ScsHttpTest {
     final class Authorization {
 
         /**
-         * Evaluates the requested operation once for either API representation.
+         * Renders every representation using the supplied account without a security context.
          *
          * @param format Response format
          * @throws Exception If the request fails
          */
         @ParameterizedTest
-        @ValueSource(strings = {"json", "xml"})
+        @ValueSource(
+            strings = {
+                "text/html",
+                "application/vnd.surok.school-class-v1+json",
+                "application/vnd.surok.school-class-v1+xml"
+            }
+        )
         void authorizesOnlyOnce(final String format) throws Exception {
             final UrAccount actor = new UrsPostgres(ScsHttpTest.this.ctx).register(
                 UUID.randomUUID().toString(), "ValidPassword1!",
@@ -683,10 +689,7 @@ final class ScsHttpTest {
             final MockHttpServletRequest request = new MockHttpServletRequest(
                 "GET", "/schools/1/classes/10"
             );
-            request.addHeader(
-                HttpHeaders.ACCEPT,
-                String.format("application/vnd.surok.school-class-v1+%s", format)
-            );
+            request.addHeader(HttpHeaders.ACCEPT, format);
             new ScsHttp(
                 ScsHttpTest.this.ctx, () -> {
                     checks.add("permission");

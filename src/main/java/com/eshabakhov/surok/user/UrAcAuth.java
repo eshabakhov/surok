@@ -12,8 +12,6 @@ import com.eshabakhov.surok.security.Operations;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -75,24 +73,9 @@ public final class UrAcAuth implements UserDetails, OAuth2User, UrAccount {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        final Stream<SimpleGrantedAuthority> account = this.user.roles().list().stream()
-            .map(role -> new SimpleGrantedAuthority(String.format("ROLE_%s", role.name())));
-        final Collection<? extends GrantedAuthority> granted;
-        if (this.user.roles().contains(Roles.RoleEnum.ADMIN)) {
-            granted = account.toList();
-        } else {
-            granted = Stream.concat(
-                account,
-                StreamSupport.stream(this.user.schools().iterate().spliterator(), false).flatMap(
-                    school -> school.users().roles(this.user).list().stream().map(
-                        role -> new SimpleGrantedAuthority(
-                            String.format("SCHOOL_%d_%s", school.uid(), role.name())
-                        )
-                    )
-                )
-            ).toList();
-        }
-        return granted;
+        return this.user.roles().list().stream()
+            .map(role -> new SimpleGrantedAuthority(String.format("ROLE_%s", role.name())))
+            .toList();
     }
 
     @Override

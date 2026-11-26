@@ -753,13 +753,19 @@ final class SlsHttpTest {
     final class Authorization {
 
         /**
-         * Evaluates the requested operation once for either API representation.
+         * Renders every representation using the supplied account without a security context.
          *
          * @param format Response format
          * @throws Exception If the request fails
          */
         @ParameterizedTest
-        @ValueSource(strings = {"json", "xml"})
+        @ValueSource(
+            strings = {
+                "text/html",
+                "application/vnd.surok.school-v1+json",
+                "application/vnd.surok.school-v1+xml"
+            }
+        )
         void authorizesOnlyOnce(final String format) throws Exception {
             SlsHttpTest.this.prepare();
             final UrAccount actor = new UrsPostgres(SlsHttpTest.this.ctx).register(
@@ -774,10 +780,7 @@ final class SlsHttpTest {
             final MockHttpServletRequest request = new MockHttpServletRequest(
                 "GET", "/schools/3"
             );
-            request.addHeader(
-                HttpHeaders.ACCEPT,
-                String.format("application/vnd.surok.school-v1+%s", format)
-            );
+            request.addHeader(HttpHeaders.ACCEPT, format);
             new SlsHttp(
                 SlsHttpTest.this.ctx, () -> {
                     checks.add("permission");

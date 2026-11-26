@@ -45,7 +45,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -164,7 +163,7 @@ public class CbsHttp {
                         } else {
                             view = "list-fragment";
                         }
-                        yield this.web(request, sch, view).with("building", build).with(
+                        yield this.web(request, sch, view, user).with("building", build).with(
                             "cabinets", new CbsWeb(selected, applied, sorts)
                         ).print();
                     }
@@ -197,7 +196,7 @@ public class CbsHttp {
             .permission(user, new SlPostgres(this.ctx, school)).permit(user)
             .schools().school(school);
         return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8)).body(
-            this.web(request, sch, "create")
+            this.web(request, sch, "create", user)
                 .with("building", sch.buildings().building(building))
                 .with("cabinet", new CbDraft(new CbInput())).print()
         );
@@ -250,7 +249,7 @@ public class CbsHttp {
                     } else {
                         view = "details";
                     }
-                    yield this.web(request, sch, view).with("building", build).with(
+                    yield this.web(request, sch, view, user).with("building", build).with(
                         "cabinet", selected
                     ).print();
                 }
@@ -442,12 +441,11 @@ public class CbsHttp {
     private Media<String> web(
         final HttpServletRequest request,
         final School school,
-        final String view
+        final String view,
+        final UrAccount user
     ) throws Exception {
         return new SrWeb(
-            new UrAcBrief(
-                (UrAccount) SecurityContextHolder.getContext().getAuthentication().getPrincipal()
-            ),
+            new UrAcBrief(user),
             new SlsBrief(new SlsPostgres(this.ctx)),
             new CsToken((CsrfToken) request.getAttribute(CsrfToken.class.getName()))
         ).print(

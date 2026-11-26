@@ -36,7 +36,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -139,8 +138,10 @@ public class SlsHttp {
                             view = "list-fragment";
                         }
                         yield this.web(
-                            request, "xslt/schools.xsl", view,
-                            new SlsWeb(selected, filters, sorts)
+                            request, new MdXslt(
+                                new MdXml("surok"), new XsClasspath("xslt/schools.xsl", view)
+                            ),
+                            new SlsWeb(selected, filters, sorts), user
                         ).print();
                     }
                     case SlsHttp.JSON -> selected.print(new MdJson()).print();
@@ -168,10 +169,12 @@ public class SlsHttp {
             new MediaType(MediaType.TEXT_HTML, StandardCharsets.UTF_8)
         ).body(
             this.web(
-                request, "xslt/schools.xsl", "create", new SlsBrief(
+                request, new MdXslt(
+                    new MdXml("surok"), new XsClasspath("xslt/schools.xsl", "create")
+                ), new SlsBrief(
                     this.operations.operation("Schools.form").permission(user)
                         .permit(user).schools()
-                )
+                ), user
             ).with("school", new SlDraft(new SlInput())).print()
         );
     }
@@ -214,7 +217,9 @@ public class SlsHttp {
                         view = "details";
                     }
                     yield this.web(
-                        request, "xslt/school.xsl", view, new SlsBrief(origin)
+                        request, new MdXslt(
+                            new MdXml("surok"), new XsClasspath("xslt/school.xsl", view)
+                        ), new SlsBrief(origin), user
                     ).with("school", new SlBrief(selected)).print();
                 }
                 case "application/vnd.surok.school-v1+json" ->
@@ -380,26 +385,20 @@ public class SlsHttp {
      * Builds shared browser data and renders the requested stylesheet.
      *
      * @param request HTTP request
-     * @param stylesheet Stylesheet path
-     * @param view Selected view
+     * @param media Browser medium
      * @param schools Printed school collection
+     * @param user Acting user
      * @return Browser medium
      * @throws Exception If printing fails
      */
     private Media<String> web(
-        final HttpServletRequest request, final String stylesheet,
-        final String view, final Schools schools
+        final HttpServletRequest request, final Media<String> media,
+        final Schools schools, final UrAccount user
     ) throws Exception {
         return new SrWeb(
-            new UrAcBrief(
-                (UrAccount) SecurityContextHolder.getContext().getAuthentication().getPrincipal()
-            ), schools,
+            new UrAcBrief(user), schools,
             new CsToken((CsrfToken) request.getAttribute(CsrfToken.class.getName()))
-        ).print(
-            new MdXslt(
-                new MdXml("surok").with("path", request.getRequestURI()),
-                new XsClasspath(stylesheet, view)
-            )
-        ).with("error", request.getParameter("error") != null);
+        ).print(media.with("path", request.getRequestURI()))
+            .with("error", request.getParameter("error") != null);
     }
 }

@@ -780,13 +780,19 @@ final class CrsHttpTest {
     final class Authorization {
 
         /**
-         * Evaluates the requested operation once for either API representation.
+         * Renders every representation using the supplied account without a security context.
          *
          * @param format Response format
          * @throws Exception If the request fails
          */
         @ParameterizedTest
-        @ValueSource(strings = {"json", "xml"})
+        @ValueSource(
+            strings = {
+                "text/html",
+                "application/vnd.surok.federal-curriculum-v1+json",
+                "application/vnd.surok.federal-curriculum-v1+xml"
+            }
+        )
         void authorizesOnlyOnce(final String format) throws Exception {
             final UrAccount actor = new UrsPostgres(CrsHttpTest.this.ctx).register(
                 UUID.randomUUID().toString(), "ValidPassword1!",
@@ -798,10 +804,7 @@ final class CrsHttpTest {
             final MockHttpServletRequest request = new MockHttpServletRequest(
                 "GET", "/federal/curriculums/1"
             );
-            request.addHeader(
-                HttpHeaders.ACCEPT,
-                String.format("application/vnd.surok.federal-curriculum-v1+%s", format)
-            );
+            request.addHeader(HttpHeaders.ACCEPT, format);
             new CrsHttp(
                 CrsHttpTest.this.ctx, () -> {
                     checks.add("permission");

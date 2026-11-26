@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 /**
  * Acting users authorize an operation before exposing their domain navigation.
@@ -23,6 +24,42 @@ import org.springframework.security.access.AccessDeniedException;
  * @since 0.0.1
  */
 final class UrAcAuthTest {
+
+    /**
+     * Preserves global account roles in the Spring principal.
+     *
+     * @param role Global role
+     */
+    @ParameterizedTest
+    @EnumSource(
+        value = Roles.RoleEnum.class,
+        names = {"ADMIN", "BASIC_MAKER", "ADVANCED_MAKER", "PRO_MAKER"}
+    )
+    void exposesGlobalRolesAsAuthorities(final Roles.RoleEnum role) {
+        MatcherAssert.assertThat(
+            "The Spring principal lost its global account role",
+            new UrAcAuth(new UrAcRole(role), List::of).getAuthorities(),
+            Matchers.contains(new SimpleGrantedAuthority(String.format("ROLE_%s", role.name())))
+        );
+    }
+
+    /**
+     * Keeps school roles outside the Spring authority collection.
+     *
+     * @param role School role
+     */
+    @ParameterizedTest
+    @EnumSource(
+        value = Roles.RoleEnum.class,
+        names = {"DIRECTOR", "DEPUTY_DIRECTOR", "TEACHER", "STUDENT"}
+    )
+    void excludesSchoolRolesFromAuthorities(final Roles.RoleEnum role) {
+        MatcherAssert.assertThat(
+            "The Spring principal exposed a school role as an authority",
+            new UrAcAuth(new UrAcRole(role), List::of).getAuthorities(),
+            Matchers.empty()
+        );
+    }
 
     /**
      * Global administrators can start a permitted chain from the same actor.

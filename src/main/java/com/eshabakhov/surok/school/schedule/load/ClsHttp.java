@@ -32,7 +32,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -121,7 +120,8 @@ public class ClsHttp {
                     } else {
                         view = "list";
                     }
-                    yield this.web(request, sch, sched, view).with("loads", selected).print();
+                    yield this.web(request, sch, view, actor)
+                        .with("schedule", new SdBrief(sched)).with("loads", selected).print();
                 }
                 case "application/vnd.surok.class-loads.v1+json" ->
                     selected.print(new MdJson()).print();
@@ -169,9 +169,9 @@ public class ClsHttp {
         final ClassLoad selected = origin.load(load);
         return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8)).body(
             switch (type.toString()) {
-                case MediaType.TEXT_HTML_VALUE -> this.web(request, sch, sched, "details").with(
-                    "loads", new ClsSingle(origin, selected)
-                ).print();
+                case MediaType.TEXT_HTML_VALUE -> this.web(request, sch, "details", actor)
+                    .with("schedule", new SdBrief(sched))
+                    .with("loads", new ClsSingle(origin, selected)).print();
                 case "application/vnd.surok.class-load-v1+json" ->
                     new ClV1(selected).print(new MdJson()).print();
                 case "application/vnd.surok.class-load-v1+xml" ->
@@ -186,13 +186,11 @@ public class ClsHttp {
     private Media<String> web(
         final HttpServletRequest request,
         final School school,
-        final Schedule schedule,
-        final String view
+        final String view,
+        final UrAccount actor
     ) throws Exception {
         return new SrWeb(
-            new UrAcBrief(
-                (UrAccount) SecurityContextHolder.getContext().getAuthentication().getPrincipal()
-            ),
+            new UrAcBrief(actor),
             new SlsBrief(new SlsPostgres(this.ctx)),
             new CsToken((CsrfToken) request.getAttribute(CsrfToken.class.getName()))
         ).print(
@@ -200,7 +198,6 @@ public class ClsHttp {
                 new MdXml("surok").with("path", request.getRequestURI()),
                 new XsClasspath("xslt/class-loads.xsl", view)
             )
-        ).with("school", new SlBrief(school))
-            .with("schedule", new SdBrief(schedule));
+        ).with("school", new SlBrief(school));
     }
 }

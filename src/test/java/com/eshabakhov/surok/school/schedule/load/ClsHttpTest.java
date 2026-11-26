@@ -353,13 +353,19 @@ final class ClsHttpTest {
     final class Authorization {
 
         /**
-         * Evaluates the requested operation once for either API representation.
+         * Renders every representation using the supplied account without a security context.
          *
          * @param format Response format
          * @throws Exception If the request fails
          */
         @ParameterizedTest
-        @ValueSource(strings = {"json", "xml"})
+        @ValueSource(
+            strings = {
+                "text/html",
+                "application/vnd.surok.class-load-v1+json",
+                "application/vnd.surok.class-load-v1+xml"
+            }
+        )
         void authorizesOnlyOnce(final String format) throws Exception {
             final UrAccount actor = new UrsPostgres(ClsHttpTest.this.ctx).register(
                 UUID.randomUUID().toString(), "ValidPassword1!",
@@ -373,10 +379,7 @@ final class ClsHttpTest {
             final MockHttpServletRequest request = new MockHttpServletRequest(
                 "GET", "/schools/1/schedules/100/loads/50"
             );
-            request.addHeader(
-                HttpHeaders.ACCEPT,
-                String.format("application/vnd.surok.class-load-v1+%s", format)
-            );
+            request.addHeader(HttpHeaders.ACCEPT, format);
             new ClsHttp(
                 ClsHttpTest.this.ctx, () -> {
                     checks.add("permission");
