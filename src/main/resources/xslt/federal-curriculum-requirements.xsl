@@ -321,7 +321,7 @@
                 </table>
             </div>
             <xsl:call-template name="pagination">
-                <xsl:with-param name="page" select="$requirements/page"/>
+                <xsl:with-param name="page" select="$requirements"/>
                 <xsl:with-param name="prefix" select="'requirements'"/>
                 <xsl:with-param name="ellipsis" select="'...'"/>
             </xsl:call-template>

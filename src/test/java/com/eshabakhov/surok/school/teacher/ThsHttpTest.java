@@ -126,9 +126,9 @@ final class ThsHttpTest {
         ).andExpect(MockMvcResultMatchers.status().isOk())
             .andExpect(MockMvcResultMatchers.jsonPath("$.items.length()").value(1))
             .andExpect(MockMvcResultMatchers.jsonPath("$.items[0].name").value("North"))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.page.total").value(1))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.page.limit").value(1))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.page.offset").value(1));
+            .andExpect(MockMvcResultMatchers.jsonPath("$.total").value(1))
+            .andExpect(MockMvcResultMatchers.jsonPath("$.limit").value(1))
+            .andExpect(MockMvcResultMatchers.jsonPath("$.offset").value(1));
     }
 
     @Test
@@ -235,7 +235,7 @@ final class ThsHttpTest {
             MockMvcRequestBuilders.get("/schools/1/teachers")
                 .session(this.session(Roles.RoleEnum.DIRECTOR, 1L))
                 .accept("application/vnd.surok.teachers.v1+json").param("name_ct", "Rejected")
-        ).andExpect(MockMvcResultMatchers.jsonPath("$.page.total").value(0));
+        ).andExpect(MockMvcResultMatchers.jsonPath("$.total").value(0));
         this.mvc.perform(
             MockMvcRequestBuilders.get("/schools/1/teachers/10")
                 .session(this.session(Roles.RoleEnum.DIRECTOR, 1L))
@@ -275,7 +275,7 @@ final class ThsHttpTest {
                 .session(this.session(Roles.RoleEnum.DIRECTOR, 1L))
                 .accept("application/vnd.surok.teachers.v1+json").param("name_ct", "West")
         ).andExpect(MockMvcResultMatchers.status().isOk())
-            .andExpect(MockMvcResultMatchers.jsonPath("$.page.total").value(0));
+            .andExpect(MockMvcResultMatchers.jsonPath("$.total").value(0));
     }
 
     @Test
@@ -330,7 +330,7 @@ final class ThsHttpTest {
             MockMvcRequestBuilders.get("/schools/1/teachers")
                 .session(this.session(Roles.RoleEnum.DIRECTOR, 1L))
                 .accept("application/vnd.surok.teachers.v1+json")
-        ).andExpect(MockMvcResultMatchers.jsonPath("$.page.total").value(2));
+        ).andExpect(MockMvcResultMatchers.jsonPath("$.total").value(2));
     }
 
     /**
@@ -531,7 +531,7 @@ final class ThsHttpTest {
                 .param("sort", "name:DESC")
         ).andExpect(MockMvcResultMatchers.status().isOk())
             .andExpect(MockMvcResultMatchers.jsonPath("$.items.length()").value(1))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.page.limit").value(1));
+            .andExpect(MockMvcResultMatchers.jsonPath("$.limit").value(1));
     }
 
     /** Verifies the negotiated fragment keeps filtering and omits the page chrome. */
@@ -620,7 +620,7 @@ final class ThsHttpTest {
                 .session(this.session(Roles.RoleEnum.DIRECTOR, 1L))
                 .accept("application/vnd.surok.teachers.v1+json").param("name_ct", "Rejected")
         ).andExpect(MockMvcResultMatchers.status().isOk())
-            .andExpect(MockMvcResultMatchers.jsonPath("$.page.total").value(0));
+            .andExpect(MockMvcResultMatchers.jsonPath("$.total").value(0));
     }
 
     @ParameterizedTest
@@ -644,7 +644,7 @@ final class ThsHttpTest {
                 .session(this.session(Roles.RoleEnum.DIRECTOR, 1L))
                 .accept("application/vnd.surok.teachers.v1+json").param("name_ct", "Rejected")
         ).andExpect(MockMvcResultMatchers.status().isOk())
-            .andExpect(MockMvcResultMatchers.jsonPath("$.page.total").value(0));
+            .andExpect(MockMvcResultMatchers.jsonPath("$.total").value(0));
     }
 
     @ParameterizedTest

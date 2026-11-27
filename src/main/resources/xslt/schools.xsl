@@ -125,7 +125,7 @@
                 <xsl:for-each select="/surok/schools/school">
                     <div class="card-item school-row school-card">
                         <xsl:attribute name="data-id">
-                            <xsl:value-of select="id"/>
+                            <xsl:value-of select="@id"/>
                         </xsl:attribute>
                         <div class="card-item-header">
                             <div class="card-item-title-row">
@@ -145,14 +145,14 @@
                             <span class="card-item-name">
                                 <xsl:value-of select="name"/>
                             </span>
-                            <div class="card-item-period-label">ID: <xsl:value-of select="id"/></div>
+                            <div class="card-item-period-label">ID: <xsl:value-of select="@id"/></div>
                         </div>
                     </div>
                 </xsl:for-each>
             </div>
             <xsl:call-template name="pagination">
                 <xsl:with-param name="page"
-                                select="/surok/schools/page"/>
+                                select="/surok/schools"/>
                 <xsl:with-param name="prefix"
                                 select="'schools'"/>
                 <xsl:with-param name="ellipsis" select="'…'"/>

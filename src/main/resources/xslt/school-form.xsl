@@ -22,7 +22,7 @@
             <form class="school-form" method="post">
                 <xsl:if test="$editing"><xsl:attribute name="id">school-edit-form</xsl:attribute></xsl:if>
                 <xsl:attribute name="action"><xsl:choose>
-                    <xsl:when test="$editing"><xsl:value-of select="concat('/schools/', $selected/id)"/></xsl:when>
+                    <xsl:when test="$editing"><xsl:value-of select="concat('/schools/', $selected/@id)"/></xsl:when>
                     <xsl:otherwise>/schools</xsl:otherwise>
                 </xsl:choose></xsl:attribute>
                 <xsl:if test="not($editing)"><xsl:call-template name="csrf-input"/></xsl:if>
@@ -33,7 +33,7 @@
                 <div class="school-form-actions">
                     <a class="btn-outline-action" title="Отменить изменение школы">
                         <xsl:attribute name="href"><xsl:choose>
-                            <xsl:when test="$editing"><xsl:value-of select="concat('/schools/', $selected/id)"/></xsl:when>
+                            <xsl:when test="$editing"><xsl:value-of select="concat('/schools/', $selected/@id)"/></xsl:when>
                             <xsl:otherwise>/schools</xsl:otherwise>
                         </xsl:choose></xsl:attribute>Отмена
                     </a>

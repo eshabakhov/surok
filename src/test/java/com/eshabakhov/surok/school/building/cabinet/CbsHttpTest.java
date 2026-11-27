@@ -132,9 +132,9 @@ final class CbsHttpTest {
         ).andExpect(MockMvcResultMatchers.status().isOk())
             .andExpect(MockMvcResultMatchers.jsonPath("$.items.length()").value(1))
             .andExpect(MockMvcResultMatchers.jsonPath("$.items[0].name").value("Room annex"))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.page.total").value(2))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.page.limit").value(1))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.page.offset").value(2));
+            .andExpect(MockMvcResultMatchers.jsonPath("$.total").value(2))
+            .andExpect(MockMvcResultMatchers.jsonPath("$.limit").value(1))
+            .andExpect(MockMvcResultMatchers.jsonPath("$.offset").value(2));
     }
 
     @Test
@@ -251,7 +251,7 @@ final class CbsHttpTest {
             MockMvcRequestBuilders.get("/schools/1/buildings/10/cabinets")
                 .session(this.session(Roles.RoleEnum.DIRECTOR, 1L))
                 .accept("application/vnd.surok.cabinets.v1+json").param("name_ct", "Rejected")
-        ).andExpect(MockMvcResultMatchers.jsonPath("$.page.total").value(0));
+        ).andExpect(MockMvcResultMatchers.jsonPath("$.total").value(0));
         this.mvc.perform(
             MockMvcRequestBuilders.get("/schools/1/buildings/10/cabinets/30")
                 .session(this.session(Roles.RoleEnum.DIRECTOR, 1L))
@@ -291,7 +291,7 @@ final class CbsHttpTest {
                 .session(this.session(Roles.RoleEnum.DIRECTOR, 1L))
                 .accept("application/vnd.surok.cabinets.v1+json").param("name_ct", "West")
         ).andExpect(MockMvcResultMatchers.status().isOk())
-            .andExpect(MockMvcResultMatchers.jsonPath("$.page.total").value(0));
+            .andExpect(MockMvcResultMatchers.jsonPath("$.total").value(0));
     }
 
     @Test
@@ -350,7 +350,7 @@ final class CbsHttpTest {
             MockMvcRequestBuilders.get("/schools/1/buildings/10/cabinets")
                 .session(this.session(Roles.RoleEnum.DIRECTOR, 1L))
                 .accept("application/vnd.surok.cabinets.v1+json")
-        ).andExpect(MockMvcResultMatchers.jsonPath("$.page.total").value(2));
+        ).andExpect(MockMvcResultMatchers.jsonPath("$.total").value(2));
     }
 
     /**
@@ -570,7 +570,7 @@ final class CbsHttpTest {
                 .param("sort", "name:DESC")
         ).andExpect(MockMvcResultMatchers.status().isOk())
             .andExpect(MockMvcResultMatchers.jsonPath("$.items.length()").value(1))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.page.limit").value(1));
+            .andExpect(MockMvcResultMatchers.jsonPath("$.limit").value(1));
     }
 
     /**
@@ -663,7 +663,7 @@ final class CbsHttpTest {
                 .session(this.session(Roles.RoleEnum.DIRECTOR, 1L))
                 .accept("application/vnd.surok.cabinets.v1+json").param("name_ct", "Rejected")
         ).andExpect(MockMvcResultMatchers.status().isOk())
-            .andExpect(MockMvcResultMatchers.jsonPath("$.page.total").value(0));
+            .andExpect(MockMvcResultMatchers.jsonPath("$.total").value(0));
     }
 
     @ParameterizedTest
@@ -687,7 +687,7 @@ final class CbsHttpTest {
                 .session(this.session(Roles.RoleEnum.DIRECTOR, 1L))
                 .accept("application/vnd.surok.cabinets.v1+json").param("name_ct", "Rejected")
         ).andExpect(MockMvcResultMatchers.status().isOk())
-            .andExpect(MockMvcResultMatchers.jsonPath("$.page.total").value(0));
+            .andExpect(MockMvcResultMatchers.jsonPath("$.total").value(0));
     }
 
     @ParameterizedTest

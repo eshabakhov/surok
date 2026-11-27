@@ -246,7 +246,7 @@ final class RqsHttpTest {
         );
         MatcherAssert.assertThat(
             "JSON requirements must contain pagination",
-            response.path("page").path("total").asInt(),
+            response.path("total").asInt(),
             Matchers.is(1)
         );
     }
@@ -269,7 +269,7 @@ final class RqsHttpTest {
                 this.actor
             ).getBody(),
             Matchers.allOf(
-                Matchers.startsWith("<requirements>"),
+                Matchers.startsWith("<requirements "),
                 Matchers.containsString("<requirement>"),
                 Matchers.endsWith("</requirements>")
             )

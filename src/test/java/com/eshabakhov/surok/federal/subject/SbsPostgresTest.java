@@ -126,7 +126,7 @@ final class SbsPostgresTest {
             "Pagination omitted shared subjects or counted foreign subjects",
             new SbsPostgres(ctx, 1L).selection(
                 new FiltersRequest(Set.of()), new PageRequest(1, 1), new SortsRequest(List.of())
-            ).print(new MdJson()).print().path("page").path("total").asInt(),
+            ).print(new MdJson()).print().path("total").asInt(),
             Matchers.is(2)
         );
     }

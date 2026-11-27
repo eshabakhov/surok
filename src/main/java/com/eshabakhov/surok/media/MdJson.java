@@ -5,7 +5,6 @@ package com.eshabakhov.surok.media;
 
 import com.eshabakhov.surok.Media;
 import com.eshabakhov.surok.Printable;
-import com.eshabakhov.surok.ResultPage;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
@@ -13,8 +12,8 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashSet;
-import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * JSON implementation of {@link Media} based on Jackson.
@@ -26,6 +25,9 @@ public final class MdJson implements Media<ObjectNode> {
     /** Jackson object node being filled. */
     private final ObjectNode node;
 
+    /** Names printed as attributes. */
+    private final Set<String> attributes;
+
     /** Included fields. */
     private final Set<String> fields;
 
@@ -36,24 +38,74 @@ public final class MdJson implements Media<ObjectNode> {
      * Creates an empty JSON media.
      */
     public MdJson() {
-        this(new ObjectNode(JsonNodeFactory.instance), new LinkedHashSet<>(0), false);
+        this(
+            new ObjectNode(JsonNodeFactory.instance), new LinkedHashSet<>(0),
+            new LinkedHashSet<>(0), false
+        );
     }
 
     /**
      * Creates JSON media with collected values.
      *
      * @param node Collected values
+     * @param attributes Names printed as attributes
      * @param fields Included fields
      * @param restricted Whether fields are restricted
      */
     private MdJson(
         final ObjectNode node,
+        final Set<String> attributes,
         final Set<String> fields,
         final boolean restricted
     ) {
         this.node = node;
+        this.attributes = attributes;
         this.fields = fields;
         this.restricted = restricted;
+    }
+
+    @Override
+    public MdJson attribute(final String name, final String value) {
+        final JsonNode printed;
+        if (value == null) {
+            printed = JsonNodeFactory.instance.nullNode();
+        } else {
+            printed = JsonNodeFactory.instance.textNode(value);
+        }
+        return this.metadata(name, printed);
+    }
+
+    @Override
+    public MdJson attribute(final String name, final Long value) {
+        final JsonNode printed;
+        if (value == null) {
+            printed = JsonNodeFactory.instance.nullNode();
+        } else {
+            printed = JsonNodeFactory.instance.numberNode(value);
+        }
+        return this.metadata(name, printed);
+    }
+
+    @Override
+    public MdJson attribute(final String name, final Integer value) {
+        final JsonNode printed;
+        if (value == null) {
+            printed = JsonNodeFactory.instance.nullNode();
+        } else {
+            printed = JsonNodeFactory.instance.numberNode(value);
+        }
+        return this.metadata(name, printed);
+    }
+
+    @Override
+    public MdJson attribute(final String name, final Boolean value) {
+        final JsonNode printed;
+        if (value == null) {
+            printed = JsonNodeFactory.instance.nullNode();
+        } else {
+            printed = JsonNodeFactory.instance.booleanNode(value);
+        }
+        return this.metadata(name, printed);
     }
 
     @Override
@@ -63,7 +115,7 @@ public final class MdJson implements Media<ObjectNode> {
             copied.put(name, value);
         }
         return new MdJson(
-            copied, this.fields, this.restricted
+            copied, this.attributes, this.fields, this.restricted
         );
     }
 
@@ -74,7 +126,7 @@ public final class MdJson implements Media<ObjectNode> {
             copied.put(name, value);
         }
         return new MdJson(
-            copied, this.fields, this.restricted
+            copied, this.attributes, this.fields, this.restricted
         );
     }
 
@@ -85,7 +137,7 @@ public final class MdJson implements Media<ObjectNode> {
             copied.put(name, value);
         }
         return new MdJson(
-            copied, this.fields, this.restricted
+            copied, this.attributes, this.fields, this.restricted
         );
     }
 
@@ -96,7 +148,7 @@ public final class MdJson implements Media<ObjectNode> {
             copied.put(name, value);
         }
         return new MdJson(
-            copied, this.fields, this.restricted
+            copied, this.attributes, this.fields, this.restricted
         );
     }
 
@@ -121,49 +173,13 @@ public final class MdJson implements Media<ObjectNode> {
             copied.set(name, printed);
         }
         return new MdJson(
-            copied, this.fields, this.restricted
+            copied, this.attributes, this.fields, this.restricted
         );
     }
 
     @Override
-    public MdJson with(final Printable value) throws Exception {
-        final ObjectNode copied = this.node.deepCopy();
-        final ArrayNode items = JsonNodeFactory.instance.arrayNode();
-        final ObjectNode printed = value.print(new MdJson()).print();
-        if (!printed.isEmpty()) {
-            final JsonNode selected = printed.elements().next();
-            if (selected.isArray()) {
-                items.addAll((ArrayNode) selected);
-            } else {
-                items.add(selected);
-            }
-        }
-        if (this.allowed("items")) {
-            copied.set("items", items);
-        }
-        return new MdJson(
-            copied, this.fields, this.restricted
-        );
-    }
-
-    @Override
-    public MdJson with(final String name, final ResultPage value) {
-        final ObjectNode copied = this.node.deepCopy();
-        if (this.allowed(name)) {
-            copied.set(
-                name,
-                JsonNodeFactory.instance.objectNode()
-                    .put("limit", value.limit())
-                    .put("offset", value.offset())
-                    .put("total", value.total())
-                    .put("totalPages", value.totalPages())
-                    .put("hasNext", value.hasNext())
-                    .put("hasPrev", value.hasPrev())
-            );
-        }
-        return new MdJson(
-            copied, this.fields, this.restricted
-        );
+    public Media<ObjectNode> with(final Printable value) throws Exception {
+        return value.print(this);
     }
 
     @Override
@@ -177,17 +193,7 @@ public final class MdJson implements Media<ObjectNode> {
             }
             copied.set("items", items);
         }
-        return new MdJson(copied, this.fields, this.restricted);
-    }
-
-    @Override
-    public MdJson attributes(final Map<String, Object> values) {
-        return this;
-    }
-
-    @Override
-    public MdJson title(final String format) {
-        return this;
+        return new MdJson(copied, this.attributes, this.fields, this.restricted);
     }
 
     @Override
@@ -199,6 +205,8 @@ public final class MdJson implements Media<ObjectNode> {
         copied.retain(included);
         return new MdJson(
             copied,
+            this.attributes.stream().filter(included::contains)
+                .collect(Collectors.toUnmodifiableSet()),
             Collections.unmodifiableSet(included),
             true
         );
@@ -209,7 +217,30 @@ public final class MdJson implements Media<ObjectNode> {
         return this.node.deepCopy();
     }
 
+    private MdJson metadata(final String name, final JsonNode value) {
+        final ObjectNode copied = this.node.deepCopy();
+        final Set<String> names = new LinkedHashSet<>(this.attributes);
+        if (!this.restricted || this.fields.contains(name)) {
+            if (copied.has(name) && !names.contains(name)) {
+                throw new IllegalArgumentException(
+                    String.format("Element and attribute share the name '%s'", name)
+                );
+            }
+            copied.set(name, value);
+            names.add(name);
+        }
+        return new MdJson(
+            copied, Collections.unmodifiableSet(names), this.fields, this.restricted
+        );
+    }
+
     private boolean allowed(final String name) {
-        return !this.restricted || this.fields.contains(name);
+        final boolean allowed = !this.restricted || this.fields.contains(name);
+        if (allowed && this.attributes.contains(name)) {
+            throw new IllegalArgumentException(
+                String.format("Element and attribute share the name '%s'", name)
+            );
+        }
+        return allowed;
     }
 }

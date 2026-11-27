@@ -3,8 +3,6 @@
  */
 package com.eshabakhov.surok;
 
-import java.util.Map;
-
 /**
  * Media that an object can print itself into.
  * Implementations define how data is rendered (JSON, XML, or HTML).
@@ -14,6 +12,51 @@ import java.util.Map;
  */
 @SuppressWarnings("PMD.TooManyMethods")
 public interface Media<T> {
+
+    /**
+     * Adds string metadata: an XML attribute or a JSON property.
+     * Attribute and element names must not collide at the same level.
+     *
+     * @param name Attribute name
+     * @param value Attribute value
+     * @return Updated media
+     */
+    default Media<T> attribute(final String name, final String value) {
+        return this.with(name, value);
+    }
+
+    /**
+     * Adds long metadata while preserving its JSON number type.
+     *
+     * @param name Attribute name
+     * @param value Attribute value
+     * @return Updated media
+     */
+    default Media<T> attribute(final String name, final Long value) {
+        return this.with(name, value);
+    }
+
+    /**
+     * Adds integer metadata while preserving its JSON number type.
+     *
+     * @param name Attribute name
+     * @param value Attribute value
+     * @return Updated media
+     */
+    default Media<T> attribute(final String name, final Integer value) {
+        return this.with(name, value);
+    }
+
+    /**
+     * Adds boolean metadata while preserving its JSON boolean type.
+     *
+     * @param name Attribute name
+     * @param value Attribute value
+     * @return Updated media
+     */
+    default Media<T> attribute(final String name, final Boolean value) {
+        return this.with(name, value);
+    }
 
     /**
      * Adds a string value to the media.
@@ -88,31 +131,6 @@ public interface Media<T> {
         }
         return result;
     }
-
-    /**
-     * Adds result pagination to the media.
-     *
-     * @param name Field name
-     * @param value Result pagination
-     * @return Updated media
-     */
-    Media<T> with(String name, ResultPage value);
-
-    /**
-     * Adds representation attributes.
-     *
-     * @param values Representation attributes
-     * @return Updated media
-     */
-    Media<T> attributes(Map<String, Object> values);
-
-    /**
-     * Sets a title format for the representation.
-     *
-     * @param format Title format
-     * @return Updated media
-     */
-    Media<T> title(String format);
 
     /**
      * Includes specified fields.

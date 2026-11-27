@@ -5,7 +5,6 @@ package com.eshabakhov.surok.media;
 
 import com.eshabakhov.surok.Media;
 import com.eshabakhov.surok.Printable;
-import com.eshabakhov.surok.ResultPage;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -33,8 +32,8 @@ public final class MdXml implements Media<String> {
     /** Whether the included fields are restricted. */
     private final boolean restricted;
 
-    /** XML element format. */
-    private final String pattern;
+    /** Escaped attributes of the root element. */
+    private final Map<String, String> attributes;
 
     /**
      * New XML media with the specified root element.
@@ -47,7 +46,7 @@ public final class MdXml implements Media<String> {
             new LinkedHashMap<>(0),
             new LinkedHashSet<>(0),
             false,
-            "<%1$s>%2$s</%1$s>"
+            new LinkedHashMap<>(0)
         );
     }
 
@@ -58,20 +57,71 @@ public final class MdXml implements Media<String> {
      * @param elements Collected XML elements
      * @param fields Included fields
      * @param restricted Whether fields are restricted
-     * @param pattern XML element format
+     * @param attributes Escaped root attributes
      */
     private MdXml(
         final String root,
         final Map<String, String> elements,
         final Set<String> fields,
         final boolean restricted,
-        final String pattern
+        final Map<String, String> attributes
     ) {
         this.root = root;
         this.elements = elements;
         this.fields = fields;
         this.restricted = restricted;
-        this.pattern = pattern;
+        this.attributes = attributes;
+    }
+
+    @Override
+    public MdXml attribute(final String name, final String value) {
+        final Map<String, String> copied = new LinkedHashMap<>(this.attributes);
+        if (!this.restricted || this.fields.contains(name)) {
+            if (this.elements.containsKey(name)) {
+                throw new IllegalArgumentException(
+                    String.format("Element and attribute share the name '%s'", name)
+                );
+            }
+            String printed = "";
+            if (value != null) {
+                printed = HtmlUtils.htmlEscape(value)
+                    .replace("\t", "&#9;")
+                    .replace(String.valueOf('\n'), "&#10;")
+                    .replace(String.valueOf('\r'), "&#13;");
+            }
+            copied.put(name, printed);
+        }
+        return new MdXml(
+            this.root, this.elements, this.fields, this.restricted,
+            Collections.unmodifiableMap(copied)
+        );
+    }
+
+    @Override
+    public MdXml attribute(final String name, final Long value) {
+        String printed = null;
+        if (value != null) {
+            printed = value.toString();
+        }
+        return this.attribute(name, printed);
+    }
+
+    @Override
+    public MdXml attribute(final String name, final Integer value) {
+        String printed = null;
+        if (value != null) {
+            printed = value.toString();
+        }
+        return this.attribute(name, printed);
+    }
+
+    @Override
+    public MdXml attribute(final String name, final Boolean value) {
+        String printed = null;
+        if (value != null) {
+            printed = value.toString();
+        }
+        return this.attribute(name, printed);
     }
 
     @Override
@@ -82,14 +132,14 @@ public final class MdXml implements Media<String> {
         }
         final Map<String, String> copied = new LinkedHashMap<>(this.elements);
         if (this.allowed(name)) {
-            copied.put(name, this.element(name, printed));
+            copied.put(name, String.format("<%1$s>%2$s</%1$s>", name, printed));
         }
         return new MdXml(
             this.root,
             Collections.unmodifiableMap(copied),
             this.fields,
             this.restricted,
-            this.pattern
+            this.attributes
         );
     }
 
@@ -136,7 +186,7 @@ public final class MdXml implements Media<String> {
             Collections.unmodifiableMap(copied),
             this.fields,
             this.restricted,
-            this.pattern
+            this.attributes
         );
     }
 
@@ -146,82 +196,42 @@ public final class MdXml implements Media<String> {
     }
 
     @Override
-    public MdXml with(final String name, final ResultPage value) {
-        final Map<String, String> copied = new LinkedHashMap<>(this.elements);
-        if (this.allowed(name)) {
-            copied.put(
-                name,
-                this.element(
-                    name,
-                    this.element("limit", Integer.toString(value.limit()))
-                        + this.element(
-                            "offset", Integer.toString(value.offset())
-                        )
-                        + this.element("total", Integer.toString(value.total()))
-                        + this.element(
-                            "totalPages",
-                            Integer.toString(value.totalPages())
-                        )
-                        + this.element(
-                            "hasNext",
-                            Boolean.toString(value.hasNext())
-                        )
-                        + this.element(
-                            "hasPrev",
-                            Boolean.toString(value.hasPrev())
-                        )
-                )
-            );
-        }
-        return new MdXml(
-            this.root,
-            Collections.unmodifiableMap(copied),
-            this.fields,
-            this.restricted,
-            this.pattern
-        );
-    }
-
-    @Override
-    public MdXml attributes(final Map<String, Object> values) {
-        return this;
-    }
-
-    @Override
-    public MdXml title(final String format) {
-        return this;
-    }
-
-    @Override
     public MdXml include(final String... names) {
         final Set<String> included = new LinkedHashSet<>(
             Arrays.asList(names)
         );
         final Map<String, String> copied = new LinkedHashMap<>(this.elements);
         copied.keySet().retainAll(included);
+        final Map<String, String> selected = new LinkedHashMap<>(this.attributes);
+        selected.keySet().retainAll(included);
         return new MdXml(
             this.root,
             Collections.unmodifiableMap(copied),
             Collections.unmodifiableSet(included),
             true,
-            this.pattern
+            Collections.unmodifiableMap(selected)
         );
     }
 
     @Override
     public String print() {
-        return this.xml();
+        final StringBuilder opening = new StringBuilder(this.root);
+        this.attributes.forEach(
+            (name, value) -> opening.append(' ').append(name).append("=\"")
+                .append(value).append('"')
+        );
+        return String.format(
+            "<%s>%s</%s>", opening, String.join("", this.elements.values()), this.root
+        );
     }
 
     private boolean allowed(final String name) {
-        return !this.restricted || this.fields.contains(name);
-    }
-
-    private String element(final String name, final String value) {
-        return String.format(this.pattern, name, value);
-    }
-
-    private String xml() {
-        return this.element(this.root, String.join("", this.elements.values()));
+        final boolean allowed = !this.restricted || this.fields.contains(name);
+        if (allowed && this.attributes.containsKey(name)) {
+            throw new IllegalArgumentException(
+                String.format("Element and attribute share the name '%s'", name)
+            );
+        }
+        return allowed;
     }
 }

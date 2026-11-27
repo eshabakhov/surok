@@ -79,7 +79,7 @@ public final class SlsSelected implements Schools {
     @Override
     public <T> Media<T> print(final Media<T> media) throws Exception {
         return media.with(new PrItems("school", this.items))
-            .with("page", this.page);
+            .with(this.page);
     }
 
     @Override

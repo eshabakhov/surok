@@ -153,16 +153,12 @@ final class RqsSelectedTest {
                             ).put("hours", 6)
                             .put("partType", "MANDATORY")
                     )
-                ).<ObjectNode>set(
-                    "page",
-                    JsonNodeFactory.instance.objectNode()
-                        .put("limit", 10)
-                        .put("offset", 2)
-                        .put("total", 25)
-                        .put("totalPages", 3)
-                        .put("hasNext", true)
-                        .put("hasPrev", true)
-                )
+                ).put("limit", 10)
+                    .put("offset", 2)
+                    .put("total", 25)
+                    .put("totalPages", 3)
+                    .put("hasNext", true)
+                    .put("hasPrev", true)
             )
         );
     }

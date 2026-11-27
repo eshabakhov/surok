@@ -132,7 +132,7 @@ final class ScsHttpTest {
         ).andExpect(MockMvcResultMatchers.status().isOk())
             .andExpect(MockMvcResultMatchers.jsonPath("$.items.length()").value(1))
             .andExpect(MockMvcResultMatchers.jsonPath("$.items[0].name").value("2А"))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.page.total").value(1));
+            .andExpect(MockMvcResultMatchers.jsonPath("$.total").value(1));
     }
 
     @ParameterizedTest
@@ -433,7 +433,7 @@ final class ScsHttpTest {
             MockMvcRequestBuilders.get("/schools/1/classes")
                 .session(this.session(Roles.RoleEnum.STUDENT, 1L))
                 .accept("application/vnd.surok.school-classes.v1+json")
-        ).andExpect(MockMvcResultMatchers.jsonPath("$.page.total").value(2))
+        ).andExpect(MockMvcResultMatchers.jsonPath("$.total").value(2))
             .andExpect(MockMvcResultMatchers.jsonPath("$.items[0].name").value("2А"));
     }
 

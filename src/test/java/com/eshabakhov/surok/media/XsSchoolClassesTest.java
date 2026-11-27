@@ -145,17 +145,16 @@ final class XsSchoolClassesTest {
         return String.format(
             """
             <surok>%s
-                <school><id>3</id><name>Школа</name><schedules><schedule>
+                <school id="3"><name>Школа</name><schedules><schedule>
                     <id>9</id><name>Учебный год</name>
                 </schedule></schedules></school>
                 <error>true</error><csrf><parameter>_csrf</parameter><token>token</token>
                     <header>X-XSRF-TOKEN</header></csrf>
-                <classes><school-class>
+                <classes offset="1" limit="15" total="60"
+                    totalPages="4" hasNext="true" hasPrev="false"><school-class>
                     <id>7</id><name>5А</name><grade>5</grade><litera>А</litera>
                 </school-class><sorts><item><name>name</name><direction>NONE</direction>
-                </item></sorts><page><offset>1</offset><limit>15</limit><total>60</total>
-                    <totalPages>4</totalPages><hasNext>true</hasNext><hasPrev>false</hasPrev>
-                </page></classes>
+                </item></sorts></classes>
             </surok>
             """, switch (view) {
                 case "create" -> "<school-class><name/><grade/><litera/></school-class>";

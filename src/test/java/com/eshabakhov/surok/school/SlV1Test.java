@@ -4,6 +4,8 @@
 package com.eshabakhov.surok.school;
 
 import com.eshabakhov.surok.media.MdJson;
+import com.eshabakhov.surok.media.MdXml;
+import java.util.List;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.jooq.DSLContext;
@@ -60,8 +62,14 @@ final class SlV1Test {
         );
         MatcherAssert.assertThat(
             "Versioned school lost its fields",
-            new SlV1(new SlPostgres(this.ctx, 42L)).print(new MdJson()).print().toString(),
-            Matchers.equalTo("{\"id\":42,\"name\":\"Школа №42\"}")
+            List.of(
+                new SlV1(new SlPostgres(this.ctx, 42L)).print(new MdJson()).print().toString(),
+                new SlV1(new SlPostgres(this.ctx, 42L)).print(new MdXml("school")).print()
+            ),
+            Matchers.contains(
+                "{\"id\":42,\"name\":\"Школа №42\"}",
+                "<school id=\"42\"><name>Школа №42</name></school>"
+            )
         );
     }
 

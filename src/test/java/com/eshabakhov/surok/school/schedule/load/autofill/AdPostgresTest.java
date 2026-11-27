@@ -7,6 +7,7 @@ import com.eshabakhov.surok.federal.curriculum.CrPostgres;
 import com.eshabakhov.surok.federal.curriculum.requirement.input.RequirementInputException;
 import com.eshabakhov.surok.federal.subject.SbFake;
 import com.eshabakhov.surok.media.MdJson;
+import com.eshabakhov.surok.media.MdXml;
 import com.eshabakhov.surok.school.schedule.SdPostgres;
 import com.eshabakhov.surok.school.schedule.load.hours.WhFake;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
@@ -126,8 +127,11 @@ final class AdPostgresTest {
         ctx.execute("UPDATE federal_curriculum_requirement SET hours = 0 WHERE id = 73");
         MatcherAssert.assertThat(
             "The addition lost its selected subject, class totals or reduced requirement",
-            addition.print(new MdJson()).print(),
-            Matchers.equalTo(
+            List.of(
+                addition.print(new MdJson()).print(),
+                addition.print(new MdXml("addition")).print()
+            ),
+            Matchers.contains(
                 JsonNodeFactory.instance.objectNode().put("grade", 5).setAll(
                     Map.of(
                         "requirements", JsonNodeFactory.instance.arrayNode().add(
@@ -155,6 +159,17 @@ final class AdPostgresTest {
                                 )
                         )
                     )
+                ),
+                String.join(
+                    "", "<addition><grade>5</grade><requirements><requirement><id>73</id>",
+                    "<grade>5</grade><hours>0</hours><partType>OPTIONAL</partType>",
+                    "</requirement></requirements><subjects><subject><id>37</id>",
+                    "<name>Робототехника</name><origin>SCHOOL</origin><hours>1</hours>",
+                    "</subject></subjects><classes><class><id>23</id><name>5Б</name>",
+                    "<grade>5</grade><litera>Б</litera><hours><current>2</current>",
+                    "<planned>3</planned></hours></class><class><id>25</id><name>5В</name>",
+                    "<grade>5</grade><litera>В</litera><hours><current>0</current>",
+                    "<planned>1</planned></hours></class></classes></addition>"
                 )
             )
         );

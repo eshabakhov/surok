@@ -4,8 +4,8 @@
 package com.eshabakhov.surok.school.schedule.load.autofill;
 
 import com.eshabakhov.surok.Media;
-import com.eshabakhov.surok.PrFields;
 import com.eshabakhov.surok.PrItems;
+import com.eshabakhov.surok.Printable;
 import com.eshabakhov.surok.federal.curriculum.Curriculum;
 import com.eshabakhov.surok.federal.curriculum.requirement.RqsPostgres;
 import com.eshabakhov.surok.federal.subject.SbPostgres;
@@ -72,27 +72,35 @@ public final class AdPostgres implements Addition {
         ).with(
             "subjects", new PrItems(
                 "subject", this.selected().stream().map(
-                    row -> new PrFields(
-                        List.of(new SbPostgres(this.ctx, row.get("subject_id", Long.class))),
-                        Map.of("hours", row.get("hours", Integer.class)), Map.of()
-                    )
+                    row -> new Printable() {
+                        @Override
+                        public <V> Media<V> print(final Media<V> target) throws Exception {
+                            return new SbPostgres(
+                                AdPostgres.this.ctx, row.get("subject_id", Long.class)
+                            ).print(target).with(new WhFake(row.get("hours", Integer.class)));
+                        }
+                    }
                 ).toList()
             )
         ).with(
             "classes", new PrItems(
                 "class", this.usage().stream().map(
-                    row -> new PrFields(
-                        List.of(new ScPostgres(this.ctx, row.get("school_class_id", Long.class))),
-                        Map.of(), Map.of(
-                            "hours", new WhPlanned(
-                                new WhProposed(
-                                    new WhFake(row.get("current", Integer.class)),
-                                    new WhFake(0)
-                                ),
-                                new WhFake(row.get("planned", Integer.class))
-                            )
-                        )
-                    )
+                    row -> new Printable() {
+                        @Override
+                        public <V> Media<V> print(final Media<V> target) throws Exception {
+                            return new ScPostgres(
+                                AdPostgres.this.ctx, row.get("school_class_id", Long.class)
+                            ).print(target).with(
+                                "hours", new WhPlanned(
+                                    new WhProposed(
+                                        new WhFake(row.get("current", Integer.class)),
+                                        new WhFake(0)
+                                    ),
+                                    new WhFake(row.get("planned", Integer.class))
+                                )
+                            );
+                        }
+                    }
                 ).toList()
             )
         );

@@ -106,6 +106,73 @@ final class SlsHttpTest {
             .andExpect(MockMvcResultMatchers.content().contentTypeCompatibleWith(type));
     }
 
+    /** Verifies JSON pagination describes the collection directly. */
+    @Test
+    void printsCollectionMetadataInJson() throws Exception {
+        this.prepare();
+        this.mvc.perform(
+            MockMvcRequestBuilders.get("/schools").param("limit", "1").param("offset", "2")
+                .accept("application/vnd.surok.schools.v1+json").with(
+                    SecurityMockMvcRequestPostProcessors.user(this.principal(Roles.RoleEnum.ADMIN))
+                )
+        ).andExpectAll(
+            MockMvcResultMatchers.status().isOk(),
+            MockMvcResultMatchers.jsonPath("$.items", Matchers.hasSize(1)),
+            MockMvcResultMatchers.jsonPath("$.items[0].id").isNumber(),
+            MockMvcResultMatchers.jsonPath("$.limit").value(1),
+            MockMvcResultMatchers.jsonPath("$.offset").value(2),
+            MockMvcResultMatchers.jsonPath("$.total").value(2),
+            MockMvcResultMatchers.jsonPath("$.hasPrev").value(true),
+            MockMvcResultMatchers.jsonPath("$.hasNext").value(false),
+            MockMvcResultMatchers.jsonPath("$.page").doesNotExist()
+        );
+    }
+
+    /** Verifies school identifiers and pagination are XML attributes. */
+    @Test
+    void printsCollectionMetadataInXml() throws Exception {
+        this.prepare();
+        this.mvc.perform(
+            MockMvcRequestBuilders.get("/schools").param("limit", "1").param("offset", "2")
+                .accept("application/vnd.surok.schools.v1+xml").with(
+                    SecurityMockMvcRequestPostProcessors.user(this.principal(Roles.RoleEnum.ADMIN))
+                )
+        ).andExpectAll(
+            MockMvcResultMatchers.status().isOk(),
+            MockMvcResultMatchers.xpath("/schools/school").nodeCount(1),
+            MockMvcResultMatchers.xpath("/schools/school/@id").exists(),
+            MockMvcResultMatchers.xpath("/schools/school/id").doesNotExist(),
+            MockMvcResultMatchers.xpath("/schools/@limit").string("1"),
+            MockMvcResultMatchers.xpath("/schools/@offset").string("2"),
+            MockMvcResultMatchers.xpath("/schools/@total").string("2"),
+            MockMvcResultMatchers.xpath("/schools/@hasPrev").string("true"),
+            MockMvcResultMatchers.xpath("/schools/@hasNext").string("false"),
+            MockMvcResultMatchers.xpath("/schools/page").doesNotExist()
+        );
+    }
+
+    /** Verifies fragment pagination and school links use the same metadata as the API. */
+    @Test
+    void rendersSchoolMetadataIntoFragmentNavigation() throws Exception {
+        this.prepare();
+        this.mvc.perform(
+            MockMvcRequestBuilders.get("/schools").param("limit", "1").param("offset", "2")
+                .accept("text/vnd.surok.schools-fragment+html").with(
+                    SecurityMockMvcRequestPostProcessors.user(this.principal(Roles.RoleEnum.ADMIN))
+                )
+        ).andExpectAll(
+            MockMvcResultMatchers.status().isOk(),
+            MockMvcResultMatchers.content().string(
+                Matchers.allOf(
+                    Matchers.containsString("class=\"pagination-btn pagination-prev\""),
+                    Matchers.containsString("data-offset=\"1\""),
+                    Matchers.containsString("data-id=\"4\""),
+                    Matchers.not(Matchers.containsString("NaN"))
+                )
+            )
+        );
+    }
+
     /**
      * Verifies removed school API routes cannot handle authenticated requests.
      *

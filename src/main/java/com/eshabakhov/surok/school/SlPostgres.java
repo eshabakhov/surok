@@ -110,7 +110,7 @@ public final class SlPostgres implements School {
                 String.format("School with id=%d not found", this.sid)
             );
         }
-        return media.with("id", selected.get("id", Long.class))
+        return media.attribute("id", selected.get("id", Long.class))
             .with("name", selected.get("name", String.class));
     }
 }

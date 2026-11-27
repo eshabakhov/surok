@@ -109,19 +109,19 @@ final class XsLoadsTest {
     private static String document() {
         return """
             <surok>
-                <school><id>3</id><name>Школа</name><schedules><schedule>
+                <school id="3"><name>Школа</name><schedules><schedule>
                     <id>9</id><name>Учебный год</name>
                 </schedule></schedules></school>
                 <schedule><id>9</id><name>Учебный год</name></schedule>
                 <csrf><parameter>_csrf</parameter><token>token</token></csrf><error></error>
                 <classes><school-class><id>10</id><name>5А</name></school-class></classes>
                 <subjects><subject><id>30</id><name>Математика</name></subject></subjects>
-                <loads><load><id>7</id><schoolClass><id>10</id><name>5А</name></schoolClass>
+                <loads offset="1" limit="15" total="30"
+                    totalPages="2" hasNext="true" hasPrev="false"><load>
+                <id>7</id><schoolClass><id>10</id><name>5А</name></schoolClass>
                     <subject><id>30</id><name>Математика</name><origin>FEDERAL</origin></subject>
                     <hours>5</hours>
-                </load><page><offset>1</offset><limit>15</limit><total>30</total>
-                    <totalPages>2</totalPages><hasNext>true</hasNext><hasPrev>false</hasPrev>
-                </page></loads>
+                </load></loads>
             </surok>
             """;
     }

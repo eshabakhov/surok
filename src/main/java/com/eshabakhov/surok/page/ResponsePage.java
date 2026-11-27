@@ -3,6 +3,7 @@
  */
 package com.eshabakhov.surok.page;
 
+import com.eshabakhov.surok.Media;
 import com.eshabakhov.surok.Page;
 import com.eshabakhov.surok.ResultPage;
 import lombok.EqualsAndHashCode;
@@ -60,5 +61,15 @@ public final class ResponsePage implements ResultPage {
     @Override
     public boolean hasPrev() {
         return this.offset() > 1;
+    }
+
+    @Override
+    public <T> Media<T> print(final Media<T> media) {
+        return media.attribute("limit", this.limit())
+            .attribute("offset", this.offset())
+            .attribute("total", this.total())
+            .attribute("totalPages", this.totalPages())
+            .attribute("hasNext", this.hasNext())
+            .attribute("hasPrev", this.hasPrev());
     }
 }

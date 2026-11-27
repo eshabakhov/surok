@@ -133,9 +133,26 @@ final class BdsHttpTest {
         ).andExpect(MockMvcResultMatchers.status().isOk())
             .andExpect(MockMvcResultMatchers.jsonPath("$.items.length()").value(1))
             .andExpect(MockMvcResultMatchers.jsonPath("$.items[0].name").value("North"))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.page.total").value(1))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.page.limit").value(1))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.page.offset").value(1));
+            .andExpect(MockMvcResultMatchers.jsonPath("$.total").value(1))
+            .andExpect(MockMvcResultMatchers.jsonPath("$.limit").value(1))
+            .andExpect(MockMvcResultMatchers.jsonPath("$.offset").value(1));
+    }
+
+    @Test
+    void printsXmlPaginationAsCollectionAttributes() throws Exception {
+        this.mvc.perform(
+            MockMvcRequestBuilders.get("/schools/1/buildings")
+                .accept("application/vnd.surok.buildings.v1+xml")
+                .session(this.session(Roles.RoleEnum.STUDENT, 1L))
+                .param("limit", "1").param("offset", "2").param("sort", "name:ASC")
+        ).andExpect(MockMvcResultMatchers.status().isOk())
+            .andExpect(MockMvcResultMatchers.xpath("/buildings/building/name").string("South"))
+            .andExpect(MockMvcResultMatchers.xpath("/buildings/@limit").string("1"))
+            .andExpect(MockMvcResultMatchers.xpath("/buildings/@offset").string("2"))
+            .andExpect(MockMvcResultMatchers.xpath("/buildings/@total").string("2"))
+            .andExpect(MockMvcResultMatchers.xpath("/buildings/@totalPages").string("2"))
+            .andExpect(MockMvcResultMatchers.xpath("/buildings/@hasNext").string("false"))
+            .andExpect(MockMvcResultMatchers.xpath("/buildings/@hasPrev").string("true"));
     }
 
     @Test
@@ -250,7 +267,7 @@ final class BdsHttpTest {
             MockMvcRequestBuilders.get("/schools/1/buildings")
                 .session(this.session(Roles.RoleEnum.DIRECTOR, 1L))
                 .accept("application/vnd.surok.buildings.v1+json").param("name_ct", "Rejected")
-        ).andExpect(MockMvcResultMatchers.jsonPath("$.page.total").value(0));
+        ).andExpect(MockMvcResultMatchers.jsonPath("$.total").value(0));
         this.mvc.perform(
             MockMvcRequestBuilders.get("/schools/1/buildings/10")
                 .session(this.session(Roles.RoleEnum.DIRECTOR, 1L))
@@ -290,7 +307,7 @@ final class BdsHttpTest {
                 .session(this.session(Roles.RoleEnum.DIRECTOR, 1L))
                 .accept("application/vnd.surok.buildings.v1+json").param("name_ct", "West")
         ).andExpect(MockMvcResultMatchers.status().isOk())
-            .andExpect(MockMvcResultMatchers.jsonPath("$.page.total").value(0));
+            .andExpect(MockMvcResultMatchers.jsonPath("$.total").value(0));
     }
 
     @Test
@@ -346,7 +363,7 @@ final class BdsHttpTest {
             MockMvcRequestBuilders.get("/schools/1/buildings")
                 .session(this.session(Roles.RoleEnum.DIRECTOR, 1L))
                 .accept("application/vnd.surok.buildings.v1+json")
-        ).andExpect(MockMvcResultMatchers.jsonPath("$.page.total").value(2));
+        ).andExpect(MockMvcResultMatchers.jsonPath("$.total").value(2));
     }
 
     /**
@@ -541,7 +558,7 @@ final class BdsHttpTest {
                 .param("sort", "name:DESC")
         ).andExpect(MockMvcResultMatchers.status().isOk())
             .andExpect(MockMvcResultMatchers.jsonPath("$.items.length()").value(1))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.page.limit").value(1));
+            .andExpect(MockMvcResultMatchers.jsonPath("$.limit").value(1));
     }
 
     /** Verifies the negotiated fragment keeps filtering and omits the page chrome. */
@@ -648,7 +665,7 @@ final class BdsHttpTest {
                 .session(this.session(Roles.RoleEnum.DIRECTOR, 1L))
                 .accept("application/vnd.surok.buildings.v1+json").param("name_ct", "Rejected")
         ).andExpect(MockMvcResultMatchers.status().isOk())
-            .andExpect(MockMvcResultMatchers.jsonPath("$.page.total").value(0));
+            .andExpect(MockMvcResultMatchers.jsonPath("$.total").value(0));
     }
 
     @ParameterizedTest
@@ -672,7 +689,7 @@ final class BdsHttpTest {
                 .session(this.session(Roles.RoleEnum.DIRECTOR, 1L))
                 .accept("application/vnd.surok.buildings.v1+json").param("name_ct", "Rejected")
         ).andExpect(MockMvcResultMatchers.status().isOk())
-            .andExpect(MockMvcResultMatchers.jsonPath("$.page.total").value(0));
+            .andExpect(MockMvcResultMatchers.jsonPath("$.total").value(0));
     }
 
     @ParameterizedTest

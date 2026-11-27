@@ -326,7 +326,8 @@ final class OaHttpTest {
         MatcherAssert.assertThat(
             "Reader documentation exposed administrator models or lost schema dependencies",
             List.of(
-                schemas.has("CurriculumList"), schemas.has("Page"), schemas.has("Permissions"),
+                schemas.has("CurriculumList"), schemas.has("CurriculumV2"),
+                schemas.has("Permissions"),
                 document.findValuesAsText("$ref").stream().allMatch(
                     ref -> ref.startsWith("#/") && !document.at(ref.substring(1)).isMissingNode()
                 )
