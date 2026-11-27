@@ -3,7 +3,6 @@
  */
 package com.eshabakhov.surok.federal.curriculum.requirement.input;
 
-import com.eshabakhov.surok.ResultPage;
 import java.util.Collections;
 import java.util.Map;
 import org.hamcrest.MatcherAssert;
@@ -131,36 +130,6 @@ final class MdRqInputTest {
                 new RqInputSubject(new RqInput(), "504")
             ).print(),
             Matchers.is(Map.of("subjectId", "504"))
-        );
-    }
-
-    @Test
-    void ignoresPagination() {
-        final MdRqInput media = new MdRqInput();
-        MatcherAssert.assertThat(
-            "Pagination must not affect an input medium",
-            media.with("page", (ResultPage) null),
-            Matchers.sameInstance(media)
-        );
-    }
-
-    @Test
-    void ignoresAttributes() {
-        final MdRqInput media = new MdRqInput();
-        MatcherAssert.assertThat(
-            "Attributes must not affect an input medium",
-            media.attributes(Collections.emptyMap()),
-            Matchers.sameInstance(media)
-        );
-    }
-
-    @Test
-    void ignoresTitle() {
-        final MdRqInput media = new MdRqInput();
-        MatcherAssert.assertThat(
-            "A title must not affect an input medium",
-            media.title(null),
-            Matchers.sameInstance(media)
         );
     }
 

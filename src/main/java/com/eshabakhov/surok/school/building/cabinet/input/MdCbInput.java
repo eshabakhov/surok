@@ -5,7 +5,6 @@ package com.eshabakhov.surok.school.building.cabinet.input;
 
 import com.eshabakhov.surok.Media;
 import com.eshabakhov.surok.Printable;
-import com.eshabakhov.surok.ResultPage;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -82,21 +81,6 @@ public final class MdCbInput implements Media<Map<String, String>> {
     public Media<Map<String, String>> with(final Printable value)
         throws Exception {
         return value.print(this);
-    }
-
-    @Override
-    public MdCbInput with(final String name, final ResultPage value) {
-        return this;
-    }
-
-    @Override
-    public MdCbInput attributes(final Map<String, Object> values) {
-        return this;
-    }
-
-    @Override
-    public MdCbInput title(final String format) {
-        return this;
     }
 
     @Override

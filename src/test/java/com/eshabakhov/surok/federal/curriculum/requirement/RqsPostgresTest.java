@@ -394,7 +394,9 @@ final class RqsPostgresTest {
                         new SortRequest("subject", Sort.Direction.DESC)
                     )
                 )
-            ).print(new MdJson()).print().path("page"),
+            ).print(
+                new MdJson().include("limit", "offset", "total", "totalPages", "hasNext", "hasPrev")
+            ).print(),
             Matchers.is(
                 JsonNodeFactory.instance.objectNode()
                     .put("limit", 1)

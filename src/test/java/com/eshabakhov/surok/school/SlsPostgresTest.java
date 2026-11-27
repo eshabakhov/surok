@@ -150,7 +150,7 @@ final class SlsPostgresTest {
             schools.selection(
                 new FiltersRequest(Set.of()), new PageRequest(1, 1),
                 new SortsRequest(List.of())
-            ).print(new MdJson()).print().path("page").path("total").asInt(),
+            ).print(new MdJson()).print().path("total").asInt(),
             Matchers.equalTo(1)
         );
     }

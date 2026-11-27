@@ -6299,6 +6299,8 @@ components:
         id:
           type: integer
           format: int64
+          xml:
+            attribute: true
           description: Identifier of the school.
           minimum: 1
         name:
@@ -6819,12 +6821,11 @@ components:
           format: int32
           description: Number of weekly teaching hours.
           minimum: 0
-    Page:
+    SchoolList:
       type: object
-      description: Pagination metadata for the filtered collection.
-      xml:
-        name: page
+      description: School records with pagination properties at the collection level.
       required:
+        - items
         - limit
         - offset
         - total
@@ -6832,6 +6833,11 @@ components:
         - hasNext
         - hasPrev
       properties:
+        items:
+          type: array
+          description: Records on the current page.
+          items:
+            $ref: "#/components/schemas/School"
         limit:
           type: integer
           format: int32
@@ -6858,31 +6864,18 @@ components:
         hasPrev:
           type: boolean
           description: Whether entries exist before this page.
-    SchoolList:
-      type: object
-      description: Collection of school records.
-      required:
-        - items
-        - page
-      properties:
-        items:
-          type: array
-          description: Records on the current page.
-          items:
-            $ref: "#/components/schemas/School"
-        page:
-          description: Pagination metadata for this collection.
-          allOf:
-            - $ref: "#/components/schemas/Page"
-          xml:
-            name: page
     SchoolListXml:
       type: object
-      description: Collection of school records.
+      description: School records with pagination attributes on the schools element.
       xml:
         name: schools
       required:
-        - page
+        - limit
+        - offset
+        - total
+        - totalPages
+        - hasNext
+        - hasPrev
       properties:
         school:
           type: array
@@ -6894,37 +6887,99 @@ components:
               name: school
           xml:
             wrapped: false
-        page:
-          description: Pagination metadata for this collection.
-          allOf:
-            - $ref: "#/components/schemas/Page"
+        limit:
           xml:
-            name: page
+            attribute: true
+          type: integer
+          format: int32
+          description: Maximum number of returned entries.
+          minimum: 1
+        offset:
+          xml:
+            attribute: true
+          type: integer
+          format: int32
+          description: One-based page number of the returned slice.
+          minimum: 1
+        total:
+          xml:
+            attribute: true
+          type: integer
+          format: int32
+          description: Number of matches before pagination.
+          minimum: 0
+        totalPages:
+          xml:
+            attribute: true
+          type: integer
+          format: int32
+          description: Number of pages for the current limit.
+          minimum: 0
+        hasNext:
+          xml:
+            attribute: true
+          type: boolean
+          description: Whether entries exist after this page.
+        hasPrev:
+          xml:
+            attribute: true
+          type: boolean
+          description: Whether entries exist before this page.
     BuildingList:
       type: object
       description: Collection of building records.
       required:
         - items
-        - page
+        - limit
+        - offset
+        - total
+        - totalPages
+        - hasNext
+        - hasPrev
       properties:
         items:
           type: array
           description: Records on the current page.
           items:
             $ref: "#/components/schemas/Building"
-        page:
-          description: Pagination metadata for this collection.
-          allOf:
-            - $ref: "#/components/schemas/Page"
-          xml:
-            name: page
+        limit:
+          type: integer
+          format: int32
+          description: Maximum number of returned entries.
+          minimum: 1
+        offset:
+          type: integer
+          format: int32
+          description: One-based page number of the returned slice.
+          minimum: 1
+        total:
+          type: integer
+          format: int32
+          description: Number of matches before pagination.
+          minimum: 0
+        totalPages:
+          type: integer
+          format: int32
+          description: Number of pages for the current limit.
+          minimum: 0
+        hasNext:
+          type: boolean
+          description: Whether entries exist after this page.
+        hasPrev:
+          type: boolean
+          description: Whether entries exist before this page.
     BuildingListXml:
       type: object
       description: Collection of building records.
       xml:
         name: buildings
       required:
-        - page
+        - limit
+        - offset
+        - total
+        - totalPages
+        - hasNext
+        - hasPrev
       properties:
         building:
           type: array
@@ -6936,37 +6991,99 @@ components:
               name: building
           xml:
             wrapped: false
-        page:
-          description: Pagination metadata for this collection.
-          allOf:
-            - $ref: "#/components/schemas/Page"
+        limit:
           xml:
-            name: page
+            attribute: true
+          type: integer
+          format: int32
+          description: Maximum number of returned entries.
+          minimum: 1
+        offset:
+          xml:
+            attribute: true
+          type: integer
+          format: int32
+          description: One-based page number of the returned slice.
+          minimum: 1
+        total:
+          xml:
+            attribute: true
+          type: integer
+          format: int32
+          description: Number of matches before pagination.
+          minimum: 0
+        totalPages:
+          xml:
+            attribute: true
+          type: integer
+          format: int32
+          description: Number of pages for the current limit.
+          minimum: 0
+        hasNext:
+          xml:
+            attribute: true
+          type: boolean
+          description: Whether entries exist after this page.
+        hasPrev:
+          xml:
+            attribute: true
+          type: boolean
+          description: Whether entries exist before this page.
     CabinetList:
       type: object
       description: Collection of cabinet records.
       required:
         - items
-        - page
+        - limit
+        - offset
+        - total
+        - totalPages
+        - hasNext
+        - hasPrev
       properties:
         items:
           type: array
           description: Records on the current page.
           items:
             $ref: "#/components/schemas/Cabinet"
-        page:
-          description: Pagination metadata for this collection.
-          allOf:
-            - $ref: "#/components/schemas/Page"
-          xml:
-            name: page
+        limit:
+          type: integer
+          format: int32
+          description: Maximum number of returned entries.
+          minimum: 1
+        offset:
+          type: integer
+          format: int32
+          description: One-based page number of the returned slice.
+          minimum: 1
+        total:
+          type: integer
+          format: int32
+          description: Number of matches before pagination.
+          minimum: 0
+        totalPages:
+          type: integer
+          format: int32
+          description: Number of pages for the current limit.
+          minimum: 0
+        hasNext:
+          type: boolean
+          description: Whether entries exist after this page.
+        hasPrev:
+          type: boolean
+          description: Whether entries exist before this page.
     CabinetListXml:
       type: object
       description: Collection of cabinet records.
       xml:
         name: cabinets
       required:
-        - page
+        - limit
+        - offset
+        - total
+        - totalPages
+        - hasNext
+        - hasPrev
       properties:
         cabinet:
           type: array
@@ -6978,37 +7095,99 @@ components:
               name: cabinet
           xml:
             wrapped: false
-        page:
-          description: Pagination metadata for this collection.
-          allOf:
-            - $ref: "#/components/schemas/Page"
+        limit:
           xml:
-            name: page
+            attribute: true
+          type: integer
+          format: int32
+          description: Maximum number of returned entries.
+          minimum: 1
+        offset:
+          xml:
+            attribute: true
+          type: integer
+          format: int32
+          description: One-based page number of the returned slice.
+          minimum: 1
+        total:
+          xml:
+            attribute: true
+          type: integer
+          format: int32
+          description: Number of matches before pagination.
+          minimum: 0
+        totalPages:
+          xml:
+            attribute: true
+          type: integer
+          format: int32
+          description: Number of pages for the current limit.
+          minimum: 0
+        hasNext:
+          xml:
+            attribute: true
+          type: boolean
+          description: Whether entries exist after this page.
+        hasPrev:
+          xml:
+            attribute: true
+          type: boolean
+          description: Whether entries exist before this page.
     TeacherList:
       type: object
       description: Collection of teacher records.
       required:
         - items
-        - page
+        - limit
+        - offset
+        - total
+        - totalPages
+        - hasNext
+        - hasPrev
       properties:
         items:
           type: array
           description: Records on the current page.
           items:
             $ref: "#/components/schemas/Teacher"
-        page:
-          description: Pagination metadata for this collection.
-          allOf:
-            - $ref: "#/components/schemas/Page"
-          xml:
-            name: page
+        limit:
+          type: integer
+          format: int32
+          description: Maximum number of returned entries.
+          minimum: 1
+        offset:
+          type: integer
+          format: int32
+          description: One-based page number of the returned slice.
+          minimum: 1
+        total:
+          type: integer
+          format: int32
+          description: Number of matches before pagination.
+          minimum: 0
+        totalPages:
+          type: integer
+          format: int32
+          description: Number of pages for the current limit.
+          minimum: 0
+        hasNext:
+          type: boolean
+          description: Whether entries exist after this page.
+        hasPrev:
+          type: boolean
+          description: Whether entries exist before this page.
     TeacherListXml:
       type: object
       description: Collection of teacher records.
       xml:
         name: teachers
       required:
-        - page
+        - limit
+        - offset
+        - total
+        - totalPages
+        - hasNext
+        - hasPrev
       properties:
         teacher:
           type: array
@@ -7020,37 +7199,99 @@ components:
               name: teacher
           xml:
             wrapped: false
-        page:
-          description: Pagination metadata for this collection.
-          allOf:
-            - $ref: "#/components/schemas/Page"
+        limit:
           xml:
-            name: page
+            attribute: true
+          type: integer
+          format: int32
+          description: Maximum number of returned entries.
+          minimum: 1
+        offset:
+          xml:
+            attribute: true
+          type: integer
+          format: int32
+          description: One-based page number of the returned slice.
+          minimum: 1
+        total:
+          xml:
+            attribute: true
+          type: integer
+          format: int32
+          description: Number of matches before pagination.
+          minimum: 0
+        totalPages:
+          xml:
+            attribute: true
+          type: integer
+          format: int32
+          description: Number of pages for the current limit.
+          minimum: 0
+        hasNext:
+          xml:
+            attribute: true
+          type: boolean
+          description: Whether entries exist after this page.
+        hasPrev:
+          xml:
+            attribute: true
+          type: boolean
+          description: Whether entries exist before this page.
     ScheduleList:
       type: object
       description: Collection of schedule records.
       required:
         - items
-        - page
+        - limit
+        - offset
+        - total
+        - totalPages
+        - hasNext
+        - hasPrev
       properties:
         items:
           type: array
           description: Records on the current page.
           items:
             $ref: "#/components/schemas/Schedule"
-        page:
-          description: Pagination metadata for this collection.
-          allOf:
-            - $ref: "#/components/schemas/Page"
-          xml:
-            name: page
+        limit:
+          type: integer
+          format: int32
+          description: Maximum number of returned entries.
+          minimum: 1
+        offset:
+          type: integer
+          format: int32
+          description: One-based page number of the returned slice.
+          minimum: 1
+        total:
+          type: integer
+          format: int32
+          description: Number of matches before pagination.
+          minimum: 0
+        totalPages:
+          type: integer
+          format: int32
+          description: Number of pages for the current limit.
+          minimum: 0
+        hasNext:
+          type: boolean
+          description: Whether entries exist after this page.
+        hasPrev:
+          type: boolean
+          description: Whether entries exist before this page.
     ScheduleListXml:
       type: object
       description: Collection of schedule records.
       xml:
         name: schedules
       required:
-        - page
+        - limit
+        - offset
+        - total
+        - totalPages
+        - hasNext
+        - hasPrev
       properties:
         schedule:
           type: array
@@ -7062,37 +7303,99 @@ components:
               name: schedule
           xml:
             wrapped: false
-        page:
-          description: Pagination metadata for this collection.
-          allOf:
-            - $ref: "#/components/schemas/Page"
+        limit:
           xml:
-            name: page
+            attribute: true
+          type: integer
+          format: int32
+          description: Maximum number of returned entries.
+          minimum: 1
+        offset:
+          xml:
+            attribute: true
+          type: integer
+          format: int32
+          description: One-based page number of the returned slice.
+          minimum: 1
+        total:
+          xml:
+            attribute: true
+          type: integer
+          format: int32
+          description: Number of matches before pagination.
+          minimum: 0
+        totalPages:
+          xml:
+            attribute: true
+          type: integer
+          format: int32
+          description: Number of pages for the current limit.
+          minimum: 0
+        hasNext:
+          xml:
+            attribute: true
+          type: boolean
+          description: Whether entries exist after this page.
+        hasPrev:
+          xml:
+            attribute: true
+          type: boolean
+          description: Whether entries exist before this page.
     SchoolClassList:
       type: object
       description: Collection of school class records.
       required:
         - items
-        - page
+        - limit
+        - offset
+        - total
+        - totalPages
+        - hasNext
+        - hasPrev
       properties:
         items:
           type: array
           description: Records on the current page.
           items:
             $ref: "#/components/schemas/SchoolClass"
-        page:
-          description: Pagination metadata for this collection.
-          allOf:
-            - $ref: "#/components/schemas/Page"
-          xml:
-            name: page
+        limit:
+          type: integer
+          format: int32
+          description: Maximum number of returned entries.
+          minimum: 1
+        offset:
+          type: integer
+          format: int32
+          description: One-based page number of the returned slice.
+          minimum: 1
+        total:
+          type: integer
+          format: int32
+          description: Number of matches before pagination.
+          minimum: 0
+        totalPages:
+          type: integer
+          format: int32
+          description: Number of pages for the current limit.
+          minimum: 0
+        hasNext:
+          type: boolean
+          description: Whether entries exist after this page.
+        hasPrev:
+          type: boolean
+          description: Whether entries exist before this page.
     SchoolClassListXml:
       type: object
       description: Collection of school class records.
       xml:
         name: classes
       required:
-        - page
+        - limit
+        - offset
+        - total
+        - totalPages
+        - hasNext
+        - hasPrev
       properties:
         school-class:
           type: array
@@ -7104,37 +7407,99 @@ components:
               name: school-class
           xml:
             wrapped: false
-        page:
-          description: Pagination metadata for this collection.
-          allOf:
-            - $ref: "#/components/schemas/Page"
+        limit:
           xml:
-            name: page
+            attribute: true
+          type: integer
+          format: int32
+          description: Maximum number of returned entries.
+          minimum: 1
+        offset:
+          xml:
+            attribute: true
+          type: integer
+          format: int32
+          description: One-based page number of the returned slice.
+          minimum: 1
+        total:
+          xml:
+            attribute: true
+          type: integer
+          format: int32
+          description: Number of matches before pagination.
+          minimum: 0
+        totalPages:
+          xml:
+            attribute: true
+          type: integer
+          format: int32
+          description: Number of pages for the current limit.
+          minimum: 0
+        hasNext:
+          xml:
+            attribute: true
+          type: boolean
+          description: Whether entries exist after this page.
+        hasPrev:
+          xml:
+            attribute: true
+          type: boolean
+          description: Whether entries exist before this page.
     SubjectList:
       type: object
       description: Collection of subject records.
       required:
         - items
-        - page
+        - limit
+        - offset
+        - total
+        - totalPages
+        - hasNext
+        - hasPrev
       properties:
         items:
           type: array
           description: Records on the current page.
           items:
             $ref: "#/components/schemas/Subject"
-        page:
-          description: Pagination metadata for this collection.
-          allOf:
-            - $ref: "#/components/schemas/Page"
-          xml:
-            name: page
+        limit:
+          type: integer
+          format: int32
+          description: Maximum number of returned entries.
+          minimum: 1
+        offset:
+          type: integer
+          format: int32
+          description: One-based page number of the returned slice.
+          minimum: 1
+        total:
+          type: integer
+          format: int32
+          description: Number of matches before pagination.
+          minimum: 0
+        totalPages:
+          type: integer
+          format: int32
+          description: Number of pages for the current limit.
+          minimum: 0
+        hasNext:
+          type: boolean
+          description: Whether entries exist after this page.
+        hasPrev:
+          type: boolean
+          description: Whether entries exist before this page.
     SubjectListXml:
       type: object
       description: Collection of subject records.
       xml:
         name: subjects
       required:
-        - page
+        - limit
+        - offset
+        - total
+        - totalPages
+        - hasNext
+        - hasPrev
       properties:
         subject:
           type: array
@@ -7146,37 +7511,99 @@ components:
               name: subject
           xml:
             wrapped: false
-        page:
-          description: Pagination metadata for this collection.
-          allOf:
-            - $ref: "#/components/schemas/Page"
+        limit:
           xml:
-            name: page
+            attribute: true
+          type: integer
+          format: int32
+          description: Maximum number of returned entries.
+          minimum: 1
+        offset:
+          xml:
+            attribute: true
+          type: integer
+          format: int32
+          description: One-based page number of the returned slice.
+          minimum: 1
+        total:
+          xml:
+            attribute: true
+          type: integer
+          format: int32
+          description: Number of matches before pagination.
+          minimum: 0
+        totalPages:
+          xml:
+            attribute: true
+          type: integer
+          format: int32
+          description: Number of pages for the current limit.
+          minimum: 0
+        hasNext:
+          xml:
+            attribute: true
+          type: boolean
+          description: Whether entries exist after this page.
+        hasPrev:
+          xml:
+            attribute: true
+          type: boolean
+          description: Whether entries exist before this page.
     CurriculumList:
       type: object
       description: Collection of curriculum records.
       required:
         - items
-        - page
+        - limit
+        - offset
+        - total
+        - totalPages
+        - hasNext
+        - hasPrev
       properties:
         items:
           type: array
           description: Records on the current page.
           items:
             $ref: "#/components/schemas/CurriculumV2"
-        page:
-          description: Pagination metadata for this collection.
-          allOf:
-            - $ref: "#/components/schemas/Page"
-          xml:
-            name: page
+        limit:
+          type: integer
+          format: int32
+          description: Maximum number of returned entries.
+          minimum: 1
+        offset:
+          type: integer
+          format: int32
+          description: One-based page number of the returned slice.
+          minimum: 1
+        total:
+          type: integer
+          format: int32
+          description: Number of matches before pagination.
+          minimum: 0
+        totalPages:
+          type: integer
+          format: int32
+          description: Number of pages for the current limit.
+          minimum: 0
+        hasNext:
+          type: boolean
+          description: Whether entries exist after this page.
+        hasPrev:
+          type: boolean
+          description: Whether entries exist before this page.
     CurriculumListXml:
       type: object
       description: Collection of curriculum records.
       xml:
         name: curriculums
       required:
-        - page
+        - limit
+        - offset
+        - total
+        - totalPages
+        - hasNext
+        - hasPrev
       properties:
         curriculum:
           type: array
@@ -7188,37 +7615,99 @@ components:
               name: curriculum
           xml:
             wrapped: false
-        page:
-          description: Pagination metadata for this collection.
-          allOf:
-            - $ref: "#/components/schemas/Page"
+        limit:
           xml:
-            name: page
+            attribute: true
+          type: integer
+          format: int32
+          description: Maximum number of returned entries.
+          minimum: 1
+        offset:
+          xml:
+            attribute: true
+          type: integer
+          format: int32
+          description: One-based page number of the returned slice.
+          minimum: 1
+        total:
+          xml:
+            attribute: true
+          type: integer
+          format: int32
+          description: Number of matches before pagination.
+          minimum: 0
+        totalPages:
+          xml:
+            attribute: true
+          type: integer
+          format: int32
+          description: Number of pages for the current limit.
+          minimum: 0
+        hasNext:
+          xml:
+            attribute: true
+          type: boolean
+          description: Whether entries exist after this page.
+        hasPrev:
+          xml:
+            attribute: true
+          type: boolean
+          description: Whether entries exist before this page.
     RequirementList:
       type: object
       description: Collection of requirement records.
       required:
         - items
-        - page
+        - limit
+        - offset
+        - total
+        - totalPages
+        - hasNext
+        - hasPrev
       properties:
         items:
           type: array
           description: Records on the current page.
           items:
             $ref: "#/components/schemas/Requirement"
-        page:
-          description: Pagination metadata for this collection.
-          allOf:
-            - $ref: "#/components/schemas/Page"
-          xml:
-            name: page
+        limit:
+          type: integer
+          format: int32
+          description: Maximum number of returned entries.
+          minimum: 1
+        offset:
+          type: integer
+          format: int32
+          description: One-based page number of the returned slice.
+          minimum: 1
+        total:
+          type: integer
+          format: int32
+          description: Number of matches before pagination.
+          minimum: 0
+        totalPages:
+          type: integer
+          format: int32
+          description: Number of pages for the current limit.
+          minimum: 0
+        hasNext:
+          type: boolean
+          description: Whether entries exist after this page.
+        hasPrev:
+          type: boolean
+          description: Whether entries exist before this page.
     RequirementListXml:
       type: object
       description: Collection of requirement records.
       xml:
         name: requirements
       required:
-        - page
+        - limit
+        - offset
+        - total
+        - totalPages
+        - hasNext
+        - hasPrev
       properties:
         requirement:
           type: array
@@ -7230,37 +7719,99 @@ components:
               name: requirement
           xml:
             wrapped: false
-        page:
-          description: Pagination metadata for this collection.
-          allOf:
-            - $ref: "#/components/schemas/Page"
+        limit:
           xml:
-            name: page
+            attribute: true
+          type: integer
+          format: int32
+          description: Maximum number of returned entries.
+          minimum: 1
+        offset:
+          xml:
+            attribute: true
+          type: integer
+          format: int32
+          description: One-based page number of the returned slice.
+          minimum: 1
+        total:
+          xml:
+            attribute: true
+          type: integer
+          format: int32
+          description: Number of matches before pagination.
+          minimum: 0
+        totalPages:
+          xml:
+            attribute: true
+          type: integer
+          format: int32
+          description: Number of pages for the current limit.
+          minimum: 0
+        hasNext:
+          xml:
+            attribute: true
+          type: boolean
+          description: Whether entries exist after this page.
+        hasPrev:
+          xml:
+            attribute: true
+          type: boolean
+          description: Whether entries exist before this page.
     ClassLoadList:
       type: object
       description: Collection of load records.
       required:
         - items
-        - page
+        - limit
+        - offset
+        - total
+        - totalPages
+        - hasNext
+        - hasPrev
       properties:
         items:
           type: array
           description: Records on the current page.
           items:
             $ref: "#/components/schemas/ClassLoad"
-        page:
-          description: Pagination metadata for this collection.
-          allOf:
-            - $ref: "#/components/schemas/Page"
-          xml:
-            name: page
+        limit:
+          type: integer
+          format: int32
+          description: Maximum number of returned entries.
+          minimum: 1
+        offset:
+          type: integer
+          format: int32
+          description: One-based page number of the returned slice.
+          minimum: 1
+        total:
+          type: integer
+          format: int32
+          description: Number of matches before pagination.
+          minimum: 0
+        totalPages:
+          type: integer
+          format: int32
+          description: Number of pages for the current limit.
+          minimum: 0
+        hasNext:
+          type: boolean
+          description: Whether entries exist after this page.
+        hasPrev:
+          type: boolean
+          description: Whether entries exist before this page.
     ClassLoadListXml:
       type: object
       description: Collection of load records.
       xml:
         name: loads
       required:
-        - page
+        - limit
+        - offset
+        - total
+        - totalPages
+        - hasNext
+        - hasPrev
       properties:
         load:
           type: array
@@ -7272,12 +7823,44 @@ components:
               name: load
           xml:
             wrapped: false
-        page:
-          description: Pagination metadata for this collection.
-          allOf:
-            - $ref: "#/components/schemas/Page"
+        limit:
           xml:
-            name: page
+            attribute: true
+          type: integer
+          format: int32
+          description: Maximum number of returned entries.
+          minimum: 1
+        offset:
+          xml:
+            attribute: true
+          type: integer
+          format: int32
+          description: One-based page number of the returned slice.
+          minimum: 1
+        total:
+          xml:
+            attribute: true
+          type: integer
+          format: int32
+          description: Number of matches before pagination.
+          minimum: 0
+        totalPages:
+          xml:
+            attribute: true
+          type: integer
+          format: int32
+          description: Number of pages for the current limit.
+          minimum: 0
+        hasNext:
+          xml:
+            attribute: true
+          type: boolean
+          description: Whether entries exist after this page.
+        hasPrev:
+          xml:
+            attribute: true
+          type: boolean
+          description: Whether entries exist before this page.
     SchoolMember:
       type: object
       description: Existing account as shown in a school membership response.
@@ -8247,8 +8830,7 @@ components:
     SchoolXml:
       summary: School returned by the application.
       value: |-
-        <school>
-          <id>12</id>
+        <school id="12">
           <name>Лицей № 42</name>
         </school>
     HtmlPageSchoolDetailsHtml:
@@ -8550,29 +9132,20 @@ components:
         items:
           - id: 31
             name: Анна Петрова
-        page:
-          limit: 15
-          offset: 1
-          total: 1
-          totalPages: 1
-          hasNext: false
-          hasPrev: false
+        limit: 15
+        offset: 1
+        total: 1
+        totalPages: 1
+        hasNext: false
+        hasPrev: false
     TeacherListXml:
       summary: Collection of teacher records.
       value: |-
-        <teachers>
+        <teachers limit="15" offset="1" total="1" totalPages="1" hasNext="false" hasPrev="false">
           <teacher>
             <id>31</id>
             <name>Анна Петрова</name>
           </teacher>
-          <page>
-            <limit>15</limit>
-            <offset>1</offset>
-            <total>1</total>
-            <totalPages>1</totalPages>
-            <hasNext>false</hasNext>
-            <hasPrev>false</hasPrev>
-          </page>
         </teachers>
     HtmlPageTeacherCreateHtml:
       summary: Rendered HTML document or fragment. The example shows the relevant part of the response.
@@ -8597,29 +9170,20 @@ components:
         items:
           - id: 25
             name: Основное расписание
-        page:
-          limit: 15
-          offset: 1
-          total: 1
-          totalPages: 1
-          hasNext: false
-          hasPrev: false
+        limit: 15
+        offset: 1
+        total: 1
+        totalPages: 1
+        hasNext: false
+        hasPrev: false
     ScheduleListXml:
       summary: Collection of schedule records.
       value: |-
-        <schedules>
+        <schedules limit="15" offset="1" total="1" totalPages="1" hasNext="false" hasPrev="false">
           <schedule>
             <id>25</id>
             <name>Основное расписание</name>
           </schedule>
-          <page>
-            <limit>15</limit>
-            <offset>1</offset>
-            <total>1</total>
-            <totalPages>1</totalPages>
-            <hasNext>false</hasNext>
-            <hasPrev>false</hasPrev>
-          </page>
         </schedules>
     HtmlPageScheduleCreateHtml:
       summary: Rendered HTML document or fragment. The example shows the relevant part of the response.
@@ -8659,31 +9223,22 @@ components:
             name: 5А
             grade: 5
             litera: А
-        page:
-          limit: 15
-          offset: 1
-          total: 1
-          totalPages: 1
-          hasNext: false
-          hasPrev: false
+        limit: 15
+        offset: 1
+        total: 1
+        totalPages: 1
+        hasNext: false
+        hasPrev: false
     SchoolClassListXml:
       summary: Collection of school class records.
       value: |-
-        <classes>
+        <classes limit="15" offset="1" total="1" totalPages="1" hasNext="false" hasPrev="false">
           <school-class>
             <id>41</id>
             <name>5А</name>
             <grade>5</grade>
             <litera>А</litera>
           </school-class>
-          <page>
-            <limit>15</limit>
-            <offset>1</offset>
-            <total>1</total>
-            <totalPages>1</totalPages>
-            <hasNext>false</hasNext>
-            <hasPrev>false</hasPrev>
-          </page>
         </classes>
     HtmlPageSchoolClassCreateHtml:
       summary: Rendered HTML document or fragment. The example shows the relevant part of the response.
@@ -8719,29 +9274,20 @@ components:
         items:
           - id: 17
             name: Кабинет 204
-        page:
-          limit: 15
-          offset: 1
-          total: 1
-          totalPages: 1
-          hasNext: false
-          hasPrev: false
+        limit: 15
+        offset: 1
+        total: 1
+        totalPages: 1
+        hasNext: false
+        hasPrev: false
     CabinetListXml:
       summary: Collection of cabinet records.
       value: |-
-        <cabinets>
+        <cabinets limit="15" offset="1" total="1" totalPages="1" hasNext="false" hasPrev="false">
           <cabinet>
             <id>17</id>
             <name>Кабинет 204</name>
           </cabinet>
-          <page>
-            <limit>15</limit>
-            <offset>1</offset>
-            <total>1</total>
-            <totalPages>1</totalPages>
-            <hasNext>false</hasNext>
-            <hasPrev>false</hasPrev>
-          </page>
         </cabinets>
     HtmlPageCabinetCreateHtml:
       summary: Rendered HTML document or fragment. The example shows the relevant part of the response.
@@ -8755,29 +9301,20 @@ components:
         items:
           - id: 7
             name: Учебный корпус
-        page:
-          limit: 15
-          offset: 1
-          total: 1
-          totalPages: 1
-          hasNext: false
-          hasPrev: false
+        limit: 15
+        offset: 1
+        total: 1
+        totalPages: 1
+        hasNext: false
+        hasPrev: false
     BuildingListXml:
       summary: Collection of building records.
       value: |-
-        <buildings>
+        <buildings limit="15" offset="1" total="1" totalPages="1" hasNext="false" hasPrev="false">
           <building>
             <id>7</id>
             <name>Учебный корпус</name>
           </building>
-          <page>
-            <limit>15</limit>
-            <offset>1</offset>
-            <total>1</total>
-            <totalPages>1</totalPages>
-            <hasNext>false</hasNext>
-            <hasPrev>false</hasPrev>
-          </page>
         </buildings>
     HtmlPageBuildingCreateHtml:
       summary: Rendered HTML document or fragment. The example shows the relevant part of the response.
@@ -8786,34 +9323,24 @@ components:
       summary: Rendered HTML document or fragment. The example shows the relevant part of the response.
       value: <main><h1>Корпуса</h1></main>
     SchoolListJson:
-      summary: Collection of school records.
+      summary: Collection of school records with pagination properties.
       value:
         items:
           - id: 12
             name: Лицей № 42
-        page:
-          limit: 15
-          offset: 1
-          total: 1
-          totalPages: 1
-          hasNext: false
-          hasPrev: false
+        limit: 15
+        offset: 1
+        total: 1
+        totalPages: 1
+        hasNext: false
+        hasPrev: false
     SchoolListXml:
-      summary: Collection of school records.
+      summary: Collection of school records with pagination attributes.
       value: |-
-        <schools>
-          <school>
-            <id>12</id>
+        <schools limit="15" offset="1" total="1" totalPages="1" hasNext="false" hasPrev="false">
+          <school id="12">
             <name>Лицей № 42</name>
           </school>
-          <page>
-            <limit>15</limit>
-            <offset>1</offset>
-            <total>1</total>
-            <totalPages>1</totalPages>
-            <hasNext>false</hasNext>
-            <hasPrev>false</hasPrev>
-          </page>
         </schools>
     HtmlPageSchoolCreateHtml:
       summary: Rendered HTML document or fragment. The example shows the relevant part of the response.
@@ -8835,30 +9362,21 @@ components:
           - id: 29
             name: Математика
             origin: FEDERAL
-        page:
-          limit: 15
-          offset: 1
-          total: 1
-          totalPages: 1
-          hasNext: false
-          hasPrev: false
+        limit: 15
+        offset: 1
+        total: 1
+        totalPages: 1
+        hasNext: false
+        hasPrev: false
     SubjectListXml:
       summary: Collection of subject records.
       value: |-
-        <subjects>
+        <subjects limit="15" offset="1" total="1" totalPages="1" hasNext="false" hasPrev="false">
           <subject>
             <id>29</id>
             <name>Математика</name>
             <origin>FEDERAL</origin>
           </subject>
-          <page>
-            <limit>15</limit>
-            <offset>1</offset>
-            <total>1</total>
-            <totalPages>1</totalPages>
-            <hasNext>false</hasNext>
-            <hasPrev>false</hasPrev>
-          </page>
         </subjects>
     HtmlPageSubjectCreateHtml:
       summary: Rendered HTML document or fragment. The example shows the relevant part of the response.
@@ -8870,30 +9388,21 @@ components:
           - id: 29
             name: Математика
             origin: SCHOOL
-        page:
-          limit: 15
-          offset: 1
-          total: 1
-          totalPages: 1
-          hasNext: false
-          hasPrev: false
+        limit: 15
+        offset: 1
+        total: 1
+        totalPages: 1
+        hasNext: false
+        hasPrev: false
     SubjectListXmlSchool:
       summary: Collection of subject records.
       value: |-
-        <subjects>
+        <subjects limit="15" offset="1" total="1" totalPages="1" hasNext="false" hasPrev="false">
           <subject>
             <id>29</id>
             <name>Математика</name>
             <origin>SCHOOL</origin>
           </subject>
-          <page>
-            <limit>15</limit>
-            <offset>1</offset>
-            <total>1</total>
-            <totalPages>1</totalPages>
-            <hasNext>false</hasNext>
-            <hasPrev>false</hasPrev>
-          </page>
         </subjects>
     HtmlPageSubjectListHtml:
       summary: Rendered HTML document or fragment. The example shows the relevant part of the response.
@@ -8910,17 +9419,16 @@ components:
               origin: FEDERAL
             hours: 5
             partType: MANDATORY
-        page:
-          limit: 15
-          offset: 1
-          total: 1
-          totalPages: 1
-          hasNext: false
-          hasPrev: false
+        limit: 15
+        offset: 1
+        total: 1
+        totalPages: 1
+        hasNext: false
+        hasPrev: false
     RequirementListXml:
       summary: Collection of requirement records.
       value: |-
-        <requirements>
+        <requirements limit="15" offset="1" total="1" totalPages="1" hasNext="false" hasPrev="false">
           <requirement>
             <id>71</id>
             <grade>5</grade>
@@ -8932,14 +9440,6 @@ components:
             <hours>5</hours>
             <partType>MANDATORY</partType>
           </requirement>
-          <page>
-            <limit>15</limit>
-            <offset>1</offset>
-            <total>1</total>
-            <totalPages>1</totalPages>
-            <hasNext>false</hasNext>
-            <hasPrev>false</hasPrev>
-          </page>
         </requirements>
     HtmlPageRequirementListHtml:
       summary: Rendered HTML document or fragment. The example shows the relevant part of the response.
@@ -9021,17 +9521,16 @@ components:
             version: "1"
             year: 2026/2027
             description: Основная школа
-        page:
-          limit: 15
-          offset: 1
-          total: 1
-          totalPages: 1
-          hasNext: false
-          hasPrev: false
+        limit: 15
+        offset: 1
+        total: 1
+        totalPages: 1
+        hasNext: false
+        hasPrev: false
     CurriculumListXml:
       summary: Collection of curriculum records.
       value: |-
-        <curriculums>
+        <curriculums limit="15" offset="1" total="1" totalPages="1" hasNext="false" hasPrev="false">
           <curriculum>
             <id>61</id>
             <title>Основной учебный план</title>
@@ -9041,14 +9540,6 @@ components:
             <year>2026/2027</year>
             <description>Основная школа</description>
           </curriculum>
-          <page>
-            <limit>15</limit>
-            <offset>1</offset>
-            <total>1</total>
-            <totalPages>1</totalPages>
-            <hasNext>false</hasNext>
-            <hasPrev>false</hasPrev>
-          </page>
         </curriculums>
     HtmlPageCurriculumCreateHtml:
       summary: Rendered HTML document or fragment. The example shows the relevant part of the response.
@@ -9149,17 +9640,16 @@ components:
               name: Математика
               origin: FEDERAL
             hours: 5
-        page:
-          limit: 15
-          offset: 1
-          total: 1
-          totalPages: 1
-          hasNext: false
-          hasPrev: false
+        limit: 15
+        offset: 1
+        total: 1
+        totalPages: 1
+        hasNext: false
+        hasPrev: false
     ClassLoadListXml:
       summary: Collection of load records.
       value: |-
-        <loads>
+        <loads limit="15" offset="1" total="1" totalPages="1" hasNext="false" hasPrev="false">
           <load>
             <id>92</id>
             <schoolClass>
@@ -9175,14 +9665,6 @@ components:
             </subject>
             <hours>5</hours>
           </load>
-          <page>
-            <limit>15</limit>
-            <offset>1</offset>
-            <total>1</total>
-            <totalPages>1</totalPages>
-            <hasNext>false</hasNext>
-            <hasPrev>false</hasPrev>
-          </page>
         </loads>
     HtmlPageClassLoadListHtml:
       summary: Rendered HTML document or fragment. The example shows the relevant part of the response.

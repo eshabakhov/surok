@@ -79,6 +79,6 @@ public final class SlMembers implements School {
 
     @Override
     public <T> Media<T> print(final Media<T> media) {
-        return media.with("id", this.id);
+        return media.attribute("id", this.id);
     }
 }

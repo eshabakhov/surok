@@ -7,10 +7,10 @@
     <xsl:variable name="clazz" select="/surok/school-class"/>
     <xsl:variable name="teacher" select="/surok/teacher"/>
     <xsl:variable name="subject" select="/surok/subject"/>
-    <xsl:variable name="school-path" select="concat('/schools/', $school/id)"/>
+    <xsl:variable name="school-path" select="concat('/schools/', $school/@id)"/>
 
     <xsl:template name="school-navigation">
-        <xsl:if test="$school/id">
+        <xsl:if test="$school/@id">
         <div class="sidebar-section">
             <a class="sidebar-school-link" href="{$school-path}" title="Перейти к школе">
                 <xsl:value-of select="$school/name"/>

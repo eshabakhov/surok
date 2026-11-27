@@ -5,8 +5,6 @@ package com.eshabakhov.surok.media;
 
 import com.eshabakhov.surok.Media;
 import com.eshabakhov.surok.Printable;
-import com.eshabakhov.surok.ResultPage;
-import java.util.Map;
 
 /**
  * HTML media produced by an XML document and an XSLT transformation.
@@ -30,6 +28,26 @@ public final class MdXslt implements Media<String> {
     public MdXslt(final Media<String> xml, final Xslt xslt) {
         this.xml = xml;
         this.xslt = xslt;
+    }
+
+    @Override
+    public MdXslt attribute(final String name, final String value) {
+        return new MdXslt(this.xml.attribute(name, value), this.xslt);
+    }
+
+    @Override
+    public MdXslt attribute(final String name, final Long value) {
+        return new MdXslt(this.xml.attribute(name, value), this.xslt);
+    }
+
+    @Override
+    public MdXslt attribute(final String name, final Integer value) {
+        return new MdXslt(this.xml.attribute(name, value), this.xslt);
+    }
+
+    @Override
+    public MdXslt attribute(final String name, final Boolean value) {
+        return new MdXslt(this.xml.attribute(name, value), this.xslt);
     }
 
     @Override
@@ -61,21 +79,6 @@ public final class MdXslt implements Media<String> {
     @Override
     public MdXslt with(final Printable value) throws Exception {
         return new MdXslt(this.xml.with(value), this.xslt);
-    }
-
-    @Override
-    public MdXslt with(final String name, final ResultPage value) {
-        return new MdXslt(this.xml.with(name, value), this.xslt);
-    }
-
-    @Override
-    public MdXslt attributes(final Map<String, Object> values) {
-        return new MdXslt(this.xml.attributes(values), this.xslt);
-    }
-
-    @Override
-    public MdXslt title(final String format) {
-        return new MdXslt(this.xml.title(format), this.xslt);
     }
 
     @Override

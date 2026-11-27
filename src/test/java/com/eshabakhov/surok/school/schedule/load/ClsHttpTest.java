@@ -129,8 +129,8 @@ final class ClsHttpTest {
             .andExpect(MockMvcResultMatchers.jsonPath("$.items.length()").value(1))
             .andExpect(MockMvcResultMatchers.jsonPath("$.items[0].id").value(51))
             .andExpect(MockMvcResultMatchers.jsonPath("$.items[0].schoolClass.name").value("10Б"))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.page.total").value(2))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.page.offset").value(2));
+            .andExpect(MockMvcResultMatchers.jsonPath("$.total").value(2))
+            .andExpect(MockMvcResultMatchers.jsonPath("$.offset").value(2));
         this.mvc.perform(
             MockMvcRequestBuilders.get("/schools/1/schedules/100/loads")
                 .session(this.session(Roles.RoleEnum.STUDENT, 1L))

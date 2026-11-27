@@ -57,7 +57,7 @@
                         <div>
                             <xsl:for-each select="/surok/memberships/membership">
                                 <div class="profile-membership">
-                                    <a class="info-value profile-school" href="/schools/{school/id}" title="Перейти к школе">
+                                    <a class="info-value profile-school" href="/schools/{school/@id}" title="Перейти к школе">
                                         <xsl:value-of select="school/name" />
                                     </a>
                                     <xsl:for-each select="roles/role">
@@ -66,7 +66,7 @@
                                         </span>
                                     </xsl:for-each>
                                     <xsl:for-each select="schedules/schedule">
-                                        <a class="info-value profile-school" href="/schools/{../../school/id}/schedules/{id}">
+                                        <a class="info-value profile-school" href="/schools/{../../school/@id}/schedules/{id}">
                                             <xsl:value-of select="name" />
                                         </a>
                                     </xsl:for-each>

@@ -251,7 +251,7 @@ final class BdsPostgresTest {
         );
         MatcherAssert.assertThat(
             "Count must use the same school, deletion and search restrictions",
-            printed.get("page").get("total").asInt(), Matchers.is(2)
+            printed.get("total").asInt(), Matchers.is(2)
         );
     }
 
@@ -278,7 +278,7 @@ final class BdsPostgresTest {
         );
         MatcherAssert.assertThat(
             "An empty page must retain the total count",
-            printed.get("page").get("total").asInt(), Matchers.is(3)
+            printed.get("total").asInt(), Matchers.is(3)
         );
     }
 

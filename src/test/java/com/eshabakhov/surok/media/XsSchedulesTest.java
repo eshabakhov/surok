@@ -150,18 +150,17 @@ final class XsSchedulesTest {
         return String.format(
             """
             <surok>%s
-                <school><id>3</id><name>Школа</name><schedules><schedule>
+                <school id="3"><name>Школа</name><schedules><schedule>
                     <id>9</id><name>Учебный год</name>
                 </schedule></schedules></school>
                 <summary><classCount>2</classCount><subjectCount>3</subjectCount></summary>
                 <error>empty</error><csrf><parameter>_csrf</parameter><token>token</token>
                     <header>X-XSRF-TOKEN</header></csrf>
-                <schedules><schedule>
+                <schedules offset="1" limit="15" total="60"
+                    totalPages="4" hasNext="true" hasPrev="false"><schedule>
                     <id>7</id><name>Учебный год</name>
                 </schedule><sorts><item><name>name</name><direction>NONE</direction>
-                </item></sorts><page><offset>1</offset><limit>15</limit><total>60</total>
-                    <totalPages>4</totalPages><hasNext>true</hasNext><hasPrev>false</hasPrev>
-                </page></schedules>
+                </item></sorts></schedules>
             </surok>
             """, switch (view) {
                 case "create" -> "<schedule><name/></schedule>";

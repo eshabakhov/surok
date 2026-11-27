@@ -31,7 +31,7 @@
         <div class="page-title-row"><div><h1 class="title-with-action">
             <span><xsl:value-of select="$selected/name"/></span>
             <xsl:if test="/surok/user/admin = 'true'">
-                <a class="btn-icon-edit" href="/schools/{$selected/id}/edit" title="Редактировать" aria-label="Редактировать">
+                <a class="btn-icon-edit" href="/schools/{$selected/@id}/edit" title="Редактировать" aria-label="Редактировать">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" height="15" width="15"
                          stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                         <path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>
@@ -40,13 +40,13 @@
             </xsl:if>
         </h1><p class="page-subtitle">Информация о школе</p></div></div>
         <div class="school-info">
-            <div class="info-row"><span class="info-label">ID:</span><span class="info-value"><xsl:value-of select="$selected/id"/></span></div>
+            <div class="info-row"><span class="info-label">ID:</span><span class="info-value"><xsl:value-of select="$selected/@id"/></span></div>
             <div class="info-row"><span class="info-label">Название:</span><span class="info-value"><xsl:value-of select="$selected/name"/></span></div>
         </div>
         <xsl:if test="/surok/user/admin = 'true'">
             <div class="details-footer-actions">
                 <button class="btn-outline-action school-delete btn-delete-school" type="button"
-                        data-id="{$selected/id}" data-name="{$selected/name}">Удалить школу</button>
+                        data-id="{$selected/@id}" data-name="{$selected/name}">Удалить школу</button>
             </div>
         </xsl:if>
     </xsl:template>

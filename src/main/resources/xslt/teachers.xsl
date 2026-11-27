@@ -101,7 +101,7 @@
                 </xsl:for-each>
             </div>
             <xsl:call-template name="pagination">
-                <xsl:with-param name="page" select="$entries/page"/>
+                <xsl:with-param name="page" select="$entries"/>
                 <xsl:with-param name="prefix" select="'teachers'"/>
                 <xsl:with-param name="ellipsis" select="'…'"/>
             </xsl:call-template>

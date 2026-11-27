@@ -13,22 +13,22 @@
     <lastGrade>9</lastGrade>
     <user><username>Administrator</username><admin>true</admin><maker>true</maker><subscription>true</subscription></user>
     <csrf><token>test-token</token><parameter>_csrf</parameter><header>X-CSRF-TOKEN</header></csrf>
-    <schools><school><id>1</id><name>Школа</name></school></schools>
-    <school><id>1</id><name>Школа</name></school>
+    <schools limit="10" offset="1" total="1" totalPages="1" hasPrev="false" hasNext="false"><school id="1"><name>Школа</name></school></schools>
+    <school id="1"><name>Школа</name></school>
     <building><id>1</id><name>Корпус</name></building>
-    <buildings><building><id>1</id><name>Корпус</name></building></buildings>
-    <cabinets><cabinet><id>1</id><name>Кабинет</name><capacity>30</capacity></cabinet></cabinets>
+    <buildings limit="10" offset="1" total="1" totalPages="1" hasPrev="false" hasNext="false"><building><id>1</id><name>Корпус</name></building></buildings>
+    <cabinets limit="10" offset="1" total="1" totalPages="1" hasPrev="false" hasNext="false"><cabinet><id>1</id><name>Кабинет</name><capacity>30</capacity></cabinet></cabinets>
     <cabinet><id>1</id><name>Кабинет</name><capacity>30</capacity></cabinet>
-    <classes><school-class><id>1</id><name>5А</name><grade>5</grade><size>25</size></school-class></classes>
+    <classes limit="10" offset="1" total="1" totalPages="1" hasPrev="false" hasNext="false"><school-class><id>1</id><name>5А</name><grade>5</grade><size>25</size></school-class></classes>
     <school-class><id>1</id><name>5А</name><grade>5</grade><size>25</size></school-class>
-    <subjects><subject><id>1</id><name>Математика</name><origin>FEDERAL</origin></subject><subject><id>2</id><name>Робототехника</name><origin>SCHOOL</origin></subject></subjects>
+    <subjects limit="10" offset="1" total="1" totalPages="1" hasPrev="false" hasNext="false"><subject><id>1</id><name>Математика</name><origin>FEDERAL</origin></subject><subject><id>2</id><name>Робототехника</name><origin>SCHOOL</origin></subject></subjects>
     <subject><id>1</id><name>Математика</name><origin>FEDERAL</origin></subject>
-    <teachers><teacher><id>1</id><name>Учитель</name></teacher></teachers>
+    <teachers limit="10" offset="1" total="1" totalPages="1" hasPrev="false" hasNext="false"><teacher><id>1</id><name>Учитель</name></teacher></teachers>
     <teacher><id>1</id><name>Учитель</name></teacher>
-    <schedules><schedule><id>1</id><name>Учебный год</name><year>2026</year></schedule></schedules>
+    <schedules limit="10" offset="1" total="1" totalPages="1" hasPrev="false" hasNext="false"><schedule><id>1</id><name>Учебный год</name><year>2026</year></schedule></schedules>
     <schedule><id>1</id><name>Учебный год</name></schedule>
-    <loads><load><id>1</id><schoolClass><id>1</id><name>5А</name><grade>5</grade><litera>А</litera></schoolClass><subject><id>1</id><name>Математика</name><origin>FEDERAL</origin></subject><hours>5</hours></load></loads>
-    <curriculums><curriculum><id>1</id><title>Учебный план</title><name>Учебный план</name><level>PRIMARY</level><week>FIVE_DAYS</week>
+    <loads limit="10" offset="1" total="1" totalPages="1" hasPrev="false" hasNext="false"><load><id>1</id><schoolClass><id>1</id><name>5А</name><grade>5</grade><litera>А</litera></schoolClass><subject><id>1</id><name>Математика</name><origin>FEDERAL</origin></subject><hours>5</hours></load></loads>
+    <curriculums limit="10" offset="1" total="1" totalPages="1" hasPrev="false" hasNext="false"><curriculum><id>1</id><title>Учебный план</title><name>Учебный план</name><level>PRIMARY</level><week>FIVE_DAYS</week>
         <requirements><requirement><id>1</id><grade>5</grade><subject><id>1</id><name>Математика</name><origin>FEDERAL</origin></subject>
             <hours>5</hours><partType>MANDATORY</partType></requirement></requirements>
     </curriculum></curriculums>
@@ -36,10 +36,9 @@
         <requirements><requirement><id>1</id><grade>5</grade><subject><id>1</id><name>Математика</name><origin>FEDERAL</origin></subject>
             <hours>5</hours><partType>MANDATORY</partType></requirement></requirements>
     </curriculum>
-    <requirements><requirement><id>1</id><name>Математика</name><subject>Математика</subject><grade>5</grade><hours>5</hours></requirement></requirements>
+    <requirements limit="10" offset="1" total="1" totalPages="1" hasPrev="false" hasNext="false"><requirement><id>1</id><name>Математика</name><subject>Математика</subject><grade>5</grade><hours>5</hours></requirement></requirements>
     <account><username>Administrator</username><initial>A</initial><roles><role><name>ADMIN</name></role></roles></account>
     <subscription><plan>BASIC</plan><label>Базовый</label><style>basic</style><valid>true</valid></subscription>
-    <page><limit>10</limit><offset>1</offset><total>1</total><totalPages>1</totalPages><hasPrev>false</hasPrev><hasNext>false</hasNext></page>
     <url>/users/login</url>
     <status>404</status><title>Страница не найдена</title><message>Такой страницы не существует или она была удалена.</message>
     <editable>true</editable><saved>true</saved>

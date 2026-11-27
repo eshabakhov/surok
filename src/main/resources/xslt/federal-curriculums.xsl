@@ -178,7 +178,7 @@
             </div>
             <xsl:call-template name="pagination">
                 <xsl:with-param name="page"
-                                select="/surok/curriculums/page"/>
+                                select="/surok/curriculums"/>
                 <xsl:with-param name="prefix"
                                 select="'federal-curriculums'"/>
                 <xsl:with-param name="ellipsis" select="'…'"/>

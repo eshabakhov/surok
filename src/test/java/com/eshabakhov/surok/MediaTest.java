@@ -9,13 +9,23 @@ import com.eshabakhov.surok.media.MdJson;
 import com.eshabakhov.surok.media.MdXml;
 import com.eshabakhov.surok.media.MdXslt;
 import com.eshabakhov.surok.media.XsClasspath;
+import com.eshabakhov.surok.page.PageRequest;
+import com.eshabakhov.surok.page.ResponsePage;
+import com.eshabakhov.surok.school.SlsFake;
+import com.eshabakhov.surok.school.SlsSelected;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.List;
+import java.util.stream.Stream;
+import org.hamcrest.MatcherAssert;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
- * Tests media printing.
+ * Tests media printing and the common metadata contract.
+ * For example, a school identifier is numeric in JSON and an attribute in XML.
  *
  * @since 0.0.1
  */
@@ -107,6 +117,147 @@ final class MediaTest {
         );
         Assertions.assertTrue(
             printed.contains("/js/federal/curriculum-requirements.js")
+        );
+    }
+
+    /**
+     * Preserves scalar types and the immutable source.
+     *
+     * @param media Output format
+     */
+    @ParameterizedTest
+    @MethodSource("media")
+    void printsTypedMetadataWithoutChangingTheSource(final Media<?> media) {
+        MatcherAssert.assertThat(
+            "Metadata lost its types, content or the original representation",
+            List.of(
+                media.attribute("id", 12L).attribute("limit", 15)
+                    .attribute("active", true).attribute("kind", "school")
+                    .with("name", "Лицей").print().toString(),
+                media.print().toString()
+            ),
+            Matchers.anyOf(
+                Matchers.contains(
+                    "{\"id\":12,\"limit\":15,\"active\":true,\"kind\":\"school\",\"name\":\"Лицей\"}",
+                    "{}"
+                ),
+                Matchers.contains(
+                    String.join(
+                        "", "<schools id=\"12\" limit=\"15\" active=\"true\" kind=\"school\">",
+                        "<name>Лицей</name></schools>"
+                    ),
+                    "<schools></schools>"
+                )
+            )
+        );
+    }
+
+    /**
+     * Applies field selection before and after metadata is collected.
+     *
+     * @param media Output format
+     */
+    @ParameterizedTest
+    @MethodSource("media")
+    void includesAttributesAlongsideElements(final Media<?> media) {
+        MatcherAssert.assertThat(
+            "Field selection ignored attribute names or changed the selected value",
+            List.of(
+                media.attribute("id", 12L).with("name", "Hidden").include("id")
+                    .attribute("hidden", false).print().toString(),
+                media.include("id").attribute("id", 12L).with("name", "Hidden")
+                    .attribute("hidden", false).print().toString()
+            ),
+            Matchers.everyItem(
+                Matchers.in(List.of("{\"id\":12}", "<schools id=\"12\"></schools>"))
+            )
+        );
+    }
+
+    /**
+     * Escapes markup, quotes and attribute whitespace without losing their values.
+     *
+     * @param media Output format
+     */
+    @ParameterizedTest
+    @MethodSource("media")
+    void escapesAttributeValues(final Media<?> media) {
+        MatcherAssert.assertThat(
+            "Attribute content was interpreted as markup or normalized whitespace",
+            media.attribute(
+                "label", String.format("Лицей & <\"Юг\">%c%c%c", '\t', '\n', '\r')
+            ).print().toString(),
+            Matchers.in(
+                List.of(
+                    "{\"label\":\"Лицей & <\\\"Юг\\\">\\t\\n\\r\"}",
+                    "<schools label=\"Лицей &amp; &lt;&quot;Юг&quot;&gt;&#9;&#10;&#13;\"></schools>"
+                )
+            )
+        );
+    }
+
+    /**
+     * Rejects an element that would overwrite metadata.
+     *
+     * @param media Output format
+     */
+    @ParameterizedTest
+    @MethodSource("media")
+    void rejectsAnElementWithAnAttributeName(final Media<?> media) {
+        Assertions.assertThrows(
+            IllegalArgumentException.class,
+            () -> media.attribute("id", 12L).with("id", 31L),
+            "An element overwrote an attribute with the same name"
+        );
+    }
+
+    /**
+     * Rejects metadata that would overwrite an element.
+     *
+     * @param media Output format
+     */
+    @ParameterizedTest
+    @MethodSource("media")
+    void rejectsAnAttributeWithAnElementName(final Media<?> media) {
+        Assertions.assertThrows(
+            IllegalArgumentException.class,
+            () -> media.with("id", 12L).attribute("id", 31L),
+            "An attribute overwrote an element with the same name"
+        );
+    }
+
+    /**
+     * Composes empty collection contents and all pagination properties at one level.
+     *
+     * @param media Output format
+     * @throws Exception If printing fails
+     */
+    @ParameterizedTest
+    @MethodSource("media")
+    void printsPaginationOnAnEmptyCollection(final Media<?> media) throws Exception {
+        MatcherAssert.assertThat(
+            "The empty collection lost pagination or acquired a page wrapper",
+            new SlsSelected(
+                new SlsFake(List.of()), List.of(), new ResponsePage(new PageRequest(15, 1), 0)
+            ).print(media).print().toString(),
+            Matchers.in(
+                List.of(
+                    String.join(
+                        "", "{\"items\":[],\"limit\":15,\"offset\":1,\"total\":0,\"totalPages\":0,",
+                        "\"hasNext\":false,\"hasPrev\":false}"
+                    ),
+                    String.join(
+                        "", "<schools limit=\"15\" offset=\"1\" total=\"0\" totalPages=\"0\" ",
+                        "hasNext=\"false\" hasPrev=\"false\"></schools>"
+                    )
+                )
+            )
+        );
+    }
+
+    private static Stream<Media<?>> media() {
+        return Stream.of(
+            new MdJson(), new MdXml("schools"), new MdXslt(new MdXml("schools"), xml -> xml)
         );
     }
 }

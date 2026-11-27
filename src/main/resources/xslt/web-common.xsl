@@ -121,9 +121,9 @@
         <xsl:param name="page"/>
         <xsl:param name="prefix"/>
         <xsl:param name="ellipsis"/>
-        <xsl:variable name="offset" select="number($page/offset)"/>
-        <xsl:variable name="limit" select="number($page/limit)"/>
-        <xsl:variable name="total" select="number($page/totalPages)"/>
+        <xsl:variable name="offset" select="number($page/@offset)"/>
+        <xsl:variable name="limit" select="number($page/@limit)"/>
+        <xsl:variable name="total" select="number($page/@totalPages)"/>
         <xsl:variable name="start">
             <xsl:choose>
                 <xsl:when test="$offset &gt; 3">
@@ -149,7 +149,7 @@
                 <xsl:value-of select="concat($prefix, '-pagination')"/>
             </xsl:attribute>
             <div class="pagination-pages">
-                <xsl:if test="$page/hasPrev = 'true'">
+                <xsl:if test="$page/@hasPrev = 'true'">
                     <a class="pagination-btn pagination-prev"
                        href="#"
                        title="Предыдущая страница">
@@ -212,7 +212,7 @@
                         </a>
                     </xsl:if>
                 </xsl:if>
-                <xsl:if test="$page/hasNext = 'true'">
+                <xsl:if test="$page/@hasNext = 'true'">
                     <a class="pagination-btn pagination-next"
                        href="#"
                        title="Следующая страница">

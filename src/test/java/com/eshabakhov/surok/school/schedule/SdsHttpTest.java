@@ -126,9 +126,9 @@ final class SdsHttpTest {
         ).andExpect(MockMvcResultMatchers.status().isOk())
             .andExpect(MockMvcResultMatchers.jsonPath("$.items.length()").value(1))
             .andExpect(MockMvcResultMatchers.jsonPath("$.items[0].name").value("North"))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.page.total").value(1))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.page.limit").value(1))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.page.offset").value(1));
+            .andExpect(MockMvcResultMatchers.jsonPath("$.total").value(1))
+            .andExpect(MockMvcResultMatchers.jsonPath("$.limit").value(1))
+            .andExpect(MockMvcResultMatchers.jsonPath("$.offset").value(1));
     }
 
     @Test
@@ -224,7 +224,7 @@ final class SdsHttpTest {
             MockMvcRequestBuilders.get("/schools/1/schedules")
                 .session(this.session(Roles.RoleEnum.DIRECTOR, 1L))
                 .accept("application/vnd.surok.schedules.v1+json").param("name_ct", "Rejected")
-        ).andExpect(MockMvcResultMatchers.jsonPath("$.page.total").value(0));
+        ).andExpect(MockMvcResultMatchers.jsonPath("$.total").value(0));
         this.mvc.perform(
             MockMvcRequestBuilders.get("/schools/1/schedules/10")
                 .session(this.session(Roles.RoleEnum.DIRECTOR, 1L))
@@ -264,7 +264,7 @@ final class SdsHttpTest {
                 .session(this.session(Roles.RoleEnum.DIRECTOR, 1L))
                 .accept("application/vnd.surok.schedules.v1+json").param("name_ct", "West")
         ).andExpect(MockMvcResultMatchers.status().isOk())
-            .andExpect(MockMvcResultMatchers.jsonPath("$.page.total").value(0));
+            .andExpect(MockMvcResultMatchers.jsonPath("$.total").value(0));
     }
 
     @Test
@@ -319,7 +319,7 @@ final class SdsHttpTest {
             MockMvcRequestBuilders.get("/schools/1/schedules")
                 .session(this.session(Roles.RoleEnum.DIRECTOR, 1L))
                 .accept("application/vnd.surok.schedules.v1+json")
-        ).andExpect(MockMvcResultMatchers.jsonPath("$.page.total").value(2));
+        ).andExpect(MockMvcResultMatchers.jsonPath("$.total").value(2));
     }
 
     /**
@@ -510,7 +510,7 @@ final class SdsHttpTest {
                 .param("sort", "name:DESC")
         ).andExpect(MockMvcResultMatchers.status().isOk())
             .andExpect(MockMvcResultMatchers.jsonPath("$.items.length()").value(1))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.page.limit").value(1));
+            .andExpect(MockMvcResultMatchers.jsonPath("$.limit").value(1));
     }
 
     /** Verifies the negotiated fragment keeps filtering and omits the page chrome. */
@@ -611,7 +611,7 @@ final class SdsHttpTest {
                 .session(this.session(Roles.RoleEnum.DIRECTOR, 1L))
                 .accept("application/vnd.surok.schedules.v1+json").param("name_ct", "Rejected")
         ).andExpect(MockMvcResultMatchers.status().isOk())
-            .andExpect(MockMvcResultMatchers.jsonPath("$.page.total").value(0));
+            .andExpect(MockMvcResultMatchers.jsonPath("$.total").value(0));
     }
 
     @ParameterizedTest
@@ -635,7 +635,7 @@ final class SdsHttpTest {
                 .session(this.session(Roles.RoleEnum.DIRECTOR, 1L))
                 .accept("application/vnd.surok.schedules.v1+json").param("name_ct", "Rejected")
         ).andExpect(MockMvcResultMatchers.status().isOk())
-            .andExpect(MockMvcResultMatchers.jsonPath("$.page.total").value(0));
+            .andExpect(MockMvcResultMatchers.jsonPath("$.total").value(0));
     }
 
     @ParameterizedTest
@@ -851,7 +851,7 @@ final class SdsHttpTest {
                 .session(this.session(Roles.RoleEnum.STUDENT, 1L))
                 .accept("application/vnd.surok.class-loads.v1+json")
         ).andExpect(MockMvcResultMatchers.status().isOk())
-            .andExpect(MockMvcResultMatchers.jsonPath("$.page.total").value(2)).andExpect(
+            .andExpect(MockMvcResultMatchers.jsonPath("$.total").value(2)).andExpect(
                 MockMvcResultMatchers.jsonPath("$.items[0].subject.name").value("Математика")
             );
         this.mvc.perform(

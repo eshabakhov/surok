@@ -133,7 +133,7 @@ final class XsAccountTest {
     private static String profile() {
         return """
             <surok><user><username>Соколова</username><subscription>true</subscription></user>
-                <school><id>3</id><name>Школа</name><schedules><schedule>
+                <school id="3"><name>Школа</name><schedules><schedule>
                     <id>9</id><name>Учебный год</name></schedule></schedules></school>
                 <account><id>7</id><username>Соколова</username><initial>С</initial>
                     <roles><role><name>TEACHER</name></role></roles></account>

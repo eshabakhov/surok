@@ -195,7 +195,7 @@ final class XsClasspathTest {
             "School fragment exposed markup or included page chrome",
             new XsClasspath("xslt/schools.xsl", "list-fragment").transform(
                 """
-                <surok><schools><school><id>7</id><name>Школа &lt;script&gt;</name></school>\
+                <surok><schools><school id="7"><name>Школа &lt;script&gt;</name></school>\
                 </schools></surok>\
                 """
             ),
@@ -227,7 +227,7 @@ final class XsClasspathTest {
                 """
                 <surok>
                     <csrf><header>X-XSRF-TOKEN</header><token>токен</token></csrf>
-                    <school><id>7</id><name>Лицей</name></school>
+                    <school id="7"><name>Лицей</name></school>
                 </surok>
                 """
             ),
@@ -247,13 +247,12 @@ final class XsClasspathTest {
                 String.format(
                     """
                     <surok>
-                        <school><id>3</id><name>Школа</name></school>
+                        <school id="3"><name>Школа</name></school>
                         <building><id>4</id><name>Корпус</name></building>
-                        <%1$ss><%1$s><id>7</id>
+                        <%1$ss offset="1" limit="15" total="1"
+                            totalPages="1" hasNext="false" hasPrev="false"><%1$s><id>7</id>
                         <name>Зал &lt;script&gt;проверка&lt;/script&gt;</name></%1$s>
-                        <page><offset>1</offset><limit>15</limit>
-                        <total>1</total><totalPages>1</totalPages>
-                        <hasNext>false</hasNext><hasPrev>false</hasPrev></page></%1$ss>
+                        </%1$ss>
                     </surok>
                     """, entity
                 )
@@ -566,15 +565,15 @@ final class XsClasspathTest {
         return String.format(
             """
             <surok>
-                <school><id>3</id><name>Школа</name><schedules><schedule>
+                <school id="3"><name>Школа</name><schedules><schedule>
                 <id>5</id><name>Первое полугодие</name></schedule></schedules></school>
                 %2$s%4$s<error>%3$s</error>
                 <csrf><parameter>_csrf</parameter><token>token</token>
                     <header>X-XSRF-TOKEN</header></csrf>
-                <%1$ss><%1$s><id>7</id><name>Южный зал</name></%1$s>
-                <page><offset>5</offset><limit>15</limit><total>150</total>
-                <totalPages>10</totalPages><hasNext>true</hasNext>
-                <hasPrev>true</hasPrev></page></%1$ss>
+                <%1$ss offset="5" limit="15" total="150"
+                    totalPages="10" hasNext="true" hasPrev="true"><%1$s>
+                <id>7</id><name>Южный зал</name></%1$s>
+                </%1$ss>
             </surok>
             """, entity, building, error,
             switch (view) {

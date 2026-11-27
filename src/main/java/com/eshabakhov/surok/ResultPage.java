@@ -8,7 +8,7 @@ package com.eshabakhov.surok;
  *
  * @since 0.0.1
  */
-public interface ResultPage extends Page {
+public interface ResultPage extends Page, Printable {
 
     /**
      * Total number of matching items.
