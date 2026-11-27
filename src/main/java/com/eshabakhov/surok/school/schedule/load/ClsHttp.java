@@ -14,21 +14,24 @@ import com.eshabakhov.surok.media.MdXslt;
 import com.eshabakhov.surok.media.SrWeb;
 import com.eshabakhov.surok.media.XsClasspath;
 import com.eshabakhov.surok.school.SlBrief;
+import com.eshabakhov.surok.school.SlPostgres;
 import com.eshabakhov.surok.school.SlsBrief;
 import com.eshabakhov.surok.school.SlsPostgres;
 import com.eshabakhov.surok.school.schedule.Schedule;
 import com.eshabakhov.surok.school.schedule.SdBrief;
 import com.eshabakhov.surok.security.CsToken;
-import com.eshabakhov.surok.user.UrAcAuthorized;
+import com.eshabakhov.surok.security.OaYaml;
+import com.eshabakhov.surok.security.Operations;
 import com.eshabakhov.surok.user.UrAcBrief;
 import jakarta.servlet.http.HttpServletRequest;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import org.jooq.DSLContext;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -48,16 +51,32 @@ import org.springframework.web.server.ResponseStatusException;
 @RequestMapping("/schools/{school}/schedules/{schedule}/loads")
 public class ClsHttp {
 
+    /** Shared operation declarations. */
+    private final Operations operations;
+
     /** Database context. */
     private final DSLContext ctx;
 
     /**
-     * New resource.
+     * New resource with explicitly constructed YAML operations.
      *
      * @param ctx Database context
+     * @throws IOException If the API description cannot be read
      */
-    public ClsHttp(final DSLContext ctx) {
+    @Autowired
+    public ClsHttp(final DSLContext ctx) throws IOException {
+        this(ctx, new OaYaml().operations());
+    }
+
+    /**
+     * New controller using the application operation catalog.
+     *
+     * @param ctx Database context
+     * @param operations Shared operation declarations
+     */
+    public ClsHttp(final DSLContext ctx, final Operations operations) {
         this.ctx = ctx;
+        this.operations = operations;
     }
 
     /**
@@ -87,9 +106,9 @@ public class ClsHttp {
         @AuthenticationPrincipal final UrAccount actor
     ) throws Exception {
         final MediaType type = new AcHttp(request, "class-loads.v1").type();
-        final School sch = new UrAcAuthorized(
-            actor, new SlsPostgres(this.ctx)
-        ).schools().school(school);
+        final School sch = this.operations.operation("ClassLoads.selection")
+            .permission(actor, new SlPostgres(this.ctx, school)).permit(actor)
+            .schools().school(school);
         final Schedule sched = sch.schedules().schedule(schedule);
         final ClassLoads selected = sched.loads().selection(page);
         return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8)).body(
@@ -101,7 +120,8 @@ public class ClsHttp {
                     } else {
                         view = "list";
                     }
-                    yield this.web(request, sch, sched, view).with("loads", selected).print();
+                    yield this.web(request, sch, view, actor)
+                        .with("schedule", new SdBrief(sched)).with("loads", selected).print();
                 }
                 case "application/vnd.surok.class-loads.v1+json" ->
                     selected.print(new MdJson()).print();
@@ -141,17 +161,17 @@ public class ClsHttp {
         @AuthenticationPrincipal final UrAccount actor
     ) throws Exception {
         final MediaType type = new AcHttp(request, "class-load-v1").type();
-        final School sch = new UrAcAuthorized(
-            actor, new SlsPostgres(this.ctx)
-        ).schools().school(school);
+        final School sch = this.operations.operation("ClassLoads.load")
+            .permission(actor, new SlPostgres(this.ctx, school)).permit(actor)
+            .schools().school(school);
         final Schedule sched = sch.schedules().schedule(schedule);
         final ClassLoads origin = sched.loads();
         final ClassLoad selected = origin.load(load);
         return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8)).body(
             switch (type.toString()) {
-                case MediaType.TEXT_HTML_VALUE -> this.web(request, sch, sched, "details").with(
-                    "loads", new ClsSingle(origin, selected)
-                ).print();
+                case MediaType.TEXT_HTML_VALUE -> this.web(request, sch, "details", actor)
+                    .with("schedule", new SdBrief(sched))
+                    .with("loads", new ClsSingle(origin, selected)).print();
                 case "application/vnd.surok.class-load-v1+json" ->
                     new ClV1(selected).print(new MdJson()).print();
                 case "application/vnd.surok.class-load-v1+xml" ->
@@ -166,13 +186,11 @@ public class ClsHttp {
     private Media<String> web(
         final HttpServletRequest request,
         final School school,
-        final Schedule schedule,
-        final String view
+        final String view,
+        final UrAccount actor
     ) throws Exception {
         return new SrWeb(
-            new UrAcBrief(
-                (UrAccount) SecurityContextHolder.getContext().getAuthentication().getPrincipal()
-            ),
+            new UrAcBrief(actor),
             new SlsBrief(new SlsPostgres(this.ctx)),
             new CsToken((CsrfToken) request.getAttribute(CsrfToken.class.getName()))
         ).print(
@@ -180,7 +198,6 @@ public class ClsHttp {
                 new MdXml("surok").with("path", request.getRequestURI()),
                 new XsClasspath("xslt/class-loads.xsl", view)
             )
-        ).with("school", new SlBrief(school))
-            .with("schedule", new SdBrief(schedule));
+        ).with("school", new SlBrief(school));
     }
 }

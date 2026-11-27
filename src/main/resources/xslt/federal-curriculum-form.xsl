@@ -4,7 +4,7 @@
     <xsl:template name="curriculum-form">
         <xsl:param name="editing"/>
         <xsl:variable name="curriculum"
-                      select="/surok/curriculums/curriculum"/>
+                      select="/surok/curriculum"/>
         <div class="page-title-row curriculum-form-heading">
             <div>
                 <h1>
@@ -44,20 +44,14 @@
                            name="title"
                            type="text"
                            autofocus="autofocus"
-                           required="required">
-                        <xsl:if test="$editing">
-                            <xsl:attribute name="value">
-                                <xsl:value-of select="$curriculum/title"/>
-                            </xsl:attribute>
-                        </xsl:if>
-                    </input>
+                           required="required" value="{$curriculum/title}"/>
                 </label>
                 <label class="curriculum-form-field">
                     <xsl:text>Уровень образования</xsl:text>
                     <select name="level" required="required">
                         <xsl:for-each select="/surok/levels/level">
                             <option value="{code}">
-                                <xsl:if test="$editing and $curriculum/level = code">
+                                <xsl:if test="$curriculum/level = code">
                                     <xsl:attribute name="selected">selected</xsl:attribute>
                                 </xsl:if>
                                 <xsl:value-of select="title"/>
@@ -70,7 +64,7 @@
                     <select name="week" required="required">
                         <xsl:for-each select="/surok/weeks/week">
                             <option value="{code}">
-                                <xsl:if test="$editing and $curriculum/week = code">
+                                <xsl:if test="$curriculum/week = code">
                                     <xsl:attribute name="selected">selected</xsl:attribute>
                                 </xsl:if>
                                 <xsl:value-of select="title"/>
@@ -83,35 +77,22 @@
                     <input id="version-name"
                            name="version"
                            type="text"
-                           required="required">
-                        <xsl:if test="$editing">
-                            <xsl:attribute name="value">
-                                <xsl:value-of select="$curriculum/version"/>
-                            </xsl:attribute>
-                        </xsl:if>
-                    </input>
+                           required="required" value="{$curriculum/version}"/>
                 </label>
                 <label class="curriculum-form-field" for="year-name">
                     <xsl:text>Учебный год</xsl:text>
                     <input id="year-name"
                            name="year"
                            type="text"
-                           required="required">
-                        <xsl:choose>
-                            <xsl:when test="$editing">
-                                <xsl:attribute name="value">
-                                    <xsl:value-of select="$curriculum/year"/>
-                                </xsl:attribute>
-                            </xsl:when>
-                            <xsl:otherwise>
-                                <xsl:attribute name="placeholder">2026/2027</xsl:attribute>
-                            </xsl:otherwise>
-                        </xsl:choose>
+                           required="required" value="{$curriculum/year}">
+                        <xsl:if test="not($editing)">
+                            <xsl:attribute name="placeholder">2026/2027</xsl:attribute>
+                        </xsl:if>
                     </input>
                 </label>
                 <label class="curriculum-form-field">
                     <xsl:text>Описание</xsl:text>
-                    <textarea name="description" rows="4"><xsl:if test="$editing"><xsl:value-of select="$curriculum/description"/></xsl:if></textarea>
+                    <textarea name="description" rows="4"><xsl:value-of select="$curriculum/description"/></textarea>
                 </label>
                 <div class="curriculum-form-actions">
                     <a class="btn-outline-action"

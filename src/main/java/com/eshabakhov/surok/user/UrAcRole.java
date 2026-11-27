@@ -4,10 +4,13 @@
 package com.eshabakhov.surok.user;
 
 import com.eshabakhov.surok.Media;
+import com.eshabakhov.surok.School;
 import com.eshabakhov.surok.Schools;
 import com.eshabakhov.surok.UrAccount;
 import com.eshabakhov.surok.school.SlMembers;
 import com.eshabakhov.surok.school.SlsFake;
+import com.eshabakhov.surok.security.OaYaml;
+import java.io.IOException;
 import java.util.List;
 
 /**
@@ -44,6 +47,16 @@ public final class UrAcRole implements UrAccount {
     public UrAcRole(final long id, final Roles.RoleEnum role) {
         this.id = id;
         this.role = role;
+    }
+
+    @Override
+    public UrAccount permit(final String operation) throws IOException {
+        return new OaYaml().operations().operation(operation).permission(this).permit(this);
+    }
+
+    @Override
+    public UrAccount permit(final String operation, final School school) throws IOException {
+        return new OaYaml().operations().operation(operation).permission(this, school).permit(this);
     }
 
     @Override

@@ -3,12 +3,16 @@
  */
 package com.eshabakhov.surok.web;
 
+import com.eshabakhov.surok.User;
 import com.eshabakhov.surok.media.AcHttp;
 import com.eshabakhov.surok.media.MdXml;
 import com.eshabakhov.surok.media.MdXslt;
 import com.eshabakhov.surok.media.XsClasspath;
-import com.eshabakhov.surok.user.UrAcAuth;
+import com.eshabakhov.surok.security.OaYaml;
+import com.eshabakhov.surok.security.Operations;
+import com.eshabakhov.surok.user.Roles;
 import jakarta.servlet.http.HttpServletRequest;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -24,35 +28,52 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public final class HomeHttp {
 
-    /** New landing resource. */
-    public HomeHttp() {
-        // Intentionally empty.
+    /** Shared operation declarations. */
+    private final Operations operations;
+
+    /**
+     * New resource with explicitly constructed YAML operations.
+     *
+     * @throws IOException If the API description cannot be read
+     */
+    public HomeHttp() throws IOException {
+        this(new OaYaml().operations());
+    }
+
+    /**
+     * New landing resource.
+     *
+     * @param operations Shared operation declarations
+     */
+    public HomeHttp(final Operations operations) {
+        this.operations = operations;
     }
 
     /**
      * Render the landing page.
      *
-     * @param user Authenticated user, if present
+     * @param user Current visitor
      * @param request HTTP request
      * @return Landing page
-     * @checkstyle NonStaticMethodCheck (2 lines)
      */
     @GetMapping(value = "/", produces = MediaType.TEXT_HTML_VALUE)
     public ResponseEntity<String> page(
-        @AuthenticationPrincipal final UrAcAuth user,
+        @AuthenticationPrincipal final User user,
         final HttpServletRequest request
     ) {
         final MediaType type = new AcHttp(request).type();
         final String target;
-        if (user == null) {
+        if (user.roles().contains(Roles.RoleEnum.ANONYMOUS)) {
             target = "/users/login";
         } else {
             target = "/schools";
         }
         return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8)).body(
-            new MdXslt(
-                new MdXml("surok").with("path", request.getRequestURI()),
-                new XsClasspath("xslt/home.xsl", "home")
+            this.operations.operation("Home.read").permission(user).permit(
+                new MdXslt(
+                    new MdXml("surok").with("path", request.getRequestURI()),
+                    new XsClasspath("xslt/home.xsl", "home")
+                )
             ).with("url", target).print()
         );
     }

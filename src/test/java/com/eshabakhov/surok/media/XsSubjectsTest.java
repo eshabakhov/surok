@@ -26,7 +26,7 @@ final class XsSubjectsTest {
     void printsProtectedForms(final String view, final String expected) {
         MatcherAssert.assertThat(
             new XsClasspath("xslt/subjects.xsl", view).transform(
-                XsSubjectsTest.document().replaceAll("(?s)<school>.*?</school>", "")
+                XsSubjectsTest.document(view).replaceAll("(?s)<school>.*?</school>", "")
             ),
             Matchers.allOf(
                 Matchers.containsString("id=\"subject-name\" name=\"name\""),
@@ -55,7 +55,7 @@ final class XsSubjectsTest {
     @Test
     void leavesCreationFieldsEmpty() {
         final String page = new XsClasspath("xslt/subjects.xsl", "create").transform(
-            XsSubjectsTest.document().replaceAll("(?s)<school>.*?</school>", "")
+            XsSubjectsTest.document("create").replaceAll("(?s)<school>.*?</school>", "")
         );
         MatcherAssert.assertThat(
             page.substring(page.indexOf("<main")),
@@ -72,7 +72,7 @@ final class XsSubjectsTest {
     void printsEditingValue() {
         MatcherAssert.assertThat(
             new XsClasspath("xslt/subjects.xsl", "edit").transform(
-                XsSubjectsTest.document().replaceAll("(?s)<school>.*?</school>", "")
+                XsSubjectsTest.document("edit").replaceAll("(?s)<school>.*?</school>", "")
             ),
             Matchers.allOf(
                 Matchers.containsString("action=\"/federal/subjects/7\""),
@@ -118,7 +118,7 @@ final class XsSubjectsTest {
     void printsSortingAndPagination(final String direction, final String icon) {
         MatcherAssert.assertThat(
             new XsClasspath("xslt/subjects.xsl", "list-fragment").transform(
-                XsSubjectsTest.document().replace(
+                XsSubjectsTest.document("list-fragment").replace(
                     "<direction>NONE", String.format("<direction>%s", direction)
                 )
             ),
@@ -138,7 +138,9 @@ final class XsSubjectsTest {
     void escapesSubjectNames() {
         MatcherAssert.assertThat(
             new XsClasspath("xslt/subjects.xsl", "list-fragment").transform(
-                XsSubjectsTest.document().replace("Математика", "Математика&lt;script&gt;")
+                XsSubjectsTest.document("list-fragment").replace(
+                    "Математика", "Математика&lt;script&gt;"
+                )
             ),
             Matchers.allOf(
                 Matchers.containsString("Математика&lt;script&gt;"),
@@ -156,8 +158,7 @@ final class XsSubjectsTest {
             new XsClasspath("xslt/subjects.xsl", "details").transform(
                 """
                 <surok><user><admin>true</admin></user>
-                    <subjects><subject><id>29</id><name>Математика</name>
-                    </subject></subjects></surok>
+                    <subject><id>29</id><name>Математика</name></subject></surok>
                 """
             ),
             Matchers.allOf(
@@ -176,6 +177,7 @@ final class XsSubjectsTest {
             new XsClasspath("xslt/subjects.xsl", view).transform(
                 """
                 <surok><user><admin>false</admin></user>
+                    <subject><id>29</id><name>Математика</name></subject>
                     <subjects><subject><id>29</id><name>Математика</name>
                     </subject></subjects></surok>
                 """
@@ -214,12 +216,13 @@ final class XsSubjectsTest {
 
     private static String page(final String view) {
         return new XsClasspath("xslt/subjects.xsl", view)
-            .transform(XsSubjectsTest.document());
+            .transform(XsSubjectsTest.document(view));
     }
 
-    private static String document() {
-        return """
-            <surok>
+    private static String document(final String view) {
+        return String.format(
+            """
+            <surok>%s
                 <editable>true</editable><user><admin>true</admin></user>
                 <school><id>3</id><name>Школа</name><schedules><schedule>
                     <id>9</id><name>Учебный год</name>
@@ -232,6 +235,12 @@ final class XsSubjectsTest {
                     <totalPages>4</totalPages><hasNext>true</hasNext><hasPrev>false</hasPrev>
                 </page></subjects>
             </surok>
-            """;
+            """, switch (view) {
+                case "create" -> "<subject><name/></subject>";
+                case "edit", "details" ->
+                    "<subject><id>7</id><name>Математика</name></subject>";
+                case null, default -> "";
+            }
+        );
     }
 }

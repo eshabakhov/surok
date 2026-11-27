@@ -4,12 +4,12 @@
 package com.eshabakhov.surok.security;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import io.swagger.v3.core.util.Json;
 import java.util.Map;
 import java.util.stream.Stream;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
-import org.springframework.core.io.ClassPathResource;
 
 /**
  * Verifies coverage of the published OpenAPI contract.
@@ -26,7 +26,7 @@ final class OaContractTest {
      */
     @Test
     void describesEveryDocumentedRepresentation() throws Exception {
-        final JsonNode document = new OaYaml(new ClassPathResource("openapi.yml")).read();
+        final JsonNode document = Json.mapper().readTree(new OaYaml().json());
         MatcherAssert.assertThat(
             "The API contract has representations without schemas or examples",
             document.path("paths").properties().stream().flatMap(
@@ -47,7 +47,7 @@ final class OaContractTest {
     void documentsTheFieldsOfEveryObjectSchema() throws Exception {
         MatcherAssert.assertThat(
             "An OpenAPI object or field lacks a description or type",
-            new OaYaml(new ClassPathResource("openapi.yml")).read()
+            Json.mapper().readTree(new OaYaml().json())
                 .path("components").path("schemas").properties().stream()
                 .flatMap(this::fields).toList(),
             Matchers.empty()
@@ -61,7 +61,7 @@ final class OaContractTest {
      */
     @Test
     void resolvesEveryReusableExampleAndSchema() throws Exception {
-        final JsonNode document = new OaYaml(new ClassPathResource("openapi.yml")).read();
+        final JsonNode document = Json.mapper().readTree(new OaYaml().json());
         MatcherAssert.assertThat(
             "The API contract has references that cannot be resolved",
             document.findValuesAsText("$ref").stream().filter(

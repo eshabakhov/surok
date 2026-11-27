@@ -4,16 +4,21 @@
 package com.eshabakhov.surok.school.teacher;
 
 import com.eshabakhov.surok.UrAccount;
+import com.eshabakhov.surok.security.OaYaml;
+import com.eshabakhov.surok.security.Operations;
 import com.eshabakhov.surok.user.Roles;
 import com.eshabakhov.surok.user.UrAcAuth;
 import com.eshabakhov.surok.user.UrAcPostgres;
 import com.eshabakhov.surok.user.UrsPostgres;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -23,6 +28,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextImpl;
@@ -811,7 +817,7 @@ final class ThsHttpTest {
     ) throws Exception {
         final MockHttpSession session = this.session(role, 1L);
         final MvcResult form = this.mvc.perform(
-            MockMvcRequestBuilders.get("/schools/1/teachers/create").session(session)
+            MockMvcRequestBuilders.get("/users/profile").session(session)
         ).andExpect(MockMvcResultMatchers.status().isOk()).andReturn();
         final CsrfToken token = (CsrfToken) form.getRequest().getAttribute(
             CsrfToken.class.getName()
@@ -861,5 +867,54 @@ final class ThsHttpTest {
         registry.add("spring.datasource.url", ThsHttpTest.POSTGRES::getJdbcUrl);
         registry.add("spring.datasource.username", ThsHttpTest.POSTGRES::getUsername);
         registry.add("spring.datasource.password", ThsHttpTest.POSTGRES::getPassword);
+    }
+
+    /**
+     * Checks authorization before resource navigation and rendering.
+     *
+     * @since 0.0.1
+     */
+    @Nested
+    final class Authorization {
+
+        /**
+         * Renders every representation using the supplied account without a security context.
+         *
+         * @param format Response format
+         * @throws Exception If the request fails
+         */
+        @ParameterizedTest
+        @ValueSource(
+            strings = {
+                "text/html",
+                "application/vnd.surok.teacher-v1+json",
+                "application/vnd.surok.teacher-v1+xml"
+            }
+        )
+        void authorizesOnlyOnce(final String format) throws Exception {
+            final UrAccount actor = new UrsPostgres(ThsHttpTest.this.ctx).register(
+                UUID.randomUUID().toString(), "ValidPassword1!",
+                String.format("%s@example.org", UUID.randomUUID()), false
+            );
+            final UrsPostgres members = new UrsPostgres(ThsHttpTest.this.ctx, 1L);
+            members.add(actor);
+            members.roles(actor).grant(Roles.RoleEnum.DIRECTOR);
+            final Operations catalog = new OaYaml().operations();
+            final List<String> checks = new ArrayList<>(1);
+            final MockHttpServletRequest request = new MockHttpServletRequest(
+                "GET", "/schools/1/teachers/10"
+            );
+            request.addHeader(HttpHeaders.ACCEPT, format);
+            new ThsHttp(
+                ThsHttpTest.this.ctx, () -> {
+                    checks.add("permission");
+                    return catalog.iterate();
+                }
+            ).teacher(1L, 10L, request, actor);
+            MatcherAssert.assertThat(
+                "The controller repeated authorization while rendering the teacher",
+                checks.size(), Matchers.is(1)
+            );
+        }
     }
 }

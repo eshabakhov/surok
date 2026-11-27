@@ -103,8 +103,8 @@ final class XsPublicTest {
             new XsClasspath("xslt/authentication.xsl", "register").transform(
                 """
                 <surok><message>&lt;script&gt;Ошибка&lt;/script&gt;</message>
-                    <username>&quot; onfocus=&quot;alert(1)</username>
-                    <email>&lt;img&gt;@example.com</email>
+                    <registration><username>&quot; onfocus=&quot;alert(1)</username>
+                    <email>&lt;img&gt;@example.com</email></registration>
                 </surok>
                 """
             ),

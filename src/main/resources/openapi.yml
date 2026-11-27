@@ -10,17 +10,36 @@ info:
     School roles apply in the school identified by the path.
     An empty list requires no specific role.
     Authentication is defined by security.
+    The x-resource label groups permission matrix rows independently of Swagger tags.
 servers:
   - url: /
 security:
   - Basic auth: []
 paths:
+  /:
+    get:
+      tags:
+        - Home
+      x-resource: Home
+      summary: Home page
+      operationId: Home.read
+      x-roles: []
+      security: []
+      responses:
+        "200":
+          description: Rendered home page.
+          content:
+            text/html:
+              schema:
+                $ref: "#/components/schemas/HtmlPage"
+              example: '<!DOCTYPE html><html lang="ru"><body><h1>Сурок</h1></body></html>'
   /schools/{school}:
     get:
       tags:
         - Schools
+      x-resource: Schools
       summary: Get school
-      operationId: school
+      operationId: Schools.school
       x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR, TEACHER, STUDENT]
       parameters:
         - name: school
@@ -58,9 +77,10 @@ paths:
     put:
       tags:
         - Schools
+      x-resource: Schools
       summary: Update school
       description: Update the school with JSON. The browser edit form uses this operation.
-      operationId: revise
+      operationId: Schools.revise
       x-roles: [ADMIN, DIRECTOR]
       parameters:
         - name: school
@@ -118,8 +138,9 @@ paths:
     delete:
       tags:
         - Schools
+      x-resource: Schools
       summary: Remove school
-      operationId: remove
+      operationId: Schools.remove
       x-roles: [ADMIN]
       parameters:
         - name: school
@@ -139,8 +160,9 @@ paths:
     put:
       tags:
         - Users
+      x-resource: SchoolUsers
       summary: Add existing user to school
-      operationId: add
+      operationId: SchoolUsers.add
       x-roles: [ADMIN, DIRECTOR]
       parameters:
         - name: school
@@ -209,8 +231,9 @@ paths:
     delete:
       tags:
         - Users
+      x-resource: SchoolUsers
       summary: Remove user from school
-      operationId: remove_1
+      operationId: SchoolUsers.remove
       x-roles: [ADMIN, DIRECTOR]
       parameters:
         - name: school
@@ -240,8 +263,9 @@ paths:
     get:
       tags:
         - Teachers
+      x-resource: Teachers
       summary: Get teacher
-      operationId: teacher
+      operationId: Teachers.teacher
       x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR, TEACHER, STUDENT]
       parameters:
         - name: school
@@ -289,9 +313,10 @@ paths:
     put:
       tags:
         - Teachers
+      x-resource: Teachers
       summary: Update teacher
       description: Update the teacher with versioned JSON. The browser edit form uses this operation.
-      operationId: revise_1
+      operationId: Teachers.revise
       x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR]
       parameters:
         - name: school
@@ -384,8 +409,9 @@ paths:
     delete:
       tags:
         - Teachers
+      x-resource: Teachers
       summary: Remove teacher
-      operationId: remove_2
+      operationId: Teachers.remove
       x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR]
       parameters:
         - name: school
@@ -415,8 +441,9 @@ paths:
     get:
       tags:
         - Schedules
+      x-resource: Schedules
       summary: Get schedule
-      operationId: schedule
+      operationId: Schedules.schedule
       x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR, TEACHER, STUDENT]
       parameters:
         - name: school
@@ -464,9 +491,10 @@ paths:
     put:
       tags:
         - Schedules
+      x-resource: Schedules
       summary: Update schedule
       description: Update the schedule with versioned JSON. The browser edit form uses this operation.
-      operationId: revise_2
+      operationId: Schedules.revise
       x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR]
       parameters:
         - name: school
@@ -559,8 +587,9 @@ paths:
     delete:
       tags:
         - Schedules
+      x-resource: Schedules
       summary: Remove schedule
-      operationId: remove_3
+      operationId: Schedules.remove
       x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR]
       parameters:
         - name: school
@@ -590,12 +619,13 @@ paths:
     get:
       tags:
         - Teaching load planning
+      x-resource: LoadDraft
       summary: Read the schedule's teaching load draft
       description: |
         Returns the saved draft. All hours are per week
         Identifiers in examples must be replaced with existing school, schedule,
         curriculum and subject identifiers
-      operationId: read
+      operationId: LoadDraft.read
       x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR, TEACHER, STUDENT]
       parameters:
         - name: school
@@ -820,6 +850,7 @@ paths:
     put:
       tags:
         - Teaching load planning
+      x-resource: LoadDraft
       summary: Save the teaching load draft without applying it
       description: |
         Replaces the complete draft settings without changing actual loads
@@ -827,7 +858,7 @@ paths:
         class in the grade. An empty additions array clears the selections
         Returns 201 with Location for a new draft, or 200 for an existing draft
         A valid CSRF token is required, including when using Basic authentication
-      operationId: save
+      operationId: LoadDraft.save
       x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR]
       parameters:
         - name: school
@@ -1272,12 +1303,13 @@ paths:
     put:
       tags:
         - Teaching load planning
+      x-resource: LoadDraft
       summary: Switch the draft's federal curriculum
       description: |
         Recalculates mandatory hours and clears additional selections when the
         plan changes. The request contains only the new curriculum reference
         A valid CSRF token is required, including when using Basic authentication
-      operationId: revise_3
+      operationId: LoadDraft.revise
       x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR]
       parameters:
         - name: school
@@ -1471,8 +1503,9 @@ paths:
     get:
       tags:
         - SchoolClasses
+      x-resource: SchoolClasses
       summary: Get school class
-      operationId: clazz
+      operationId: SchoolClasses.clazz
       x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR, TEACHER, STUDENT]
       parameters:
         - name: school
@@ -1520,9 +1553,10 @@ paths:
     put:
       tags:
         - SchoolClasses
+      x-resource: SchoolClasses
       summary: Update school class
       description: Update the school class with versioned JSON. The browser edit form uses this operation.
-      operationId: revise_4
+      operationId: SchoolClasses.revise
       x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR]
       parameters:
         - name: school
@@ -1615,8 +1649,9 @@ paths:
     delete:
       tags:
         - SchoolClasses
+      x-resource: SchoolClasses
       summary: Remove school class
-      operationId: remove_4
+      operationId: SchoolClasses.remove
       x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR]
       parameters:
         - name: school
@@ -1646,6 +1681,7 @@ paths:
     get:
       tags:
         - Buildings
+      x-resource: Buildings
       summary: Get building
       operationId: Buildings.building
       x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR, TEACHER, STUDENT]
@@ -1695,6 +1731,7 @@ paths:
     put:
       tags:
         - Buildings
+      x-resource: Buildings
       summary: Update building
       description: Update the building with versioned JSON. The browser edit form uses this operation.
       operationId: Building.revise
@@ -1765,6 +1802,7 @@ paths:
     delete:
       tags:
         - Buildings
+      x-resource: Buildings
       summary: Remove building
       operationId: Buildings.remove
       x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR]
@@ -1796,8 +1834,9 @@ paths:
     get:
       tags:
         - Cabinets
+      x-resource: Cabinets
       summary: Get cabinet
-      operationId: cabinet
+      operationId: Cabinets.cabinet
       x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR, TEACHER, STUDENT]
       parameters:
         - name: school
@@ -1855,9 +1894,10 @@ paths:
     put:
       tags:
         - Cabinets
+      x-resource: Cabinets
       summary: Update classroom
       description: Update the cabinet with versioned JSON. The browser edit form uses this operation.
-      operationId: revise_6
+      operationId: Cabinets.revise
       x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR]
       parameters:
         - name: school
@@ -1935,8 +1975,9 @@ paths:
     delete:
       tags:
         - Cabinets
+      x-resource: Cabinets
       summary: Remove cabinet
-      operationId: remove_6
+      operationId: Cabinets.remove
       x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR]
       parameters:
         - name: school
@@ -1976,8 +2017,9 @@ paths:
     get:
       tags:
         - Subjects
+      x-resource: SchoolSubjects
       summary: Get subject
-      operationId: subject
+      operationId: SchoolSubjects.subject
       x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR, TEACHER, STUDENT]
       parameters:
         - name: school
@@ -2025,8 +2067,9 @@ paths:
     put:
       tags:
         - Subjects
+      x-resource: SchoolSubjects
       summary: Update subject
-      operationId: revise_7
+      operationId: SchoolSubjects.revise
       x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR]
       parameters:
         - name: school
@@ -2094,8 +2137,9 @@ paths:
     delete:
       tags:
         - Subjects
+      x-resource: SchoolSubjects
       summary: Remove subject
-      operationId: remove_7
+      operationId: SchoolSubjects.remove
       x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR]
       parameters:
         - name: school
@@ -2125,8 +2169,9 @@ paths:
     get:
       tags:
         - Subjects
+      x-resource: FederalSubjects
       summary: Get subject
-      operationId: subject_1
+      operationId: FederalSubjects.subject
       x-roles: []
       parameters:
         - name: subject
@@ -2164,8 +2209,9 @@ paths:
     put:
       tags:
         - Subjects
+      x-resource: FederalSubjects
       summary: Update subject
-      operationId: revise_8
+      operationId: FederalSubjects.revise
       x-roles: [ADMIN]
       parameters:
         - name: subject
@@ -2223,8 +2269,9 @@ paths:
     delete:
       tags:
         - Subjects
+      x-resource: FederalSubjects
       summary: Remove subject
-      operationId: remove_8
+      operationId: FederalSubjects.remove
       x-roles: [ADMIN]
       parameters:
         - name: subject
@@ -2244,8 +2291,9 @@ paths:
     get:
       tags:
         - Federal Curriculum Requirements
+      x-resource: Requirements
       summary: Get federal curriculum requirement
-      operationId: requirement
+      operationId: Requirements.requirement
       x-roles: []
       parameters:
         - name: curriculum
@@ -2293,7 +2341,8 @@ paths:
     put:
       tags:
         - Federal Curriculum Requirements
-      operationId: update
+      x-resource: Requirements
+      operationId: Requirements.revise
       x-roles: [ADMIN]
       parameters:
         - name: curriculum
@@ -2359,82 +2408,12 @@ paths:
               optional:
                 $ref: "#/components/examples/RequirementInputOptionalJson"
       summary: Update curriculum requirement
-    post:
-      tags:
-        - Federal Curriculum Requirements
-      summary: Update curriculum requirement
-      operationId: revise_9
-      x-roles: [ADMIN]
-      parameters:
-        - name: curriculum
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
-            description: Federal curriculum identifier.
-            minimum: 1
-          description: Federal curriculum identifier.
-          example: 61
-        - name: requirement
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
-            description: Curriculum requirement identifier.
-            minimum: 1
-          description: Curriculum requirement identifier.
-          example: 71
-      responses:
-        "200":
-          description: The resource was updated.
-          content:
-            application/vnd.surok.federal-curriculum-requirement-v1+json:
-              schema:
-                $ref: "#/components/schemas/Requirement"
-              examples:
-                mandatory:
-                  $ref: "#/components/examples/RequirementJson"
-                optional:
-                  $ref: "#/components/examples/RequirementOptionalJson"
-            application/vnd.surok.federal-curriculum-requirement-v1+xml:
-              schema:
-                $ref: "#/components/schemas/Requirement"
-              examples:
-                mandatory:
-                  $ref: "#/components/examples/RequirementXml"
-                optional:
-                  $ref: "#/components/examples/RequirementOptionalXml"
-        "302":
-          description: Browser requests are redirected to the resource page. No body.
-          headers:
-            Location:
-              description: Relative URL of the resource or page to open.
-              schema:
-                type: string
-              example: /federal/curriculums/61/requirements
-        "400":
-          $ref: "#/components/responses/InvalidRequest"
-        "404":
-          $ref: "#/components/responses/NotFound"
-      requestBody:
-        description: Replacement fields for the existing resource.
-        required: true
-        content:
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: "#/components/schemas/RequirementInput"
-            examples:
-              mandatory:
-                $ref: "#/components/examples/RequirementInputForm"
-              optional:
-                $ref: "#/components/examples/RequirementInputOptionalForm"
     delete:
       tags:
         - Federal Curriculum Requirements
+      x-resource: Requirements
       summary: Remove federal curriculum requirement
-      operationId: remove_9
+      operationId: Requirements.remove
       x-roles: [ADMIN]
       parameters:
         - name: curriculum
@@ -2466,7 +2445,8 @@ paths:
     post:
       tags:
         - Users
-      operationId: checkout
+      x-resource: Subscription
+      operationId: Subscription.checkout
       x-roles: []
       responses:
         "302":
@@ -2494,7 +2474,8 @@ paths:
     post:
       tags:
         - Users
-      operationId: cancel
+      x-resource: Subscription
+      operationId: Subscription.cancel
       x-roles: []
       responses:
         "302":
@@ -2520,7 +2501,8 @@ paths:
     get:
       tags:
         - Users
-      operationId: page
+      x-resource: Registration
+      operationId: Registration.form
       x-roles: []
       responses:
         "200":
@@ -2539,8 +2521,9 @@ paths:
     get:
       tags:
         - Users
+      x-resource: SchoolUsers
       summary: List school users
-      operationId: list
+      operationId: SchoolUsers.list
       x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR, TEACHER, STUDENT]
       parameters:
         - name: school
@@ -2572,8 +2555,9 @@ paths:
     post:
       tags:
         - Users
+      x-resource: SchoolUsers
       summary: Add an existing account by username or email
-      operationId: attach
+      operationId: SchoolUsers.attach
       x-roles: [ADMIN, DIRECTOR]
       parameters:
         - name: school
@@ -2643,8 +2627,9 @@ paths:
     get:
       tags:
         - Users
+      x-resource: SchoolRoles
       summary: List school roles of user
-      operationId: roles
+      operationId: SchoolRoles.list
       x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR, TEACHER, STUDENT]
       parameters:
         - name: school
@@ -2680,8 +2665,9 @@ paths:
     post:
       tags:
         - Users
+      x-resource: SchoolRoles
       summary: Grant school role
-      operationId: grant
+      operationId: SchoolRoles.grant
       x-roles: [ADMIN, DIRECTOR]
       parameters:
         - name: school
@@ -2734,8 +2720,9 @@ paths:
     get:
       tags:
         - Teachers
+      x-resource: Teachers
       summary: Get teacher
-      operationId: teacher_1
+      operationId: Teachers.edit
       x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR, TEACHER, STUDENT]
       parameters:
         - name: school
@@ -2784,8 +2771,9 @@ paths:
     get:
       tags:
         - Teachers
+      x-resource: Teachers
       summary: Open the teacher creation form
-      operationId: selection
+      operationId: Teachers.form
       x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR, TEACHER, STUDENT]
       parameters:
         - name: school
@@ -2812,9 +2800,10 @@ paths:
     get:
       tags:
         - Teachers
+      x-resource: Teachers
       summary: List teachers
       description: Select a full HTML page, an HTML results fragment, JSON, or XML with the Accept header.
-      operationId: selection_2
+      operationId: Teachers.selection
       x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR, TEACHER, STUDENT]
       parameters:
         - name: school
@@ -2906,8 +2895,9 @@ paths:
     post:
       tags:
         - Teachers
+      x-resource: Teachers
       summary: Create teacher
-      operationId: create_2
+      operationId: Teachers.create
       x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR]
       parameters:
         - name: school
@@ -2972,12 +2962,13 @@ paths:
     post:
       tags:
         - Teaching load planning
+      x-resource: LoadDraft
       summary: Apply the saved draft to the schedule's teaching loads
       description: |
         POST without a request body. Applies mandatory and saved additional hours
         The response shows current hours after application
         A valid CSRF token is required, including when using Basic authentication
-      operationId: apply
+      operationId: LoadDraft.apply
       x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR]
       parameters:
         - name: school
@@ -3197,8 +3188,9 @@ paths:
     get:
       tags:
         - Schedules
+      x-resource: Schedules
       summary: Get schedule
-      operationId: schedule_1
+      operationId: Schedules.edit
       x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR, TEACHER, STUDENT]
       parameters:
         - name: school
@@ -3247,8 +3239,9 @@ paths:
     get:
       tags:
         - Schedules
+      x-resource: Schedules
       summary: Open the schedule creation form
-      operationId: selection_3
+      operationId: Schedules.form
       x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR, TEACHER, STUDENT]
       parameters:
         - name: school
@@ -3275,9 +3268,10 @@ paths:
     get:
       tags:
         - Schedules
+      x-resource: Schedules
       summary: List schedules
       description: Select a full HTML page, an HTML results fragment, JSON, or XML with the Accept header.
-      operationId: selection_4
+      operationId: Schedules.selection
       x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR, TEACHER, STUDENT]
       parameters:
         - name: school
@@ -3369,8 +3363,9 @@ paths:
     post:
       tags:
         - Schedules
+      x-resource: Schedules
       summary: Create schedule
-      operationId: create_4
+      operationId: Schedules.create
       x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR]
       parameters:
         - name: school
@@ -3435,8 +3430,9 @@ paths:
     get:
       tags:
         - Schools
+      x-resource: Schools
       summary: Get school
-      operationId: school_1
+      operationId: Schools.edit
       x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR, TEACHER, STUDENT]
       parameters:
         - name: school
@@ -3475,8 +3471,9 @@ paths:
     get:
       tags:
         - SchoolClasses
+      x-resource: SchoolClasses
       summary: Get school class
-      operationId: clazz_1
+      operationId: SchoolClasses.edit
       x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR, TEACHER, STUDENT]
       parameters:
         - name: school
@@ -3525,8 +3522,9 @@ paths:
     get:
       tags:
         - SchoolClasses
+      x-resource: SchoolClasses
       summary: Open the class creation form
-      operationId: selection_6
+      operationId: SchoolClasses.form
       x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR, TEACHER, STUDENT]
       parameters:
         - name: school
@@ -3553,9 +3551,10 @@ paths:
     get:
       tags:
         - SchoolClasses
+      x-resource: SchoolClasses
       summary: List classes
       description: Select a full HTML page, an HTML results fragment, JSON, or XML with the Accept header.
-      operationId: selection_8
+      operationId: SchoolClasses.selection
       x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR, TEACHER, STUDENT]
       parameters:
         - name: school
@@ -3647,8 +3646,9 @@ paths:
     post:
       tags:
         - SchoolClasses
+      x-resource: SchoolClasses
       summary: Create school class
-      operationId: create_8
+      operationId: SchoolClasses.create
       x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR]
       parameters:
         - name: school
@@ -3713,8 +3713,9 @@ paths:
     get:
       tags:
         - Buildings
+      x-resource: Buildings
       summary: Open the building editing form
-      operationId: openBuildingEditForm
+      operationId: Buildings.edit
       x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR, TEACHER, STUDENT]
       parameters:
         - name: school
@@ -3763,8 +3764,9 @@ paths:
     get:
       tags:
         - Cabinets
+      x-resource: Cabinets
       summary: Get cabinet
-      operationId: cabinet_1
+      operationId: Cabinets.edit
       x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR, TEACHER, STUDENT]
       parameters:
         - name: school
@@ -3823,8 +3825,9 @@ paths:
     get:
       tags:
         - Cabinets
+      x-resource: Cabinets
       summary: Open the cabinet creation form
-      operationId: selection_9
+      operationId: Cabinets.form
       x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR, TEACHER, STUDENT]
       parameters:
         - name: school
@@ -3861,9 +3864,10 @@ paths:
     get:
       tags:
         - Cabinets
+      x-resource: Cabinets
       summary: List cabinets
       description: Select a full HTML page, an HTML results fragment, JSON, or XML with the Accept header.
-      operationId: selection_11
+      operationId: Cabinets.selection
       x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR, TEACHER, STUDENT]
       parameters:
         - name: school
@@ -3965,8 +3969,9 @@ paths:
     post:
       tags:
         - Cabinets
+      x-resource: Cabinets
       summary: Create classroom
-      operationId: create_11
+      operationId: Cabinets.create
       x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR]
       parameters:
         - name: school
@@ -4041,8 +4046,9 @@ paths:
     get:
       tags:
         - Buildings
+      x-resource: Buildings
       summary: Open the building creation form
-      operationId: openBuildingCreationForm
+      operationId: Buildings.form
       x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR, TEACHER, STUDENT]
       parameters:
         - name: school
@@ -4069,6 +4075,7 @@ paths:
     get:
       tags:
         - Buildings
+      x-resource: Buildings
       summary: List buildings
       description: Select a full HTML page, an HTML results fragment, JSON, or XML with the Accept header.
       operationId: Buildings.selection
@@ -4163,6 +4170,7 @@ paths:
     post:
       tags:
         - Buildings
+      x-resource: Buildings
       summary: Create building
       operationId: Buildings.create
       x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR]
@@ -4229,8 +4237,9 @@ paths:
     get:
       tags:
         - Schools
+      x-resource: Schools
       summary: Open the school creation form
-      operationId: selection_15
+      operationId: Schools.form
       x-roles: []
       responses:
         "200":
@@ -4246,9 +4255,10 @@ paths:
     get:
       tags:
         - Schools
+      x-resource: Schools
       summary: List schools
       description: Select a full HTML page, an HTML results fragment, JSON, or XML with the Accept header.
-      operationId: selection_16
+      operationId: Schools.selection
       x-roles: []
       parameters:
         - name: filter
@@ -4330,8 +4340,9 @@ paths:
     post:
       tags:
         - Schools
+      x-resource: Schools
       summary: Create school
-      operationId: create_16
+      operationId: Schools.create
       x-roles: []
       responses:
         "201":
@@ -4391,8 +4402,9 @@ paths:
     get:
       tags:
         - Subjects
+      x-resource: FederalSubjects
       summary: Get subject editing form
-      operationId: editSubjectFederal
+      operationId: FederalSubjects.edit
       x-roles: [ADMIN]
       parameters:
         - name: subject
@@ -4419,8 +4431,9 @@ paths:
     get:
       tags:
         - Subjects
+      x-resource: SchoolSubjects
       summary: Get subject editing form
-      operationId: editSubjectSchool
+      operationId: SchoolSubjects.edit
       x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR, TEACHER, STUDENT]
       parameters:
         - name: school
@@ -4457,8 +4470,9 @@ paths:
     get:
       tags:
         - Subjects
+      x-resource: FederalSubjects
       summary: Get subject creation form
-      operationId: formSubjectFederal
+      operationId: FederalSubjects.form
       x-roles: [ADMIN]
       responses:
         "200":
@@ -4475,8 +4489,9 @@ paths:
     get:
       tags:
         - Subjects
+      x-resource: SchoolSubjects
       summary: Get subject creation form
-      operationId: formSubjectSchool
+      operationId: SchoolSubjects.form
       x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR, TEACHER, STUDENT]
       parameters:
         - name: school
@@ -4504,8 +4519,9 @@ paths:
     get:
       tags:
         - Subjects
+      x-resource: FederalSubjects
       summary: List subjects
-      operationId: selection_22
+      operationId: FederalSubjects.selection
       x-roles: []
       parameters:
         - name: filter
@@ -4587,8 +4603,9 @@ paths:
     post:
       tags:
         - Subjects
+      x-resource: FederalSubjects
       summary: Create subject
-      operationId: create_22
+      operationId: FederalSubjects.create
       x-roles: [ADMIN]
       responses:
         "201":
@@ -4642,8 +4659,9 @@ paths:
     get:
       tags:
         - Subjects
+      x-resource: SchoolSubjects
       summary: List subjects
-      operationId: selection_23
+      operationId: SchoolSubjects.selection
       x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR, TEACHER, STUDENT]
       parameters:
         - name: school
@@ -4735,8 +4753,9 @@ paths:
     post:
       tags:
         - Subjects
+      x-resource: SchoolSubjects
       summary: Create subject
-      operationId: create_23
+      operationId: SchoolSubjects.create
       x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR]
       parameters:
         - name: school
@@ -4801,8 +4820,9 @@ paths:
     get:
       tags:
         - Federal Curriculum Requirements
+      x-resource: Requirements
       summary: List federal curriculum requirements
-      operationId: selection_24
+      operationId: Requirements.selection
       x-roles: []
       parameters:
         - name: curriculum
@@ -4896,8 +4916,9 @@ paths:
     post:
       tags:
         - Federal Curriculum Requirements
+      x-resource: Requirements
       summary: Create curriculum requirement
-      operationId: create_24
+      operationId: Requirements.create
       x-roles: [ADMIN]
       parameters:
         - name: curriculum
@@ -4970,8 +4991,9 @@ paths:
     get:
       tags:
         - Federal Curriculums
+      x-resource: Curriculums
       summary: Get federal curriculum editing form
-      operationId: editCurriculum
+      operationId: Curriculums.edit
       x-roles: [ADMIN]
       parameters:
         - name: curriculum
@@ -5000,8 +5022,9 @@ paths:
     get:
       tags:
         - Federal Curriculums
+      x-resource: Curriculums
       summary: Get federal curriculum creation form
-      operationId: formCurriculum
+      operationId: Curriculums.form
       x-roles: [ADMIN]
       responses:
         "200":
@@ -5018,9 +5041,10 @@ paths:
     post:
       tags:
         - Users
+      x-resource: Registration
       summary: Register new user
       description: Accepts JSON or the browser registration form.
-      operationId: register
+      operationId: Registration.create
       x-roles: []
       responses:
         "201":
@@ -5082,8 +5106,9 @@ paths:
     get:
       tags:
         - Users
+      x-resource: UserRoles
       summary: Get all roles for user
-      operationId: listRoles
+      operationId: UserRoles.list
       x-roles: [ADMIN]
       parameters:
         - name: user
@@ -5109,8 +5134,9 @@ paths:
     post:
       tags:
         - Users
+      x-resource: UserRoles
       summary: Assign role to user
-      operationId: assignRole
+      operationId: UserRoles.grant
       x-roles: [ADMIN]
       parameters:
         - name: user
@@ -5153,7 +5179,8 @@ paths:
     get:
       tags:
         - Users
-      operationId: page_1
+      x-resource: Subscription
+      operationId: Subscription.read
       x-roles: []
       responses:
         "200":
@@ -5198,7 +5225,8 @@ paths:
     get:
       tags:
         - Users
-      operationId: page_2
+      x-resource: Login
+      operationId: Login.form
       x-roles: []
       responses:
         "200":
@@ -5236,7 +5264,8 @@ paths:
     get:
       tags:
         - Users
-      operationId: page_3
+      x-resource: Profile
+      operationId: Profile.read
       x-roles: []
       responses:
         "200":
@@ -5254,8 +5283,9 @@ paths:
     get:
       tags:
         - Teaching loads
+      x-resource: ClassLoads
       summary: Get teaching load
-      operationId: load
+      operationId: ClassLoads.load
       x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR, TEACHER, STUDENT]
       parameters:
         - name: school
@@ -5314,8 +5344,9 @@ paths:
     get:
       tags:
         - Teaching loads
+      x-resource: ClassLoads
       summary: List teaching loads
-      operationId: selection_27
+      operationId: ClassLoads.trailing
       x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR, TEACHER, STUDENT]
       parameters:
         - name: school
@@ -5384,8 +5415,9 @@ paths:
     get:
       tags:
         - Teaching loads
+      x-resource: ClassLoads
       summary: List teaching loads
-      operationId: selection_28
+      operationId: ClassLoads.fragment
       x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR, TEACHER, STUDENT]
       parameters:
         - name: school
@@ -5455,8 +5487,9 @@ paths:
     get:
       tags:
         - Teaching loads
+      x-resource: ClassLoads
       summary: List teaching loads
-      operationId: selection_29
+      operationId: ClassLoads.selection
       x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR, TEACHER, STUDENT]
       parameters:
         - name: school
@@ -5525,12 +5558,13 @@ paths:
     get:
       tags:
         - Teaching load planning
+      x-resource: LoadDraft
       summary: Read the schedule's teaching load draft
       description: |
         Returns the saved draft. All hours are per week
         Identifiers in examples must be replaced with existing school, schedule,
         curriculum and subject identifiers
-      operationId: read_1
+      operationId: LoadDraft.fragment
       x-roles: [ADMIN, DIRECTOR, DEPUTY_DIRECTOR, TEACHER, STUDENT]
       parameters:
         - name: school
@@ -5756,6 +5790,7 @@ paths:
     get:
       tags:
         - Permissions
+      x-resource: Permissions
       summary: View permissions by resource and role
       description: |
         Administrator-only matrix of registered application controllers and their authorization
@@ -5764,7 +5799,7 @@ paths:
         only), or denied. Additional conditions are described in condition. Main resource
         routes are listed, excluding GET aliases for forms and fragments. Examples show an
         excerpt; the response includes all roles, including ANONYMOUS
-      operationId: page_4
+      operationId: Permissions.read
       x-roles: [ADMIN]
       responses:
         "200":
@@ -5830,8 +5865,9 @@ paths:
     get:
       tags:
         - Federal Curriculums
+      x-resource: Curriculums
       summary: Get federal curriculum
-      operationId: curriculum_1
+      operationId: Curriculums.curriculum
       x-roles: []
       parameters:
         - name: curriculum
@@ -5883,8 +5919,9 @@ paths:
     put:
       tags:
         - Federal Curriculums
+      x-resource: Curriculums
       summary: Update federal curriculum
-      operationId: reviseCurriculum
+      operationId: Curriculums.revise
       x-roles: [ADMIN]
       parameters:
         - name: curriculum
@@ -5964,8 +6001,9 @@ paths:
     delete:
       tags:
         - Federal Curriculums
+      x-resource: Curriculums
       summary: Remove federal curriculum
-      operationId: remove_10
+      operationId: Curriculums.remove
       x-roles: [ADMIN]
       parameters:
         - name: curriculum
@@ -5987,8 +6025,9 @@ paths:
     get:
       tags:
         - Federal Curriculums
+      x-resource: Curriculums
       summary: List federal curriculums
-      operationId: selection_38
+      operationId: Curriculums.selection
       x-roles: []
       parameters:
         - name: filter
@@ -6072,8 +6111,9 @@ paths:
     post:
       tags:
         - Federal Curriculums
+      x-resource: Curriculums
       summary: Create federal curriculum
-      operationId: createCurriculum
+      operationId: Curriculums.create
       x-roles: [ADMIN]
       responses:
         '201':
@@ -6153,8 +6193,9 @@ paths:
     delete:
       tags:
         - Users
+      x-resource: SchoolRoles
       summary: Revoke school role
-      operationId: revoke
+      operationId: SchoolRoles.revoke
       x-roles: [ADMIN, DIRECTOR]
       parameters:
         - name: school
@@ -6194,8 +6235,9 @@ paths:
     delete:
       tags:
         - Users
+      x-resource: Users
       summary: Remove user account
-      operationId: remove_11
+      operationId: Users.remove
       x-roles: [ADMIN]
       parameters:
         - name: user
@@ -6215,8 +6257,9 @@ paths:
     delete:
       tags:
         - Users
+      x-resource: UserRoles
       summary: Remove role from user
-      operationId: removeRole
+      operationId: UserRoles.revoke
       x-roles: [ADMIN]
       parameters:
         - name: user

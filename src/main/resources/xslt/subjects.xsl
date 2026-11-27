@@ -5,7 +5,7 @@
                 doctype-system="about:legacy-compat"/>
     <xsl:param name="view"/>
     <xsl:variable name="entries" select="/surok/subjects"/>
-    <xsl:variable name="selected" select="$entries/subject[$view = 'details' or $view = 'edit']"/>
+    <xsl:variable name="selected" select="/surok/subject"/>
     <xsl:variable name="catalogue" select="not(/surok/school)"/>
     <xsl:variable name="editable" select="($catalogue and /surok/user/admin = 'true') or (not($catalogue) and /surok/editable = 'true')"/>
     <xsl:variable name="base"><xsl:choose>

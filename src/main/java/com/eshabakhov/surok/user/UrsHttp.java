@@ -5,6 +5,7 @@ package com.eshabakhov.surok.user;
 
 import com.eshabakhov.surok.PrItems;
 import com.eshabakhov.surok.UrAccount;
+import com.eshabakhov.surok.User;
 import com.eshabakhov.surok.Users;
 import com.eshabakhov.surok.media.AcHttp;
 import com.eshabakhov.surok.media.MdJson;
@@ -12,20 +13,25 @@ import com.eshabakhov.surok.media.MdXml;
 import com.eshabakhov.surok.media.MdXslt;
 import com.eshabakhov.surok.media.SrWeb;
 import com.eshabakhov.surok.media.XsClasspath;
+import com.eshabakhov.surok.school.SlPostgres;
 import com.eshabakhov.surok.school.SlsBrief;
 import com.eshabakhov.surok.school.SlsPostgres;
 import com.eshabakhov.surok.security.CsToken;
-import com.eshabakhov.surok.security.right.RtAdmin;
+import com.eshabakhov.surok.security.OaYaml;
+import com.eshabakhov.surok.security.Operations;
 import com.eshabakhov.surok.user.subscription.PgSubscriptions;
 import com.eshabakhov.surok.user.subscription.SpWeb;
 import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.servlet.http.HttpServletRequest;
+import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.StreamSupport;
 import org.jooq.DSLContext;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -47,45 +53,68 @@ import org.springframework.web.server.ResponseStatusException;
  *
  * @since 0.0.1
  * @checkstyle ParameterNumberCheck (1000 lines)
- * @checkstyle NonStaticMethodCheck (1000 lines)
  * @checkstyle ClassFanOutComplexityCheck (1000 lines)
  */
 @RestController
 @SuppressWarnings("PMD.TooManyMethods")
 public final class UrsHttp {
 
+    /** Shared operation declarations. */
+    private final Operations operations;
+
     /** Database context. */
     private final DSLContext ctx;
 
     /**
-     * New user HTTP resource.
+     * New resource with explicitly constructed YAML operations.
      *
      * @param ctx Database context
+     * @throws IOException If the API description cannot be read
      */
-    public UrsHttp(final DSLContext ctx) {
+    @Autowired
+    public UrsHttp(final DSLContext ctx) throws IOException {
+        this(ctx, new OaYaml().operations());
+    }
+
+    /**
+     * New controller using the application operation catalog.
+     *
+     * @param ctx Database context
+     * @param operations Shared operation declarations
+     */
+    public UrsHttp(final DSLContext ctx, final Operations operations) {
         this.ctx = ctx;
+        this.operations = operations;
     }
 
     /**
      * Render a login or registration form.
      *
      * @param request HTTP request
+     * @param actor Acting visitor
      * @return Public form
      * @throws Exception If printing fails
-     * @checkstyle NonStaticMethodCheck (2 lines)
      */
     @GetMapping(value = {"/users/login", "/users/register"}, produces = MediaType.TEXT_HTML_VALUE)
-    public ResponseEntity<String> authenticationPage(final HttpServletRequest request)
-        throws Exception {
+    public ResponseEntity<String> authenticationPage(
+        final HttpServletRequest request, @AuthenticationPrincipal final User actor
+    ) throws Exception {
         final String view;
+        final String operation;
         if (request.getRequestURI().endsWith("/register")) {
             view = "register";
+            operation = "Registration.form";
         } else {
             view = "login";
+            operation = "Login.form";
         }
         return ResponseEntity.ok().contentType(
             new MediaType(MediaType.TEXT_HTML, StandardCharsets.UTF_8)
-        ).body(UrsHttp.authentication(request, view).print());
+        ).body(
+            this.operations.operation(operation)
+                .permission(actor).permit(UrsHttp.authentication(request, view))
+                .with("registration", new UrDraft("", "")).print()
+        );
     }
 
     /**
@@ -93,6 +122,7 @@ public final class UrsHttp {
      *
      * @param parameters Submitted fields
      * @param request HTTP request
+     * @param actor Acting visitor
      * @return Login redirect or the form containing a validation error
      * @throws Exception If storage or printing fails
      */
@@ -103,21 +133,25 @@ public final class UrsHttp {
     )
     public ResponseEntity<String> registerForm(
         @RequestParam final MultiValueMap<String, String> parameters,
-        final HttpServletRequest request
+        final HttpServletRequest request, @AuthenticationPrincipal final User actor
     ) throws Exception {
         final MdXslt page = UrsHttp.authentication(request, "register");
         ResponseEntity<String> response;
         try {
-            new UrSignup(this.ctx, parameters).register();
+            this.operations.operation("Registration.create").permission(actor)
+                .permit(new UrSignup(this.ctx, parameters)).register();
             response = ResponseEntity.status(HttpStatus.FOUND)
                 .location(URI.create("/users/login?registered")).build();
         } catch (final RegistrationException | UserCreationException exception) {
             response = ResponseEntity.badRequest().contentType(
                 new MediaType(MediaType.TEXT_HTML, StandardCharsets.UTF_8)
             ).body(
-                page.with("message", exception.getMessage())
-                    .with("username", parameters.getFirst("username"))
-                    .with("email", parameters.getFirst("email")).print()
+                page.with("message", exception.getMessage()).with(
+                    "registration", new UrDraft(
+                        Objects.toString(parameters.getFirst("username"), ""),
+                        Objects.toString(parameters.getFirst("email"), "")
+                    )
+                ).print()
             );
         }
         return response;
@@ -127,6 +161,7 @@ public final class UrsHttp {
      * Register a user.
      *
      * @param request Registration request
+     * @param actor Acting visitor
      * @return Created user
      * @throws Exception If registration fails
      */
@@ -136,7 +171,7 @@ public final class UrsHttp {
         produces = MediaType.APPLICATION_JSON_VALUE
     )
     public ResponseEntity<Map<String, Object>> register(
-        @RequestBody final JsonNode request
+        @RequestBody final JsonNode request, @AuthenticationPrincipal final User actor
     ) throws Exception {
         final JsonNode username = request.get("username");
         if (username == null || username.asText().isBlank()) {
@@ -153,18 +188,21 @@ public final class UrsHttp {
         if (request.has("school")) {
             throw new RegistrationException("School membership is managed separately");
         }
-        final UrAccount created = new UrsPostgres(this.ctx).register(
+        final UrAccount created = this.operations.operation("Registration.create").permission(actor)
+            .permit(new UrsPostgres(this.ctx)).register(
             username.asText(), password.asText(), email.asText(), false
         );
-        final Account account = created.account();
         return ResponseEntity.created(
             URI.create(String.format("/users/%s", created.uid()))
         ).body(
             Map.of(
-                "uid", created.uid(), "credentials", Map.of("username", account.username()),
+                "uid", created.uid(),
+                "credentials", Map.of("username", created.account().username()),
                 "roles", created.roles().print(new MdJson()).print(),
-                "info", Map.of("corporate", account.corporate(), "alive", account.alive()),
-                "admin", new RtAdmin(created).allows()
+                "info", Map.of(
+                    "corporate", created.account().corporate(), "alive", created.account().alive()
+                ),
+                "admin", created.roles().contains(Roles.RoleEnum.ADMIN)
             )
         );
     }
@@ -181,7 +219,8 @@ public final class UrsHttp {
     public ResponseEntity<Void> remove(
         @PathVariable final long user, @AuthenticationPrincipal final UrAccount actor
     ) throws Exception {
-        new UrsGlobalAuthorized(new UrsPostgres(this.ctx), actor).remove(user);
+        this.operations.operation("Users.remove").permission(actor)
+            .permit(new UrsPostgres(this.ctx)).remove(user);
         return ResponseEntity.noContent().build();
     }
 
@@ -200,9 +239,8 @@ public final class UrsHttp {
         @RequestBody final JsonNode request,
         @AuthenticationPrincipal final UrAccount actor
     ) throws Exception {
-        final UrAccount target = new UrsGlobalAuthorized(
-            new UrsPostgres(this.ctx), actor
-        ).identification(user);
+        final UrAccount target = this.operations.operation("UserRoles.grant").permission(actor)
+            .permit(new UrsPostgres(this.ctx)).identification(user);
         final JsonNode rolenode = request.get("role");
         if (rolenode == null || rolenode.asText().isBlank()) {
             throw new RoleAssignmentException("Role is required");
@@ -241,8 +279,8 @@ public final class UrsHttp {
         @PathVariable final long user, @AuthenticationPrincipal final UrAccount actor
     ) throws Exception {
         return ResponseEntity.ok(
-            new UrsGlobalAuthorized(new UrsPostgres(this.ctx), actor)
-                .identification(user)
+            this.operations.operation("UserRoles.list").permission(actor)
+                .permit(new UrsPostgres(this.ctx)).identification(user)
                 .roles()
                 .print(new MdJson()).print().path("list")
         );
@@ -263,8 +301,8 @@ public final class UrsHttp {
         @PathVariable final long role,
         @AuthenticationPrincipal final UrAccount actor
     ) throws Exception {
-        new UrsGlobalAuthorized(new UrsPostgres(this.ctx), actor)
-            .identification(user)
+        this.operations.operation("UserRoles.revoke").permission(actor)
+            .permit(new UrsPostgres(this.ctx)).identification(user)
             .roles()
             .revoke(role);
         return ResponseEntity.noContent().build();
@@ -287,7 +325,11 @@ public final class UrsHttp {
             new MediaType(new AcHttp(request).type(), StandardCharsets.UTF_8)
         ).body(
             new SrWeb(
-                new UrAcBrief(user), new SlsBrief(new SlsPostgres(this.ctx)),
+                new UrAcBrief(
+                    this.operations.operation("Profile.read")
+                        .permission(user)
+                        .permit(user)
+                ), new SlsBrief(new SlsPostgres(this.ctx)),
                 new CsToken((CsrfToken) request.getAttribute(CsrfToken.class.getName()))
             ).print(
                 new MdXslt(
@@ -298,7 +340,8 @@ public final class UrsHttp {
                 "memberships", new PrItems(
                     "membership", StreamSupport.stream(
                         user.schools().iterate().spliterator(), false
-                    ).map(school -> new UrMembership(school, user)).toList()
+                    ).filter(school -> school.users().contains(user))
+                        .map(school -> new UrMembership(school, user)).toList()
                 )
             ).print()
         );
@@ -319,7 +362,9 @@ public final class UrsHttp {
     ) throws Exception {
         final MediaType type = new AcHttp(request).type();
         final ResponseEntity<String> response;
-        if (user.account().corporate() || new RtAdmin(user).allows()) {
+        if (this.operations.operation("Subscription.read")
+            .permission(user)
+            .permit(user).account().corporate() || user.roles().contains(Roles.RoleEnum.ADMIN)) {
             response = ResponseEntity.status(HttpStatus.FOUND)
                 .location(URI.create("/users/profile")).build();
         } else {
@@ -365,7 +410,9 @@ public final class UrsHttp {
     ) throws Exception {
         new AcHttp(request).type();
         String target = "/users/profile";
-        if (!user.account().corporate() && !new RtAdmin(user).allows()) {
+        if (!this.operations.operation("Subscription.checkout")
+            .permission(user)
+            .permit(user).account().corporate() && !user.roles().contains(Roles.RoleEnum.ADMIN)) {
             final Subscription.Plan selected;
             try {
                 selected = Subscription.Plan.valueOf(plan);
@@ -402,7 +449,9 @@ public final class UrsHttp {
     ) throws Exception {
         new AcHttp(request).type();
         String target = "/users/profile";
-        if (!user.account().corporate() && !new RtAdmin(user).allows()) {
+        if (!this.operations.operation("Subscription.cancel")
+            .permission(user)
+            .permit(user).account().corporate() && !user.roles().contains(Roles.RoleEnum.ADMIN)) {
             new PgSubscriptions(this.ctx, user).subscription(Subscription.Plan.BASIC);
             target = "/users/subscription?cancelled";
         }
@@ -436,7 +485,9 @@ public final class UrsHttp {
             )
         ).type();
         final PrItems items = new PrItems(
-            "user", this.members(actor, school).iterate()
+            "user", this.operations.operation("SchoolUsers.list")
+                .permission(actor, new SlPostgres(this.ctx, school)).permit(actor)
+                .schools().school(school).users().iterate()
         );
         return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8)).body(
             switch (type.toString()) {
@@ -472,35 +523,17 @@ public final class UrsHttp {
         @PathVariable final long school, @PathVariable final long user,
         final HttpServletRequest request, @AuthenticationPrincipal final UrAccount actor
     ) throws Exception {
-        final MediaType type = new AcHttp(
-            request, List.of(
-                MediaType.parseMediaType("application/vnd.surok.school-user.v1+json"),
-                MediaType.parseMediaType("application/vnd.surok.school-user.v1+xml")
-            )
-        ).type();
-        final Users members = this.members(actor, school);
-        final UrAccount selected = new UrsPostgres(this.ctx).identification(user);
-        final HttpStatus status;
-        if (members.contains(selected)) {
-            status = HttpStatus.OK;
-        } else {
-            status = HttpStatus.CREATED;
-        }
-        final UrAccount added = members.add(selected);
-        return ResponseEntity.status(status)
-            .contentType(new MediaType(type, StandardCharsets.UTF_8)).location(
-                URI.create(String.format("/schools/%d/users/%d", school, user))
-            ).body(
-                switch (type.toString()) {
-                    case "application/vnd.surok.school-user.v1+json" ->
-                        added.print(new MdJson()).print();
-                    case "application/vnd.surok.school-user.v1+xml" ->
-                        added.print(new MdXml("user")).print();
-                    case null, default -> throw new ResponseStatusException(
-                        HttpStatus.NOT_ACCEPTABLE, "Unsupported Accept header"
-                    );
-                }
-            );
+        return UrsHttp.add(
+            new AcHttp(
+                request, List.of(
+                    MediaType.parseMediaType("application/vnd.surok.school-user.v1+json"),
+                    MediaType.parseMediaType("application/vnd.surok.school-user.v1+xml")
+                )
+            ).type(), this.operations.operation("SchoolUsers.add")
+                .permission(actor, new SlPostgres(this.ctx, school)).permit(actor)
+                .schools().school(school).users(),
+            new UrsPostgres(this.ctx).identification(user), school
+        );
     }
 
     /**
@@ -525,13 +558,21 @@ public final class UrsHttp {
         @PathVariable final long school, @RequestBody final JsonNode document,
         final HttpServletRequest request, @AuthenticationPrincipal final UrAccount actor
     ) throws Exception {
+        final MediaType type = new AcHttp(
+            request, List.of(
+                MediaType.parseMediaType("application/vnd.surok.school-user.v1+json"),
+                MediaType.parseMediaType("application/vnd.surok.school-user.v1+xml")
+            )
+        ).type();
+        final Users members = this.operations.operation("SchoolUsers.attach")
+            .permission(actor, new SlPostgres(this.ctx, school)).permit(actor)
+            .schools().school(school).users();
         final JsonNode login = document.get("login");
         if (login == null || login.asText().isBlank()) {
             throw new RoleAssignmentException("Login is required");
         }
-        return this.addSchoolUser(
-            school, new UrsPostgres(this.ctx).identification(login.asText()).uid(),
-            request, actor
+        return UrsHttp.add(
+            type, members, new UrsPostgres(this.ctx).identification(login.asText()), school
         );
     }
 
@@ -549,7 +590,9 @@ public final class UrsHttp {
         @PathVariable final long school, @PathVariable final long user,
         @AuthenticationPrincipal final UrAccount actor
     ) throws Exception {
-        this.members(actor, school).remove(user);
+        this.operations.operation("SchoolUsers.remove")
+            .permission(actor, new SlPostgres(this.ctx, school)).permit(actor)
+            .schools().school(school).users().remove(user);
         return ResponseEntity.noContent().build();
     }
 
@@ -570,7 +613,9 @@ public final class UrsHttp {
         @PathVariable final long school, @PathVariable final long user,
         @AuthenticationPrincipal final UrAccount actor
     ) throws Exception {
-        final Users members = this.members(actor, school);
+        final Users members = this.operations.operation("SchoolRoles.list")
+            .permission(actor, new SlPostgres(this.ctx, school)).permit(actor)
+            .schools().school(school).users();
         return ResponseEntity.ok(
             members.roles(members.identification(user)).print(new MdJson()).print().path("list")
         );
@@ -595,11 +640,13 @@ public final class UrsHttp {
         @PathVariable final long school, @PathVariable final long user,
         @RequestBody final JsonNode document, @AuthenticationPrincipal final UrAccount actor
     ) throws Exception {
+        final Users members = this.operations.operation("SchoolRoles.grant")
+            .permission(actor, new SlPostgres(this.ctx, school)).permit(actor)
+            .schools().school(school).users();
         final JsonNode name = document.get("role");
         if (name == null || name.asText().isBlank()) {
             throw new RoleAssignmentException("Role is required");
         }
-        final Users members = this.members(actor, school);
         final Role granted = members.roles(members.identification(user)).grant(
             switch (name.asText()) {
                 case "DIRECTOR" -> Roles.RoleEnum.DIRECTOR;
@@ -629,7 +676,9 @@ public final class UrsHttp {
         @PathVariable final long school, @PathVariable final long user,
         @PathVariable final long role, @AuthenticationPrincipal final UrAccount actor
     ) throws Exception {
-        final Users members = this.members(actor, school);
+        final Users members = this.operations.operation("SchoolRoles.revoke")
+            .permission(actor, new SlPostgres(this.ctx, school)).permit(actor)
+            .schools().school(school).users();
         members.roles(members.identification(user)).revoke(role);
         return ResponseEntity.noContent().build();
     }
@@ -647,7 +696,29 @@ public final class UrsHttp {
             .with("registered", request.getParameterMap().containsKey("registered"));
     }
 
-    private Users members(final UrAccount actor, final long id) throws Exception {
-        return new UrAcAuthorized(actor, new SlsPostgres(this.ctx)).schools().school(id).users();
+    private static ResponseEntity<?> add(
+        final MediaType type, final Users members, final UrAccount user, final long school
+    ) throws Exception {
+        final HttpStatus status;
+        if (members.contains(user)) {
+            status = HttpStatus.OK;
+        } else {
+            status = HttpStatus.CREATED;
+        }
+        final UrAccount added = members.add(user);
+        return ResponseEntity.status(status)
+            .contentType(new MediaType(type, StandardCharsets.UTF_8)).location(
+                URI.create(String.format("/schools/%d/users/%d", school, user.uid()))
+            ).body(
+                switch (type.toString()) {
+                    case "application/vnd.surok.school-user.v1+json" ->
+                        added.print(new MdJson()).print();
+                    case "application/vnd.surok.school-user.v1+xml" ->
+                        added.print(new MdXml("user")).print();
+                    case null, default -> throw new ResponseStatusException(
+                        HttpStatus.NOT_ACCEPTABLE, "Unsupported Accept header"
+                    );
+                }
+            );
     }
 }

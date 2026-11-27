@@ -2,7 +2,7 @@
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
     <xsl:template name="school-form">
         <xsl:param name="editing"/>
-        <xsl:variable name="selected" select="/surok/schools/school"/>
+        <xsl:variable name="selected" select="/surok/school"/>
         <div class="page-title-row school-form-heading"><div><h1>
             <xsl:choose><xsl:when test="$editing">Редактировать школу</xsl:when>
                 <xsl:otherwise>Новая школа</xsl:otherwise></xsl:choose>

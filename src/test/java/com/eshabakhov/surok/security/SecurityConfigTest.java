@@ -147,9 +147,44 @@ final class SecurityConfigTest {
             List.of(
                 paths.path("/federal/curriculums").has("get"),
                 paths.path("/federal/curriculums").has("post"),
-                paths.path("/federal/subjects").has("post"), paths.has("/schools")
+                paths.path("/federal/subjects").has("post"), paths.has("/schools"),
+                paths.has("/schools/{school}/buildings")
             ),
-            Matchers.contains(true, false, false, true)
+            Matchers.contains(true, false, false, true, false)
+        );
+    }
+
+    /**
+     * Authentication supplies the catalog needed for user-rooted building access.
+     *
+     * @param mvc HTTP client
+     * @param ctx Database context
+     * @throws Exception If authentication or school navigation fails
+     */
+    @Test
+    void allowsSchoolNavigationAfterBasicAuthentication(
+        @Autowired final MockMvc mvc, @Autowired final DSLContext ctx
+    ) throws Exception {
+        final UrAccount user = new UrsPostgres(ctx).register(
+            UUID.randomUUID().toString(), "SchoolPassword1!",
+            String.format("%s@example.org", UUID.randomUUID()), false
+        );
+        MatcherAssert.assertThat(
+            "The authenticated user could not navigate to the school's buildings",
+            new ObjectMapper().readTree(
+                mvc.perform(
+                    MockMvcRequestBuilders.get(
+                        "/schools/{school}/buildings", new SlsPostgres(ctx, user).create(
+                            new SlInputName(new SlInput(), "Школа текущего пользователя")
+                        ).uid()
+                    ).accept("application/vnd.surok.buildings.v1+json").with(
+                        SecurityMockMvcRequestPostProcessors.httpBasic(
+                            user.account().username(), "SchoolPassword1!"
+                        )
+                    )
+                ).andReturn().getResponse().getContentAsString()
+            ).path("items").isArray(),
+            Matchers.is(true)
         );
     }
 
@@ -183,10 +218,14 @@ final class SecurityConfigTest {
                 paths.path("/schools/{school}/subjects").has("get"),
                 paths.path("/schools/{school}/subjects").has("post"),
                 paths.path("/federal/subjects").has("post"),
-                paths.path("/schools/{school}/schedules/{schedule}/loads/draft").has("put")
+                paths.path("/schools/{school}/schedules/{schedule}/loads/draft").has("put"),
+                paths.path("/schools/{school}/buildings/create").has("get"),
+                paths.path("/schools/{school}/buildings/{building}/edit").has("get"),
+                paths.path("/schools/{school}/buildings").has("post")
             ),
             Matchers.contains(
-                true, role == Roles.RoleEnum.DIRECTOR, false, role == Roles.RoleEnum.DIRECTOR
+                true, role == Roles.RoleEnum.DIRECTOR, false, role == Roles.RoleEnum.DIRECTOR,
+                true, true, role == Roles.RoleEnum.DIRECTOR
             )
         );
     }

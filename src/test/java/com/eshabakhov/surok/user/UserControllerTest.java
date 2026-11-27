@@ -5,22 +5,30 @@ package com.eshabakhov.surok.user;
 
 import com.eshabakhov.surok.School;
 import com.eshabakhov.surok.UrAccount;
+import com.eshabakhov.surok.school.SlsPostgres;
 import com.eshabakhov.surok.school.input.SlInput;
 import com.eshabakhov.surok.school.input.SlInputName;
+import com.eshabakhov.surok.security.OaYaml;
+import com.eshabakhov.surok.security.Operations;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.jooq.DSLContext;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -32,7 +40,7 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
- * Global user endpoints enforce the actor's live role through protected objects.
+ * User endpoints authorize each operation using the actor's current roles.
  * For example, a regular user cannot assign a global subscription role.
  *
  * @since 0.0.1
@@ -270,5 +278,189 @@ final class UserControllerTest {
         registry.add("spring.datasource.username", UserControllerTest.POSTGRES::getUsername);
         registry.add("spring.datasource.password", UserControllerTest.POSTGRES::getPassword);
         registry.add("spring.liquibase.enabled", () -> true);
+    }
+
+    /**
+     * Verifies permission selection at the HTTP boundary.
+     *
+     * @since 0.0.1
+     */
+    @Nested
+    final class Authorization {
+
+        /**
+         * Uses only the permission declared for the requested endpoint.
+         *
+         * @param operation Operation identifier
+         * @param ctx Database context
+         * @throws Exception If the operation fails
+         */
+        @ParameterizedTest
+        @ValueSource(
+            strings = {
+                "SchoolUsers.list", "SchoolUsers.add", "SchoolUsers.attach", "SchoolUsers.remove",
+                "SchoolRoles.list", "SchoolRoles.grant", "SchoolRoles.revoke"
+            }
+        )
+        void authorizesOnlyTheRequestedOperation(
+            final String operation, @Autowired final DSLContext ctx
+        ) throws Exception {
+            final UrAccount actor = new UrsPostgres(ctx).register(
+                UUID.randomUUID().toString(), "ValidPassword1!",
+                String.format("%s@example.org", UUID.randomUUID()), false
+            );
+            actor.roles().grant(Roles.RoleEnum.ADMIN);
+            final UrAccount target = new UrsPostgres(ctx).register(
+                UUID.randomUUID().toString(), "ValidPassword1!",
+                String.format("%s@example.org", UUID.randomUUID()), false
+            );
+            final School school = new SlsPostgres(ctx).create(
+                new SlInputName(new SlInput(), "Школа для проверки доступа")
+            );
+            school.users().add(target);
+            final long assignment = school.users().roles(target)
+                .grant(Roles.RoleEnum.STUDENT).uid();
+            final Operations catalog = new OaYaml().operations();
+            final List<String> checks = new ArrayList<>(1);
+            final UrsHttp controller = new UrsHttp(
+                ctx, () -> {
+                    checks.add(operation);
+                    return List.of(catalog.operation(operation));
+                }
+            );
+            final MockHttpServletRequest request = new MockHttpServletRequest();
+            request.addHeader(HttpHeaders.ACCEPT, "application/*+json");
+            switch (operation) {
+                case "SchoolUsers.list" -> controller.schoolUsers(school.uid(), request, actor);
+                case "SchoolUsers.add" ->
+                    controller.addSchoolUser(school.uid(), target.uid(), request, actor);
+                case "SchoolUsers.attach" -> controller.attachSchoolUser(
+                    school.uid(), new ObjectMapper().createObjectNode()
+                        .put("login", target.account().username()), request, actor
+                );
+                case "SchoolUsers.remove" ->
+                    controller.removeSchoolUser(school.uid(), target.uid(), actor);
+                case "SchoolRoles.list" ->
+                    controller.schoolRoles(school.uid(), target.uid(), actor);
+                case "SchoolRoles.grant" -> controller.grantSchoolRole(
+                    school.uid(), target.uid(),
+                    new ObjectMapper().readTree("{\"role\":\"TEACHER\"}"), actor
+                );
+                case "SchoolRoles.revoke" ->
+                    controller.revokeSchoolRole(school.uid(), target.uid(), assignment, actor);
+                case null, default -> throw new IllegalArgumentException(operation);
+            }
+            MatcherAssert.assertThat(
+                "The controller required unrelated permissions or repeated authorization",
+                checks, Matchers.contains(operation)
+            );
+        }
+
+        /**
+         * Authorizes global account and role operations without nested read permissions.
+         *
+         * @param operation Operation identifier
+         * @param ctx Database context
+         * @throws Exception If the operation fails
+         */
+        @ParameterizedTest
+        @ValueSource(
+            strings = {"Users.remove", "UserRoles.list", "UserRoles.grant", "UserRoles.revoke"}
+        )
+        void authorizesOnlyTheRequestedGlobalOperation(
+            final String operation, @Autowired final DSLContext ctx
+        ) throws Exception {
+            final UrAccount actor = new UrsPostgres(ctx).register(
+                UUID.randomUUID().toString(), "ValidPassword1!",
+                String.format("%s@example.org", UUID.randomUUID()), false
+            );
+            actor.roles().grant(Roles.RoleEnum.ADMIN);
+            final UrAccount target = new UrsPostgres(ctx).register(
+                UUID.randomUUID().toString(), "ValidPassword1!",
+                String.format("%s@example.org", UUID.randomUUID()), false
+            );
+            final Operations catalog = new OaYaml().operations();
+            final List<String> checks = new ArrayList<>(1);
+            final UrsHttp controller = new UrsHttp(
+                ctx, () -> {
+                    checks.add(operation);
+                    return List.of(catalog.operation(operation));
+                }
+            );
+            switch (operation) {
+                case "Users.remove" -> controller.remove(target.uid(), actor);
+                case "UserRoles.list" -> controller.listRoles(target.uid(), actor);
+                case "UserRoles.grant" -> controller.assignRole(
+                    target.uid(), new ObjectMapper().readTree("{\"role\":\"PRO_MAKER\"}"), actor
+                );
+                case "UserRoles.revoke" -> controller.removeRole(
+                    target.uid(), target.roles().list().getFirst().uid(), actor
+                );
+                case null, default -> throw new IllegalArgumentException(operation);
+            }
+            MatcherAssert.assertThat(
+                "The global operation required unrelated permissions or repeated authorization",
+                checks, Matchers.contains(operation)
+            );
+        }
+
+        /**
+         * Rejects a new role grant after the caller's assignment or membership is removed.
+         *
+         * @param change Revoked access
+         * @param ctx Database context
+         * @param mvc HTTP client
+         * @throws Exception If setup or the request fails
+         */
+        @ParameterizedTest
+        @CsvSource({"global", "school", "membership"})
+        void deniesRoleChangesAfterAccessIsRevoked(
+            final String change, @Autowired final DSLContext ctx, @Autowired final MockMvc mvc
+        ) throws Exception {
+            final UrAccount actor = new UrsPostgres(ctx).register(
+                UUID.randomUUID().toString(), "ValidPassword1!",
+                String.format("%s@example.org", UUID.randomUUID()), false
+            );
+            final School school = actor.schools().create(
+                new SlInputName(new SlInput(), "Школа после отзыва роли")
+            );
+            final String path;
+            final String type;
+            final String name;
+            final Roles roles;
+            if ("global".equals(change)) {
+                actor.roles().grant(Roles.RoleEnum.ADMIN);
+                path = String.format("/users/%d/roles", actor.uid());
+                type = MediaType.APPLICATION_JSON_VALUE;
+                name = "PRO_MAKER";
+                roles = actor.roles();
+            } else {
+                path = String.format("/schools/%d/users/%d/roles", school.uid(), actor.uid());
+                type = "application/vnd.surok.school-role.v1+json";
+                name = "TEACHER";
+                roles = school.users().roles(actor);
+            }
+            final UrAcAuth principal = new UrAcAuth(actor);
+            if ("membership".equals(change)) {
+                school.users().remove(actor.uid());
+            } else {
+                for (final Role role : roles.list()) {
+                    roles.revoke(role.uid());
+                }
+            }
+            MatcherAssert.assertThat(
+                "A revoked caller granted a role using an existing principal",
+                List.of(
+                    mvc.perform(
+                        MockMvcRequestBuilders.post(path).contentType(type).accept(type)
+                            .content(String.format("{\"role\":\"%s\"}", name))
+                            .with(SecurityMockMvcRequestPostProcessors.csrf())
+                            .with(SecurityMockMvcRequestPostProcessors.user(principal))
+                    ).andReturn().getResponse().getStatus(),
+                    roles.contains(Roles.RoleEnum.valueOf(name))
+                ),
+                Matchers.contains(HttpStatus.FORBIDDEN.value(), false)
+            );
+        }
     }
 }

@@ -3,31 +3,35 @@
  */
 package com.eshabakhov.surok.security.permission;
 
-import com.eshabakhov.surok.Printable;
-import com.eshabakhov.surok.Schools;
-import com.eshabakhov.surok.UrAccount;
+import org.springframework.security.access.AccessDeniedException;
 
 /**
- * Permission to invoke a controller operation.
- * For example, a director can create a cabinet in their own school.
+ * Permission already bound to its caller and target.
+ * For example, permit a collection before invoking its creation operation.
  *
  * @since 0.0.1
  */
-public interface Permission extends Printable {
+@FunctionalInterface
+public interface Permission {
 
     /**
-     * Evaluate access for a visitor without an account.
+     * Evaluate current assignments.
      *
-     * @return Whether the operation is public
+     * @return Whether access is granted
      */
     boolean allows();
 
     /**
-     * Evaluate the controller's authorization rule for an account in the supplied schools.
+     * Expose an object after evaluating access.
      *
-     * @param actor Account being inspected
-     * @param schools Schools in which access is evaluated
-     * @return Whether the rule grants access
+     * @param origin Protected object
+     * @param <T> Object type
+     * @return Permitted object
      */
-    boolean allows(UrAccount actor, Schools schools);
+    default <T> T permit(final T origin) {
+        if (!this.allows()) {
+            throw new AccessDeniedException("Operation access denied");
+        }
+        return origin;
+    }
 }

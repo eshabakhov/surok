@@ -9,6 +9,7 @@ import com.eshabakhov.surok.Media;
 import com.eshabakhov.surok.Page;
 import com.eshabakhov.surok.Sorts;
 import com.eshabakhov.surok.UrAccount;
+import com.eshabakhov.surok.federal.subject.input.SbInput;
 import com.eshabakhov.surok.federal.subject.input.SbInputHttp;
 import com.eshabakhov.surok.federal.subject.input.SubjectInputException;
 import com.eshabakhov.surok.filter.FilterRequest;
@@ -20,15 +21,16 @@ import com.eshabakhov.surok.media.MdXslt;
 import com.eshabakhov.surok.media.SrWeb;
 import com.eshabakhov.surok.media.XsClasspath;
 import com.eshabakhov.surok.school.SlBrief;
+import com.eshabakhov.surok.school.SlPostgres;
 import com.eshabakhov.surok.school.SlsBrief;
 import com.eshabakhov.surok.school.SlsPostgres;
 import com.eshabakhov.surok.security.CsToken;
-import com.eshabakhov.surok.security.right.RtAdmin;
-import com.eshabakhov.surok.security.right.RtDirectorOrDeputy;
-import com.eshabakhov.surok.user.UrAcAuthorized;
+import com.eshabakhov.surok.security.OaYaml;
+import com.eshabakhov.surok.security.Operations;
 import com.eshabakhov.surok.user.UrAcBrief;
 import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.servlet.http.HttpServletRequest;
+import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashSet;
@@ -36,6 +38,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 import org.jooq.DSLContext;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -75,16 +78,32 @@ public class SbsHttp {
     /** HTML representation containing only the subject results. */
     private static final String FRAGMENT = "text/vnd.surok.subjects-fragment+html";
 
+    /** Shared operation declarations. */
+    private final Operations operations;
+
     /** Database context. */
     private final DSLContext ctx;
 
     /**
-     * New resource.
+     * New resource with explicitly constructed YAML operations.
      *
      * @param ctx Database context
+     * @throws IOException If the API description cannot be read
      */
-    public SbsHttp(final DSLContext ctx) {
+    @Autowired
+    public SbsHttp(final DSLContext ctx) throws IOException {
+        this(ctx, new OaYaml().operations());
+    }
+
+    /**
+     * New controller using the application operation catalog.
+     *
+     * @param ctx Database context
+     * @param operations Shared operation declarations
+     */
+    public SbsHttp(final DSLContext ctx, final Operations operations) {
         this.ctx = ctx;
+        this.operations = operations;
     }
 
     /**
@@ -122,9 +141,16 @@ public class SbsHttp {
                 .map(name -> new FilterRequest(name, request.getParameter(name))).toList()
         );
         final Filters applied = new FiltersRequest(requested);
-        final Subjects selected = this.subjects(school, actor).selection(
-            applied, page, sorts
-        );
+        final Subjects origin;
+        if (school == null) {
+            origin = this.operations.operation("FederalSubjects.selection").permission(actor)
+                .permit(new SbsFederal(this.ctx));
+        } else {
+            origin = this.operations.operation("SchoolSubjects.selection")
+                .permission(actor, new SlPostgres(this.ctx, school)).permit(actor)
+                .schools().school(school).subjects();
+        }
+        final Subjects selected = origin.selection(applied, page, sorts);
         return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8))
             .varyBy(HttpHeaders.ACCEPT).body(
                 switch (type.toString()) {
@@ -164,14 +190,20 @@ public class SbsHttp {
         @AuthenticationPrincipal final UrAccount actor
     ) throws Exception {
         final MediaType type = new AcHttp(request, List.of(MediaType.TEXT_HTML)).type();
-        if (school == null && !new RtAdmin(actor).allows()) {
-            throw new ResponseStatusException(
-                HttpStatus.FORBIDDEN, "Federal catalogue is read-only"
-            );
+        final UrAccount user;
+        final Subject.Origin origin;
+        if (school == null) {
+            user = this.operations.operation("FederalSubjects.form")
+                .permission(actor).permit(actor);
+            origin = Subject.Origin.FEDERAL;
+        } else {
+            user = this.operations.operation("SchoolSubjects.form")
+                .permission(actor, new SlPostgres(this.ctx, school)).permit(actor);
+            origin = Subject.Origin.SCHOOL;
         }
-        this.subjects(school, actor);
         return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8)).body(
-            this.web(request, school, "create", actor).print()
+            this.web(request, school, "create", user)
+                .with("subject", new SbDraft(new SbInput(), origin)).print()
         );
     }
 
@@ -200,13 +232,21 @@ public class SbsHttp {
         @AuthenticationPrincipal final UrAccount actor
     ) throws Exception {
         final MediaType type = new AcHttp(request, "subject-v1").type();
-        final Subjects origin = this.subjects(school, actor);
+        final Subjects origin;
+        if (school == null) {
+            origin = this.operations.operation("FederalSubjects.subject").permission(actor)
+                .permit(new SbsFederal(this.ctx));
+        } else {
+            origin = this.operations.operation("SchoolSubjects.subject")
+                .permission(actor, new SlPostgres(this.ctx, school)).permit(actor)
+                .schools().school(school).subjects();
+        }
         final Subject selected = origin.subject(subject);
         return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8)).body(
             switch (type.toString()) {
                 case MediaType.TEXT_HTML_VALUE ->
                     this.web(request, school, "details", actor).with(
-                        "subjects", new SbsSingle(origin, selected)
+                        "subject", selected
                     ).print();
                 case "application/vnd.surok.subject-v1+json" ->
                     new SbV1(selected).print(new MdJson()).print();
@@ -237,15 +277,22 @@ public class SbsHttp {
         @AuthenticationPrincipal final UrAccount actor
     ) throws Exception {
         final MediaType type = new AcHttp(request, List.of(MediaType.TEXT_HTML)).type();
-        final Subjects origin = this.subjects(school, actor);
+        final Subjects origin;
+        if (school == null) {
+            origin = this.operations.operation("FederalSubjects.edit").permission(actor)
+                .permit(new SbsFederal(this.ctx));
+        } else {
+            origin = this.operations.operation("SchoolSubjects.edit")
+                .permission(actor, new SlPostgres(this.ctx, school)).permit(actor)
+                .schools().school(school).subjects();
+        }
         final Subject selected = origin.subject(subject);
-        if (school == null && !new RtAdmin(actor).allows()
-            || school != null && selected.origin() == Subject.Origin.FEDERAL) {
+        if (school != null && selected.origin() == Subject.Origin.FEDERAL) {
             throw new SubjectReadOnlyException(selected.uid());
         }
         return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8)).body(
             this.web(request, school, "edit", actor).with(
-                "subjects", new SbsSingle(origin, selected)
+                "subject", selected
             ).print()
         );
     }
@@ -275,12 +322,20 @@ public class SbsHttp {
         @AuthenticationPrincipal final UrAccount actor
     ) throws Exception {
         final MediaType type = new AcHttp(request, "subject-v1").type();
+        final Subjects origin;
+        if (school == null) {
+            origin = this.operations.operation("FederalSubjects.create").permission(actor)
+                .permit(new SbsFederal(this.ctx));
+        } else {
+            origin = this.operations.operation("SchoolSubjects.create")
+                .permission(actor, new SlPostgres(this.ctx, school)).permit(actor)
+                .schools().school(school).subjects();
+        }
         ResponseEntity<?> response;
         try {
             response = SbsHttp.result(
                 type,
-                this.subjects(school, actor)
-                    .create(new SbInputHttp(parameters)), HttpStatus.CREATED,
+                origin.create(new SbInputHttp(parameters)), HttpStatus.CREATED,
                 SbsHttp.base(school),
                 SbsHttp.base(school)
             );
@@ -314,10 +369,18 @@ public class SbsHttp {
         final HttpServletRequest request,
         @AuthenticationPrincipal final UrAccount actor
     ) throws Exception {
+        final MediaType type = new AcHttp(request, "subject-v1").type();
+        final Subjects origin;
+        if (school == null) {
+            origin = this.operations.operation("FederalSubjects.create").permission(actor)
+                .permit(new SbsFederal(this.ctx));
+        } else {
+            origin = this.operations.operation("SchoolSubjects.create")
+                .permission(actor, new SlPostgres(this.ctx, school)).permit(actor)
+                .schools().school(school).subjects();
+        }
         return SbsHttp.result(
-            new AcHttp(request, "subject-v1").type(),
-            this.subjects(school, actor)
-                .create(new SbInputHttp(json)), HttpStatus.CREATED,
+            type, origin.create(new SbInputHttp(json)), HttpStatus.CREATED,
             SbsHttp.base(school),
             SbsHttp.base(school)
         );
@@ -351,8 +414,16 @@ public class SbsHttp {
         @AuthenticationPrincipal final UrAccount actor
     ) throws Exception {
         final MediaType type = new AcHttp(request, "subject-v1").type();
-        final Subject revised = this.subjects(school, actor)
-            .revise(subject, new SbInputHttp(json));
+        final Subjects origin;
+        if (school == null) {
+            origin = this.operations.operation("FederalSubjects.revise").permission(actor)
+                .permit(new SbsFederal(this.ctx));
+        } else {
+            origin = this.operations.operation("SchoolSubjects.revise")
+                .permission(actor, new SlPostgres(this.ctx, school)).permit(actor)
+                .schools().school(school).subjects();
+        }
+        final Subject revised = origin.revise(subject, new SbInputHttp(json));
         return SbsHttp.result(
             type, revised, HttpStatus.OK, SbsHttp.base(school),
             String.format("%s/%d", SbsHttp.base(school), revised.uid())
@@ -381,19 +452,17 @@ public class SbsHttp {
         @AuthenticationPrincipal final UrAccount actor
     ) throws Exception {
         new AcHttp(request, "subject-v1").type();
-        this.subjects(school, actor).remove(subject);
-        return ResponseEntity.noContent().build();
-    }
-
-    private Subjects subjects(final Long school, final UrAccount actor) throws Exception {
-        final Subjects subjects;
+        final Subjects origin;
         if (school == null) {
-            subjects = new SbsFederalAuthorized(new SbsFederal(this.ctx), actor);
+            origin = this.operations.operation("FederalSubjects.remove").permission(actor)
+                .permit(new SbsFederal(this.ctx));
         } else {
-            subjects = new UrAcAuthorized(actor, new SlsPostgres(this.ctx)).schools()
-                .school(school).subjects();
+            origin = this.operations.operation("SchoolSubjects.remove")
+                .permission(actor, new SlPostgres(this.ctx, school)).permit(actor)
+                .schools().school(school).subjects();
         }
-        return subjects;
+        origin.remove(subject);
+        return ResponseEntity.noContent().build();
     }
 
     private static String base(final Long school) {
@@ -455,11 +524,13 @@ public class SbsHttp {
         final String view,
         final UrAccount actor
     ) throws Exception {
-        boolean editable = new RtAdmin(actor).allows();
-        if (school != null && !editable) {
-            editable = new RtDirectorOrDeputy(
-                actor, new UrAcAuthorized(actor, new SlsPostgres(this.ctx)).schools().school(school)
-            ).allows();
+        final boolean editable;
+        if (school == null) {
+            editable = this.operations.operation("FederalSubjects.revise")
+                .permission(actor).allows();
+        } else {
+            editable = this.operations.operation("SchoolSubjects.revise")
+                .permission(actor, new SlPostgres(this.ctx, school)).allows();
         }
         Media<String> media = new SrWeb(
             new UrAcBrief(actor),
@@ -475,7 +546,7 @@ public class SbsHttp {
         if (school != null) {
             media = media.with(
                 "school", new SlBrief(
-                    new UrAcAuthorized(actor, new SlsPostgres(this.ctx)).schools().school(school)
+                    actor.schools().school(school)
                 )
             );
         }

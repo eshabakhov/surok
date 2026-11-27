@@ -18,22 +18,23 @@ import com.eshabakhov.surok.media.MdXslt;
 import com.eshabakhov.surok.media.SrWeb;
 import com.eshabakhov.surok.media.XsClasspath;
 import com.eshabakhov.surok.school.SlBrief;
+import com.eshabakhov.surok.school.SlPostgres;
 import com.eshabakhov.surok.school.SlsBrief;
 import com.eshabakhov.surok.school.SlsPostgres;
 import com.eshabakhov.surok.school.schedule.Schedule;
 import com.eshabakhov.surok.school.schedule.SdBrief;
 import com.eshabakhov.surok.security.CsToken;
-import com.eshabakhov.surok.security.right.RtAdmin;
-import com.eshabakhov.surok.security.right.RtDirectorOrDeputy;
-import com.eshabakhov.surok.security.right.RtEither;
-import com.eshabakhov.surok.user.UrAcAuthorized;
+import com.eshabakhov.surok.security.OaYaml;
+import com.eshabakhov.surok.security.Operations;
 import com.eshabakhov.surok.user.UrAcBrief;
 import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.servlet.http.HttpServletRequest;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import org.jooq.DSLContext;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -61,6 +62,9 @@ import org.springframework.web.server.ResponseStatusException;
 @RequestMapping("/schools/{school}/schedules/{schedule}/loads/draft")
 public class LdHttp {
 
+    /** Shared operation declarations. */
+    private final Operations operations;
+
     /** Database context. */
     private final DSLContext ctx;
 
@@ -68,16 +72,29 @@ public class LdHttp {
     private final MediaType[] types;
 
     /**
-     * New planning controller.
+     * New resource with explicitly constructed YAML operations.
      *
      * @param ctx Database context
+     * @throws IOException If the API description cannot be read
      */
-    public LdHttp(final DSLContext ctx) {
+    @Autowired
+    public LdHttp(final DSLContext ctx) throws IOException {
+        this(ctx, new OaYaml().operations());
+    }
+
+    /**
+     * New controller using the application operation catalog.
+     *
+     * @param ctx Database context
+     * @param operations Shared operation declarations
+     */
+    public LdHttp(final DSLContext ctx, final Operations operations) {
         this.ctx = ctx;
         this.types = new MediaType[] {
             new MediaType("application", "vnd.surok.load-draft.v1+json"),
             new MediaType("application", "vnd.surok.load-draft.v1+xml"),
         };
+        this.operations = operations;
     }
 
     /**
@@ -109,9 +126,9 @@ public class LdHttp {
             request,
             List.of(this.types[0], this.types[1], MediaType.TEXT_HTML)
         ).type();
-        final School source = new UrAcAuthorized(
-            actor, new SlsPostgres(this.ctx)
-        ).schools().school(school);
+        final School source = this.operations.operation("LoadDraft.read")
+            .permission(actor, new SlPostgres(this.ctx, school)).permit(actor)
+            .schools().school(school);
         final Schedule selected = source.schedules().schedule(schedule);
         final LoadDraft draft = selected.draft();
         return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8))
@@ -158,10 +175,8 @@ public class LdHttp {
                                 .with("subjects", source.subjects())
                                 .with("offers", new PrItems("curriculum", offers)).with(
                                     "editable",
-                                    new RtEither(
-                                        new RtAdmin(actor),
-                                        new RtDirectorOrDeputy(actor, source)
-                                    ).allows()
+                                    this.operations.operation("LoadDraft.save")
+                                        .permission(actor, source).allows()
                                 )
                         ).print();
                     }
@@ -203,9 +218,9 @@ public class LdHttp {
         @AuthenticationPrincipal final UrAccount actor
     ) throws Exception {
         final MediaType type = new AcHttp(request, List.of(this.types)).type();
-        final LoadDraft draft = new UrAcAuthorized(
-            actor, new SlsPostgres(this.ctx)
-        ).schools().school(school).schedules().schedule(schedule).draft();
+        final LoadDraft draft = this.operations.operation("LoadDraft.save")
+            .permission(actor, new SlPostgres(this.ctx, school)).permit(actor)
+            .schools().school(school).schedules().schedule(schedule).draft();
         HttpStatus status;
         try {
             draft.curriculum();
@@ -262,9 +277,9 @@ public class LdHttp {
         @AuthenticationPrincipal final UrAccount actor
     ) throws Exception {
         final MediaType type = new AcHttp(request, List.of(this.types)).type();
-        final LoadDraft draft = new UrAcAuthorized(
-            actor, new SlsPostgres(this.ctx)
-        ).schools().school(school).schedules().schedule(schedule).draft();
+        final LoadDraft draft = this.operations.operation("LoadDraft.revise")
+            .permission(actor, new SlPostgres(this.ctx, school)).permit(actor)
+            .schools().school(school).schedules().schedule(schedule).draft();
         draft.revise(new LdiJson(this.ctx, document));
         return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8))
             .varyBy(HttpHeaders.ACCEPT).body(
@@ -305,9 +320,9 @@ public class LdHttp {
         @AuthenticationPrincipal final UrAccount actor
     ) throws Exception {
         final MediaType type = new AcHttp(request, List.of(this.types)).type();
-        final LoadDraft draft = new UrAcAuthorized(
-            actor, new SlsPostgres(this.ctx)
-        ).schools().school(school).schedules().schedule(schedule).draft();
+        final LoadDraft draft = this.operations.operation("LoadDraft.apply")
+            .permission(actor, new SlPostgres(this.ctx, school)).permit(actor)
+            .schools().school(school).schedules().schedule(schedule).draft();
         draft.apply();
         return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8))
             .varyBy(HttpHeaders.ACCEPT).body(

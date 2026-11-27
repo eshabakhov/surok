@@ -3,7 +3,6 @@
  */
 package com.eshabakhov.surok.school.building.cabinet;
 
-import com.eshabakhov.surok.Filter;
 import com.eshabakhov.surok.Filters;
 import com.eshabakhov.surok.Media;
 import com.eshabakhov.surok.Page;
@@ -19,29 +18,33 @@ import com.eshabakhov.surok.media.MdXslt;
 import com.eshabakhov.surok.media.SrWeb;
 import com.eshabakhov.surok.media.XsClasspath;
 import com.eshabakhov.surok.school.SlBrief;
+import com.eshabakhov.surok.school.SlPostgres;
 import com.eshabakhov.surok.school.SlsBrief;
 import com.eshabakhov.surok.school.SlsPostgres;
 import com.eshabakhov.surok.school.building.Building;
 import com.eshabakhov.surok.school.building.cabinet.input.CabinetInputException;
+import com.eshabakhov.surok.school.building.cabinet.input.CbInput;
 import com.eshabakhov.surok.school.building.cabinet.input.CbInputHttp;
 import com.eshabakhov.surok.security.CsToken;
-import com.eshabakhov.surok.user.UrAcAuthorized;
+import com.eshabakhov.surok.security.OaYaml;
+import com.eshabakhov.surok.security.Operations;
 import com.eshabakhov.surok.user.UrAcBrief;
 import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.servlet.http.HttpServletRequest;
+import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.jooq.DSLContext;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -76,16 +79,32 @@ public class CbsHttp {
     /** HTML representation containing only the cabinet results. */
     private static final String FRAGMENT = "text/vnd.surok.cabinets-fragment+html";
 
+    /** Shared operation declarations. */
+    private final Operations operations;
+
     /** Database context. */
     private final DSLContext ctx;
 
     /**
-     * New resource.
+     * New resource with explicitly constructed YAML operations.
      *
      * @param ctx Database context
+     * @throws IOException If the API description cannot be read
      */
-    public CbsHttp(final DSLContext ctx) {
+    @Autowired
+    public CbsHttp(final DSLContext ctx) throws IOException {
+        this(ctx, new OaYaml().operations());
+    }
+
+    /**
+     * New controller using the application operation catalog.
+     *
+     * @param ctx Database context
+     * @param operations Shared operation declarations
+     */
+    public CbsHttp(final DSLContext ctx, final Operations operations) {
         this.ctx = ctx;
+        this.operations = operations;
     }
 
     /**
@@ -120,17 +139,17 @@ public class CbsHttp {
                 MediaType.valueOf(CbsHttp.FRAGMENT)
             )
         ).type();
-        final School sch = new UrAcAuthorized(
-            user, new SlsPostgres(this.ctx)
-        ).schools().school(school);
+        final School sch = this.operations.operation("Cabinets.selection")
+            .permission(user, new SlPostgres(this.ctx, school)).permit(user)
+            .schools().school(school);
         final Building build = sch.buildings().building(building);
-        final Set<Filter> requested = new LinkedHashSet<>(filters.filters());
-        requested.addAll(
-            Stream.of("name", "name_ct")
-                .filter(name -> request.getParameter(name) != null)
-                .map(name -> new FilterRequest(name, request.getParameter(name))).toList()
+        final Filters applied = new FiltersRequest(
+            Stream.concat(
+                filters.filters().stream(), Stream.of("name", "name_ct")
+                    .filter(name -> request.getParameter(name) != null)
+                    .map(name -> new FilterRequest(name, request.getParameter(name)))
+            ).collect(Collectors.toCollection(LinkedHashSet::new))
         );
-        final Filters applied = new FiltersRequest(requested);
         final Cabinets selected = build.cabinets().selection(
             applied, page, sorts
         );
@@ -144,7 +163,7 @@ public class CbsHttp {
                         } else {
                             view = "list-fragment";
                         }
-                        yield this.web(request, sch, view).with("building", build).with(
+                        yield this.web(request, sch, view, user).with("building", build).with(
                             "cabinets", new CbsWeb(selected, applied, sorts)
                         ).print();
                     }
@@ -173,12 +192,13 @@ public class CbsHttp {
         final HttpServletRequest request, @AuthenticationPrincipal final UrAccount user
     ) throws Exception {
         final MediaType type = new AcHttp(request, List.of(MediaType.TEXT_HTML)).type();
-        final School sch = new UrAcAuthorized(
-            user, new SlsPostgres(this.ctx)
-        ).schools().school(school);
+        final School sch = this.operations.operation("Cabinets.form")
+            .permission(user, new SlPostgres(this.ctx, school)).permit(user)
+            .schools().school(school);
         return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8)).body(
-            this.web(request, sch, "create")
-                .with("building", sch.buildings().building(building)).print()
+            this.web(request, sch, "create", user)
+                .with("building", sch.buildings().building(building))
+                .with("cabinet", new CbDraft(new CbInput())).print()
         );
     }
 
@@ -209,12 +229,17 @@ public class CbsHttp {
         @AuthenticationPrincipal final UrAccount user
     ) throws Exception {
         final MediaType type = new AcHttp(request, "cabinet-v1").type();
-        final School sch = new UrAcAuthorized(
-            user, new SlsPostgres(this.ctx)
-        ).schools().school(school);
+        final String operation;
+        if (request.getRequestURI().endsWith("/edit")) {
+            operation = "Cabinets.edit";
+        } else {
+            operation = "Cabinets.cabinet";
+        }
+        final School sch = this.operations.operation(operation)
+            .permission(user, new SlPostgres(this.ctx, school)).permit(user)
+            .schools().school(school);
         final Building build = sch.buildings().building(building);
-        final Cabinets origin = build.cabinets();
-        final Cabinet selected = origin.cabinet(cabinet);
+        final Cabinet selected = build.cabinets().cabinet(cabinet);
         return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8)).body(
             switch (type.toString()) {
                 case MediaType.TEXT_HTML_VALUE -> {
@@ -224,8 +249,8 @@ public class CbsHttp {
                     } else {
                         view = "details";
                     }
-                    yield this.web(request, sch, view).with("building", build).with(
-                        "cabinets", new CbsSingle(origin, selected)
+                    yield this.web(request, sch, view, user).with("building", build).with(
+                        "cabinet", selected
                     ).print();
                 }
                 case "application/vnd.surok.cabinet-v1+json" ->
@@ -266,9 +291,16 @@ public class CbsHttp {
         @AuthenticationPrincipal final UrAccount user
     ) throws Exception {
         final MediaType type = new AcHttp(request, "cabinet-v1").type();
+        final School target = this.operations.operation("Cabinets.create")
+            .permission(user, new SlPostgres(this.ctx, school)).permit(user)
+            .schools().school(school);
+        final String base = String.format("/schools/%d/buildings/%d/cabinets", school, building);
         ResponseEntity<?> response;
         try {
-            response = this.create(type, school, building, new CbInputHttp(parameters), user);
+            response = CbsHttp.result(
+                type, target.buildings().building(building).cabinets()
+                    .create(new CbInputHttp(parameters)), HttpStatus.CREATED, base, base
+            );
         } catch (final CabinetInputException exception) {
             if (!MediaType.TEXT_HTML.equals(type)) {
                 throw exception;
@@ -306,8 +338,13 @@ public class CbsHttp {
         final HttpServletRequest request,
         @AuthenticationPrincipal final UrAccount user
     ) throws Exception {
-        return this.create(
-            new AcHttp(request, "cabinet-v1").type(), school, building, new CbInputHttp(json), user
+        final MediaType type = new AcHttp(request, "cabinet-v1").type();
+        final String base = String.format("/schools/%d/buildings/%d/cabinets", school, building);
+        return CbsHttp.result(
+            type, this.operations.operation("Cabinets.create")
+                .permission(user, new SlPostgres(this.ctx, school)).permit(user)
+                .schools().school(school).buildings().building(building).cabinets()
+                .create(new CbInputHttp(json)), HttpStatus.CREATED, base, base
         );
     }
 
@@ -341,8 +378,9 @@ public class CbsHttp {
         @AuthenticationPrincipal final UrAccount user
     ) throws Exception {
         final MediaType type = new AcHttp(request, "cabinet-v1").type();
-        final Cabinet revised = new UrAcAuthorized(user, new SlsPostgres(this.ctx)).schools()
-            .school(school).buildings().building(building).cabinets()
+        final Cabinet revised = this.operations.operation("Cabinets.revise")
+            .permission(user, new SlPostgres(this.ctx, school)).permit(user)
+            .schools().school(school).buildings().building(building).cabinets()
             .revise(cabinet, new CbInputHttp(json));
         return CbsHttp.result(
             type, revised, HttpStatus.OK,
@@ -368,23 +406,10 @@ public class CbsHttp {
         @PathVariable final long cabinet,
         @AuthenticationPrincipal final UrAccount user
     ) throws Exception {
-        new UrAcAuthorized(user, new SlsPostgres(this.ctx)).schools()
+        this.operations.operation("Cabinets.remove")
+            .permission(user, new SlPostgres(this.ctx, school)).permit(user).schools()
             .school(school).buildings().building(building).cabinets().remove(cabinet);
         return ResponseEntity.noContent().build();
-    }
-
-    private ResponseEntity<?> create(
-        final MediaType type, final long school, final long building,
-        final CabinetInput input, final UrAccount user
-    ) throws Exception {
-        final String base = String.format("/schools/%d/buildings/%d/cabinets", school, building);
-        return CbsHttp.result(
-            type,
-            new UrAcAuthorized(user, new SlsPostgres(this.ctx)).schools()
-                .school(school).buildings().building(building).cabinets()
-                .create(input),
-            HttpStatus.CREATED, base, base
-        );
     }
 
     private static ResponseEntity<?> result(
@@ -416,12 +441,11 @@ public class CbsHttp {
     private Media<String> web(
         final HttpServletRequest request,
         final School school,
-        final String view
+        final String view,
+        final UrAccount user
     ) throws Exception {
         return new SrWeb(
-            new UrAcBrief(
-                (UrAccount) SecurityContextHolder.getContext().getAuthentication().getPrincipal()
-            ),
+            new UrAcBrief(user),
             new SlsBrief(new SlsPostgres(this.ctx)),
             new CsToken((CsrfToken) request.getAttribute(CsrfToken.class.getName()))
         ).print(

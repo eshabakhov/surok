@@ -3,7 +3,6 @@
  */
 package com.eshabakhov.surok.user;
 
-import com.eshabakhov.surok.security.right.RtAdmin;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assertions;
@@ -21,7 +20,7 @@ final class UrAnonymousTest {
     void deniesAdministratorAccess() {
         MatcherAssert.assertThat(
             "An anonymous visitor received administrator access",
-            new RtAdmin(new UrAnonymous()).allows(), Matchers.is(false)
+            new UrAnonymous().roles().contains(Roles.RoleEnum.ADMIN), Matchers.is(false)
         );
     }
 

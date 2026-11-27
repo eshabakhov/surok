@@ -105,7 +105,7 @@ final class XsSchoolClassesTest {
     void printsSortingAndPagination(final String direction, final String icon) {
         MatcherAssert.assertThat(
             new XsClasspath("xslt/school-classes.xsl", "list-fragment").transform(
-                XsSchoolClassesTest.document().replace(
+                XsSchoolClassesTest.document("list-fragment").replace(
                     "<direction>NONE", String.format("<direction>%s", direction)
                 )
             ),
@@ -125,7 +125,7 @@ final class XsSchoolClassesTest {
     void escapesClassNames() {
         MatcherAssert.assertThat(
             new XsClasspath("xslt/school-classes.xsl", "list-fragment").transform(
-                XsSchoolClassesTest.document().replace("5А", "5&lt;script&gt;")
+                XsSchoolClassesTest.document("list-fragment").replace("5А", "5&lt;script&gt;")
             ),
             Matchers.allOf(
                 Matchers.containsString("5&lt;script&gt;"),
@@ -138,12 +138,13 @@ final class XsSchoolClassesTest {
 
     private static String page(final String view) {
         return new XsClasspath("xslt/school-classes.xsl", view)
-            .transform(XsSchoolClassesTest.document());
+            .transform(XsSchoolClassesTest.document(view));
     }
 
-    private static String document() {
-        return """
-            <surok>
+    private static String document(final String view) {
+        return String.format(
+            """
+            <surok>%s
                 <school><id>3</id><name>Школа</name><schedules><schedule>
                     <id>9</id><name>Учебный год</name>
                 </schedule></schedules></school>
@@ -156,6 +157,15 @@ final class XsSchoolClassesTest {
                     <totalPages>4</totalPages><hasNext>true</hasNext><hasPrev>false</hasPrev>
                 </page></classes>
             </surok>
-            """;
+            """, switch (view) {
+                case "create" -> "<school-class><name/><grade/><litera/></school-class>";
+                case "edit", "details" ->
+                    """
+                    <school-class><id>7</id><name>5А</name>
+                    <grade>5</grade><litera>А</litera></school-class>
+                    """;
+                case null, default -> "";
+            }
+        );
     }
 }

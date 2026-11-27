@@ -4,16 +4,21 @@
 package com.eshabakhov.surok.school.building.cabinet;
 
 import com.eshabakhov.surok.UrAccount;
+import com.eshabakhov.surok.security.OaYaml;
+import com.eshabakhov.surok.security.Operations;
 import com.eshabakhov.surok.user.Roles;
 import com.eshabakhov.surok.user.UrAcAuth;
 import com.eshabakhov.surok.user.UrAcPostgres;
 import com.eshabakhov.surok.user.UrsPostgres;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -22,7 +27,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextImpl;
@@ -103,11 +110,7 @@ final class CbsHttpTest {
 
     @AfterEach
     void truncateSchools() {
-        this.ctx.resultQuery(
-            """
-                TRUNCATE TABLE public.school, subject RESTART IDENTITY CASCADE
-                """
-        ).execute();
+        this.ctx.execute("TRUNCATE TABLE public.school, subject RESTART IDENTITY CASCADE");
     }
 
     @Test
@@ -177,16 +180,22 @@ final class CbsHttpTest {
         ).andExpect(MockMvcResultMatchers.status().isForbidden());
     }
 
-    @Test
-    void createsCabinetForDeputyDirector() throws Exception {
+    /**
+     * Allows school editors and an administrator without membership to create a resource.
+     *
+     * @param role Acting role
+     * @throws Exception If creation fails
+     */
+    @ParameterizedTest
+    @CsvSource({"ADMIN", "DIRECTOR", "DEPUTY_DIRECTOR"})
+    void createsCabinetForAnEditingRole(final Roles.RoleEnum role) throws Exception {
         this.mvc.perform(
             this.authorized(
-                MockMvcRequestBuilders.post("/schools/1/buildings/10/cabinets"),
-                Roles.RoleEnum.DEPUTY_DIRECTOR
+                MockMvcRequestBuilders.post("/schools/1/buildings/10/cabinets"), role
             ).accept("application/vnd.surok.cabinet-v1+json")
                 .contentType("application/vnd.surok.cabinet-v1+json")
-                .content("{\"name\":\"Кабинет заместителя\"}")
-        ).andExpect(MockMvcResultMatchers.jsonPath("$.name").value("Кабинет заместителя"));
+                .content("{\"name\":\"Кабинет для занятий\"}")
+        ).andExpect(MockMvcResultMatchers.jsonPath("$.name").value("Кабинет для занятий"));
     }
 
     /**
@@ -809,12 +818,85 @@ final class CbsHttpTest {
         ).andExpect(MockMvcResultMatchers.status().isNotFound());
     }
 
+    /**
+     * Leaves stored cabinets untouched when a student requests a mutation.
+     *
+     * @param method Request method
+     * @param suffix Resource suffix
+     * @throws Exception If the request fails
+     */
+    @ParameterizedTest
+    @CsvSource({"POST, ''", "PUT, /30", "DELETE, /30"})
+    void rejectsMutationsBeforeChangingData(final String method, final String suffix)
+        throws Exception {
+        final List<String> names = this.ctx.resultQuery(
+            "SELECT name FROM public.cabinet WHERE NOT is_deleted ORDER BY id"
+        ).fetch("name", String.class);
+        this.mvc.perform(
+            this.authorized(
+                MockMvcRequestBuilders.request(
+                    HttpMethod.valueOf(method),
+                    String.format("/schools/1/buildings/10/cabinets%s", suffix)
+                ), Roles.RoleEnum.STUDENT
+            ).contentType("application/vnd.surok.cabinet-v1+json")
+                .accept("application/vnd.surok.cabinet-v1+json")
+                .content("{\"name\":\"Запрещённое изменение\"}")
+        ).andReturn();
+        MatcherAssert.assertThat(
+            "A forbidden cabinet request changed stored data",
+            this.ctx.resultQuery(
+                "SELECT name FROM public.cabinet WHERE NOT is_deleted ORDER BY id"
+            ).fetch("name", String.class), Matchers.is(names)
+        );
+    }
+
+    /**
+     * Evaluates current roles and membership in the requested school on every request.
+     *
+     * @param change Access change after authentication
+     * @param route Requested resource
+     * @throws Exception If setup or the request fails
+     */
+    @ParameterizedTest
+    @CsvSource({
+        "role, /schools/1/buildings/10/cabinets/30",
+        "membership, /schools/1/buildings/10/cabinets/30",
+        "school, /schools/2/buildings/20/cabinets/50"
+    })
+    void rejectsARequestWithoutTheCurrentSchoolRole(final String change, final String route)
+        throws Exception {
+        final MockHttpServletRequestBuilder request = this.authorized(
+            MockMvcRequestBuilders.put(route), Roles.RoleEnum.DIRECTOR
+        ).contentType("application/vnd.surok.cabinet-v1+json")
+            .accept("application/vnd.surok.cabinet-v1+json")
+            .content("{\"name\":\"Недоступное изменение\"}");
+        final UrAccount actor = new UrAcPostgres(
+            this.ctx, this.ctx.resultQuery(
+                "SELECT user_id FROM public.school_user WHERE school_id = ?", 1L
+            ).fetchSingle("user_id", Long.class)
+        );
+        final UrsPostgres members = new UrsPostgres(this.ctx, 1L);
+        switch (change) {
+            case "role" -> members.roles(actor).revoke(
+                members.roles(actor).list().getFirst().uid()
+            );
+            case "membership" -> members.remove(actor.uid());
+            case "school" -> {
+                final UrsPostgres students = new UrsPostgres(this.ctx, 2L);
+                students.add(actor);
+                students.roles(actor).grant(Roles.RoleEnum.STUDENT);
+            }
+            case null, default -> throw new IllegalArgumentException(change);
+        }
+        this.mvc.perform(request).andExpect(MockMvcResultMatchers.status().isForbidden());
+    }
+
     private MockHttpServletRequestBuilder authorized(
         final MockHttpServletRequestBuilder request, final Roles.RoleEnum role
     ) throws Exception {
         final MockHttpSession session = this.session(role, 1L);
         final MvcResult form = this.mvc.perform(
-            MockMvcRequestBuilders.get("/schools/1/buildings/10/cabinets/create").session(session)
+            MockMvcRequestBuilders.get("/users/profile").session(session)
         ).andExpect(MockMvcResultMatchers.status().isOk()).andReturn();
         final CsrfToken token = (CsrfToken) form.getRequest().getAttribute(
             CsrfToken.class.getName()
@@ -836,7 +918,7 @@ final class CbsHttpTest {
                 String.format("%s@example.org", UUID.randomUUID())
             ).fetchSingle("id", Long.class)
         );
-        if (school != null) {
+        if (school != null && role != Roles.RoleEnum.ADMIN) {
             new UrsPostgres(this.ctx, school).add(user);
         }
         if (List.of(
@@ -864,5 +946,55 @@ final class CbsHttpTest {
         registry.add("spring.datasource.url", CbsHttpTest.POSTGRES::getJdbcUrl);
         registry.add("spring.datasource.username", CbsHttpTest.POSTGRES::getUsername);
         registry.add("spring.datasource.password", CbsHttpTest.POSTGRES::getPassword);
+    }
+
+    /**
+     * Verifies one authorization before rendering a resource.
+     *
+     * @since 0.0.1
+     */
+    @Nested
+    final class Authorization {
+
+        /**
+         * Renders views using the supplied account without a security context.
+         *
+         * @param suffix Resource view
+         * @param format Response format
+         * @throws Exception If the request fails
+         */
+        @ParameterizedTest
+        @CsvSource({
+            "'', text/html", "/edit, text/html",
+            "'', application/vnd.surok.cabinet-v1+json",
+            "'', application/vnd.surok.cabinet-v1+xml",
+            "/edit, application/vnd.surok.cabinet-v1+json",
+            "/edit, application/vnd.surok.cabinet-v1+xml"
+        })
+        void authorizesOnlyOnce(final String suffix, final String format) throws Exception {
+            final UrAccount actor = new UrsPostgres(CbsHttpTest.this.ctx).register(
+                UUID.randomUUID().toString(), "ValidPassword1!",
+                String.format("%s@example.org", UUID.randomUUID()), false
+            );
+            final UrsPostgres members = new UrsPostgres(CbsHttpTest.this.ctx, 1L);
+            members.add(actor);
+            members.roles(actor).grant(Roles.RoleEnum.DIRECTOR);
+            final Operations catalog = new OaYaml().operations();
+            final List<String> checks = new ArrayList<>(1);
+            final MockHttpServletRequest request = new MockHttpServletRequest(
+                "GET", String.format("/schools/1/buildings/10/cabinets/30%s", suffix)
+            );
+            request.addHeader(HttpHeaders.ACCEPT, format);
+            new CbsHttp(
+                CbsHttpTest.this.ctx, () -> {
+                    checks.add("permission");
+                    return catalog.iterate();
+                }
+            ).cabinet(1L, 10L, 30L, request, actor);
+            MatcherAssert.assertThat(
+                "The controller repeated authorization while rendering the cabinet",
+                checks.size(), Matchers.is(1)
+            );
+        }
     }
 }

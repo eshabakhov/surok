@@ -5,7 +5,7 @@
                 doctype-system="about:legacy-compat"/>
     <xsl:param name="view"/>
     <xsl:variable name="entries" select="/surok/teachers"/>
-    <xsl:variable name="selected" select="$entries/teacher[$view = 'details' or $view = 'edit']"/>
+    <xsl:variable name="selected" select="/surok/teacher"/>
     <xsl:variable name="base" select="concat($school-path, '/teachers')"/>
 
     <xsl:template match="/">

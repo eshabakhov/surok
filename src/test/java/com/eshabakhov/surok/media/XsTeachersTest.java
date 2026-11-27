@@ -121,7 +121,7 @@ final class XsTeachersTest {
     void printsSortingAndPagination(final String direction, final String icon) {
         MatcherAssert.assertThat(
             new XsClasspath("xslt/teachers.xsl", "list-fragment").transform(
-                XsTeachersTest.document().replace(
+                XsTeachersTest.document("list-fragment").replace(
                     "<direction>NONE", String.format("<direction>%s", direction)
                 )
             ),
@@ -142,7 +142,7 @@ final class XsTeachersTest {
     void escapesTeacherNames() {
         MatcherAssert.assertThat(
             new XsClasspath("xslt/teachers.xsl", "list-fragment").transform(
-                XsTeachersTest.document().replace(
+                XsTeachersTest.document("list-fragment").replace(
                     "Иванов Иван Иванович", "Иванов Иван Иванович&lt;script&gt;"
                 )
             ),
@@ -159,12 +159,13 @@ final class XsTeachersTest {
 
     private static String page(final String view) {
         return new XsClasspath("xslt/teachers.xsl", view)
-            .transform(XsTeachersTest.document());
+            .transform(XsTeachersTest.document(view));
     }
 
-    private static String document() {
-        return """
-            <surok>
+    private static String document(final String view) {
+        return String.format(
+            """
+            <surok>%s
                 <school><id>3</id><name>Школа</name><schedules><schedule>
                     <id>9</id><name>Учебный год</name>
                 </schedule></schedules></school>
@@ -177,6 +178,12 @@ final class XsTeachersTest {
                     <totalPages>4</totalPages><hasNext>true</hasNext><hasPrev>false</hasPrev>
                 </page></teachers>
             </surok>
-            """;
+            """, switch (view) {
+                case "create" -> "<teacher><name/></teacher>";
+                case "edit", "details" ->
+                    "<teacher><id>7</id><name>Иванов Иван Иванович</name></teacher>";
+                case null, default -> "";
+            }
+        );
     }
 }

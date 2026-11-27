@@ -4,30 +4,30 @@
 package com.eshabakhov.surok.user;
 
 import com.eshabakhov.surok.Media;
+import com.eshabakhov.surok.School;
 import com.eshabakhov.surok.Schools;
 import com.eshabakhov.surok.UrAccount;
-import com.eshabakhov.surok.security.right.RtAdmin;
+import com.eshabakhov.surok.security.OaYaml;
+import com.eshabakhov.surok.security.Operations;
+import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 
 /**
- * Custom UserDetails and OAuth2User principal.
+ * Current application actor adapted to UserDetails and OAuth2User.
  *
  * <p>Implements both {@link UserDetails} and {@link OAuth2User} so that
  * {@code @AuthenticationPrincipal UrAcAuth} resolves correctly regardless
  * of whether the user signed in via form-login or Yandex OAuth2.</p>
  * Usage example:
  * <pre>
- * final UrAcAuth user = new UrAcAuth(dbUser);
+ * final UrAccount user = new UrAcAuth(dbUser, operations);
  * user.uid();           // always available
- * user.getUsername();   // from UserDetails
- * user.getName();       // from OAuth2User - same as username
+ * user.permit("Buildings.create", school).schools().school(school.uid()).buildings();
  * </pre>
  *
  * @since 0.0.1
@@ -37,35 +37,45 @@ public final class UrAcAuth implements UserDetails, OAuth2User, UrAccount {
     /** User. */
     private final UrAccount user;
 
+    /** Application operations, without cached permission decisions. */
+    private final Operations operations;
+
     /**
      * New Spring principal backed by a registered account.
      *
      * @param user User
+     * @throws IOException If the operation catalog cannot be read
      */
-    public UrAcAuth(final UrAccount user) {
+    public UrAcAuth(final UrAccount user) throws IOException {
+        this(user, new OaYaml().operations());
+    }
+
+    /**
+     * New actor with an explicitly supplied operation catalog.
+     *
+     * @param user Account backing this actor
+     * @param operations Application operations
+     */
+    public UrAcAuth(final UrAccount user, final Operations operations) {
         this.user = user;
+        this.operations = operations;
+    }
+
+    @Override
+    public UrAccount permit(final String operation) {
+        return this.operations.operation(operation).permission(this).permit(this);
+    }
+
+    @Override
+    public UrAccount permit(final String operation, final School school) {
+        return this.operations.operation(operation).permission(this, school).permit(this);
     }
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        final Stream<SimpleGrantedAuthority> account = this.user.roles().list().stream()
-            .map(role -> new SimpleGrantedAuthority(String.format("ROLE_%s", role.name())));
-        final Collection<? extends GrantedAuthority> granted;
-        if (new RtAdmin(this.user).allows()) {
-            granted = account.toList();
-        } else {
-            granted = Stream.concat(
-                account,
-                StreamSupport.stream(this.user.schools().iterate().spliterator(), false).flatMap(
-                    school -> school.users().roles(this.user).list().stream().map(
-                        role -> new SimpleGrantedAuthority(
-                            String.format("SCHOOL_%d_%s", school.uid(), role.name())
-                        )
-                    )
-                )
-            ).toList();
-        }
-        return granted;
+        return this.user.roles().list().stream()
+            .map(role -> new SimpleGrantedAuthority(String.format("ROLE_%s", role.name())))
+            .toList();
     }
 
     @Override

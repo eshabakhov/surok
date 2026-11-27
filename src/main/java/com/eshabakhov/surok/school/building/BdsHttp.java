@@ -5,7 +5,6 @@ package com.eshabakhov.surok.school.building;
 
 import com.eshabakhov.surok.Filter;
 import com.eshabakhov.surok.Filters;
-import com.eshabakhov.surok.Media;
 import com.eshabakhov.surok.Page;
 import com.eshabakhov.surok.School;
 import com.eshabakhov.surok.Sorts;
@@ -19,12 +18,13 @@ import com.eshabakhov.surok.media.MdXslt;
 import com.eshabakhov.surok.media.SrWeb;
 import com.eshabakhov.surok.media.XsClasspath;
 import com.eshabakhov.surok.school.SlBrief;
+import com.eshabakhov.surok.school.SlPostgres;
 import com.eshabakhov.surok.school.SlsBrief;
 import com.eshabakhov.surok.school.SlsPostgres;
+import com.eshabakhov.surok.school.building.input.BdInput;
 import com.eshabakhov.surok.school.building.input.BdInputHttp;
 import com.eshabakhov.surok.school.building.input.BuildingInputException;
 import com.eshabakhov.surok.security.CsToken;
-import com.eshabakhov.surok.user.UrAcAuthorized;
 import com.eshabakhov.surok.user.UrAcBrief;
 import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.servlet.http.HttpServletRequest;
@@ -40,7 +40,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -79,7 +78,7 @@ public class BdsHttp {
     private final DSLContext ctx;
 
     /**
-     * New resource.
+     * New resource using the acting user's operation catalog.
      *
      * @param ctx Database context
      */
@@ -117,9 +116,8 @@ public class BdsHttp {
                 MediaType.valueOf(BdsHttp.FRAGMENT)
             )
         ).type();
-        final School sch = new UrAcAuthorized(
-            user, new SlsPostgres(this.ctx)
-        ).schools().school(school);
+        final School sch = user.permit("Buildings.selection", new SlPostgres(this.ctx, school))
+            .schools().school(school);
         final Set<Filter> requested = new LinkedHashSet<>(filters.filters());
         requested.addAll(
             Stream.of("name", "name_ct")
@@ -127,9 +125,7 @@ public class BdsHttp {
                 .map(name -> new FilterRequest(name, request.getParameter(name))).toList()
         );
         final Filters applied = new FiltersRequest(requested);
-        final Buildings selected = sch.buildings().selection(
-            applied, page, sorts
-        );
+        final Buildings selected = sch.buildings().selection(applied, page, sorts);
         return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8))
             .varyBy(HttpHeaders.ACCEPT).body(
                 switch (type.toString()) {
@@ -140,9 +136,18 @@ public class BdsHttp {
                         } else {
                             view = "list-fragment";
                         }
-                        yield this.web(request, sch, view).with(
-                            "buildings", new BdsWeb(selected, applied, sorts)
-                        ).print();
+                        yield new SrWeb(
+                            new UrAcBrief(user),
+                            new SlsBrief(new SlsPostgres(this.ctx)),
+                            new CsToken((CsrfToken) request.getAttribute(CsrfToken.class.getName()))
+                        ).print(
+                            new MdXslt(
+                                new MdXml("surok").with("path", request.getRequestURI()),
+                                new XsClasspath("xslt/buildings.xsl", view)
+                            )
+                        ).with("school", new SlBrief(sch))
+                            .with("error", request.getParameter("error") != null)
+                            .with("buildings", new BdsWeb(selected, applied, sorts)).print();
                     }
                     case BdsHttp.JSON -> selected.print(new MdJson()).print();
                     case BdsHttp.XML -> selected.print(new MdXml("buildings")).print();
@@ -167,16 +172,21 @@ public class BdsHttp {
         @PathVariable final long school, final HttpServletRequest request,
         @AuthenticationPrincipal final UrAccount user
     ) throws Exception {
-        return ResponseEntity.ok().contentType(
-            new MediaType(
-                new AcHttp(request, List.of(MediaType.TEXT_HTML)).type(), StandardCharsets.UTF_8
-            )
-        ).body(
-            this.web(
-                request,
-                new UrAcAuthorized(user, new SlsPostgres(this.ctx)).schools().school(school),
-                "create"
-            ).print()
+        final MediaType type = new AcHttp(request, List.of(MediaType.TEXT_HTML)).type();
+        final UrAccount actor = user.permit("Buildings.form", new SlPostgres(this.ctx, school));
+        return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8)).body(
+            new SrWeb(
+                new UrAcBrief(actor),
+                new SlsBrief(new SlsPostgres(this.ctx)),
+                new CsToken((CsrfToken) request.getAttribute(CsrfToken.class.getName()))
+            ).print(
+                new MdXslt(
+                    new MdXml("surok").with("path", request.getRequestURI()),
+                    new XsClasspath("xslt/buildings.xsl", "create")
+                )
+            ).with("school", new SlBrief(actor.schools().school(school)))
+                .with("building", new BdDraft(new BdInput()))
+                .with("error", request.getParameter("error") != null).print()
         );
     }
 
@@ -205,24 +215,32 @@ public class BdsHttp {
         @AuthenticationPrincipal final UrAccount user
     ) throws Exception {
         final MediaType type = new AcHttp(request, "building-v1").type();
-        final School sch = new UrAcAuthorized(
-            user, new SlsPostgres(this.ctx)
-        ).schools().school(school);
-        final Buildings origin = sch.buildings();
-        final Building selected = origin.building(building);
+        final String operation;
+        final String view;
+        if (request.getRequestURI().endsWith("/edit")) {
+            operation = "Buildings.edit";
+            view = "edit";
+        } else {
+            operation = "Buildings.building";
+            view = "details";
+        }
+        final School sch = user.permit(operation, new SlPostgres(this.ctx, school))
+            .schools().school(school);
+        final Building selected = sch.buildings().building(building);
         return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8)).body(
             switch (type.toString()) {
-                case MediaType.TEXT_HTML_VALUE -> {
-                    final String view;
-                    if (request.getRequestURI().endsWith("/edit")) {
-                        view = "edit";
-                    } else {
-                        view = "details";
-                    }
-                    yield this.web(request, sch, view).with(
-                        "buildings", new BdsSingle(origin, selected)
-                    ).print();
-                }
+                case MediaType.TEXT_HTML_VALUE -> new SrWeb(
+                    new UrAcBrief(user),
+                    new SlsBrief(new SlsPostgres(this.ctx)),
+                    new CsToken((CsrfToken) request.getAttribute(CsrfToken.class.getName()))
+                ).print(
+                    new MdXslt(
+                        new MdXml("surok").with("path", request.getRequestURI()),
+                        new XsClasspath("xslt/buildings.xsl", view)
+                    )
+                ).with("school", new SlBrief(sch))
+                    .with("error", request.getParameter("error") != null)
+                    .with("building", selected).print();
                 case "application/vnd.surok.building-v1+json" ->
                     new BdV1(selected).print(new MdJson()).print();
                 case "application/vnd.surok.building-v1+xml" ->
@@ -259,9 +277,29 @@ public class BdsHttp {
         @AuthenticationPrincipal final UrAccount user
     ) throws Exception {
         final MediaType type = new AcHttp(request, "building-v1").type();
+        final School target = user.permit("Buildings.create", new SlPostgres(this.ctx, school))
+            .schools().school(school);
+        final String base = String.format("/schools/%d/buildings", school);
         ResponseEntity<?> response;
         try {
-            response = this.create(type, school, new BdInputHttp(parameters), user);
+            final Building selected = target.buildings().create(new BdInputHttp(parameters));
+            response = switch (type.toString()) {
+                case MediaType.TEXT_HTML_VALUE -> ResponseEntity.status(HttpStatus.FOUND)
+                    .location(URI.create(base)).build();
+                case "application/vnd.surok.building-v1+json" ->
+                    ResponseEntity.status(HttpStatus.CREATED)
+                        .location(URI.create(String.format("%s/%d", base, selected.uid())))
+                        .contentType(new MediaType(type, StandardCharsets.UTF_8))
+                        .body(new BdV1(selected).print(new MdJson()).print());
+                case "application/vnd.surok.building-v1+xml" ->
+                    ResponseEntity.status(HttpStatus.CREATED)
+                        .location(URI.create(String.format("%s/%d", base, selected.uid())))
+                        .contentType(new MediaType(type, StandardCharsets.UTF_8))
+                        .body(new BdV1(selected).print(new MdXml("building")).print());
+                case null, default -> throw new ResponseStatusException(
+                    HttpStatus.NOT_ACCEPTABLE, "Unsupported Accept header"
+                );
+            };
         } catch (final BuildingInputException exception) {
             if (!MediaType.TEXT_HTML.equals(type)) {
                 throw exception;
@@ -297,9 +335,27 @@ public class BdsHttp {
         final HttpServletRequest request,
         @AuthenticationPrincipal final UrAccount user
     ) throws Exception {
-        return this.create(
-            new AcHttp(request, "building-v1").type(), school, new BdInputHttp(json), user
-        );
+        final MediaType type = new AcHttp(request, "building-v1").type();
+        final String base = String.format("/schools/%d/buildings", school);
+        final Building selected = user.permit("Buildings.create", new SlPostgres(this.ctx, school))
+            .schools().school(school).buildings().create(new BdInputHttp(json));
+        return switch (type.toString()) {
+            case MediaType.TEXT_HTML_VALUE -> ResponseEntity.status(HttpStatus.FOUND)
+                .location(URI.create(base)).build();
+            case "application/vnd.surok.building-v1+json" ->
+                ResponseEntity.status(HttpStatus.CREATED)
+                    .location(URI.create(String.format("%s/%d", base, selected.uid())))
+                    .contentType(new MediaType(type, StandardCharsets.UTF_8))
+                    .body(new BdV1(selected).print(new MdJson()).print());
+            case "application/vnd.surok.building-v1+xml" ->
+                ResponseEntity.status(HttpStatus.CREATED)
+                    .location(URI.create(String.format("%s/%d", base, selected.uid())))
+                    .contentType(new MediaType(type, StandardCharsets.UTF_8))
+                    .body(new BdV1(selected).print(new MdXml("building")).print());
+            case null, default -> throw new ResponseStatusException(
+                HttpStatus.NOT_ACCEPTABLE, "Unsupported Accept header"
+            );
+        };
     }
 
     /**
@@ -330,14 +386,26 @@ public class BdsHttp {
         @AuthenticationPrincipal final UrAccount user
     ) throws Exception {
         final MediaType type = new AcHttp(request, "building-v1").type();
-        final Building revised = new UrAcAuthorized(
-            user, new SlsPostgres(this.ctx)
-        ).schools().school(school).buildings()
-            .revise(building, new BdInputHttp(json));
-        return BdsHttp.result(
-            type, revised, HttpStatus.OK, String.format("/schools/%d/buildings", school),
+        final Building revised = user.permit("Building.revise", new SlPostgres(this.ctx, school))
+            .schools().school(school).buildings().revise(building, new BdInputHttp(json));
+        final URI location = URI.create(
             String.format("/schools/%d/buildings/%d", school, revised.uid())
         );
+        return switch (type.toString()) {
+            case MediaType.TEXT_HTML_VALUE -> ResponseEntity.status(HttpStatus.FOUND)
+                .location(location).build();
+            case "application/vnd.surok.building-v1+json" ->
+                ResponseEntity.ok().location(location)
+                    .contentType(new MediaType(type, StandardCharsets.UTF_8))
+                    .body(new BdV1(revised).print(new MdJson()).print());
+            case "application/vnd.surok.building-v1+xml" ->
+                ResponseEntity.ok().location(location)
+                    .contentType(new MediaType(type, StandardCharsets.UTF_8))
+                    .body(new BdV1(revised).print(new MdXml("building")).print());
+            case null, default -> throw new ResponseStatusException(
+                HttpStatus.NOT_ACCEPTABLE, "Unsupported Accept header"
+            );
+        };
     }
 
     /**
@@ -355,66 +423,8 @@ public class BdsHttp {
         @PathVariable final long building,
         @AuthenticationPrincipal final UrAccount user
     ) throws Exception {
-        new UrAcAuthorized(user, new SlsPostgres(this.ctx)).schools()
-            .school(school).buildings().remove(building);
+        user.permit("Buildings.remove", new SlPostgres(this.ctx, school))
+            .schools().school(school).buildings().remove(building);
         return ResponseEntity.noContent().build();
-    }
-
-    private ResponseEntity<?> create(
-        final MediaType type, final long school, final BuildingInput input, final UrAccount user
-    ) throws Exception {
-        final String base = String.format("/schools/%d/buildings", school);
-        return BdsHttp.result(
-            type,
-            new UrAcAuthorized(user, new SlsPostgres(this.ctx)).schools().school(school).buildings()
-                .create(input),
-            HttpStatus.CREATED, base, base
-        );
-    }
-
-    private static ResponseEntity<?> result(
-        final MediaType type,
-        final Building selected,
-        final HttpStatus status,
-        final String base,
-        final String redirect
-    ) throws Exception {
-        return switch (type.toString()) {
-            case MediaType.TEXT_HTML_VALUE -> ResponseEntity.status(HttpStatus.FOUND)
-                .location(URI.create(redirect)).build();
-            case "application/vnd.surok.building-v1+json" ->
-                ResponseEntity.status(status)
-                    .location(URI.create(String.format("%s/%d", base, selected.uid())))
-                    .contentType(new MediaType(type, StandardCharsets.UTF_8))
-                    .body(new BdV1(selected).print(new MdJson()).print());
-            case "application/vnd.surok.building-v1+xml" ->
-                ResponseEntity.status(status)
-                    .location(URI.create(String.format("%s/%d", base, selected.uid())))
-                    .contentType(new MediaType(type, StandardCharsets.UTF_8))
-                    .body(new BdV1(selected).print(new MdXml("building")).print());
-            case null, default -> throw new ResponseStatusException(
-                HttpStatus.NOT_ACCEPTABLE, "Unsupported Accept header"
-            );
-        };
-    }
-
-    private Media<String> web(
-        final HttpServletRequest request,
-        final School school,
-        final String view
-    ) throws Exception {
-        return new SrWeb(
-            new UrAcBrief(
-                (UrAccount) SecurityContextHolder.getContext().getAuthentication().getPrincipal()
-            ),
-            new SlsBrief(new SlsPostgres(this.ctx)),
-            new CsToken((CsrfToken) request.getAttribute(CsrfToken.class.getName()))
-        ).print(
-            new MdXslt(
-                new MdXml("surok").with("path", request.getRequestURI()),
-                new XsClasspath("xslt/buildings.xsl", view)
-            )
-        ).with("school", new SlBrief(school))
-            .with("error", request.getParameter("error") != null);
     }
 }

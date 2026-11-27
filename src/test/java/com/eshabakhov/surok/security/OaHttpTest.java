@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import io.swagger.v3.core.util.Json;
 import io.swagger.v3.core.util.Yaml;
 import java.util.List;
+import java.util.stream.StreamSupport;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
@@ -16,10 +17,11 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.aggregator.ArgumentsAccessor;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.info.BuildProperties;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.core.io.ClassPathResource;
+import org.springframework.context.ApplicationContext;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -28,6 +30,7 @@ import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequ
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
+import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 
 /**
  * Exercises the packaged specification without connecting to the database.
@@ -45,6 +48,61 @@ import org.springframework.test.web.servlet.request.RequestPostProcessor;
 )
 @AutoConfigureMockMvc
 final class OaHttpTest {
+
+    /**
+     * Covers all application routes, including browser forms and fragments.
+     *
+     * @param mappings Registered routes
+     * @throws Exception If the API description cannot be read
+     */
+    @Test
+    void describesEveryRegisteredApplicationRoute(
+        @Autowired @Qualifier("requestMappingHandlerMapping")
+        final RequestMappingHandlerMapping mappings
+    ) throws Exception {
+        MatcherAssert.assertThat(
+            "An application route had no permission declaration",
+            mappings.getHandlerMethods().entrySet().stream().filter(
+                entry -> entry.getValue().getBeanType().getPackageName()
+                    .startsWith("com.eshabakhov.surok")
+            ).flatMap(
+                entry -> entry.getKey().getPatternValues().stream().filter(
+                    path -> !path.startsWith("/api-docs")
+                ).flatMap(
+                    path -> entry.getKey().getMethodsCondition().getMethods().stream().map(
+                        method -> String.format(
+                            "%s %s", method, path.replace(":^[0-9]+$", "")
+                                .replace(":\\d+", "").replace(":[0-9]+", "")
+                        )
+                    )
+                )
+            ).distinct().toList(),
+            Matchers.everyItem(
+                Matchers.in(
+                    StreamSupport.stream(
+                        new OaYaml().operations().iterate().spliterator(), false
+                    ).map(
+                        operation -> String.format("%s %s", operation.method(), operation.path())
+                    ).toList()
+                )
+            )
+        );
+    }
+
+    /**
+     * Keeps operation catalogs outside the Spring container.
+     *
+     * @param context Application context
+     */
+    @Test
+    void createsControllersWithoutAnOperationCatalogBean(
+        @Autowired final ApplicationContext context
+    ) {
+        MatcherAssert.assertThat(
+            "The application registered an operation catalog as a bean",
+            context.getBeansOfType(Operations.class), Matchers.anEmptyMap()
+        );
+    }
 
     /**
      * Publishes the authored API information with the Maven version.
@@ -65,7 +123,7 @@ final class OaHttpTest {
             "The API information lost the packaged description or the build version",
             List.of(info.path("description").asText(), info.path("version").asText()),
             Matchers.contains(
-                new OaYaml(new ClassPathResource("openapi.yml")).read()
+                Json.mapper().readTree(new OaYaml().json())
                     .at("/info/description").asText(), build.getVersion()
             )
         );

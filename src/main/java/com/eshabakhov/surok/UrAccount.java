@@ -14,6 +14,25 @@ import com.eshabakhov.surok.user.Account;
 public interface UrAccount extends User {
 
     /**
+     * Permit an operation using current global role assignments.
+     *
+     * @param operation Identifier declared in the operation catalog
+     * @return Account after authorization
+     * @throws Exception If the operation catalog cannot be read
+     */
+    UrAccount permit(String operation) throws Exception;
+
+    /**
+     * Permit an operation using current global and target-school role assignments.
+     *
+     * @param operation Identifier declared in the operation catalog
+     * @param school Target school
+     * @return Account after authorization
+     * @throws Exception If the operation catalog cannot be read
+     */
+    UrAccount permit(String operation, School school) throws Exception;
+
+    /**
      * Registered user identifier.
      *
      * @return User identifier

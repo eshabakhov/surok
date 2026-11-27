@@ -9,10 +9,9 @@ import com.eshabakhov.surok.Page;
 import com.eshabakhov.surok.Sorts;
 import com.eshabakhov.surok.UrAccount;
 import com.eshabakhov.surok.federal.curriculum.CrWithRequirements;
-import com.eshabakhov.surok.federal.curriculum.CrsAuthorized;
 import com.eshabakhov.surok.federal.curriculum.CrsPostgres;
-import com.eshabakhov.surok.federal.curriculum.CrsSingle;
 import com.eshabakhov.surok.federal.curriculum.Curriculum;
+import com.eshabakhov.surok.federal.curriculum.requirement.input.RqInput;
 import com.eshabakhov.surok.federal.curriculum.requirement.input.RqInputForm;
 import com.eshabakhov.surok.federal.curriculum.requirement.input.RqInputHttp;
 import com.eshabakhov.surok.federal.subject.SbsFederal;
@@ -25,19 +24,22 @@ import com.eshabakhov.surok.media.XsClasspath;
 import com.eshabakhov.surok.school.SlsBrief;
 import com.eshabakhov.surok.school.SlsPostgres;
 import com.eshabakhov.surok.security.CsToken;
+import com.eshabakhov.surok.security.OaYaml;
+import com.eshabakhov.surok.security.Operations;
 import com.eshabakhov.surok.user.UrAcBrief;
 import jakarta.servlet.http.HttpServletRequest;
+import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import org.jooq.DSLContext;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -66,17 +68,32 @@ public class RqsHttp {
     private static final String FRAGMENT =
         "text/vnd.surok.federal-curriculum-requirements-fragment+html";
 
+    /** Shared operation declarations. */
+    private final Operations operations;
+
     /** JOOQ context. */
     private final DSLContext ctx;
 
     /**
-     * New controller.
+     * New resource with explicitly constructed YAML operations.
      *
-     * @param ctx JOOQ context
-     * @since 0.0.1
+     * @param ctx Database context
+     * @throws IOException If the API description cannot be read
      */
-    public RqsHttp(final DSLContext ctx) {
+    @Autowired
+    public RqsHttp(final DSLContext ctx) throws IOException {
+        this(ctx, new OaYaml().operations());
+    }
+
+    /**
+     * New controller using the application operation catalog.
+     *
+     * @param ctx Database context
+     * @param operations Shared operation declarations
+     */
+    public RqsHttp(final DSLContext ctx, final Operations operations) {
         this.ctx = ctx;
+        this.operations = operations;
     }
 
     /**
@@ -121,9 +138,8 @@ public class RqsHttp {
                 MediaType.valueOf(RqsHttp.FRAGMENT)
             )
         ).type();
-        final Curriculum curriculum = new CrsAuthorized(
-            new CrsPostgres(this.ctx), actor
-        ).curriculum(current);
+        final Curriculum curriculum = this.operations.operation("Requirements.selection")
+            .permission(actor).permit(new CrsPostgres(this.ctx)).curriculum(current);
         final Requirements selected = curriculum.requirements().selection(filters, page, sorts);
         return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8))
             .varyBy(HttpHeaders.ACCEPT).body(
@@ -135,19 +151,17 @@ public class RqsHttp {
                         } else {
                             view = "list-fragment";
                         }
-                        yield this.web(request, view).with(
+                        yield this.web(request, view, actor).with(
                             "subjects", new SbsFederal(this.ctx)
                         ).with("firstGrade", curriculum.grades().getFirst()).with(
                             "lastGrade", curriculum.grades().getLast()
                         ).with(
-                            "curriculums",
-                            new CrsSingle(
-                                new CrsPostgres(this.ctx),
-                                new CrWithRequirements(
-                                    curriculum,
-                                    new RqsWeb(selected, filters, sorts)
-                                )
+                            "curriculum",
+                            new CrWithRequirements(
+                                curriculum, new RqsWeb(selected, filters, sorts)
                             )
+                        ).with(
+                            "requirement", new RqDraft(new RqInput(), new SbsFederal(this.ctx))
                         ).print();
                     }
                     case "application/vnd.surok.federal-curriculum-requirements.v1+json" ->
@@ -195,9 +209,8 @@ public class RqsHttp {
                 )
             )
         ).type();
-        final Requirement selected = new RqsAuthorized(
-            new RqsPostgres(this.ctx, current), actor
-        ).requirement(requirement);
+        final Requirement selected = this.operations.operation("Requirements.requirement")
+            .permission(actor).permit(new RqsPostgres(this.ctx, current)).requirement(requirement);
         return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8)).body(
             switch (type.toString()) {
                 case "application/vnd.surok.federal-curriculum-requirement-v1+json" ->
@@ -237,9 +250,10 @@ public class RqsHttp {
     ) throws Exception {
         return RqsHttp.result(
             new AcHttp(request, "federal-curriculum-requirement-v1").type(),
-            new RqsAuthorized(new RqsPostgres(this.ctx, current), actor).create(
-                new RqInputForm(parameters.toSingleValueMap())
-            ),
+            this.operations.operation("Requirements.create").permission(actor)
+                .permit(new RqsPostgres(this.ctx, current)).create(
+                    new RqInputForm(parameters.toSingleValueMap())
+                ),
             HttpStatus.CREATED, current
         );
     }
@@ -270,9 +284,8 @@ public class RqsHttp {
     ) throws Exception {
         return RqsHttp.result(
             new AcHttp(request, "federal-curriculum-requirement-v1").type(),
-            new RqsAuthorized(new RqsPostgres(this.ctx, current), actor).create(
-                new RqInputHttp(fields)
-            ),
+            this.operations.operation("Requirements.create").permission(actor)
+                .permit(new RqsPostgres(this.ctx, current)).create(new RqInputHttp(fields)),
             HttpStatus.CREATED, current
         );
     }
@@ -306,9 +319,10 @@ public class RqsHttp {
     ) throws Exception {
         return RqsHttp.result(
             new AcHttp(request, "federal-curriculum-requirement-v1").type(),
-            new RqsAuthorized(new RqsPostgres(this.ctx, current), actor).revise(
-                requirement, new RqInputHttp(fields)
-            ),
+            this.operations.operation("Requirements.revise").permission(actor)
+                .permit(new RqsPostgres(this.ctx, current)).revise(
+                    requirement, new RqInputHttp(fields)
+                ),
             HttpStatus.OK, current
         );
     }
@@ -331,7 +345,8 @@ public class RqsHttp {
         @AuthenticationPrincipal final UrAccount actor
     ) throws Exception {
         new AcHttp(request, "federal-curriculum-requirement-v1").type();
-        new RqsAuthorized(new RqsPostgres(this.ctx, current), actor).remove(requirement);
+        this.operations.operation("Requirements.remove").permission(actor)
+            .permit(new RqsPostgres(this.ctx, current)).remove(requirement);
         return ResponseEntity.noContent().build();
     }
 
@@ -360,12 +375,11 @@ public class RqsHttp {
         };
     }
 
-    private Media<String> web(final HttpServletRequest request, final String view)
-        throws Exception {
+    private Media<String> web(
+        final HttpServletRequest request, final String view, final UrAccount actor
+    ) throws Exception {
         return new SrWeb(
-            new UrAcBrief(
-                (UrAccount) SecurityContextHolder.getContext().getAuthentication().getPrincipal()
-            ),
+            new UrAcBrief(actor),
             new SlsBrief(new SlsPostgres(this.ctx)),
             new CsToken((CsrfToken) request.getAttribute(CsrfToken.class.getName()))
         ).print(

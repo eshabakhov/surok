@@ -7,6 +7,8 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.swagger.v3.core.util.Yaml;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.function.Predicate;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 
 /**
@@ -15,10 +17,17 @@ import org.springframework.core.io.Resource;
  *
  * @since 0.0.1
  */
-public final class OaYaml implements ApiDescription {
+public final class OaYaml implements OpenApi {
 
     /** Canonical description. */
     private final Resource source;
+
+    /**
+     * New description from the packaged OpenAPI resource.
+     */
+    public OaYaml() {
+        this(new ClassPathResource("openapi.yml"));
+    }
 
     /**
      * New description from YAML.
@@ -30,9 +39,41 @@ public final class OaYaml implements ApiDescription {
     }
 
     @Override
-    public ObjectNode read() throws IOException {
+    public Paths paths() throws IOException {
+        return this.description().paths();
+    }
+
+    @Override
+    public Operations operations() throws IOException {
+        return this.description().operations();
+    }
+
+    @Override
+    public OpenApi selection(final Predicate<Operation> condition) throws IOException {
+        return this.description().selection(condition);
+    }
+
+    @Override
+    public OpenApi relative(final String path) throws IOException {
+        return this.description().relative(path);
+    }
+
+    @Override
+    public byte[] json() throws IOException {
+        return this.description().json();
+    }
+
+    @Override
+    public byte[] yaml() throws IOException {
+        return this.description().yaml();
+    }
+
+    /*
+     * Load an independent document while closing the resource stream.
+     */
+    private OpenApi description() throws IOException {
         try (InputStream stream = this.source.getInputStream()) {
-            return Yaml.mapper().readValue(stream, ObjectNode.class);
+            return new OaJson(Yaml.mapper().readValue(stream, ObjectNode.class));
         }
     }
 }

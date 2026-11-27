@@ -12,13 +12,15 @@ import com.eshabakhov.surok.media.XsClasspath;
 import com.eshabakhov.surok.school.SlsBrief;
 import com.eshabakhov.surok.school.SlsPostgres;
 import com.eshabakhov.surok.security.CsToken;
+import com.eshabakhov.surok.security.OaYaml;
+import com.eshabakhov.surok.security.Operations;
 import com.eshabakhov.surok.user.UrAcAuth;
 import com.eshabakhov.surok.user.UrAcBrief;
 import jakarta.servlet.http.HttpServletRequest;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
 import org.jooq.DSLContext;
-import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -28,7 +30,6 @@ import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
-import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 
 /**
  * Administrator-only permission matrix with negotiated HTML, JSON and XML representations.
@@ -39,29 +40,31 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandl
 @RestController
 public class PsHttp {
 
-    /** Registered controllers. */
-    private final RequestMappingHandlerMapping mappings;
-
-    /** Public paths shared with the filter chains. */
-    private final List<String> anonymous;
+    /** Application operation permissions. */
+    private final Operations catalog;
 
     /** Database context for shared page navigation. */
     private final DSLContext ctx;
 
     /**
+     * New resource with explicitly constructed YAML operations.
+     *
+     * @param ctx Database context
+     * @throws IOException If the API description cannot be read
+     */
+    @Autowired
+    public PsHttp(final DSLContext ctx) throws IOException {
+        this(new OaYaml().operations(), ctx);
+    }
+
+    /**
      * New permission resource.
      *
-     * @param mappings Registered MVC mappings
-     * @param anonymous Public paths
+     * @param catalog Application operation permissions
      * @param ctx Database context
      */
-    public PsHttp(
-        @Qualifier("requestMappingHandlerMapping") final RequestMappingHandlerMapping mappings,
-        @Qualifier("publicPaths") final List<String> anonymous,
-        final DSLContext ctx
-    ) {
-        this.mappings = mappings;
-        this.anonymous = anonymous;
+    public PsHttp(final Operations catalog, final DSLContext ctx) {
+        this.catalog = catalog;
         this.ctx = ctx;
     }
 
@@ -85,9 +88,8 @@ public class PsHttp {
         @AuthenticationPrincipal final UrAcAuth user, final HttpServletRequest request
     ) throws Exception {
         final MediaType type = new AcHttp(request, "permissions.v1").type();
-        final Permissions permissions = new PsAuthorized(
-            new PsSpring(this.mappings, this.anonymous, request.getLocale()), user
-        );
+        final Permissions permissions = this.catalog.operation("Permissions.read").permission(user)
+            .permit(new PsSpring(this.catalog, request.getLocale()));
         return ResponseEntity.ok().cacheControl(CacheControl.noStore())
             .contentType(new MediaType(type, StandardCharsets.UTF_8)).body(
                 switch (type.toString()) {
