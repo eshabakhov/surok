@@ -427,7 +427,7 @@ public class CrsHttp {
             new CsToken((CsrfToken) request.getAttribute(CsrfToken.class.getName()))
         ).print(
             new MdXslt(
-                new MdXml("surok").with("path", request.getRequestURI()).with(
+                new MdXml("surok").attribute("path", request.getRequestURI()).with(
                     "levels", new PrItems(
                         "level", List.of(Curriculum.Level.values()).stream()
                             .map(level -> new LvLocalized(level, request.getLocale())).toList()

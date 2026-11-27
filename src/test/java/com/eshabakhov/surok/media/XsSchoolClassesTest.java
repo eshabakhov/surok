@@ -145,23 +145,23 @@ final class XsSchoolClassesTest {
         return String.format(
             """
             <surok>%s
-                <school id="3"><name>Школа</name><schedules><schedule>
-                    <id>9</id><name>Учебный год</name>
+                <school id="3"><name>Школа</name><schedules><schedule id="9"
+                    ><name>Учебный год</name>
                 </schedule></schedules></school>
                 <error>true</error><csrf><parameter>_csrf</parameter><token>token</token>
                     <header>X-XSRF-TOKEN</header></csrf>
                 <classes offset="1" limit="15" total="60"
-                    totalPages="4" hasNext="true" hasPrev="false"><school-class>
-                    <id>7</id><name>5А</name><grade>5</grade><litera>А</litera>
-                </school-class><sorts><item><name>name</name><direction>NONE</direction>
-                </item></sorts></classes>
+                    totalPages="4" hasNext="true" hasPrev="false"><school-class id="7"
+                    ><grade>5</grade><name>5А</name><litera>А</litera>
+                </school-class><sorts><sort><name>name</name><direction>NONE</direction>
+                </sort></sorts></classes>
             </surok>
             """, switch (view) {
-                case "create" -> "<school-class><name/><grade/><litera/></school-class>";
+                case "create" -> "<school-class><grade></grade><name/><litera/></school-class>";
                 case "edit", "details" ->
                     """
-                    <school-class><id>7</id><name>5А</name>
-                    <grade>5</grade><litera>А</litera></school-class>
+                    <school-class id="7"><grade>5</grade><name>5А</name>
+                    <litera>А</litera></school-class>
                     """;
                 case null, default -> "";
             }

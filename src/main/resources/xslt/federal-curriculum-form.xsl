@@ -32,7 +32,7 @@
                 <xsl:attribute name="action">
                     <xsl:choose>
                         <xsl:when test="$editing">
-                            <xsl:value-of select="concat('/federal/curriculums/', $curriculum/id)"/>
+                            <xsl:value-of select="concat('/federal/curriculums/', $curriculum/@id)"/>
                         </xsl:when>
                         <xsl:otherwise>/federal/curriculums</xsl:otherwise>
                     </xsl:choose>
@@ -50,8 +50,8 @@
                     <xsl:text>Уровень образования</xsl:text>
                     <select name="level" required="required">
                         <xsl:for-each select="/surok/levels/level">
-                            <option value="{code}">
-                                <xsl:if test="$curriculum/level = code">
+                            <option value="{@code}">
+                                <xsl:if test="$curriculum/level = @code">
                                     <xsl:attribute name="selected">selected</xsl:attribute>
                                 </xsl:if>
                                 <xsl:value-of select="title"/>
@@ -63,8 +63,8 @@
                     <xsl:text>Учебная неделя</xsl:text>
                     <select name="week" required="required">
                         <xsl:for-each select="/surok/weeks/week">
-                            <option value="{code}">
-                                <xsl:if test="$curriculum/week = code">
+                            <option value="{@code}">
+                                <xsl:if test="$curriculum/week = @code">
                                     <xsl:attribute name="selected">selected</xsl:attribute>
                                 </xsl:if>
                                 <xsl:value-of select="title"/>
@@ -100,7 +100,7 @@
                         <xsl:attribute name="href">
                             <xsl:choose>
                                 <xsl:when test="$editing">
-                                    <xsl:value-of select="concat('/federal/curriculums/', $curriculum/id)"/>
+                                    <xsl:value-of select="concat('/federal/curriculums/', $curriculum/@id)"/>
                                 </xsl:when>
                                 <xsl:otherwise>/federal/curriculums</xsl:otherwise>
                             </xsl:choose>

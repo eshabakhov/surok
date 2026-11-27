@@ -161,14 +161,17 @@ final class AdPostgresTest {
                     )
                 ),
                 String.join(
-                    "", "<addition><grade>5</grade><requirements><requirement><id>73</id>",
-                    "<grade>5</grade><hours>0</hours><partType>OPTIONAL</partType>",
-                    "</requirement></requirements><subjects><subject><id>37</id>",
+                    "", "<addition><grade>5</grade><requirements>",
+                    "<requirement id=\"73\"><grade>5</grade><hours>0</hours>",
+                    "<partType>OPTIONAL</partType>",
+                    "</requirement></requirements><subjects><subject id=\"37\">",
                     "<name>Робототехника</name><origin>SCHOOL</origin><hours>1</hours>",
-                    "</subject></subjects><classes><class><id>23</id><name>5Б</name>",
-                    "<grade>5</grade><litera>Б</litera><hours><current>2</current>",
-                    "<planned>3</planned></hours></class><class><id>25</id><name>5В</name>",
-                    "<grade>5</grade><litera>В</litera><hours><current>0</current>",
+                    "</subject></subjects><classes><class id=\"23\">",
+                    "<name>5Б</name><grade>5</grade>",
+                    "<litera>Б</litera><hours><current>2</current>",
+                    "<planned>3</planned></hours></class><class id=\"25\">",
+                    "<name>5В</name><grade>5</grade>",
+                    "<litera>В</litera><hours><current>0</current>",
                     "<planned>1</planned></hours></class></classes></addition>"
                 )
             )

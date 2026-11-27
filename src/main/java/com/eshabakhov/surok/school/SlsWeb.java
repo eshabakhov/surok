@@ -82,16 +82,16 @@ public final class SlsWeb implements Schools {
 
     @Override
     public <T> Media<T> print(final Media<T> media) throws Exception {
-        return this.origin.print(media).with("href", "/schools").with(
+        return this.origin.print(media).attribute("href", "/schools").with(
             "filters",
             new PrItems(
-                "item",
+                "filter",
                 this.filters.filters().stream().map(FlWeb::new).toList()
             )
         ).with(
             "sorts",
             new PrItems(
-                "item",
+                "sort",
                 this.sorts.sorts().stream().map(StWeb::new).toList()
             )
         );

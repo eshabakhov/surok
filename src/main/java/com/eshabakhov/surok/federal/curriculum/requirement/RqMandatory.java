@@ -53,7 +53,7 @@ public final class RqMandatory implements Requirement {
     @Override
     public <T> Media<T> print(final Media<T> media) throws Exception {
         final Record record = this.details();
-        return media.with("id", record.get("id", Long.class))
+        return media.attribute("id", record.get("id", Long.class))
             .with("grade", record.get("grade", Integer.class)).with(
                 "subject", new SbPostgres(this.ctx, record.get("subject_id", Long.class), true)
             ).with("hours", record.get("hours", Integer.class))

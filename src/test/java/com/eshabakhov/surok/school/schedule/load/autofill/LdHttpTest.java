@@ -172,7 +172,7 @@ final class LdHttpTest {
                 Matchers.is("#/components/schemas/LoadDraftXml"), Matchers.is("draft"),
                 Matchers.allOf(
                     Matchers.containsString("<draft>"),
-                    Matchers.containsString("<schoolClass>"),
+                    Matchers.containsString("<schoolClass id=\"41\">"),
                     Matchers.containsString("<unavailable></unavailable>")
                 )
             )

@@ -4,7 +4,9 @@
 package com.eshabakhov.surok.federal.curriculum;
 
 import com.eshabakhov.surok.media.MdJson;
+import com.eshabakhov.surok.media.MdXml;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import java.util.List;
 import java.util.Locale;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
@@ -36,11 +38,18 @@ final class WkLocalizedTest {
     void printsTitlesWithoutChangingCodes(
         final Curriculum.Week week, final String language, final String title
     ) {
+        final WkLocalized localized = new WkLocalized(week, Locale.forLanguageTag(language));
         MatcherAssert.assertThat(
             "The localized study week lost its code or default title",
-            new WkLocalized(week, Locale.forLanguageTag(language)).print(new MdJson()).print(),
-            Matchers.equalTo(
-                JsonNodeFactory.instance.objectNode().put("code", week.name()).put("title", title)
+            List.of(
+                localized.print(new MdJson()).print(),
+                localized.print(new MdXml("week")).print()
+            ),
+            Matchers.contains(
+                JsonNodeFactory.instance.objectNode().put("code", week.name()).put("title", title),
+                String.format(
+                    "<week code=\"%s\"><title>%s</title></week>", week.name(), title
+                )
             )
         );
     }

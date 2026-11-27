@@ -142,7 +142,7 @@ public class BdsHttp {
                             new CsToken((CsrfToken) request.getAttribute(CsrfToken.class.getName()))
                         ).print(
                             new MdXslt(
-                                new MdXml("surok").with("path", request.getRequestURI()),
+                                new MdXml("surok").attribute("path", request.getRequestURI()),
                                 new XsClasspath("xslt/buildings.xsl", view)
                             )
                         ).with("school", new SlBrief(sch))
@@ -181,7 +181,7 @@ public class BdsHttp {
                 new CsToken((CsrfToken) request.getAttribute(CsrfToken.class.getName()))
             ).print(
                 new MdXslt(
-                    new MdXml("surok").with("path", request.getRequestURI()),
+                    new MdXml("surok").attribute("path", request.getRequestURI()),
                     new XsClasspath("xslt/buildings.xsl", "create")
                 )
             ).with("school", new SlBrief(actor.schools().school(school)))
@@ -235,7 +235,7 @@ public class BdsHttp {
                     new CsToken((CsrfToken) request.getAttribute(CsrfToken.class.getName()))
                 ).print(
                     new MdXslt(
-                        new MdXml("surok").with("path", request.getRequestURI()),
+                        new MdXml("surok").attribute("path", request.getRequestURI()),
                         new XsClasspath("xslt/buildings.xsl", view)
                     )
                 ).with("school", new SlBrief(sch))

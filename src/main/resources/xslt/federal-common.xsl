@@ -36,7 +36,7 @@
                     <div class="sidebar-section">Общее</div>
                     <a class="sidebar-link" title="Школы">
                         <xsl:attribute name="href">
-                            <xsl:value-of select="/surok/schools/href"/>
+                            <xsl:value-of select="/surok/schools/@href"/>
                         </xsl:attribute>
                         <svg xmlns="http://www.w3.org/2000/svg"
                              fill="none"
@@ -56,9 +56,9 @@
                     <a href="/permissions" title="Права доступа">
                         <xsl:attribute name="class">
                             <xsl:text>sidebar-link</xsl:text>
-                            <xsl:if test="/surok/path = '/permissions'"> active</xsl:if>
+                            <xsl:if test="/surok/@path = '/permissions'"> active</xsl:if>
                         </xsl:attribute>
-                        <xsl:if test="/surok/path = '/permissions'">
+                        <xsl:if test="/surok/@path = '/permissions'">
                             <xsl:attribute name="aria-current">page</xsl:attribute>
                         </xsl:if>
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor"

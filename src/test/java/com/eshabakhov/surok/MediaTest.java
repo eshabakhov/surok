@@ -93,8 +93,8 @@ final class MediaTest {
             "xslt/federal-curriculum.xsl", "details"
         ).transform(
             """
-            <surok><curriculums><curriculum><id>1</id>
-            <title>Plan</title></curriculum></curriculums></surok>
+            <surok><curriculums><curriculum id="1"
+            ><title>Plan</title></curriculum></curriculums></surok>
             """
         );
         Assertions.assertTrue(printed.contains("class=\"school-info\""));
@@ -107,8 +107,8 @@ final class MediaTest {
             "xslt/federal-curriculum-requirements.xsl", "list"
         ).transform(
             """
-            <surok><curriculums><curriculum><id>1</id>
-            <title>Plan</title><requirements/></curriculum>
+            <surok><curriculums><curriculum id="1"
+            ><title>Plan</title><requirements/></curriculum>
             </curriculums></surok>
             """
         );

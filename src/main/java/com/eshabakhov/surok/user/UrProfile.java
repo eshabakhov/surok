@@ -35,7 +35,7 @@ public final class UrProfile implements Printable {
         if (!name.isEmpty()) {
             initial = name.substring(0, name.offsetByCodePoints(0, 1)).toUpperCase(Locale.ROOT);
         }
-        return media.with("id", this.origin.uid()).with("username", name)
+        return media.attribute("id", this.origin.uid()).with("username", name)
             .with("initial", initial).with(
                 "roles",
                 new PrItems(

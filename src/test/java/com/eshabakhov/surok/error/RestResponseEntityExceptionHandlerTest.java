@@ -160,7 +160,7 @@ final class RestResponseEntityExceptionHandlerTest {
             MockMvcRequestBuilders.get("/users/1/roles").accept(MediaType.APPLICATION_XML)
         ).andExpect(MockMvcResultMatchers.status().isUnauthorized()).andExpect(
             MockMvcResultMatchers.content().contentTypeCompatibleWith(MediaType.APPLICATION_XML)
-        ).andExpect(MockMvcResultMatchers.xpath("/error/status").string("401"));
+        ).andExpect(MockMvcResultMatchers.xpath("/error/@status").string("401"));
     }
 
     @Test

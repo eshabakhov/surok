@@ -115,7 +115,7 @@ public final class SbPostgres implements Subject {
     @Override
     public <T> Media<T> print(final Media<T> media) throws Exception {
         final Record selected = this.details();
-        return media.with("id", selected.get("id", Long.class))
+        return media.attribute("id", selected.get("id", Long.class))
             .with("name", selected.get("name", String.class))
             .with("origin", selected.get("origin", String.class));
     }

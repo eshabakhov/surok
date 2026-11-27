@@ -448,7 +448,7 @@ public class SdsHttp {
             new CsToken((CsrfToken) request.getAttribute(CsrfToken.class.getName()))
         ).print(
             new MdXslt(
-                new MdXml("surok").with("path", request.getRequestURI()),
+                new MdXml("surok").attribute("path", request.getRequestURI()),
                 new XsClasspath("xslt/schedules.xsl", view)
             )
         ).with("school", new SlBrief(school))

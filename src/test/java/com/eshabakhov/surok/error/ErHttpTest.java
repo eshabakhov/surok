@@ -80,9 +80,10 @@ final class ErHttpTest {
         MatcherAssert.assertThat(
             new ErHttp(ErHttpTest.request(accept), HttpStatus.FORBIDDEN).response().getBody(),
             Matchers.allOf(
-                Matchers.startsWith("<error><status>403</status>"),
+                Matchers.startsWith("<error status=\"403\" timestamp=\""),
+                Matchers.containsString("<title>"),
                 Matchers.containsString("<message>"),
-                Matchers.containsString("<timestamp>"),
+                Matchers.not(Matchers.containsString("<timestamp>")),
                 Matchers.not(Matchers.containsString("<html"))
             )
         );

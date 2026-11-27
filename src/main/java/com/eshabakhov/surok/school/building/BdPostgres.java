@@ -72,7 +72,7 @@ public final class BdPostgres implements Building {
                 String.format("Building with id=%d not found", this.id)
             );
         }
-        return media.with("id", selected.get("id", Long.class))
+        return media.attribute("id", selected.get("id", Long.class))
             .with("name", selected.get("name", String.class));
     }
 }

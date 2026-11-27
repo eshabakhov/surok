@@ -146,8 +146,8 @@ final class PlsMemoryTest {
                     )
                 ),
                 String.join(
-                    "", "<plan><load><schoolClass><id>17</id></schoolClass>",
-                    "<subject><id>29</id></subject>",
+                    "", "<plan><load><schoolClass id=\"17\"></schoolClass>",
+                    "<subject id=\"29\"></subject>",
                     "<hours><current>5</current><proposed>3</proposed><planned>3</planned></hours>",
                     "<decision>manual</decision></load></plan>"
                 )

@@ -21,7 +21,7 @@ public interface Roles extends Printable {
 
     @Override
     default <T> Media<T> print(final Media<T> media) throws Exception {
-        return media.with("list", new PrItems("role", this.list()));
+        return media.with(new PrItems("role", this.list()));
     }
 
     /**

@@ -7,7 +7,7 @@
     <xsl:variable name="schedule" select="/surok/schedule"/>
     <xsl:variable name="entries" select="/surok/loads"/>
     <xsl:variable name="selected" select="$entries/load[$view = 'details']"/>
-    <xsl:variable name="base" select="concat($school-path, '/schedules/', $schedule/id, '/loads')"/>
+    <xsl:variable name="base" select="concat($school-path, '/schedules/', $schedule/@id, '/loads')"/>
 
     <xsl:template match="/">
         <xsl:choose>
@@ -24,7 +24,7 @@
 
     <xsl:template name="content">
         <nav class="breadcrumbs" aria-label="Навигация">
-            <a href="{$school-path}/schedules/{$schedule/id}" title="Перейти к расписанию"><xsl:value-of select="$schedule/name"/></a>
+            <a href="{$school-path}/schedules/{$schedule/@id}" title="Перейти к расписанию"><xsl:value-of select="$schedule/name"/></a>
             <span>/</span><a href="{$base}" title="Учебная нагрузка">Учебная нагрузка</a>
         </nav>
         <xsl:choose>
@@ -50,8 +50,8 @@
                     <tbody>
                         <xsl:if test="not($entries/load)"><tr><td class="table-empty" colspan="3">Нагрузка пока не заполнена. Перейдите в автозаполнение.</td></tr></xsl:if>
                         <xsl:for-each select="$entries/load">
-                            <tr data-id="{id}">
-                                <td><a href="{$base}/{id}" title="Открыть нагрузку"><xsl:value-of select="schoolClass/name"/></a></td>
+                            <tr data-id="{@id}">
+                                <td><a href="{$base}/{@id}" title="Открыть нагрузку"><xsl:value-of select="schoolClass/name"/></a></td>
                                 <td><xsl:value-of select="subject/name"/>
                                     <xsl:if test="subject/origin = 'SCHOOL'">
                                         <span class="load-additional">Вариативная</span>

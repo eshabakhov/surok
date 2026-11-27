@@ -386,11 +386,9 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
               example: |-
-                <error>
-                  <status>409</status>
+                <error status="409" timestamp="2026-11-07T10:00:00Z">
                   <title>Конфликт данных</title>
                   <message>Teacher `Анна Петрова` already exists</message>
-                  <timestamp>2026-11-07T10:00:00Z</timestamp>
                 </error>
             text/html:
               schema:
@@ -564,11 +562,9 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
               example: |-
-                <error>
-                  <status>409</status>
+                <error status="409" timestamp="2026-11-07T10:00:00Z">
                   <title>Конфликт данных</title>
                   <message>Schedule `Основное расписание` already exists</message>
-                  <timestamp>2026-11-07T10:00:00Z</timestamp>
                 </error>
             text/html:
               schema:
@@ -737,8 +733,7 @@ paths:
                   summary: XML representation of a saved teaching load draft.
                   value: |-
                     <draft>
-                      <curriculum>
-                        <id>61</id>
+                      <curriculum id="61">
                         <title>Основной учебный план</title>
                         <level>BASIC</level>
                         <week>FIVE_DAYS</week>
@@ -748,14 +743,12 @@ paths:
                       </curriculum>
                       <loads>
                         <load>
-                          <schoolClass>
-                            <id>41</id>
+                          <schoolClass id="41">
                             <name>5А</name>
                             <grade>5</grade>
                             <litera>А</litera>
                           </schoolClass>
-                          <subject>
-                            <id>29</id>
+                          <subject id="29">
                             <name>Математика</name>
                             <origin>FEDERAL</origin>
                           </subject>
@@ -767,14 +760,12 @@ paths:
                           <decision>plan</decision>
                         </load>
                         <load>
-                          <schoolClass>
-                            <id>41</id>
+                          <schoolClass id="41">
                             <name>5А</name>
                             <grade>5</grade>
                             <litera>А</litera>
                           </schoolClass>
-                          <subject>
-                            <id>31</id>
+                          <subject id="31">
                             <name>Музыка</name>
                             <origin>SCHOOL</origin>
                           </subject>
@@ -789,24 +780,21 @@ paths:
                         <addition>
                           <grade>5</grade>
                           <requirements>
-                            <requirement>
-                              <id>73</id>
+                            <requirement id="73">
                               <grade>5</grade>
                               <hours>3</hours>
                               <partType>OPTIONAL</partType>
                             </requirement>
                           </requirements>
                           <subjects>
-                            <subject>
-                              <id>31</id>
+                            <subject id="31">
                               <name>Музыка</name>
                               <origin>SCHOOL</origin>
                               <hours>2</hours>
                             </subject>
                           </subjects>
                           <classes>
-                            <class>
-                              <id>41</id>
+                            <class id="41">
                               <name>5А</name>
                               <grade>5</grade>
                               <litera>А</litera>
@@ -819,19 +807,16 @@ paths:
                         </addition>
                       </additions>
                       <requirements>
-                        <requirement>
-                          <id>71</id>
+                        <requirement id="71">
                           <grade>5</grade>
-                          <subject>
-                            <id>29</id>
+                          <subject id="29">
                             <name>Математика</name>
                             <origin>FEDERAL</origin>
                           </subject>
                           <hours>3</hours>
                           <partType>MANDATORY</partType>
                         </requirement>
-                        <requirement>
-                          <id>73</id>
+                        <requirement id="73">
                           <grade>5</grade>
                           <hours>3</hours>
                           <partType>OPTIONAL</partType>
@@ -970,8 +955,7 @@ paths:
                   summary: XML representation of a saved teaching load draft.
                   value: |-
                     <draft>
-                      <curriculum>
-                        <id>61</id>
+                      <curriculum id="61">
                         <title>Основной учебный план</title>
                         <level>BASIC</level>
                         <week>FIVE_DAYS</week>
@@ -981,14 +965,12 @@ paths:
                       </curriculum>
                       <loads>
                         <load>
-                          <schoolClass>
-                            <id>41</id>
+                          <schoolClass id="41">
                             <name>5А</name>
                             <grade>5</grade>
                             <litera>А</litera>
                           </schoolClass>
-                          <subject>
-                            <id>29</id>
+                          <subject id="29">
                             <name>Математика</name>
                             <origin>FEDERAL</origin>
                           </subject>
@@ -1000,14 +982,12 @@ paths:
                           <decision>plan</decision>
                         </load>
                         <load>
-                          <schoolClass>
-                            <id>41</id>
+                          <schoolClass id="41">
                             <name>5А</name>
                             <grade>5</grade>
                             <litera>А</litera>
                           </schoolClass>
-                          <subject>
-                            <id>31</id>
+                          <subject id="31">
                             <name>Музыка</name>
                             <origin>SCHOOL</origin>
                           </subject>
@@ -1022,24 +1002,21 @@ paths:
                         <addition>
                           <grade>5</grade>
                           <requirements>
-                            <requirement>
-                              <id>73</id>
+                            <requirement id="73">
                               <grade>5</grade>
                               <hours>3</hours>
                               <partType>OPTIONAL</partType>
                             </requirement>
                           </requirements>
                           <subjects>
-                            <subject>
-                              <id>31</id>
+                            <subject id="31">
                               <name>Музыка</name>
                               <origin>SCHOOL</origin>
                               <hours>2</hours>
                             </subject>
                           </subjects>
                           <classes>
-                            <class>
-                              <id>41</id>
+                            <class id="41">
                               <name>5А</name>
                               <grade>5</grade>
                               <litera>А</litera>
@@ -1052,19 +1029,16 @@ paths:
                         </addition>
                       </additions>
                       <requirements>
-                        <requirement>
-                          <id>71</id>
+                        <requirement id="71">
                           <grade>5</grade>
-                          <subject>
-                            <id>29</id>
+                          <subject id="29">
                             <name>Математика</name>
                             <origin>FEDERAL</origin>
                           </subject>
                           <hours>3</hours>
                           <partType>MANDATORY</partType>
                         </requirement>
-                        <requirement>
-                          <id>73</id>
+                        <requirement id="73">
                           <grade>5</grade>
                           <hours>3</hours>
                           <partType>OPTIONAL</partType>
@@ -1166,8 +1140,7 @@ paths:
                   summary: XML representation of a saved teaching load draft.
                   value: |-
                     <draft>
-                      <curriculum>
-                        <id>61</id>
+                      <curriculum id="61">
                         <title>Основной учебный план</title>
                         <level>BASIC</level>
                         <week>FIVE_DAYS</week>
@@ -1177,14 +1150,12 @@ paths:
                       </curriculum>
                       <loads>
                         <load>
-                          <schoolClass>
-                            <id>41</id>
+                          <schoolClass id="41">
                             <name>5А</name>
                             <grade>5</grade>
                             <litera>А</litera>
                           </schoolClass>
-                          <subject>
-                            <id>29</id>
+                          <subject id="29">
                             <name>Математика</name>
                             <origin>FEDERAL</origin>
                           </subject>
@@ -1196,14 +1167,12 @@ paths:
                           <decision>plan</decision>
                         </load>
                         <load>
-                          <schoolClass>
-                            <id>41</id>
+                          <schoolClass id="41">
                             <name>5А</name>
                             <grade>5</grade>
                             <litera>А</litera>
                           </schoolClass>
-                          <subject>
-                            <id>31</id>
+                          <subject id="31">
                             <name>Музыка</name>
                             <origin>SCHOOL</origin>
                           </subject>
@@ -1218,24 +1187,21 @@ paths:
                         <addition>
                           <grade>5</grade>
                           <requirements>
-                            <requirement>
-                              <id>73</id>
+                            <requirement id="73">
                               <grade>5</grade>
                               <hours>3</hours>
                               <partType>OPTIONAL</partType>
                             </requirement>
                           </requirements>
                           <subjects>
-                            <subject>
-                              <id>31</id>
+                            <subject id="31">
                               <name>Музыка</name>
                               <origin>SCHOOL</origin>
                               <hours>2</hours>
                             </subject>
                           </subjects>
                           <classes>
-                            <class>
-                              <id>41</id>
+                            <class id="41">
                               <name>5А</name>
                               <grade>5</grade>
                               <litera>А</litera>
@@ -1248,19 +1214,16 @@ paths:
                         </addition>
                       </additions>
                       <requirements>
-                        <requirement>
-                          <id>71</id>
+                        <requirement id="71">
                           <grade>5</grade>
-                          <subject>
-                            <id>29</id>
+                          <subject id="29">
                             <name>Математика</name>
                             <origin>FEDERAL</origin>
                           </subject>
                           <hours>3</hours>
                           <partType>MANDATORY</partType>
                         </requirement>
-                        <requirement>
-                          <id>73</id>
+                        <requirement id="73">
                           <grade>5</grade>
                           <hours>3</hours>
                           <partType>OPTIONAL</partType>
@@ -1404,8 +1367,7 @@ paths:
                   summary: XML representation of a saved teaching load draft.
                   value: |-
                     <draft>
-                      <curriculum>
-                        <id>67</id>
+                      <curriculum id="67">
                         <title>Основной учебный план</title>
                         <level>BASIC</level>
                         <week>FIVE_DAYS</week>
@@ -1415,14 +1377,12 @@ paths:
                       </curriculum>
                       <loads>
                         <load>
-                          <schoolClass>
-                            <id>41</id>
+                          <schoolClass id="41">
                             <name>5А</name>
                             <grade>5</grade>
                             <litera>А</litera>
                           </schoolClass>
-                          <subject>
-                            <id>29</id>
+                          <subject id="29">
                             <name>Математика</name>
                             <origin>FEDERAL</origin>
                           </subject>
@@ -1438,8 +1398,7 @@ paths:
                         <addition>
                           <grade>5</grade>
                           <requirements>
-                            <requirement>
-                              <id>73</id>
+                            <requirement id="73">
                               <grade>5</grade>
                               <hours>3</hours>
                               <partType>OPTIONAL</partType>
@@ -1447,8 +1406,7 @@ paths:
                           </requirements>
                           <subjects></subjects>
                           <classes>
-                            <class>
-                              <id>41</id>
+                            <class id="41">
                               <name>5А</name>
                               <grade>5</grade>
                               <litera>А</litera>
@@ -1461,19 +1419,16 @@ paths:
                         </addition>
                       </additions>
                       <requirements>
-                        <requirement>
-                          <id>71</id>
+                        <requirement id="71">
                           <grade>5</grade>
-                          <subject>
-                            <id>29</id>
+                          <subject id="29">
                             <name>Математика</name>
                             <origin>FEDERAL</origin>
                           </subject>
                           <hours>3</hours>
                           <partType>MANDATORY</partType>
                         </requirement>
-                        <requirement>
-                          <id>73</id>
+                        <requirement id="73">
                           <grade>5</grade>
                           <hours>3</hours>
                           <partType>OPTIONAL</partType>
@@ -1626,11 +1581,9 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
               example: |-
-                <error>
-                  <status>409</status>
+                <error status="409" timestamp="2026-11-07T10:00:00Z">
                   <title>Конфликт данных</title>
                   <message>School class `5А` already exists</message>
-                  <timestamp>2026-11-07T10:00:00Z</timestamp>
                 </error>
             text/html:
               schema:
@@ -3080,8 +3033,7 @@ paths:
                   summary: XML representation of a saved teaching load draft.
                   value: |-
                     <draft>
-                      <curriculum>
-                        <id>61</id>
+                      <curriculum id="61">
                         <title>Основной учебный план</title>
                         <level>BASIC</level>
                         <week>FIVE_DAYS</week>
@@ -3091,14 +3043,12 @@ paths:
                       </curriculum>
                       <loads>
                         <load>
-                          <schoolClass>
-                            <id>41</id>
+                          <schoolClass id="41">
                             <name>5А</name>
                             <grade>5</grade>
                             <litera>А</litera>
                           </schoolClass>
-                          <subject>
-                            <id>29</id>
+                          <subject id="29">
                             <name>Математика</name>
                             <origin>FEDERAL</origin>
                           </subject>
@@ -3110,14 +3060,12 @@ paths:
                           <decision>plan</decision>
                         </load>
                         <load>
-                          <schoolClass>
-                            <id>41</id>
+                          <schoolClass id="41">
                             <name>5А</name>
                             <grade>5</grade>
                             <litera>А</litera>
                           </schoolClass>
-                          <subject>
-                            <id>31</id>
+                          <subject id="31">
                             <name>Музыка</name>
                             <origin>SCHOOL</origin>
                           </subject>
@@ -3132,24 +3080,21 @@ paths:
                         <addition>
                           <grade>5</grade>
                           <requirements>
-                            <requirement>
-                              <id>73</id>
+                            <requirement id="73">
                               <grade>5</grade>
                               <hours>3</hours>
                               <partType>OPTIONAL</partType>
                             </requirement>
                           </requirements>
                           <subjects>
-                            <subject>
-                              <id>31</id>
+                            <subject id="31">
                               <name>Музыка</name>
                               <origin>SCHOOL</origin>
                               <hours>2</hours>
                             </subject>
                           </subjects>
                           <classes>
-                            <class>
-                              <id>41</id>
+                            <class id="41">
                               <name>5А</name>
                               <grade>5</grade>
                               <litera>А</litera>
@@ -3162,19 +3107,16 @@ paths:
                         </addition>
                       </additions>
                       <requirements>
-                        <requirement>
-                          <id>71</id>
+                        <requirement id="71">
                           <grade>5</grade>
-                          <subject>
-                            <id>29</id>
+                          <subject id="29">
                             <name>Математика</name>
                             <origin>FEDERAL</origin>
                           </subject>
                           <hours>3</hours>
                           <partType>MANDATORY</partType>
                         </requirement>
-                        <requirement>
-                          <id>73</id>
+                        <requirement id="73">
                           <grade>5</grade>
                           <hours>3</hours>
                           <partType>OPTIONAL</partType>
@@ -5676,8 +5618,7 @@ paths:
                   summary: XML representation of a saved teaching load draft.
                   value: |-
                     <draft>
-                      <curriculum>
-                        <id>61</id>
+                      <curriculum id="61">
                         <title>Основной учебный план</title>
                         <level>BASIC</level>
                         <week>FIVE_DAYS</week>
@@ -5687,14 +5628,12 @@ paths:
                       </curriculum>
                       <loads>
                         <load>
-                          <schoolClass>
-                            <id>41</id>
+                          <schoolClass id="41">
                             <name>5А</name>
                             <grade>5</grade>
                             <litera>А</litera>
                           </schoolClass>
-                          <subject>
-                            <id>29</id>
+                          <subject id="29">
                             <name>Математика</name>
                             <origin>FEDERAL</origin>
                           </subject>
@@ -5706,14 +5645,12 @@ paths:
                           <decision>plan</decision>
                         </load>
                         <load>
-                          <schoolClass>
-                            <id>41</id>
+                          <schoolClass id="41">
                             <name>5А</name>
                             <grade>5</grade>
                             <litera>А</litera>
                           </schoolClass>
-                          <subject>
-                            <id>31</id>
+                          <subject id="31">
                             <name>Музыка</name>
                             <origin>SCHOOL</origin>
                           </subject>
@@ -5728,24 +5665,21 @@ paths:
                         <addition>
                           <grade>5</grade>
                           <requirements>
-                            <requirement>
-                              <id>73</id>
+                            <requirement id="73">
                               <grade>5</grade>
                               <hours>3</hours>
                               <partType>OPTIONAL</partType>
                             </requirement>
                           </requirements>
                           <subjects>
-                            <subject>
-                              <id>31</id>
+                            <subject id="31">
                               <name>Музыка</name>
                               <origin>SCHOOL</origin>
                               <hours>2</hours>
                             </subject>
                           </subjects>
                           <classes>
-                            <class>
-                              <id>41</id>
+                            <class id="41">
                               <name>5А</name>
                               <grade>5</grade>
                               <litera>А</litera>
@@ -5758,19 +5692,16 @@ paths:
                         </addition>
                       </additions>
                       <requirements>
-                        <requirement>
-                          <id>71</id>
+                        <requirement id="71">
                           <grade>5</grade>
-                          <subject>
-                            <id>29</id>
+                          <subject id="29">
                             <name>Математика</name>
                             <origin>FEDERAL</origin>
                           </subject>
                           <hours>3</hours>
                           <partType>MANDATORY</partType>
                         </requirement>
-                        <requirement>
-                          <id>73</id>
+                        <requirement id="73">
                           <grade>5</grade>
                           <hours>3</hours>
                           <partType>OPTIONAL</partType>
@@ -6326,6 +6257,8 @@ components:
         - name
       properties:
         id:
+          xml:
+            attribute: true
           type: integer
           format: int64
           description: Identifier of the school building.
@@ -6353,6 +6286,8 @@ components:
         - name
       properties:
         id:
+          xml:
+            attribute: true
           type: integer
           format: int64
           description: Identifier of the classroom.
@@ -6380,6 +6315,8 @@ components:
         - name
       properties:
         id:
+          xml:
+            attribute: true
           type: integer
           format: int64
           description: Identifier of the teacher.
@@ -6407,6 +6344,8 @@ components:
         - name
       properties:
         id:
+          xml:
+            attribute: true
           type: integer
           format: int64
           description: Identifier of the timetable.
@@ -6452,6 +6391,8 @@ components:
         - litera
       properties:
         id:
+          xml:
+            attribute: true
           type: integer
           format: int64
           description: School class identifier.
@@ -6489,6 +6430,8 @@ components:
         - origin
       properties:
         id:
+          xml:
+            attribute: true
           type: integer
           format: int64
           description: Subject identifier.
@@ -6552,6 +6495,8 @@ components:
         - year
       properties:
         id:
+          xml:
+            attribute: true
           type: integer
           format: int64
           description: Federal curriculum identifier.
@@ -6593,6 +6538,8 @@ components:
         - description
       properties:
         id:
+          xml:
+            attribute: true
           type: integer
           format: int64
           description: Federal curriculum identifier.
@@ -6636,6 +6583,8 @@ components:
         - partType
       properties:
         id:
+          xml:
+            attribute: true
           type: integer
           format: int64
           description: Requirement identifier.
@@ -6674,6 +6623,8 @@ components:
         - partType
       properties:
         id:
+          xml:
+            attribute: true
           type: integer
           format: int64
           description: Allowance identifier.
@@ -6800,6 +6751,8 @@ components:
         - hours
       properties:
         id:
+          xml:
+            attribute: true
           type: integer
           format: int64
           description: Teaching load entry identifier.
@@ -7872,6 +7825,8 @@ components:
         - admin
       properties:
         id:
+          xml:
+            attribute: true
           type: integer
           format: int64
           description: Account identifier.
@@ -7955,6 +7910,8 @@ components:
         - name
       properties:
         uid:
+          xml:
+            attribute: true
           type: integer
           format: int64
           description: Role assignment identifier used when revoking the role.
@@ -7980,6 +7937,8 @@ components:
         - name
       properties:
         uid:
+          xml:
+            attribute: true
           type: integer
           format: int64
           description: Role assignment identifier used when revoking the role.
@@ -7997,17 +7956,6 @@ components:
       description: Role assignments visible on this account or membership.
       items:
         $ref: "#/components/schemas/Role"
-    AccountRoles:
-      type: object
-      description: Account-wide role assignments.
-      required:
-        - list
-      properties:
-        list:
-          type: array
-          description: Assigned system or subscription roles.
-          items:
-            $ref: "#/components/schemas/Role"
     AccountCredentials:
       type: object
       description: Public portion of the account credentials.
@@ -8052,7 +8000,7 @@ components:
         roles:
           description: Account-wide role assignments.
           allOf:
-            - $ref: "#/components/schemas/AccountRoles"
+            - $ref: "#/components/schemas/RoleList"
         info:
           description: Account status.
           allOf:
@@ -8147,6 +8095,8 @@ components:
         - timestamp
       properties:
         status:
+          xml:
+            attribute: true
           type: integer
           format: int32
           description: HTTP status code.
@@ -8159,6 +8109,8 @@ components:
           type: string
           description: Reason the request could not be completed.
         timestamp:
+          xml:
+            attribute: true
           type: string
           description: UTC time at which the error response was generated.
           format: date-time
@@ -8416,6 +8368,8 @@ components:
         - hours
       properties:
         id:
+          xml:
+            attribute: true
           type: integer
           format: int64
           description: Subject identifier.
@@ -8447,6 +8401,8 @@ components:
         - hours
       properties:
         id:
+          xml:
+            attribute: true
           type: integer
           format: int64
           description: School class identifier.
@@ -8737,11 +8693,9 @@ components:
     ErrorInvalidRequestXml:
       summary: Negotiated error response returned by the application.
       value: |-
-        <error>
-          <status>400</status>
+        <error status="400" timestamp="2026-11-07T10:00:00Z">
           <title>Некорректный запрос</title>
           <message>Проверьте поля запроса</message>
-          <timestamp>2026-11-07T10:00:00Z</timestamp>
         </error>
     HtmlPageInvalidRequestHtml:
       summary: Rendered HTML document or fragment. The example shows the relevant part of the response.
@@ -8756,11 +8710,9 @@ components:
     ErrorAuthenticationRequiredXml:
       summary: Negotiated error response returned by the application.
       value: |-
-        <error>
-          <status>401</status>
+        <error status="401" timestamp="2026-11-07T10:00:00Z">
           <title>Необходима авторизация</title>
           <message>Войдите в систему</message>
-          <timestamp>2026-11-07T10:00:00Z</timestamp>
         </error>
     HtmlPageAuthenticationRequiredHtml:
       summary: Rendered HTML document or fragment. The example shows the relevant part of the response.
@@ -8775,11 +8727,9 @@ components:
     ErrorAccessDeniedXml:
       summary: Negotiated error response returned by the application.
       value: |-
-        <error>
-          <status>403</status>
+        <error status="403" timestamp="2026-11-07T10:00:00Z">
           <title>Доступ запрещён</title>
           <message>Недостаточно прав для этой операции</message>
-          <timestamp>2026-11-07T10:00:00Z</timestamp>
         </error>
     HtmlPageAccessDeniedHtml:
       summary: Rendered HTML document or fragment. The example shows the relevant part of the response.
@@ -8794,11 +8744,9 @@ components:
     ErrorNotFoundXml:
       summary: Negotiated error response returned by the application.
       value: |-
-        <error>
-          <status>404</status>
+        <error status="404" timestamp="2026-11-07T10:00:00Z">
           <title>Не найдено</title>
           <message>Запрошенный ресурс не найден</message>
-          <timestamp>2026-11-07T10:00:00Z</timestamp>
         </error>
     HtmlPageNotFoundHtml:
       summary: Rendered HTML document or fragment. The example shows the relevant part of the response.
@@ -8813,11 +8761,9 @@ components:
     ErrorUnsupportedRepresentationXml:
       summary: Negotiated error response returned by the application.
       value: |-
-        <error>
-          <status>406</status>
+        <error status="406" timestamp="2026-11-07T10:00:00Z">
           <title>Неподдерживаемый формат</title>
           <message>Запрошенный формат ответа недоступен</message>
-          <timestamp>2026-11-07T10:00:00Z</timestamp>
         </error>
     HtmlPageUnsupportedRepresentationHtml:
       summary: Rendered HTML document or fragment. The example shows the relevant part of the response.
@@ -8849,8 +8795,7 @@ components:
     SchoolMemberXml:
       summary: Existing account as shown in a school membership response.
       value: |-
-        <user>
-          <id>53</id>
+        <user id="53">
           <username>schedule.student</username>
           <admin>false</admin>
         </user>
@@ -8862,8 +8807,7 @@ components:
     TeacherXml:
       summary: Teacher returned by the application.
       value: |-
-        <teacher>
-          <id>31</id>
+        <teacher id="31">
           <name>Анна Петрова</name>
         </teacher>
     HtmlPageTeacherDetailsHtml:
@@ -8881,8 +8825,7 @@ components:
     ScheduleXml:
       summary: Timetable returned by the application.
       value: |-
-        <schedule>
-          <id>25</id>
+        <schedule id="25">
           <name>Основное расписание</name>
         </schedule>
     HtmlPageScheduleDetailsHtml:
@@ -8905,8 +8848,7 @@ components:
     SchoolClassXml:
       summary: School class and its display label.
       value: |-
-        <school-class>
-          <id>41</id>
+        <school-class id="41">
           <name>5А</name>
           <grade>5</grade>
           <litera>А</litera>
@@ -8927,8 +8869,7 @@ components:
     BuildingXml:
       summary: School building returned by the application.
       value: |-
-        <building>
-          <id>7</id>
+        <building id="7">
           <name>Учебный корпус</name>
         </building>
     HtmlPageBuildingDetailsHtml:
@@ -8946,8 +8887,7 @@ components:
     CabinetXml:
       summary: Classroom returned by the application.
       value: |-
-        <cabinet>
-          <id>17</id>
+        <cabinet id="17">
           <name>Кабинет 204</name>
         </cabinet>
     HtmlPageCabinetDetailsHtml:
@@ -8966,8 +8906,7 @@ components:
     SubjectXml:
       summary: Subject from the federal catalogue or an individual school.
       value: |-
-        <subject>
-          <id>29</id>
+        <subject id="29">
           <name>Математика</name>
           <origin>FEDERAL</origin>
         </subject>
@@ -8980,8 +8919,7 @@ components:
     SubjectSchoolXml:
       summary: Subject from the federal catalogue or an individual school.
       value: |-
-        <subject>
-          <id>29</id>
+        <subject id="29">
           <name>Математика</name>
           <origin>SCHOOL</origin>
         </subject>
@@ -9013,11 +8951,9 @@ components:
     RequirementXml:
       summary: A mandatory subject requirement or an optional grade allowance.
       value: |-
-        <requirement>
-          <id>71</id>
+        <requirement id="71">
           <grade>5</grade>
-          <subject>
-            <id>29</id>
+          <subject id="29">
             <name>Математика</name>
             <origin>FEDERAL</origin>
           </subject>
@@ -9027,8 +8963,7 @@ components:
     RequirementOptionalXml:
       summary: A mandatory subject requirement or an optional grade allowance.
       value: |-
-        <requirement>
-          <id>73</id>
+        <requirement id="73">
           <grade>5</grade>
           <hours>3</hours>
           <partType>OPTIONAL</partType>
@@ -9091,8 +9026,7 @@ components:
       summary: Collection of user records.
       value: |-
         <users>
-          <user>
-            <id>53</id>
+          <user id="53">
             <username>schedule.student</username>
             <admin>false</admin>
           </user>
@@ -9142,8 +9076,7 @@ components:
       summary: Collection of teacher records.
       value: |-
         <teachers limit="15" offset="1" total="1" totalPages="1" hasNext="false" hasPrev="false">
-          <teacher>
-            <id>31</id>
+          <teacher id="31">
             <name>Анна Петрова</name>
           </teacher>
         </teachers>
@@ -9180,8 +9113,7 @@ components:
       summary: Collection of schedule records.
       value: |-
         <schedules limit="15" offset="1" total="1" totalPages="1" hasNext="false" hasPrev="false">
-          <schedule>
-            <id>25</id>
+          <schedule id="25">
             <name>Основное расписание</name>
           </schedule>
         </schedules>
@@ -9233,8 +9165,7 @@ components:
       summary: Collection of school class records.
       value: |-
         <classes limit="15" offset="1" total="1" totalPages="1" hasNext="false" hasPrev="false">
-          <school-class>
-            <id>41</id>
+          <school-class id="41">
             <name>5А</name>
             <grade>5</grade>
             <litera>А</litera>
@@ -9284,8 +9215,7 @@ components:
       summary: Collection of cabinet records.
       value: |-
         <cabinets limit="15" offset="1" total="1" totalPages="1" hasNext="false" hasPrev="false">
-          <cabinet>
-            <id>17</id>
+          <cabinet id="17">
             <name>Кабинет 204</name>
           </cabinet>
         </cabinets>
@@ -9311,8 +9241,7 @@ components:
       summary: Collection of building records.
       value: |-
         <buildings limit="15" offset="1" total="1" totalPages="1" hasNext="false" hasPrev="false">
-          <building>
-            <id>7</id>
+          <building id="7">
             <name>Учебный корпус</name>
           </building>
         </buildings>
@@ -9372,8 +9301,7 @@ components:
       summary: Collection of subject records.
       value: |-
         <subjects limit="15" offset="1" total="1" totalPages="1" hasNext="false" hasPrev="false">
-          <subject>
-            <id>29</id>
+          <subject id="29">
             <name>Математика</name>
             <origin>FEDERAL</origin>
           </subject>
@@ -9398,8 +9326,7 @@ components:
       summary: Collection of subject records.
       value: |-
         <subjects limit="15" offset="1" total="1" totalPages="1" hasNext="false" hasPrev="false">
-          <subject>
-            <id>29</id>
+          <subject id="29">
             <name>Математика</name>
             <origin>SCHOOL</origin>
           </subject>
@@ -9429,11 +9356,9 @@ components:
       summary: Collection of requirement records.
       value: |-
         <requirements limit="15" offset="1" total="1" totalPages="1" hasNext="false" hasPrev="false">
-          <requirement>
-            <id>71</id>
+          <requirement id="71">
             <grade>5</grade>
-            <subject>
-              <id>29</id>
+            <subject id="29">
               <name>Математика</name>
               <origin>FEDERAL</origin>
             </subject>
@@ -9468,8 +9393,7 @@ components:
     CurriculumV1Xml:
       summary: Version 1 representation of a federal curriculum.
       value: |-
-        <curriculum>
-          <id>61</id>
+        <curriculum id="61">
           <title>Основной учебный план</title>
           <level>BASIC</level>
           <week>FIVE_DAYS</week>
@@ -9489,8 +9413,7 @@ components:
     CurriculumV2Xml:
       summary: Version 2 representation, including the curriculum description.
       value: |-
-        <curriculum>
-          <id>61</id>
+        <curriculum id="61">
           <title>Основной учебный план</title>
           <level>BASIC</level>
           <week>FIVE_DAYS</week>
@@ -9531,8 +9454,7 @@ components:
       summary: Collection of curriculum records.
       value: |-
         <curriculums limit="15" offset="1" total="1" totalPages="1" hasNext="false" hasPrev="false">
-          <curriculum>
-            <id>61</id>
+          <curriculum id="61">
             <title>Основной учебный план</title>
             <level>BASIC</level>
             <week>FIVE_DAYS</week>
@@ -9557,9 +9479,8 @@ components:
         credentials:
           username: schedule.student
         roles:
-          list:
-            - uid: 84
-              name: BASIC_MAKER
+          - uid: 84
+            name: BASIC_MAKER
         info:
           corporate: false
           alive: true
@@ -9607,16 +9528,13 @@ components:
     ClassLoadXml:
       summary: Current weekly teaching load of a class in a timetable.
       value: |-
-        <load>
-          <id>92</id>
-          <schoolClass>
-            <id>41</id>
+        <load id="92">
+          <schoolClass id="41">
             <name>5А</name>
             <grade>5</grade>
             <litera>А</litera>
           </schoolClass>
-          <subject>
-            <id>29</id>
+          <subject id="29">
             <name>Математика</name>
             <origin>FEDERAL</origin>
           </subject>
@@ -9650,16 +9568,13 @@ components:
       summary: Collection of load records.
       value: |-
         <loads limit="15" offset="1" total="1" totalPages="1" hasNext="false" hasPrev="false">
-          <load>
-            <id>92</id>
-            <schoolClass>
-              <id>41</id>
+          <load id="92">
+            <schoolClass id="41">
               <name>5А</name>
               <grade>5</grade>
               <litera>А</litera>
             </schoolClass>
-            <subject>
-              <id>29</id>
+            <subject id="29">
               <name>Математика</name>
               <origin>FEDERAL</origin>
             </subject>

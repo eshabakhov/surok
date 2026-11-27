@@ -71,7 +71,7 @@ public final class HomeHttp {
         return ResponseEntity.ok().contentType(new MediaType(type, StandardCharsets.UTF_8)).body(
             this.operations.operation("Home.read").permission(user).permit(
                 new MdXslt(
-                    new MdXml("surok").with("path", request.getRequestURI()),
+                    new MdXml("surok").attribute("path", request.getRequestURI()),
                     new XsClasspath("xslt/home.xsl", "home")
                 )
             ).with("url", target).print()

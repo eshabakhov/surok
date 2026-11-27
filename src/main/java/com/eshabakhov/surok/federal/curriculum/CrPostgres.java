@@ -62,7 +62,7 @@ public final class CrPostgres implements Curriculum {
             this.fid
         ).fetchSingle(
             record -> media
-                .with("id", record.get("id", Long.class))
+                .attribute("id", record.get("id", Long.class))
                 .with("title", record.get("title", String.class))
                 .with("level", record.get("education_level", String.class))
                 .with("week", record.get("study_week_type", String.class))

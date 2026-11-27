@@ -41,8 +41,8 @@ final class XsAccountTest {
             new XsClasspath("xslt/profile.xsl", "profile").transform(
                 """
                 <surok><user><username>Admin</username><admin>true</admin></user>
-                    <schools><href>/schools</href></schools><account><id>1</id>
-                    <username>Admin</username><initial>A</initial><roles></roles></account></surok>
+                    <schools href="/schools"></schools><account id="1"
+                    ><username>Admin</username><initial>A</initial><roles></roles></account></surok>
                 """
             ),
             Matchers.allOf(
@@ -123,7 +123,7 @@ final class XsAccountTest {
                 """
                 <surok><user><username>Visitor</username><subscription>true</subscription></user>
                     <csrf><parameter>_csrf</parameter><token>token</token></csrf>
-                    <subscription><plan>%s</plan><style>pro</style><label>Тариф</label>
+                    <subscription style="pro"><plan>%s</plan><label>Тариф</label>
                         <valid>%s</valid><expiry>12.04.2030</expiry></subscription></surok>
                 """, plan, valid
             )
@@ -133,9 +133,9 @@ final class XsAccountTest {
     private static String profile() {
         return """
             <surok><user><username>Соколова</username><subscription>true</subscription></user>
-                <school id="3"><name>Школа</name><schedules><schedule>
-                    <id>9</id><name>Учебный год</name></schedule></schedules></school>
-                <account><id>7</id><username>Соколова</username><initial>С</initial>
+                <school id="3"><name>Школа</name><schedules><schedule id="9"
+                    ><name>Учебный год</name></schedule></schedules></school>
+                <account id="7"><username>Соколова</username><initial>С</initial>
                     <roles><role><name>TEACHER</name></role></roles></account>
                 <csrf><parameter>_csrf</parameter><token>token</token></csrf></surok>
             """;

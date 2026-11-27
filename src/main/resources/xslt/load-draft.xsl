@@ -3,17 +3,17 @@
     <xsl:import href="school-common.xsl"/>
     <xsl:output method="html" encoding="UTF-8" omit-xml-declaration="yes" doctype-system="about:legacy-compat"/>
     <xsl:param name="view"/>
-    <xsl:key name="load-subject" match="draft/loads/load/subject" use="id"/>
+    <xsl:key name="load-subject" match="draft/loads/load/subject" use="@id"/>
     <xsl:variable name="draft" select="/surok/draft"/>
-    <xsl:variable name="editable" select="/surok/editable = 'true'"/>
+    <xsl:variable name="editable" select="/surok/@editable = 'true'"/>
     <xsl:variable name="schedule" select="/surok/schedule"/>
-    <xsl:variable name="base" select="concat($school-path, '/schedules/', $schedule/id, '/loads/draft')"/>
+    <xsl:variable name="base" select="concat($school-path, '/schedules/', $schedule/@id, '/loads/draft')"/>
     <xsl:variable name="chosen"><xsl:choose>
-        <xsl:when test="$draft/curriculum/id"><xsl:value-of select="$draft/curriculum/id"/></xsl:when>
-        <xsl:otherwise><xsl:value-of select="/surok/offers/curriculum[1]/id"/></xsl:otherwise>
+        <xsl:when test="$draft/curriculum/@id"><xsl:value-of select="$draft/curriculum/@id"/></xsl:when>
+        <xsl:otherwise><xsl:value-of select="/surok/offers/curriculum[1]/@id"/></xsl:otherwise>
     </xsl:choose></xsl:variable>
-    <xsl:variable name="classes" select="/surok/classes/school-class[id = $draft/additions/addition/classes/class/id]"/>
-    <xsl:variable name="columns" select="/surok/subjects/subject | $draft/loads/load/subject[not(id = /surok/subjects/subject/id) and generate-id() = generate-id(key('load-subject', id)[1])]"/>
+    <xsl:variable name="classes" select="/surok/classes/school-class[@id = $draft/additions/addition/classes/class/@id]"/>
+    <xsl:variable name="columns" select="/surok/subjects/subject | $draft/loads/load/subject[not(@id = /surok/subjects/subject/@id) and generate-id() = generate-id(key('load-subject', @id)[1])]"/>
 
     <xsl:template match="/">
         <xsl:choose>
@@ -26,8 +26,8 @@
     <xsl:template name="scripts"><script type="module" src="/js/school/load-draft.js"></script></xsl:template>
     <xsl:template name="content">
         <nav class="breadcrumbs" aria-label="Навигация">
-            <a href="{$school-path}/schedules/{$schedule/id}" title="Перейти к расписанию"><xsl:value-of select="$schedule/name"/></a>
-            <span>/</span><a href="{$school-path}/schedules/{$schedule/id}/loads" title="Учебная нагрузка">Учебная нагрузка</a>
+            <a href="{$school-path}/schedules/{$schedule/@id}" title="Перейти к расписанию"><xsl:value-of select="$schedule/name"/></a>
+            <span>/</span><a href="{$school-path}/schedules/{$schedule/@id}/loads" title="Учебная нагрузка">Учебная нагрузка</a>
         </nav>
         <div class="page-title-row"><div><h1>Автозаполнение нагрузки</h1><p class="page-subtitle"><xsl:value-of select="$schedule/name"/></p></div></div>
         <noscript><p class="error-message">Для редактирования и сохранения черновика включите JavaScript.</p></noscript>
@@ -35,7 +35,7 @@
     </xsl:template>
 
     <xsl:template name="workspace">
-        <section id="load-draft" class="load-draft" data-uri="{$base}" data-saved="{/surok/saved}" data-editable="{$editable}" data-curriculum="{$draft/curriculum/id}">
+        <section id="load-draft" class="load-draft" data-uri="{$base}" data-saved="{/surok/saved}" data-editable="{$editable}" data-curriculum="{$draft/curriculum/@id}">
             <p>План и дополнительные часы сохраняются в черновике. Фактическая нагрузка изменится после нажатия «Применить нагрузку».</p>
             <xsl:if test="not($editable)"><p class="draft-notice">Доступен только просмотр. Для изменения нагрузки нужны права составителя.</p></xsl:if>
             <div id="draft-status" class="draft-notice draft-status" role="status" aria-live="polite"></div>
@@ -48,8 +48,8 @@
                         <xsl:when test="/surok/offers/curriculum">
                             <label for="draft-curriculum">Выберите план для всех классов соответствующего уровня</label>
                             <select id="draft-curriculum" class="draft-curriculum" name="curriculumId" required="required">
-                                <xsl:for-each select="/surok/offers/curriculum"><option value="{id}">
-                                    <xsl:if test="id = string($chosen)"><xsl:attribute name="selected">selected</xsl:attribute></xsl:if>
+                                <xsl:for-each select="/surok/offers/curriculum"><option value="{@id}">
+                                    <xsl:if test="@id = string($chosen)"><xsl:attribute name="selected">selected</xsl:attribute></xsl:if>
                                     <xsl:value-of select="concat(title, ' · ', year, ' · версия ', version)"/>
                                 </option></xsl:for-each>
                             </select>
@@ -85,9 +85,9 @@
     </xsl:template>
 
     <xsl:template name="offer">
-                <section class="draft-offer" data-plan="{id}">
-            <xsl:if test="id != string($chosen)"><xsl:attribute name="hidden">hidden</xsl:attribute></xsl:if>
-            <p class="draft-meta"><xsl:value-of select="/surok/levels/level[code = current()/level]/title"/><xsl:text> · </xsl:text><xsl:value-of select="/surok/weeks/week[code = current()/week]/title"/></p>
+                <section class="draft-offer" data-plan="{@id}">
+            <xsl:if test="@id != string($chosen)"><xsl:attribute name="hidden">hidden</xsl:attribute></xsl:if>
+            <p class="draft-meta"><xsl:value-of select="/surok/levels/level[@code = current()/level]/title"/><xsl:text> · </xsl:text><xsl:value-of select="/surok/weeks/week[@code = current()/week]/title"/></p>
             <xsl:if test="description != ''"><p><xsl:value-of select="description"/></p></xsl:if>
             <details class="draft-requirements"><summary>Состав плана и часы по классам (<xsl:value-of select="count(requirements/requirement)"/>)</summary>
                 <div class="data-table-wrap"><table class="shadcn-table"><caption class="draft-sr-only">Требования федерального плана</caption>
@@ -122,20 +122,20 @@
                             <xsl:otherwise><strong>не задан в плане</strong></xsl:otherwise>
                         </xsl:choose></p>
                         <div class="draft-addition-list">
-                            <xsl:for-each select="/surok/subjects/subject[origin = 'SCHOOL'] | subjects/subject[not(id = /surok/subjects/subject/id)]">
-                                <xsl:variable name="subject" select="id"/>
-                                <label class="draft-addition" for="draft-addition-{$grade}-{id}">
+                            <xsl:for-each select="/surok/subjects/subject[origin = 'SCHOOL'] | subjects/subject[not(@id = /surok/subjects/subject/@id)]">
+                                <xsl:variable name="subject" select="@id"/>
+                                <label class="draft-addition" for="draft-addition-{$grade}-{@id}">
                                     <span><xsl:value-of select="name"/></span>
-                                    <input id="draft-addition-{$grade}-{id}" type="number" min="0" max="2147483647" step="1" required="required" data-addition="{$grade}" data-subject="{id}">
+                                    <input id="draft-addition-{$grade}-{@id}" type="number" min="0" max="2147483647" step="1" required="required" data-addition="{$grade}" data-subject="{@id}">
                                         <xsl:attribute name="value"><xsl:choose>
-                                            <xsl:when test="$addition/subjects/subject[id = $subject]"><xsl:value-of select="$addition/subjects/subject[id = $subject]/hours"/></xsl:when>
+                                            <xsl:when test="$addition/subjects/subject[@id = $subject]"><xsl:value-of select="$addition/subjects/subject[@id = $subject]/hours"/></xsl:when>
                                             <xsl:otherwise>0</xsl:otherwise>
                                         </xsl:choose></xsl:attribute>
                                     </input>
                                 </label>
                             </xsl:for-each>
                         </div>
-                        <p>Ноль исключает предмет из назначения на параллель. Индивидуальную нагрузку можно изменить на <a href="{$school-path}/schedules/{$schedule/id}/loads" title="Открыть учебную нагрузку">странице нагрузки</a>.</p>
+                        <p>Ноль исключает предмет из назначения на параллель. Индивидуальную нагрузку можно изменить на <a href="{$school-path}/schedules/{$schedule/@id}/loads" title="Открыть учебную нагрузку">странице нагрузки</a>.</p>
                         <ul><xsl:for-each select="classes/class">
                             <li><strong><xsl:value-of select="name"/></strong>: сейчас <xsl:value-of select="hours/current"/> ч., после применения <xsl:value-of select="hours/planned"/> ч.
                                 <xsl:if test="hours/planned &gt; $addition/requirements/requirement/hours or (hours/planned &gt; 0 and not($addition/requirements/requirement/hours))">
@@ -164,13 +164,13 @@
                             <table class="shadcn-table draft-table"><caption class="draft-sr-only">Черновик учебной нагрузки</caption>
                                 <thead><tr><th scope="col">Класс</th><xsl:for-each select="$columns"><th scope="col"><xsl:value-of select="name"/></th></xsl:for-each><th scope="col">Итого</th></tr></thead>
                                 <tbody><xsl:for-each select="$classes">
-                                    <xsl:variable name="class" select="id"/>
-                                    <tr data-row="{id}"><th scope="row"><xsl:value-of select="name"/></th>
+                                    <xsl:variable name="class" select="@id"/>
+                                    <tr data-row="{@id}"><th scope="row"><xsl:value-of select="name"/></th>
                                         <xsl:for-each select="$columns">
-                                            <xsl:variable name="subject" select="id"/>
+                                            <xsl:variable name="subject" select="@id"/>
                                             <xsl:call-template name="cell"><xsl:with-param name="class" select="$class"/><xsl:with-param name="subject" select="$subject"/></xsl:call-template>
                                         </xsl:for-each>
-                                        <td data-total="true"><xsl:value-of select="sum($draft/loads/load[schoolClass/id = $class]/hours/planned)"/></td>
+                                        <td data-total="true"><xsl:value-of select="sum($draft/loads/load[schoolClass/@id = $class]/hours/planned)"/></td>
                                     </tr>
                                 </xsl:for-each></tbody>
                             </table>
@@ -185,8 +185,8 @@
 
     <xsl:template name="cell">
         <xsl:param name="class"/><xsl:param name="subject"/>
-        <xsl:variable name="load" select="$draft/loads/load[schoolClass/id = $class and subject/id = $subject]"/>
-        <xsl:variable name="grade" select="$classes[id = $class]/grade"/>
+        <xsl:variable name="load" select="$draft/loads/load[schoolClass/@id = $class and subject/@id = $subject]"/>
+        <xsl:variable name="grade" select="$classes[@id = $class]/grade"/>
         <xsl:variable name="additional" select="$load/subject/origin = 'SCHOOL'"/>
         <td><xsl:if test="$load"><div class="draft-cell" data-class="{$class}" data-subject="{$subject}" data-current="{$load/hours/current}" data-proposed="{$load/hours/proposed}">
             <strong><xsl:value-of select="$load/hours/planned"/> ч.</strong>
@@ -195,7 +195,7 @@
                 <xsl:when test="$load/hours/proposed &gt; 0"><span>Обязательная по плану</span></xsl:when>
                 <xsl:when test="$additional">
                     <span>Вариативная</span>
-                    <xsl:if test="$load/hours/current &gt; 0 and not($draft/additions/addition[grade = $grade]/subjects/subject[id = $subject])">
+                    <xsl:if test="$load/hours/current &gt; 0 and not($draft/additions/addition[grade = $grade]/subjects/subject[@id = $subject])">
                         <span class="draft-hours-note">Назначена отдельно классу; учитывается в вариативном лимите</span>
                     </xsl:if>
                 </xsl:when>

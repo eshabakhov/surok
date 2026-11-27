@@ -25,8 +25,8 @@ final class PrItemsTest {
         delimiter = '|',
         textBlock = """
             0|[]|''
-            1|[{"id":17}]|<class><id>17</id></class>
-            2|[{"id":17},{"id":29}]|<class><id>17</id></class><class><id>29</id></class>
+            1|[{"id":17}]|<class id="17"></class>
+            2|[{"id":17},{"id":29}]|<class id="17"></class><class id="29"></class>
             """
     )
     void printsNamedCollectionsInBothFormats(

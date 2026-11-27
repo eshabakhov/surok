@@ -14,7 +14,8 @@ public interface ErrorResponse extends Printable {
 
     @Override
     default <T> Media<T> print(final Media<T> media) {
-        return media.with("message", this.message()).with("timestamp", this.timestamp().toString());
+        return media.with("message", this.message())
+            .attribute("timestamp", this.timestamp().toString());
     }
 
     /**

@@ -73,7 +73,7 @@
                            title="Редактировать"
                            aria-label="Редактировать">
                             <xsl:attribute name="href">
-                                <xsl:value-of select="concat('/federal/curriculums/', $curriculum/id, '/edit')"/>
+                                <xsl:value-of select="concat('/federal/curriculums/', $curriculum/@id, '/edit')"/>
                             </xsl:attribute>
                             <svg xmlns="http://www.w3.org/2000/svg"
                                  fill="none"
@@ -94,15 +94,15 @@
         <div class="school-info">
             <xsl:call-template name="info-row">
                 <xsl:with-param name="label" select="'ID:'"/>
-                <xsl:with-param name="value" select="$curriculum/id"/>
+                <xsl:with-param name="value" select="$curriculum/@id"/>
             </xsl:call-template>
             <xsl:call-template name="info-row">
                 <xsl:with-param name="label" select="'Уровень:'"/>
-                <xsl:with-param name="value" select="/surok/levels/level[code = $curriculum/level]/title"/>
+                <xsl:with-param name="value" select="/surok/levels/level[@code = $curriculum/level]/title"/>
             </xsl:call-template>
             <xsl:call-template name="info-row">
                 <xsl:with-param name="label" select="'Неделя:'"/>
-                <xsl:with-param name="value" select="/surok/weeks/week[code = $curriculum/week]/title"/>
+                <xsl:with-param name="value" select="/surok/weeks/week[@code = $curriculum/week]/title"/>
             </xsl:call-template>
             <xsl:call-template name="info-row">
                 <xsl:with-param name="label" select="'Версия:'"/>
@@ -129,7 +129,7 @@
                     <a class="curriculum-requirements-link"
                        title="Перейти к требованиям учебного плана">
                         <xsl:attribute name="href">
-                            <xsl:value-of select="concat('/federal/curriculums/', $curriculum/id, '/requirements')"/>
+                            <xsl:value-of select="concat('/federal/curriculums/', $curriculum/@id, '/requirements')"/>
                         </xsl:attribute>
                         <xsl:text>Перейти к требованиям учебного плана</xsl:text>
                     </a>
@@ -141,7 +141,7 @@
                 <button class="btn-outline-action curriculum-delete btn-delete-curriculum"
                         type="submit">
                     <xsl:attribute name="data-id">
-                        <xsl:value-of select="$curriculum/id"/>
+                        <xsl:value-of select="$curriculum/@id"/>
                     </xsl:attribute>
                     <xsl:attribute name="data-name">
                         <xsl:value-of select="$curriculum/title"/>

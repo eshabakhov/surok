@@ -105,7 +105,7 @@ public final class ScPostgres implements SchoolClass {
     @Override
     public <T> Media<T> print(final Media<T> media) throws Exception {
         final Record selected = this.details();
-        return media.with("id", selected.get("id", Long.class)).with(
+        return media.attribute("id", selected.get("id", Long.class)).with(
             "name", String.format(
                 "%d%s", selected.get("grade", Integer.class),
                 selected.get("litera", String.class)

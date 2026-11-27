@@ -98,7 +98,7 @@
                            type="text"
                            placeholder="Поиск плана...">
                         <xsl:attribute name="value">
-                            <xsl:value-of select="/surok/curriculums/filters/item[name = 'title']/value"/>
+                            <xsl:value-of select="/surok/curriculums/filters/filter[name = 'title']/value"/>
                         </xsl:attribute>
                     </input>
                 </label>
@@ -145,7 +145,7 @@
                 <xsl:for-each select="/surok/curriculums/curriculum">
                     <div class="card-item federal-curriculum-row federal-curriculum-card">
                         <xsl:attribute name="data-id">
-                            <xsl:value-of select="id"/>
+                            <xsl:value-of select="@id"/>
                         </xsl:attribute>
                         <div class="card-item-header">
                             <div class="card-item-title-row">
@@ -166,9 +166,9 @@
                                 <xsl:value-of select="title"/>
                             </span>
                             <div class="card-item-period-label">
-                                <span><xsl:value-of select="/surok/levels/level[code = current()/level]/title"/></span>
+                                <span><xsl:value-of select="/surok/levels/level[@code = current()/level]/title"/></span>
                                 <xsl:text> · </xsl:text>
-                                <span><xsl:value-of select="/surok/weeks/week[code = current()/week]/title"/></span>
+                                <span><xsl:value-of select="/surok/weeks/week[@code = current()/week]/title"/></span>
                                 <xsl:text> · </xsl:text>
                                 <span><xsl:value-of select="year"/></span>
                             </div>
@@ -191,7 +191,7 @@
         <xsl:param name="label"/>
         <xsl:param name="title"/>
         <xsl:variable name="direction"
-                      select="/surok/curriculums/sorts/item[name = $field]/direction"/>
+                      select="/surok/curriculums/sorts/sort[name = $field]/direction"/>
         <button type="button">
             <xsl:attribute name="class">
                 <xsl:text>federal-curriculums-sort</xsl:text>

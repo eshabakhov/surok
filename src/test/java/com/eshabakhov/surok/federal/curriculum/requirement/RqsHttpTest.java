@@ -270,7 +270,7 @@ final class RqsHttpTest {
             ).getBody(),
             Matchers.allOf(
                 Matchers.startsWith("<requirements "),
-                Matchers.containsString("<requirement>"),
+                Matchers.containsString("<requirement "),
                 Matchers.endsWith("</requirements>")
             )
         );
@@ -328,8 +328,9 @@ final class RqsHttpTest {
                 this.ctx, new OaYaml().operations()
             ).requirement(1L, 7L, request, this.actor).getBody(),
             Matchers.allOf(
-                Matchers.startsWith("<requirement>"),
-                Matchers.containsString("<id>7</id>"),
+                Matchers.startsWith("<requirement id=\"7\""),
+                Matchers.containsString("<grade>5</grade>"),
+                Matchers.containsString("<partType>MANDATORY</partType>"),
                 Matchers.endsWith("</requirement>")
             )
         );
@@ -441,7 +442,7 @@ final class RqsHttpTest {
             "XML creation must return the created requirement",
             (String) response.getBody(),
             Matchers.containsString(
-                "<subject><id>507</id><name>History</name><origin>FEDERAL</origin></subject>"
+                "<subject id=\"507\"><name>History</name><origin>FEDERAL</origin></subject>"
             )
         );
         MatcherAssert.assertThat(
@@ -541,7 +542,7 @@ final class RqsHttpTest {
                 1L, 7L, parameters.toSingleValueMap(), request, this.actor
             ).getBody(),
             Matchers.containsString(
-                "<subject><id>502</id><name>Algebra</name><origin>FEDERAL</origin></subject>"
+                "<subject id=\"502\"><name>Algebra</name><origin>FEDERAL</origin></subject>"
             )
         );
     }

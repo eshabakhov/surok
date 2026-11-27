@@ -6,6 +6,7 @@ package com.eshabakhov.surok.security;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.swagger.v3.core.util.Json;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Stream;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
@@ -18,6 +19,50 @@ import org.junit.jupiter.api.Test;
  * @since 0.0.1
  */
 final class OaContractTest {
+
+    /**
+     * Keeps resource metadata consistent with XML printing.
+     *
+     * @throws Exception If the specification cannot be read
+     */
+    @Test
+    void describesResourceMetadataAsXmlAttributes() throws Exception {
+        MatcherAssert.assertThat(
+            "The response schemas describe resource metadata as XML elements",
+            Json.mapper().readTree(new OaYaml().json())
+                .path("components").path("schemas").properties().stream()
+                .filter(schema -> schema.getValue().has("xml")).flatMap(
+                    schema -> schema.getValue().path("properties").properties().stream()
+                ).filter(
+                    field -> Set.of("id", "uid", "code", "status", "timestamp")
+                        .contains(field.getKey())
+                ).filter(field -> !field.getValue().path("xml").path("attribute").asBoolean())
+                .map(Map.Entry::getKey).toList(),
+            Matchers.empty()
+        );
+    }
+
+    /**
+     * Keeps meaningful domain values in XML elements.
+     *
+     * @throws Exception If the specification cannot be read
+     */
+    @Test
+    void describesDomainValuesAsXmlElements() throws Exception {
+        MatcherAssert.assertThat(
+            "The response schemas describe domain values as XML attributes",
+            Json.mapper().readTree(new OaYaml().json())
+                .path("components").path("schemas").properties().stream()
+                .filter(schema -> schema.getValue().has("xml")).flatMap(
+                    schema -> schema.getValue().path("properties").properties().stream()
+                ).filter(
+                    field -> Set.of("grade", "origin", "partType", "decision")
+                        .contains(field.getKey())
+                ).filter(field -> field.getValue().path("xml").path("attribute").asBoolean())
+                .map(Map.Entry::getKey).toList(),
+            Matchers.empty()
+        );
+    }
 
     /**
      * Requires a typed example for every request and response representation.

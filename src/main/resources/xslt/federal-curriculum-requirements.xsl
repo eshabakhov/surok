@@ -54,7 +54,7 @@
             <a class="breadcrumb-link"
                title="Перейти к описанию учебного плана">
                 <xsl:attribute name="href">
-                    <xsl:value-of select="concat('/federal/curriculums/', $curriculum/id)"/>
+                    <xsl:value-of select="concat('/federal/curriculums/', $curriculum/@id)"/>
                 </xsl:attribute>
                 <xsl:value-of select="$curriculum/title"/>
             </a>
@@ -74,7 +74,7 @@
         <xsl:if test="$editable">
             <form class="requirements-add" id="requirements-add" method="post">
                 <xsl:attribute name="action">
-                    <xsl:value-of select="concat('/federal/curriculums/', $curriculum/id, '/requirements')"/>
+                    <xsl:value-of select="concat('/federal/curriculums/', $curriculum/@id, '/requirements')"/>
                 </xsl:attribute>
                 <xsl:call-template name="csrf-input"/>
                 <fieldset class="requirements-group requirements-group-add">
@@ -99,7 +99,7 @@
                                     <xsl:text>Дополнительные предметы</xsl:text>
                                 </option>
                                 <xsl:call-template name="subject-options">
-                                    <xsl:with-param name="selected" select="/surok/requirement/subject/id"/>
+                                    <xsl:with-param name="selected" select="/surok/requirement/subject/@id"/>
                                 </xsl:call-template>
                             </select>
                         </label>
@@ -194,7 +194,7 @@
                     </thead>
                     <tbody id="requirements-body">
                         <xsl:attribute name="data-search-url">
-                            <xsl:value-of select="concat('/federal/curriculums/', $curriculum/id, '/requirements')"/>
+                            <xsl:value-of select="concat('/federal/curriculums/', $curriculum/@id, '/requirements')"/>
                         </xsl:attribute>
                         <xsl:if test="not($requirements/requirement)">
                             <tr id="requirements-empty">
@@ -206,19 +206,19 @@
                         </xsl:if>
                         <xsl:for-each select="$requirements/requirement">
                             <tr class="requirement-row">
-                                <xsl:attribute name="data-uri"><xsl:value-of select="concat('/federal/curriculums/', $curriculum/id, '/requirements/', id)"/></xsl:attribute>
+                                <xsl:attribute name="data-uri"><xsl:value-of select="concat('/federal/curriculums/', $curriculum/@id, '/requirements/', @id)"/></xsl:attribute>
                                 <xsl:attribute name="data-grade"><xsl:value-of select="grade"/></xsl:attribute>
                                 <xsl:attribute name="data-part"><xsl:value-of select="partType"/></xsl:attribute>
                                 <xsl:attribute name="data-hours"><xsl:value-of select="hours"/></xsl:attribute>
-                                <xsl:attribute name="data-subject"><xsl:value-of select="subject/id"/></xsl:attribute>
+                                <xsl:attribute name="data-subject"><xsl:value-of select="subject/@id"/></xsl:attribute>
                                 <td class="requirement-grade">
                                     <span class="requirement-value"><xsl:value-of select="grade"/></span>
                                     <xsl:if test="$editable">
                                         <label class="requirement-label">
-                                            <xsl:attribute name="for"><xsl:value-of select="concat('requirement-', id, '-grade')"/></xsl:attribute>
+                                            <xsl:attribute name="for"><xsl:value-of select="concat('requirement-', @id, '-grade')"/></xsl:attribute>
                                             <xsl:text>Класс</xsl:text>
                                             <select class="requirement-input requirement-grade-input">
-                                                <xsl:attribute name="id"><xsl:value-of select="concat('requirement-', id, '-grade')"/></xsl:attribute>
+                                                <xsl:attribute name="id"><xsl:value-of select="concat('requirement-', @id, '-grade')"/></xsl:attribute>
                                                 <option value="">Класс</option>
                                                 <xsl:call-template name="grade-options">
                                                     <xsl:with-param name="selected" select="grade"/>
@@ -237,13 +237,13 @@
                                     </span>
                                     <xsl:if test="$editable and partType = 'MANDATORY'">
                                         <label class="requirement-label">
-                                            <xsl:attribute name="for"><xsl:value-of select="concat('requirement-', id, '-subject')"/></xsl:attribute>
+                                            <xsl:attribute name="for"><xsl:value-of select="concat('requirement-', @id, '-subject')"/></xsl:attribute>
                                             <xsl:text>Предмет</xsl:text>
                                             <select class="requirement-input requirement-subject-input">
-                                                <xsl:attribute name="id"><xsl:value-of select="concat('requirement-', id, '-subject')"/></xsl:attribute>
+                                                <xsl:attribute name="id"><xsl:value-of select="concat('requirement-', @id, '-subject')"/></xsl:attribute>
                                                 <option value="">Выберите предмет</option>
                                                 <xsl:call-template name="subject-options">
-                                                    <xsl:with-param name="selected" select="subject/id"/>
+                                                    <xsl:with-param name="selected" select="subject/@id"/>
                                                 </xsl:call-template>
                                             </select>
                                         </label>
@@ -253,13 +253,13 @@
                                     <span class="requirement-value"><xsl:if test="partType = 'OPTIONAL'">До </xsl:if><xsl:value-of select="hours"/></span>
                                     <xsl:if test="$editable">
                                         <label class="requirement-label">
-                                            <xsl:attribute name="for"><xsl:value-of select="concat('requirement-', id, '-hours')"/></xsl:attribute>
+                                            <xsl:attribute name="for"><xsl:value-of select="concat('requirement-', @id, '-hours')"/></xsl:attribute>
                                             <xsl:text>Часов в неделю</xsl:text>
                                             <input class="requirement-input requirement-hours-input"
                                                    type="number"
                                                    step="1">
                                                 <xsl:attribute name="min"><xsl:value-of select="number(partType = 'MANDATORY')"/></xsl:attribute>
-                                                <xsl:attribute name="id"><xsl:value-of select="concat('requirement-', id, '-hours')"/></xsl:attribute>
+                                                <xsl:attribute name="id"><xsl:value-of select="concat('requirement-', @id, '-hours')"/></xsl:attribute>
                                                 <xsl:attribute name="value"><xsl:value-of select="hours"/></xsl:attribute>
                                             </input>
                                         </label>
@@ -284,8 +284,8 @@
                                             <button class="requirement-action requirement-delete"
                                                     type="button"
                                                     title="Удалить">
-                                                <xsl:attribute name="data-curriculum"><xsl:value-of select="$curriculum/id"/></xsl:attribute>
-                                                <xsl:attribute name="data-id"><xsl:value-of select="id"/></xsl:attribute>
+                                                <xsl:attribute name="data-curriculum"><xsl:value-of select="$curriculum/@id"/></xsl:attribute>
+                                                <xsl:attribute name="data-id"><xsl:value-of select="@id"/></xsl:attribute>
                                                 <xsl:attribute name="data-name">
                                                     <xsl:choose>
                                                         <xsl:when test="partType = 'OPTIONAL'">Вариативная нагрузка, <xsl:value-of select="grade"/> класс</xsl:when>
@@ -353,10 +353,10 @@
             <xsl:sort select="name"/>
             <option>
                 <xsl:attribute name="value"><xsl:choose>
-                    <xsl:when test="$identifiers"><xsl:value-of select="id"/></xsl:when>
+                    <xsl:when test="$identifiers"><xsl:value-of select="@id"/></xsl:when>
                     <xsl:otherwise><xsl:value-of select="name"/></xsl:otherwise>
                 </xsl:choose></xsl:attribute>
-                <xsl:if test="id = $selected">
+                <xsl:if test="@id = $selected">
                     <xsl:attribute name="selected">selected</xsl:attribute>
                 </xsl:if>
                 <xsl:value-of select="name"/>
@@ -370,7 +370,7 @@
         <xsl:param name="title"/>
         <xsl:param name="requirements"/>
         <xsl:variable name="direction"
-                      select="$requirements/sorts/item[name = $field]/direction"/>
+                      select="$requirements/sorts/sort[name = $field]/direction"/>
         <th>
             <button type="button">
                 <xsl:attribute name="class">

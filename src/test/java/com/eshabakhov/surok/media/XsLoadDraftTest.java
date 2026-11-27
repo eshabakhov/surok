@@ -73,7 +73,10 @@ final class XsLoadDraftTest {
                 Files.readString(Path.of("src/test/resources/pages.xml"))
                     .replaceAll("(?s)<loads>.*?</loads>", "<loads/>").replace(
                         "</school-class>",
-                        "</school-class><school-class><id>2</id><name>11Б</name><grade>11</grade></school-class>"
+                        String.join(
+                            "", "</school-class><school-class id=\"2\"><grade>11</grade>",
+                            "<name>11Б</name></school-class>"
+                        )
                     )
             ),
             Matchers.allOf(
