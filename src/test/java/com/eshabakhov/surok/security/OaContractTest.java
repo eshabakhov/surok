@@ -34,7 +34,7 @@ final class OaContractTest {
                 .filter(schema -> schema.getValue().has("xml")).flatMap(
                     schema -> schema.getValue().path("properties").properties().stream()
                 ).filter(
-                    field -> Set.of("id", "uid", "code", "status", "timestamp")
+                    field -> Set.of("id", "uid", "code")
                         .contains(field.getKey())
                 ).filter(field -> !field.getValue().path("xml").path("attribute").asBoolean())
                 .map(Map.Entry::getKey).toList(),

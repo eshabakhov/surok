@@ -378,22 +378,18 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
               example:
-                status: 409
-                title: Конфликт данных
                 message: Teacher `Анна Петрова` already exists
-                timestamp: "2026-11-07T10:00:00Z"
             application/xml:
               schema:
                 $ref: "#/components/schemas/Error"
               example: |-
-                <error status="409" timestamp="2026-11-07T10:00:00Z">
-                  <title>Конфликт данных</title>
+                <error>
                   <message>Teacher `Анна Петрова` already exists</message>
                 </error>
             text/html:
               schema:
                 $ref: "#/components/schemas/HtmlPage"
-              example: <main><h1>Конфликт данных</h1></main>
+              example: <main><h1>Teacher `Анна Петрова` already exists</h1></main>
       requestBody:
         description: Replacement fields for the existing resource.
         required: true
@@ -554,22 +550,18 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
               example:
-                status: 409
-                title: Конфликт данных
                 message: Schedule `Основное расписание` already exists
-                timestamp: "2026-11-07T10:00:00Z"
             application/xml:
               schema:
                 $ref: "#/components/schemas/Error"
               example: |-
-                <error status="409" timestamp="2026-11-07T10:00:00Z">
-                  <title>Конфликт данных</title>
+                <error>
                   <message>Schedule `Основное расписание` already exists</message>
                 </error>
             text/html:
               schema:
                 $ref: "#/components/schemas/HtmlPage"
-              example: <main><h1>Конфликт данных</h1></main>
+              example: <main><h1>Schedule `Основное расписание` already exists</h1></main>
       requestBody:
         description: Replacement fields for the existing resource.
         required: true
@@ -1573,22 +1565,18 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
               example:
-                status: 409
-                title: Конфликт данных
                 message: School class `5А` already exists
-                timestamp: "2026-11-07T10:00:00Z"
             application/xml:
               schema:
                 $ref: "#/components/schemas/Error"
               example: |-
-                <error status="409" timestamp="2026-11-07T10:00:00Z">
-                  <title>Конфликт данных</title>
+                <error>
                   <message>School class `5А` already exists</message>
                 </error>
             text/html:
               schema:
                 $ref: "#/components/schemas/HtmlPage"
-              example: <main><h1>Конфликт данных</h1></main>
+              example: <main><h1>School class `5А` already exists</h1></main>
       requestBody:
         description: Replacement fields for the existing resource.
         required: true
@@ -6568,7 +6556,9 @@ components:
           description: Academic year in YYYY/YYYY form.
         description:
           type: string
-          description: Optional explanatory text about the curriculum.
+          description: >-
+            Explanatory text. A missing description is JSON null or an XML element with
+            xsi:nil="true". An empty description is an empty string or an empty XML element.
           nullable: true
     MandatoryRequirement:
       type: object
@@ -7925,10 +7915,16 @@ components:
             - TEACHER
             - STUDENT
     SchoolRoleList:
-      type: array
-      description: Role assignments visible on this account or membership.
-      items:
-        $ref: "#/components/schemas/SchoolRole"
+      type: object
+      description: Role assignments for a user in the selected school.
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          description: Assigned school roles, empty when none are assigned.
+          items:
+            $ref: "#/components/schemas/SchoolRole"
     Role:
       type: object
       description: A role assignment attached to a user.
@@ -7952,10 +7948,16 @@ components:
             - ADVANCED_MAKER
             - PRO_MAKER
     RoleList:
-      type: array
-      description: Role assignments visible on this account or membership.
-      items:
-        $ref: "#/components/schemas/Role"
+      type: object
+      description: Account-wide role assignments for a user.
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          description: Assigned account roles, empty when none are assigned.
+          items:
+            $ref: "#/components/schemas/Role"
     AccountCredentials:
       type: object
       description: Public portion of the account credentials.
@@ -7998,9 +8000,10 @@ components:
           allOf:
             - $ref: "#/components/schemas/AccountCredentials"
         roles:
+          type: array
           description: Account-wide role assignments.
-          allOf:
-            - $ref: "#/components/schemas/RoleList"
+          items:
+            $ref: "#/components/schemas/Role"
         info:
           description: Account status.
           allOf:
@@ -8085,35 +8088,16 @@ components:
           description: CSRF token supplied by the page; omit this field when using the CSRF header.
     Error:
       type: object
-      description: Negotiated error response returned by the application.
+      description: Public message explaining the failure. The HTTP status is sent in the response line.
+      additionalProperties: false
       xml:
         name: error
       required:
-        - status
-        - title
         - message
-        - timestamp
       properties:
-        status:
-          xml:
-            attribute: true
-          type: integer
-          format: int32
-          description: HTTP status code.
-          minimum: 400
-          maximum: 599
-        title:
-          type: string
-          description: Short localized name of the error.
         message:
           type: string
           description: Reason the request could not be completed.
-        timestamp:
-          xml:
-            attribute: true
-          type: string
-          description: UTC time at which the error response was generated.
-          format: date-time
     PermissionGrant:
       type: object
       description: Access granted to one role for the operation.
@@ -8686,88 +8670,68 @@ components:
     ErrorInvalidRequestJson:
       summary: Negotiated error response returned by the application.
       value:
-        status: 400
-        title: Некорректный запрос
         message: Проверьте поля запроса
-        timestamp: "2026-11-07T10:00:00Z"
     ErrorInvalidRequestXml:
       summary: Negotiated error response returned by the application.
       value: |-
-        <error status="400" timestamp="2026-11-07T10:00:00Z">
-          <title>Некорректный запрос</title>
+        <error>
           <message>Проверьте поля запроса</message>
         </error>
     HtmlPageInvalidRequestHtml:
       summary: Rendered HTML document or fragment. The example shows the relevant part of the response.
-      value: <main><h1>400 - Некорректный запрос</h1><p>Проверьте поля запроса</p></main>
+      value: <main><h1>Проверьте поля запроса</h1></main>
     ErrorAuthenticationRequiredJson:
       summary: Negotiated error response returned by the application.
       value:
-        status: 401
-        title: Необходима авторизация
         message: Войдите в систему
-        timestamp: "2026-11-07T10:00:00Z"
     ErrorAuthenticationRequiredXml:
       summary: Negotiated error response returned by the application.
       value: |-
-        <error status="401" timestamp="2026-11-07T10:00:00Z">
-          <title>Необходима авторизация</title>
+        <error>
           <message>Войдите в систему</message>
         </error>
     HtmlPageAuthenticationRequiredHtml:
       summary: Rendered HTML document or fragment. The example shows the relevant part of the response.
-      value: <main><h1>401 - Необходима авторизация</h1><p>Войдите в систему</p></main>
+      value: <main><h1>Войдите в систему</h1></main>
     ErrorAccessDeniedJson:
       summary: Negotiated error response returned by the application.
       value:
-        status: 403
-        title: Доступ запрещён
         message: Недостаточно прав для этой операции
-        timestamp: "2026-11-07T10:00:00Z"
     ErrorAccessDeniedXml:
       summary: Negotiated error response returned by the application.
       value: |-
-        <error status="403" timestamp="2026-11-07T10:00:00Z">
-          <title>Доступ запрещён</title>
+        <error>
           <message>Недостаточно прав для этой операции</message>
         </error>
     HtmlPageAccessDeniedHtml:
       summary: Rendered HTML document or fragment. The example shows the relevant part of the response.
-      value: <main><h1>403 - Доступ запрещён</h1><p>Недостаточно прав для этой операции</p></main>
+      value: <main><h1>Недостаточно прав для этой операции</h1></main>
     ErrorNotFoundJson:
       summary: Negotiated error response returned by the application.
       value:
-        status: 404
-        title: Не найдено
         message: Запрошенный ресурс не найден
-        timestamp: "2026-11-07T10:00:00Z"
     ErrorNotFoundXml:
       summary: Negotiated error response returned by the application.
       value: |-
-        <error status="404" timestamp="2026-11-07T10:00:00Z">
-          <title>Не найдено</title>
+        <error>
           <message>Запрошенный ресурс не найден</message>
         </error>
     HtmlPageNotFoundHtml:
       summary: Rendered HTML document or fragment. The example shows the relevant part of the response.
-      value: <main><h1>404 - Не найдено</h1><p>Запрошенный ресурс не найден</p></main>
+      value: <main><h1>Запрошенный ресурс не найден</h1></main>
     ErrorUnsupportedRepresentationJson:
       summary: Negotiated error response returned by the application.
       value:
-        status: 406
-        title: Неподдерживаемый формат
         message: Запрошенный формат ответа недоступен
-        timestamp: "2026-11-07T10:00:00Z"
     ErrorUnsupportedRepresentationXml:
       summary: Negotiated error response returned by the application.
       value: |-
-        <error status="406" timestamp="2026-11-07T10:00:00Z">
-          <title>Неподдерживаемый формат</title>
+        <error>
           <message>Запрошенный формат ответа недоступен</message>
         </error>
     HtmlPageUnsupportedRepresentationHtml:
       summary: Rendered HTML document or fragment. The example shows the relevant part of the response.
-      value: <main><h1>406 - Неподдерживаемый формат</h1><p>Запрошенный формат ответа недоступен</p></main>
+      value: <main><h1>Запрошенный формат ответа недоступен</h1></main>
     SchoolJson:
       summary: School returned by the application.
       value:
@@ -9036,10 +9000,11 @@ components:
       value:
         login: student@example.org
     SchoolRoleListJson:
-      summary: Role assignments visible on this account or membership.
+      summary: Role assignments for a user in the selected school.
       value:
-        - uid: 84
-          name: STUDENT
+        items:
+          - uid: 84
+            name: STUDENT
     SchoolRoleInputJson:
       summary: School role to grant to an existing member.
       value:
@@ -9486,10 +9451,11 @@ components:
           alive: true
         admin: false
     RoleListJson:
-      summary: Role assignments visible on this account or membership.
+      summary: Account-wide role assignments for a user.
       value:
-        - uid: 84
-          name: PRO_MAKER
+        items:
+          - uid: 84
+            name: PRO_MAKER
     AccountRoleInputJson:
       summary: Account-wide role to grant.
       value:

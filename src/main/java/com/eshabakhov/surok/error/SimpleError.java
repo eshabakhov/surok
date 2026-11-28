@@ -4,41 +4,29 @@
 package com.eshabakhov.surok.error;
 
 import com.eshabakhov.surok.ErrorResponse;
-import java.time.Instant;
+import com.eshabakhov.surok.Media;
 
 /**
- * Simple implementation of {@link ErrorResponse} interface.
- *
- * <p>Contains a message and the timestamp when the error was created.</p>
+ * Public error message. For example, a JSON response has a single message property.
  *
  * @since 0.0.1
  */
 public final class SimpleError implements ErrorResponse {
 
     /** Human-readable error message. */
-    private final String msg;
-
-    /** Timestamp of the error creation. */
-    private final Instant tsm;
+    private final String message;
 
     /**
      * New error.
      *
-     * @param msg Error message
-     * @param tsm Error creation timestamp
+     * @param message Public message
      */
-    public SimpleError(final String msg, final Instant tsm) {
-        this.msg = msg;
-        this.tsm = tsm;
+    public SimpleError(final String message) {
+        this.message = message;
     }
 
     @Override
-    public String message() {
-        return this.msg;
-    }
-
-    @Override
-    public Instant timestamp() {
-        return this.tsm;
+    public <T> Media<T> print(final Media<T> media) {
+        return media.with("message", this.message);
     }
 }

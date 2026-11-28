@@ -11,7 +11,9 @@ import com.eshabakhov.surok.school.input.SlInput;
 import com.eshabakhov.surok.school.input.SlInputName;
 import com.eshabakhov.surok.security.OaYaml;
 import com.eshabakhov.surok.security.Operations;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -55,6 +57,35 @@ final class UserControllerTest {
     @Container
     private static final PostgreSQLContainer<?> POSTGRES =
         new PostgreSQLContainer<>("postgres:16-alpine");
+
+    /**
+     * Invalid JSON registration returns the documented error envelope.
+     *
+     * @param mvc HTTP client
+     * @throws Exception If the request or JSON parsing fails
+     */
+    @Test
+    void returnsTheDocumentedErrorForInvalidRegistration(@Autowired final MockMvc mvc)
+        throws Exception {
+        final MvcResult result = mvc.perform(
+            MockMvcRequestBuilders.post("/users").contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON).content("{}")
+                .with(SecurityMockMvcRequestPostProcessors.csrf())
+        ).andReturn();
+        MatcherAssert.assertThat(
+            "The registration error departed from its HTTP or JSON contract",
+            List.of(
+                result.getResponse().getStatus(),
+                new ObjectMapper().readTree(
+                    result.getResponse().getContentAsString(StandardCharsets.UTF_8)
+                )
+            ),
+            Matchers.contains(
+                HttpStatus.BAD_REQUEST.value(),
+                new ObjectMapper().readTree("{\"message\":\"Username is required\"}")
+            )
+        );
+    }
 
     /**
      * Creates an account through the canonical collection path.
@@ -270,6 +301,13 @@ final class UserControllerTest {
             type = MediaType.APPLICATION_JSON_VALUE;
             roles = target.roles();
         }
+        final JsonNode empty = new ObjectMapper().readTree(
+            mvc.perform(
+                MockMvcRequestBuilders.get(path).with(
+                    SecurityMockMvcRequestPostProcessors.user(new UrAcAuth(actor))
+                )
+            ).andReturn().getResponse().getContentAsString()
+        );
         final MvcResult granted = mvc.perform(
             MockMvcRequestBuilders.post(path).contentType(type)
                 .content(String.format("{\"role\":\"%s\"}", name))
@@ -281,9 +319,9 @@ final class UserControllerTest {
             "{\"uid\":%d,\"name\":\"%s\"}", roles.list().getFirst().uid(), name
         );
         MatcherAssert.assertThat(
-            "Role endpoints lost the assignment identifier, name or array representation",
+            "Role endpoints lost the assignment or its items envelope",
             List.of(
-                new ObjectMapper().readTree(granted.getResponse().getContentAsString()),
+                empty, new ObjectMapper().readTree(granted.getResponse().getContentAsString()),
                 new ObjectMapper().readTree(
                     mvc.perform(
                         MockMvcRequestBuilders.get(path).with(
@@ -293,8 +331,9 @@ final class UserControllerTest {
                 )
             ),
             Matchers.contains(
+                new ObjectMapper().readTree("{\"items\":[]}"),
                 new ObjectMapper().readTree(expected),
-                new ObjectMapper().readTree(String.format("[%s]", expected))
+                new ObjectMapper().readTree(String.format("{\"items\":[%s]}", expected))
             )
         );
     }

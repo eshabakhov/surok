@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<surok status="404" editable="true">
+<surok editable="true">
     <levels>
         <level code="PRIMARY"><title>Начальное общее образование</title></level>
         <level code="BASIC"><title>Основное общее образование</title></level>
@@ -40,7 +40,7 @@
     <account><username>Administrator</username><initial>A</initial><roles><role><name>ADMIN</name></role></roles></account>
     <subscription style="basic"><plan>BASIC</plan><label>Базовый</label><valid>true</valid></subscription>
     <url>/users/login</url>
-    <title>Страница не найдена</title><message>Такой страницы не существует или она была удалена.</message>
+    <message>Такой страницы не существует или она была удалена.</message>
     <saved>true</saved>
     <offers><curriculum id="1"><title>Основной план</title><level>BASIC</level><week>FIVE_DAYS</week><year>2026/2027</year><version>1</version>
         <requirements><requirement id="71"><grade>5</grade><partType>MANDATORY</partType><subject id="1"><origin>FEDERAL</origin><name>Математика</name></subject><hours>3</hours></requirement></requirements>

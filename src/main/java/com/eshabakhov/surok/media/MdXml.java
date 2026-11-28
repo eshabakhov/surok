@@ -12,6 +12,7 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
+import javax.xml.XMLConstants;
 
 /**
  * XML implementation of {@link Media}.
@@ -130,13 +131,18 @@ public final class MdXml implements Media<String> {
 
     @Override
     public MdXml with(final String name, final String value) {
-        String printed = "";
-        if (value != null) {
-            printed = MdXml.escape(value);
-        }
         final Map<String, String> copied = new LinkedHashMap<>(this.elements);
         if (this.allowed(name)) {
-            copied.put(name, String.format("<%1$s>%2$s</%1$s>", name, printed));
+            final String element;
+            if (value == null) {
+                element = String.format(
+                    "<%s xmlns:xsi=\"%s\" xsi:nil=\"true\"/>", name,
+                    XMLConstants.W3C_XML_SCHEMA_INSTANCE_NS_URI
+                );
+            } else {
+                element = String.format("<%1$s>%2$s</%1$s>", name, MdXml.escape(value));
+            }
+            copied.put(name, element);
         }
         return new MdXml(
             this.root,
