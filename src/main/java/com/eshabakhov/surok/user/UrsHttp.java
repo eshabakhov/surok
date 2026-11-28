@@ -27,7 +27,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.stream.StreamSupport;
 import org.jooq.DSLContext;
@@ -170,7 +169,7 @@ public final class UrsHttp {
         consumes = MediaType.APPLICATION_JSON_VALUE,
         produces = MediaType.APPLICATION_JSON_VALUE
     )
-    public ResponseEntity<Map<String, Object>> register(
+    public ResponseEntity<JsonNode> register(
         @RequestBody final JsonNode request, @AuthenticationPrincipal final User actor
     ) throws Exception {
         final JsonNode username = request.get("username");
@@ -194,17 +193,7 @@ public final class UrsHttp {
         );
         return ResponseEntity.created(
             URI.create(String.format("/users/%s", created.uid()))
-        ).body(
-            Map.of(
-                "uid", created.uid(),
-                "credentials", Map.of("username", created.account().username()),
-                "roles", created.roles().print(new MdJson()).print().path("items"),
-                "info", Map.of(
-                    "corporate", created.account().corporate(), "alive", created.account().alive()
-                ),
-                "admin", created.roles().contains(Roles.RoleEnum.ADMIN)
-            )
-        );
+        ).body(created.account().print(new MdJson()).print());
     }
 
     /**

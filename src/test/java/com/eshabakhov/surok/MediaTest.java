@@ -14,14 +14,18 @@ import com.eshabakhov.surok.page.ResponsePage;
 import com.eshabakhov.surok.school.SlsFake;
 import com.eshabakhov.surok.school.SlsSelected;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import java.io.StringReader;
 import java.util.List;
 import java.util.stream.Stream;
+import javax.xml.parsers.DocumentBuilderFactory;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.w3c.dom.Element;
+import org.xml.sax.InputSource;
 
 /**
  * Tests media printing and the common metadata contract.
@@ -31,6 +35,38 @@ import org.junit.jupiter.params.provider.MethodSource;
  */
 @SuppressWarnings("PMD.UnitTestContainsTooManyAsserts")
 final class MediaTest {
+
+    /**
+     * Parses the serialized document to verify character and whitespace round trips.
+     *
+     * @throws Exception If the emitted XML is malformed
+     */
+    @Test
+    void preservesUnicodeAndMarkupInAttributesAndText() throws Exception {
+        final String value = String.format("Lycée «Север» 🏫 & <\"'>%c%c%c", '\t', '\n', '\r');
+        final Element root = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(
+            new InputSource(
+                new StringReader(
+                    new MdXml("building").attribute("label", value).with("name", value).print()
+                )
+            )
+        ).getDocumentElement();
+        MatcherAssert.assertThat(
+            "XML parsing changed the attribute or the text",
+            List.of(root.getAttribute("label"), root.getTextContent()),
+            Matchers.contains(value, value)
+        );
+    }
+
+    /** Invalid XML characters cannot appear even as numeric references. */
+    @Test
+    void rejectsForbiddenXmlCharacters() {
+        Assertions.assertThrows(
+            IllegalArgumentException.class,
+            () -> new MdXml("building").with("name", Character.toString(0)),
+            "An invalid XML character reached the document"
+        );
+    }
 
     @Test
     void keepsJsonMediaImmutable() {

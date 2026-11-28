@@ -3,6 +3,8 @@
  */
 package com.eshabakhov.surok.user;
 
+import com.eshabakhov.surok.Printable;
+
 /**
  * Details of a registered account, independent of the current login session.
  * For example, a deleted account cannot be used for password login.
@@ -10,7 +12,7 @@ package com.eshabakhov.surok.user;
  *
  * @since 0.0.1
  */
-public interface Account {
+public interface Account extends Printable {
 
     /**
      * Login name of the account.

@@ -5,6 +5,7 @@ package com.eshabakhov.surok.user;
 
 import com.eshabakhov.surok.School;
 import com.eshabakhov.surok.UrAccount;
+import com.eshabakhov.surok.media.MdXml;
 import com.eshabakhov.surok.school.SlsPostgres;
 import com.eshabakhov.surok.school.input.SlInput;
 import com.eshabakhov.surok.school.input.SlInputName;
@@ -37,6 +38,28 @@ final class UrAcPostgresTest {
     @Container
     private static final PostgreSQLContainer<?> POSTGRES =
         new PostgreSQLContainer<>("postgres:16");
+
+    /**
+     * The school directory includes the global administrator flag.
+     *
+     * @param ctx Database context
+     * @throws Exception If the account cannot be created or printed
+     */
+    @Test
+    void printsThePublicFieldsOfAnAdministrator(@Autowired final DSLContext ctx) throws Exception {
+        final String name = String.format("Директор-%s", UUID.randomUUID());
+        final UrAccount user = new UrsPostgres(ctx).register(
+            name, "ValidPassword1!", String.format("%s@example.org", UUID.randomUUID()), false
+        );
+        user.roles().grant(Roles.RoleEnum.ADMIN);
+        Assertions.assertEquals(
+            String.format(
+                "<user id=\"%d\"><username>%s</username><admin>true</admin></user>",
+                user.uid(), name
+            ),
+            user.print(new MdXml("user")).print(), "The public user fields were incorrect"
+        );
+    }
 
     /**
      * Global authorization is reevaluated after a role is revoked.

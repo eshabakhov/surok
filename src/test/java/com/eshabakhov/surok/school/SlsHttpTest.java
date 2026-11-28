@@ -35,6 +35,7 @@ import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequ
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.json.JsonCompareMode;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
@@ -569,8 +570,15 @@ final class SlsHttpTest {
             MockMvcRequestBuilders.put(path).with(
                 SecurityMockMvcRequestPostProcessors.user(director)
             ).with(SecurityMockMvcRequestPostProcessors.csrf())
-                .accept("application/vnd.surok.school-user.v1+json")
-        ).andExpect(MockMvcResultMatchers.status().isCreated());
+                .accept("application/vnd.surok.school-user.v1+xml")
+        ).andExpect(MockMvcResultMatchers.status().isCreated()).andExpect(
+            MockMvcResultMatchers.content().string(
+                String.format(
+                    "<user id=\"%d\"><username>%s</username><admin>false</admin></user>",
+                    member.uid(), member.account().username()
+                )
+            )
+        );
         this.mvc.perform(
             MockMvcRequestBuilders.post(String.format("%s/roles", path))
                 .with(SecurityMockMvcRequestPostProcessors.user(director))
@@ -614,7 +622,13 @@ final class SlsHttpTest {
                 .contentType("application/vnd.surok.school-user.v1+json")
                 .accept("application/vnd.surok.school-user.v1+json")
                 .content(String.format("{\"login\":\"%s\"}", login))
-        ).andExpect(MockMvcResultMatchers.status().isCreated());
+        ).andExpect(MockMvcResultMatchers.status().isCreated()).andExpect(
+            MockMvcResultMatchers.content().json(
+                String.format(
+                    "{\"id\":%d,\"username\":\"%s\",\"admin\":false}", member.uid(), login
+                ), JsonCompareMode.STRICT
+            )
+        );
         MatcherAssert.assertThat(
             new UrsPostgres(this.ctx, 3L).contains(member), Matchers.is(true)
         );
@@ -645,15 +659,18 @@ final class SlsHttpTest {
     @Test
     void allowsSchoolStudentToReadMembers() throws Exception {
         this.prepare();
+        final UrAcAuth student = this.principal(Roles.RoleEnum.STUDENT);
         this.mvc.perform(
             MockMvcRequestBuilders.get("/schools/3/users")
-                .accept("application/vnd.surok.school-users.v1+json").with(
-                    SecurityMockMvcRequestPostProcessors.user(
-                        this.principal(Roles.RoleEnum.STUDENT)
-                    )
-                )
+                .accept("application/vnd.surok.school-users.v1+json")
+                .with(SecurityMockMvcRequestPostProcessors.user(student))
         ).andExpect(MockMvcResultMatchers.status().isOk()).andExpect(
-            MockMvcResultMatchers.content().string(Matchers.containsString("user"))
+            MockMvcResultMatchers.content().json(
+                String.format(
+                    "{\"items\":[{\"id\":%d,\"username\":\"%s\",\"admin\":false}]}",
+                    student.uid(), student.account().username()
+                ), JsonCompareMode.STRICT
+            )
         );
     }
 
