@@ -28,7 +28,7 @@
                     </div>
                     <div class="profile-hint">
                         ID: <span class="profile-id">
-                            <xsl:value-of select="/surok/account/id" />
+                            <xsl:value-of select="/surok/account/@id" />
                         </span>
                     </div>
                 </div>
@@ -48,7 +48,7 @@
                 <div class="info-row profile-row">
                     <span class="info-label">ID</span>
                     <span class="info-value td-mono">
-                        <xsl:value-of select="/surok/account/id" />
+                        <xsl:value-of select="/surok/account/@id" />
                     </span>
                 </div>
                 <xsl:if test="/surok/memberships/membership">
@@ -66,7 +66,7 @@
                                         </span>
                                     </xsl:for-each>
                                     <xsl:for-each select="schedules/schedule">
-                                        <a class="info-value profile-school" href="/schools/{../../school/@id}/schedules/{id}">
+                                        <a class="info-value profile-school" href="/schools/{../../school/@id}/schedules/{@id}">
                                             <xsl:value-of select="name" />
                                         </a>
                                     </xsl:for-each>

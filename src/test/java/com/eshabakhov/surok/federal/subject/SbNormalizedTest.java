@@ -64,7 +64,7 @@ final class SbNormalizedTest {
             "The normalized representation lost the subject identity or canonical name",
             new SbNormalized(new SbFake(29L, "  МАТЕМАТИКА  "))
                 .print(new MdXml("subject")).print(),
-            Matchers.is("<subject><id>29</id><name>математика</name></subject>")
+            Matchers.is("<subject id=\"29\"><name>математика</name></subject>")
         );
     }
 

@@ -78,13 +78,13 @@ public final class SdsWeb implements Schedules {
         return this.origin.print(media).with(
             "filters",
             new PrItems(
-                "item",
+                "filter",
                 this.filters.filters().stream().map(FlWeb::new).toList()
             )
         ).with(
             "sorts",
             new PrItems(
-                "item",
+                "sort",
                 this.sorts.sorts().stream().map(StWeb::new).toList()
             )
         );

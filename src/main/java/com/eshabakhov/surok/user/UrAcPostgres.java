@@ -69,7 +69,7 @@ public final class UrAcPostgres implements UrAccount {
     @Override
     public <T> Media<T> print(final Media<T> media) {
         return media
-            .with("id", this.uid())
+            .attribute("id", this.uid())
             .with("username", this.account().username())
             .with("admin", this.roles().contains(Roles.RoleEnum.ADMIN));
     }

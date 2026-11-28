@@ -384,7 +384,7 @@ public class RqsHttp {
             new CsToken((CsrfToken) request.getAttribute(CsrfToken.class.getName()))
         ).print(
             new MdXslt(
-                new MdXml("surok").with("path", request.getRequestURI()),
+                new MdXml("surok").attribute("path", request.getRequestURI()),
                 new XsClasspath("xslt/federal-curriculum-requirements.xsl", view)
             )
         );

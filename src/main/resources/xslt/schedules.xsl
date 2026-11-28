@@ -57,7 +57,7 @@
                         </svg>
                         <label for="schedule-search">
                             <input id="schedule-search" type="text" placeholder="Поиск расписания..."
-                                   value="{$entries/filters/item[name='name' or name='name_ct']/value}"/>
+                                   value="{$entries/filters/filter[name='name' or name='name_ct']/value}"/>
                         </label>
                     </div>
                     <xsl:call-template name="results"/>
@@ -71,7 +71,7 @@
             <div class="schedules-sort-controls">
                 <xsl:call-template name="name-sort">
                     <xsl:with-param name="prefix" select="'schedules'"/>
-                    <xsl:with-param name="direction" select="$entries/sorts/item[name = 'name']/direction"/>
+                    <xsl:with-param name="direction" select="$entries/sorts/sort[name = 'name']/direction"/>
                 </xsl:call-template>
             </div>
             <div class="card-grid" id="schedules-container">
@@ -79,7 +79,7 @@
                     <div class="schedules-empty">Расписания не найдены.</div>
                 </xsl:if>
                 <xsl:for-each select="$entries/schedule">
-                    <div class="card-item schedule-row schedule-card" data-id="{id}" data-name="{name}">
+                    <div class="card-item schedule-row schedule-card" data-id="{@id}" data-name="{name}">
                         <div class="card-item-header"><div class="card-item-title-row"><div class="card-item-icon">
                             <svg fill="none"
                                      stroke="currentColor"
@@ -93,8 +93,8 @@
                                 </svg>
                         </div></div></div>
                         <div class="card-item-period">
-                            <a class="card-item-name" href="{$base}/{id}" title="Открыть"><xsl:value-of select="name"/></a>
-                            <div class="card-item-period-label">ID: <span class="td-mono"><xsl:value-of select="id"/></span></div>
+                            <a class="card-item-name" href="{$base}/{@id}" title="Открыть"><xsl:value-of select="name"/></a>
+                            <div class="card-item-period-label">ID: <span class="td-mono"><xsl:value-of select="@id"/></span></div>
                         </div>
                     </div>
                 </xsl:for-each>
@@ -112,7 +112,7 @@
             <div>
                 <h1 class="title-with-action">
                     <span><xsl:value-of select="$selected/name"/></span>
-                    <a class="btn-icon-edit" href="{$base}/{$selected/id}/edit"
+                    <a class="btn-icon-edit" href="{$base}/{$selected/@id}/edit"
                        title="Редактировать" aria-label="Редактировать">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" height="15" width="15"
                              stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -124,12 +124,12 @@
             </div>
         </div>
         <div class="school-info">
-            <div class="info-row"><span class="info-label">ID:</span><span class="info-value"><xsl:value-of select="$selected/id"/></span></div>
+            <div class="info-row"><span class="info-label">ID:</span><span class="info-value"><xsl:value-of select="$selected/@id"/></span></div>
             <div class="info-row"><span class="info-label">Название:</span><span class="info-value"><xsl:value-of select="$selected/name"/></span></div>
             <div class="info-row">
                 <span class="info-label">Нагрузка:</span>
                 <span class="info-value">
-                    <a class="schedule-loads-link" href="{$base}/{$selected/id}/loads"
+                    <a class="schedule-loads-link" href="{$base}/{$selected/@id}/loads"
                        title="Перейти к учебной нагрузке">Перейти к учебной нагрузке</a>
                 </span>
             </div>
@@ -146,7 +146,7 @@
         </div>
         <div class="details-footer-actions">
             <button class="btn-outline-action btn-delete-row schedule-delete" type="button"
-                    data-name="{$selected/name}" data-uri="{$base}/{$selected/id}" data-redirect="{$base}">Удалить</button>
+                    data-name="{$selected/name}" data-uri="{$base}/{$selected/@id}" data-redirect="{$base}">Удалить</button>
         </div>
     </xsl:template>
 
@@ -183,7 +183,7 @@
                 <xsl:if test="$view = 'edit'"><xsl:attribute name="id">schedule-edit-form</xsl:attribute></xsl:if>
                 <xsl:attribute name="action">
                     <xsl:choose>
-                        <xsl:when test="$view = 'edit'"><xsl:value-of select="concat($base, '/', $selected/id)"/></xsl:when>
+                        <xsl:when test="$view = 'edit'"><xsl:value-of select="concat($base, '/', $selected/@id)"/></xsl:when>
                         <xsl:otherwise><xsl:value-of select="$base"/></xsl:otherwise>
                     </xsl:choose>
                 </xsl:attribute>
@@ -207,7 +207,7 @@
                         </xsl:attribute>
                         <xsl:attribute name="href">
                             <xsl:choose>
-                                <xsl:when test="$view = 'edit'"><xsl:value-of select="concat($base, '/', $selected/id)"/></xsl:when>
+                                <xsl:when test="$view = 'edit'"><xsl:value-of select="concat($base, '/', $selected/@id)"/></xsl:when>
                                 <xsl:otherwise><xsl:value-of select="$base"/></xsl:otherwise>
                             </xsl:choose>
                         </xsl:attribute>

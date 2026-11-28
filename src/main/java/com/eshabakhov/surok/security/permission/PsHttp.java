@@ -98,7 +98,7 @@ public class PsHttp {
                         new CsToken((CsrfToken) request.getAttribute(CsrfToken.class.getName()))
                     ).print(
                         new MdXslt(
-                            new MdXml("surok").with("path", request.getRequestURI()),
+                            new MdXml("surok").attribute("path", request.getRequestURI()),
                             new XsClasspath("xslt/permissions.xsl", "permissions")
                         )
                     ).with("permissions", permissions).print();

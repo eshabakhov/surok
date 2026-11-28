@@ -35,8 +35,8 @@
             <div class="sidebar-subnav">
                 <xsl:for-each select="$school/schedules/schedule">
                     <a class="sidebar-schedule-link"
-                       href="{$school-path}/schedules/{id}" title="{name}">
-                        <xsl:if test="id = /surok/schedule/id">
+                       href="{$school-path}/schedules/{@id}" title="{name}">
+                        <xsl:if test="@id = /surok/schedule/@id">
                             <xsl:attribute name="class">sidebar-schedule-link active</xsl:attribute>
                         </xsl:if>
                         <span><xsl:value-of select="name"/></span>
@@ -58,9 +58,9 @@
                         </svg>
                         <span class="sidebar-link-label">Учителя</span>
                     </a>
-        <xsl:if test="$teacher/id">
+        <xsl:if test="$teacher/@id">
             <div class="sidebar-subnav">
-                <a class="sidebar-subnav-link active" href="{$school-path}/teachers/{$teacher/id}"
+                <a class="sidebar-subnav-link active" href="{$school-path}/teachers/{$teacher/@id}"
                    title="Перейти к учителю"><xsl:value-of select="$teacher/name"/></a>
             </div>
         </xsl:if>
@@ -77,9 +77,9 @@
                         </svg>
                         <span class="sidebar-link-label">Классы</span>
                     </a>
-        <xsl:if test="$clazz/id">
+        <xsl:if test="$clazz/@id">
             <div class="sidebar-subnav">
-                <a class="sidebar-subnav-link active" href="{$school-path}/classes/{$clazz/id}"
+                <a class="sidebar-subnav-link active" href="{$school-path}/classes/{$clazz/@id}"
                    title="Перейти к классу"><xsl:value-of select="$clazz/name"/></a>
             </div>
         </xsl:if>
@@ -96,9 +96,9 @@
                         </svg>
                         <span class="sidebar-link-label">Предметы</span>
                     </a>
-        <xsl:if test="$subject/id">
+        <xsl:if test="$subject/@id">
             <div class="sidebar-subnav">
-                <a class="sidebar-subnav-link active" href="{$school-path}/subjects/{$subject/id}"
+                <a class="sidebar-subnav-link active" href="{$school-path}/subjects/{$subject/@id}"
                    title="Перейти к предмету"><xsl:value-of select="$subject/name"/></a>
             </div>
         </xsl:if>
@@ -116,11 +116,11 @@
                         </svg>
                         <span class="sidebar-link-label">Корпусы</span>
                     </a>
-        <xsl:if test="$building/id">
+        <xsl:if test="$building/@id">
             <div class="sidebar-subnav">
-                <a class="sidebar-subnav-link active" href="{$school-path}/buildings/{$building/id}"
+                <a class="sidebar-subnav-link active" href="{$school-path}/buildings/{$building/@id}"
                    title="Перейти к корпусу"><xsl:value-of select="$building/name"/></a>
-                <a class="sidebar-link" href="{$school-path}/buildings/{$building/id}/cabinets" title="Кабинеты">
+                <a class="sidebar-link" href="{$school-path}/buildings/{$building/@id}/cabinets" title="Кабинеты">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor"
                          stroke-width="2" viewBox="0 0 24 24">
                         <rect height="18" rx="1" width="12" x="6" y="3"/>
@@ -128,10 +128,10 @@
                     </svg>
                     <span class="sidebar-link-label">Кабинеты</span>
                 </a>
-                <xsl:if test="$cabinet/id">
+                <xsl:if test="$cabinet/@id">
                     <div class="sidebar-subnav">
                         <a class="sidebar-subnav-link active" title="Перейти к кабинету"
-                           href="{$school-path}/buildings/{$building/id}/cabinets/{$cabinet/id}">
+                           href="{$school-path}/buildings/{$building/@id}/cabinets/{$cabinet/@id}">
                             <xsl:value-of select="$cabinet/name"/>
                         </a>
                     </div>

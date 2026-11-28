@@ -538,11 +538,11 @@ public class SbsHttp {
             new CsToken((CsrfToken) request.getAttribute(CsrfToken.class.getName()))
         ).print(
             new MdXslt(
-                new MdXml("surok").with("path", request.getRequestURI()),
+                new MdXml("surok").attribute("path", request.getRequestURI()),
                 new XsClasspath("xslt/subjects.xsl", view)
             )
         ).with("federal", school == null).with("error", request.getParameter("error"))
-            .with("editable", editable);
+            .attribute("editable", editable);
         if (school != null) {
             media = media.with(
                 "school", new SlBrief(

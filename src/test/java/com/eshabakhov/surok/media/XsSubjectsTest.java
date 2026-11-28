@@ -158,7 +158,7 @@ final class XsSubjectsTest {
             new XsClasspath("xslt/subjects.xsl", "details").transform(
                 """
                 <surok><user><admin>true</admin></user>
-                    <subject><id>29</id><name>Математика</name></subject></surok>
+                    <subject id="29"><name>Математика</name></subject></surok>
                 """
             ),
             Matchers.allOf(
@@ -177,8 +177,8 @@ final class XsSubjectsTest {
             new XsClasspath("xslt/subjects.xsl", view).transform(
                 """
                 <surok><user><admin>false</admin></user>
-                    <subject><id>29</id><name>Математика</name></subject>
-                    <subjects><subject><id>29</id><name>Математика</name>
+                    <subject id="29"><name>Математика</name></subject>
+                    <subjects><subject id="29"><name>Математика</name>
                     </subject></subjects></surok>
                 """
             ),
@@ -199,7 +199,7 @@ final class XsSubjectsTest {
             new XsClasspath("xslt/subjects.xsl", "list").transform(
                 String.format(
                     """
-                    <surok><user><admin>true</admin></user><editable>true</editable>%s
+                    <surok editable="true"><user><admin>true</admin></user>%s
                     <subjects/></surok>
                     """, Map.of(
                         true, "", false, "<school id=\"31\"><name>Лицей</name></school>"
@@ -222,22 +222,22 @@ final class XsSubjectsTest {
     private static String document(final String view) {
         return String.format(
             """
-            <surok>%s
-                <editable>true</editable><user><admin>true</admin></user>
-                <school id="3"><name>Школа</name><schedules><schedule>
-                    <id>9</id><name>Учебный год</name>
+            <surok editable="true">%s
+                <user><admin>true</admin></user>
+                <school id="3"><name>Школа</name><schedules><schedule id="9"
+                    ><name>Учебный год</name>
                 </schedule></schedules></school>
                 <error>empty</error><csrf><parameter>_csrf</parameter><token>token</token></csrf>
                 <subjects offset="1" limit="15" total="60"
-                    totalPages="4" hasNext="true" hasPrev="false"><subject>
-                    <id>7</id><name>Математика</name>
-                </subject><sorts><item><name>name</name><direction>NONE</direction>
-                </item></sorts></subjects>
+                    totalPages="4" hasNext="true" hasPrev="false"><subject id="7"
+                    ><name>Математика</name>
+                </subject><sorts><sort><name>name</name><direction>NONE</direction>
+                </sort></sorts></subjects>
             </surok>
             """, switch (view) {
                 case "create" -> "<subject><name/></subject>";
                 case "edit", "details" ->
-                    "<subject><id>7</id><name>Математика</name></subject>";
+                    "<subject id=\"7\"><name>Математика</name></subject>";
                 case null, default -> "";
             }
         );

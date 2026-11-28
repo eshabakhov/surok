@@ -59,7 +59,7 @@ public final class ClFake implements ClassLoad {
 
     @Override
     public <T> Media<T> print(final Media<T> media) throws Exception {
-        return media.with("id", this.identifier)
+        return media.attribute("id", this.identifier)
             .with("schoolClass", this.clazz)
             .with("subject", this.subject)
             .with("hours", this.hours.value());

@@ -72,7 +72,8 @@ public final class RqOptional implements Requirement {
     @Override
     public <T> Media<T> print(final Media<T> media) throws Exception {
         final Record row = this.details();
-        return media.with("id", this.identity).with("grade", row.get("grade", Integer.class))
+        return media.attribute("id", this.identity)
+            .with("grade", row.get("grade", Integer.class))
             .with("hours", row.get("hours", Integer.class))
             .with("partType", "OPTIONAL");
     }

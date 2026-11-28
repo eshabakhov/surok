@@ -100,18 +100,18 @@ public final class ErHttp {
         if (MediaType.TEXT_HTML.isCompatibleWith(selected)) {
             type = MediaType.TEXT_HTML;
             body = new XsClasspath("xslt/error.xsl", "error").transform(
-                new MdXml("surok").with("path", this.request.getRequestURI())
-                    .with("status", this.status.value())
+                new MdXml("surok").attribute("path", this.request.getRequestURI())
+                    .attribute("status", this.status.value())
                     .with("title", title).with("message", this.message).print()
             );
         } else if (selected.getSubtype().endsWith("json")) {
             type = MediaType.APPLICATION_JSON;
-            body = new MdJson().with("status", this.status.value()).with("title", title)
-                .with("message", this.message).with("timestamp", timestamp).print().toString();
+            body = new MdJson().attribute("status", this.status.value()).with("title", title)
+                .with("message", this.message).attribute("timestamp", timestamp).print().toString();
         } else {
             type = MediaType.APPLICATION_XML;
-            body = new MdXml("error").with("status", this.status.value()).with("title", title)
-                .with("message", this.message).with("timestamp", timestamp).print();
+            body = new MdXml("error").attribute("status", this.status.value()).with("title", title)
+                .with("message", this.message).attribute("timestamp", timestamp).print();
         }
         return ResponseEntity.status(this.status)
             .contentType(new MediaType(type, StandardCharsets.UTF_8))

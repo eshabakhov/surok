@@ -65,6 +65,6 @@ public final class SlsBrief implements Schools {
 
     @Override
     public <T> Media<T> print(final Media<T> media) throws Exception {
-        return media.with("href", "/schools");
+        return media.attribute("href", "/schools");
     }
 }

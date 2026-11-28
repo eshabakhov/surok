@@ -35,7 +35,7 @@ public final class WkLocalized implements Printable {
 
     @Override
     public <T> Media<T> print(final Media<T> media) {
-        return media.with("code", this.week.name()).with(
+        return media.attribute("code", this.week.name()).with(
             "title",
             ResourceBundle.getBundle(
                 "localization.weeks", this.locale,

@@ -154,7 +154,7 @@ public class LdHttp {
                                 )
                             ).print(
                                 new MdXslt(
-                                    new MdXml("surok").with("path", request.getRequestURI()),
+                                    new MdXml("surok").attribute("path", request.getRequestURI()),
                                     new XsClasspath("xslt/load-draft.xsl", view)
                                 )
                             ).with(
@@ -173,7 +173,7 @@ public class LdHttp {
                                 .with("schedule", new SdBrief(selected))
                                 .with("classes", source.schoolClasses())
                                 .with("subjects", source.subjects())
-                                .with("offers", new PrItems("curriculum", offers)).with(
+                                .with("offers", new PrItems("curriculum", offers)).attribute(
                                     "editable",
                                     this.operations.operation("LoadDraft.save")
                                         .permission(actor, source).allows()

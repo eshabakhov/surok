@@ -35,7 +35,7 @@ public final class LvLocalized implements Printable {
 
     @Override
     public <T> Media<T> print(final Media<T> media) {
-        return media.with("code", this.level.name()).with(
+        return media.attribute("code", this.level.name()).with(
             "title",
             ResourceBundle.getBundle(
                 "localization.levels", this.locale,

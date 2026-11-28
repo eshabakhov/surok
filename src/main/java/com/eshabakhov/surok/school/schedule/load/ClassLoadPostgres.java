@@ -44,7 +44,7 @@ public final class ClassLoadPostgres implements ClassLoad {
     public <T> Media<T> print(final Media<T> media) throws Exception {
         final Record selected = this.details();
         return new WhFake(selected.get("hours", Integer.class)).print(
-            media.with("id", selected.get("id", Long.class)).with(
+            media.attribute("id", selected.get("id", Long.class)).with(
                 "schoolClass", new ScPostgres(
                     this.ctx, selected.get("school_class_id", Long.class), true
                 )

@@ -5,6 +5,7 @@ package com.eshabakhov.surok.school.schedule.load;
 
 import com.eshabakhov.surok.Media;
 import com.eshabakhov.surok.Page;
+import com.eshabakhov.surok.PrItems;
 import java.util.List;
 
 /**
@@ -48,6 +49,6 @@ public final class ClsSingle implements ClassLoads {
 
     @Override
     public <T> Media<T> print(final Media<T> media) throws Exception {
-        return media.with("load", this.selected);
+        return media.with(new PrItems("load", this.iterate()));
     }
 }

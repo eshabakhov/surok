@@ -98,6 +98,6 @@ public final class UrAcRole implements UrAccount {
 
     @Override
     public <T> Media<T> print(final Media<T> media) {
-        return media.with("id", this.id).with("role", this.role.name());
+        return media.attribute("id", this.id).with("role", this.role.name());
     }
 }

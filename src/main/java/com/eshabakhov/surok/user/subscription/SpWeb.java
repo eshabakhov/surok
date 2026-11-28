@@ -36,7 +36,7 @@ public final class SpWeb implements Printable {
             expiry = this.origin.expiry().format(DateTimeFormatter.ofPattern("dd.MM.yyyy"));
         }
         return media.with("plan", plan.name()).with("label", plan.label())
-            .with("style", plan.name().toLowerCase(Locale.ROOT))
+            .attribute("style", plan.name().toLowerCase(Locale.ROOT))
             .with("valid", this.origin.valid()).with("expiry", expiry);
     }
 }

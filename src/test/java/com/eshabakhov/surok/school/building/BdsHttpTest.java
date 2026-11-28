@@ -139,14 +139,14 @@ final class BdsHttpTest {
     }
 
     @Test
-    void printsXmlPaginationAsCollectionAttributes() throws Exception {
+    void printsXmlMetadataAsAttributes() throws Exception {
         this.mvc.perform(
             MockMvcRequestBuilders.get("/schools/1/buildings")
                 .accept("application/vnd.surok.buildings.v1+xml")
                 .session(this.session(Roles.RoleEnum.STUDENT, 1L))
                 .param("limit", "1").param("offset", "2").param("sort", "name:ASC")
         ).andExpect(MockMvcResultMatchers.status().isOk())
-            .andExpect(MockMvcResultMatchers.xpath("/buildings/building/name").string("South"))
+            .andExpect(MockMvcResultMatchers.xpath("/buildings/building[@id]/name").string("South"))
             .andExpect(MockMvcResultMatchers.xpath("/buildings/@limit").string("1"))
             .andExpect(MockMvcResultMatchers.xpath("/buildings/@offset").string("2"))
             .andExpect(MockMvcResultMatchers.xpath("/buildings/@total").string("2"))

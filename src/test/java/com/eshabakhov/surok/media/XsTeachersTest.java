@@ -166,21 +166,21 @@ final class XsTeachersTest {
         return String.format(
             """
             <surok>%s
-                <school id="3"><name>Школа</name><schedules><schedule>
-                    <id>9</id><name>Учебный год</name>
+                <school id="3"><name>Школа</name><schedules><schedule id="9"
+                    ><name>Учебный год</name>
                 </schedule></schedules></school>
                 <error>empty</error><csrf><parameter>_csrf</parameter><token>token</token>
                     <header>X-XSRF-TOKEN</header></csrf>
                 <teachers offset="1" limit="15" total="60"
-                    totalPages="4" hasNext="true" hasPrev="false"><teacher>
-                    <id>7</id><name>Иванов Иван Иванович</name>
-                </teacher><sorts><item><name>name</name><direction>NONE</direction>
-                </item></sorts></teachers>
+                    totalPages="4" hasNext="true" hasPrev="false"><teacher id="7"
+                    ><name>Иванов Иван Иванович</name>
+                </teacher><sorts><sort><name>name</name><direction>NONE</direction>
+                </sort></sorts></teachers>
             </surok>
             """, switch (view) {
                 case "create" -> "<teacher><name/></teacher>";
                 case "edit", "details" ->
-                    "<teacher><id>7</id><name>Иванов Иван Иванович</name></teacher>";
+                    "<teacher id=\"7\"><name>Иванов Иван Иванович</name></teacher>";
                 case null, default -> "";
             }
         );

@@ -69,10 +69,10 @@ final class CrOfferedTest {
                     Matchers.not(Matchers.containsString("<names>")),
                     Matchers.not(Matchers.containsString("<optional>")),
                     Matchers.containsString(
-                        "<subject><id>29</id><name>Музыка</name><origin>FEDERAL</origin></subject>"
+                        "<subject id=\"29\"><name>Музыка</name><origin>FEDERAL</origin></subject>"
                     ),
                     Matchers.containsString(
-                        "<subject><id>31</id><name>МУЗЫКА</name><origin>FEDERAL</origin></subject>"
+                        "<subject id=\"31\"><name>МУЗЫКА</name><origin>FEDERAL</origin></subject>"
                     )
                 )
             );

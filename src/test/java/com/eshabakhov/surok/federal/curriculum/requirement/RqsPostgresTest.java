@@ -479,9 +479,9 @@ final class RqsPostgresTest {
             new RqsPostgres(this.ctx, 1L)
                 .print(new MdXml("requirements")).print(),
             Matchers.allOf(
-                Matchers.startsWith("<requirements><requirement>"),
+                Matchers.startsWith("<requirements><requirement "),
                 Matchers.containsString(
-                    "<subject><id>509</id><name>Informatics</name><origin>FEDERAL</origin></subject>"
+                    "<subject id=\"509\"><name>Informatics</name><origin>FEDERAL</origin></subject>"
                 ),
                 Matchers.endsWith("</requirement></requirements>")
             )

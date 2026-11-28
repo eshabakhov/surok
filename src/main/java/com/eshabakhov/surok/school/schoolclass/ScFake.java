@@ -63,6 +63,6 @@ public final class ScFake implements SchoolClass {
 
     @Override
     public <T> Media<T> print(final Media<T> media) {
-        return media.with("id", this.identifier);
+        return media.attribute("id", this.identifier);
     }
 }

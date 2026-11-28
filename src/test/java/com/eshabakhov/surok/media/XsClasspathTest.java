@@ -83,7 +83,7 @@ final class XsClasspathTest {
                 ).print().replace(
                     "</surok>",
                     """
-                    <curriculum><id>17</id><level>BASIC</level></curriculum></surok>
+                    <curriculum id="17"><level>BASIC</level></curriculum></surok>
                     """
                 )
             ),
@@ -129,7 +129,7 @@ final class XsClasspathTest {
                 ).print().replace(
                     "</surok>",
                     """
-                    <curriculum><id>17</id><week>SIX_DAYS</week></curriculum></surok>
+                    <curriculum id="17"><week>SIX_DAYS</week></curriculum></surok>
                     """
                 )
             ),
@@ -248,10 +248,10 @@ final class XsClasspathTest {
                     """
                     <surok>
                         <school id="3"><name>Школа</name></school>
-                        <building><id>4</id><name>Корпус</name></building>
+                        <building id="4"><name>Корпус</name></building>
                         <%1$ss offset="1" limit="15" total="1"
-                            totalPages="1" hasNext="false" hasPrev="false"><%1$s><id>7</id>
-                        <name>Зал &lt;script&gt;проверка&lt;/script&gt;</name></%1$s>
+                            totalPages="1" hasNext="false" hasPrev="false"><%1$s id="7"
+                        ><name>Зал &lt;script&gt;проверка&lt;/script&gt;</name></%1$s>
                         </%1$ss>
                     </surok>
                     """, entity
@@ -447,7 +447,7 @@ final class XsClasspathTest {
                         String.format("</%ss>", entity),
                         String.format(
                             """
-                            <sorts><item><name>name</name><direction>%s</direction></item>
+                            <sorts><sort><name>name</name><direction>%s</direction></sort>
                             </sorts></%ss>
                             """, direction, entity
                         )
@@ -480,10 +480,11 @@ final class XsClasspathTest {
                     <surok><user><admin>false</admin></user>%1$s
                     <curriculums>%1$s</curriculums></surok>
                     """, """
-                    <curriculum><id>17</id><title>Основной план</title>
-                    <requirements><requirement><id>23</id><grade>5</grade>
-                    <subject><id>1</id><name>Математика</name><origin>FEDERAL</origin></subject>
-                    <hours>5</hours><partType>MANDATORY</partType></requirement></requirements>
+                    <curriculum id="17"><title>Основной план</title>
+                    <requirements><requirement id="23"
+                    ><grade>5</grade><partType>MANDATORY</partType>
+                    <subject id="1"><origin>FEDERAL</origin><name>Математика</name></subject>
+                    <hours>5</hours></requirement></requirements>
                     </curriculum>
                     """
                 )
@@ -510,10 +511,10 @@ final class XsClasspathTest {
                 """
                 <surok><user><admin>true</admin></user>
                 <csrf><parameter>_csrf</parameter><token>защита</token></csrf>
-                <subjects><subject><id>29</id><name>Физика</name></subject></subjects>
+                <subjects><subject id="29"><name>Физика</name></subject></subjects>
                 <firstGrade>5</firstGrade><lastGrade>9</lastGrade>
-                <curriculum><id>17</id><title>План</title><requirements/></curriculum>
-                <requirement><grade/><hours/><partType>MANDATORY</partType></requirement>
+                <curriculum id="17"><title>План</title><requirements/></curriculum>
+                <requirement><grade></grade><partType>MANDATORY</partType><hours/></requirement>
                 </surok>
                 """
             ),
@@ -560,26 +561,26 @@ final class XsClasspathTest {
     ) {
         String building = "";
         if ("cabinet".equals(entity)) {
-            building = "<building><id>4</id><name>Учебный корпус</name></building>";
+            building = "<building id=\"4\"><name>Учебный корпус</name></building>";
         }
         return String.format(
             """
             <surok>
-                <school id="3"><name>Школа</name><schedules><schedule>
-                <id>5</id><name>Первое полугодие</name></schedule></schedules></school>
+                <school id="3"><name>Школа</name><schedules><schedule id="5"
+                ><name>Первое полугодие</name></schedule></schedules></school>
                 %2$s%4$s<error>%3$s</error>
                 <csrf><parameter>_csrf</parameter><token>token</token>
                     <header>X-XSRF-TOKEN</header></csrf>
                 <%1$ss offset="5" limit="15" total="150"
-                    totalPages="10" hasNext="true" hasPrev="true"><%1$s>
-                <id>7</id><name>Южный зал</name></%1$s>
+                    totalPages="10" hasNext="true" hasPrev="true"><%1$s id="7"
+                ><name>Южный зал</name></%1$s>
                 </%1$ss>
             </surok>
             """, entity, building, error,
             switch (view) {
                 case "create" -> String.format("<%1$s><name></name></%1$s>", entity);
                 case "details", "edit" -> String.format(
-                    "<%1$s><id>7</id><name>Южный зал</name></%1$s>", entity
+                    "<%1$s id=\"7\"><name>Южный зал</name></%1$s>", entity
                 );
                 case null, default -> "";
             }

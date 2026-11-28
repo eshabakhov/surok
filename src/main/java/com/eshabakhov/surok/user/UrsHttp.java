@@ -198,7 +198,7 @@ public final class UrsHttp {
             Map.of(
                 "uid", created.uid(),
                 "credentials", Map.of("username", created.account().username()),
-                "roles", created.roles().print(new MdJson()).print(),
+                "roles", created.roles().print(new MdJson()).print().path("items"),
                 "info", Map.of(
                     "corporate", created.account().corporate(), "alive", created.account().alive()
                 ),
@@ -282,7 +282,7 @@ public final class UrsHttp {
             this.operations.operation("UserRoles.list").permission(actor)
                 .permit(new UrsPostgres(this.ctx)).identification(user)
                 .roles()
-                .print(new MdJson()).print().path("list")
+                .print(new MdJson()).print().path("items")
         );
     }
 
@@ -333,7 +333,7 @@ public final class UrsHttp {
                 new CsToken((CsrfToken) request.getAttribute(CsrfToken.class.getName()))
             ).print(
                 new MdXslt(
-                    new MdXml("surok").with("path", request.getRequestURI()),
+                    new MdXml("surok").attribute("path", request.getRequestURI()),
                     new XsClasspath("xslt/profile.xsl", "profile")
                 )
             ).with("account", new UrProfile(user)).with(
@@ -375,7 +375,7 @@ public final class UrsHttp {
                         new CsToken((CsrfToken) request.getAttribute(CsrfToken.class.getName()))
                     ).print(
                         new MdXslt(
-                            new MdXml("surok").with("path", request.getRequestURI()),
+                            new MdXml("surok").attribute("path", request.getRequestURI()),
                             new XsClasspath("xslt/subscription.xsl", "subscription")
                         )
                     ).with(
@@ -617,7 +617,7 @@ public final class UrsHttp {
             .permission(actor, new SlPostgres(this.ctx, school)).permit(actor)
             .schools().school(school).users();
         return ResponseEntity.ok(
-            members.roles(members.identification(user)).print(new MdJson()).print().path("list")
+            members.roles(members.identification(user)).print(new MdJson()).print().path("items")
         );
     }
 
@@ -687,7 +687,7 @@ public final class UrsHttp {
         throws Exception {
         new AcHttp(request).type();
         return new MdXslt(
-            new MdXml("surok").with("path", request.getRequestURI()),
+            new MdXml("surok").attribute("path", request.getRequestURI()),
             new XsClasspath("xslt/authentication.xsl", view)
         ).with(
             "csrf", new CsToken((CsrfToken) request.getAttribute(CsrfToken.class.getName()))

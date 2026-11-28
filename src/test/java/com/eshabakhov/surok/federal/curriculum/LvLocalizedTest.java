@@ -4,7 +4,9 @@
 package com.eshabakhov.surok.federal.curriculum;
 
 import com.eshabakhov.surok.media.MdJson;
+import com.eshabakhov.surok.media.MdXml;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import java.util.List;
 import java.util.Locale;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
@@ -37,11 +39,18 @@ final class LvLocalizedTest {
     void printsTitlesWithoutChangingCodes(
         final Curriculum.Level level, final String language, final String title
     ) {
+        final LvLocalized localized = new LvLocalized(level, Locale.forLanguageTag(language));
         MatcherAssert.assertThat(
             "The localized education level lost its code or default title",
-            new LvLocalized(level, Locale.forLanguageTag(language)).print(new MdJson()).print(),
-            Matchers.equalTo(
-                JsonNodeFactory.instance.objectNode().put("code", level.name()).put("title", title)
+            List.of(
+                localized.print(new MdJson()).print(),
+                localized.print(new MdXml("level")).print()
+            ),
+            Matchers.contains(
+                JsonNodeFactory.instance.objectNode().put("code", level.name()).put("title", title),
+                String.format(
+                    "<level code=\"%s\"><title>%s</title></level>", level.name(), title
+                )
             )
         );
     }

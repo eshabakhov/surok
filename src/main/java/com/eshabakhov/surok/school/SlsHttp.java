@@ -398,7 +398,7 @@ public class SlsHttp {
         return new SrWeb(
             new UrAcBrief(user), schools,
             new CsToken((CsrfToken) request.getAttribute(CsrfToken.class.getName()))
-        ).print(media.with("path", request.getRequestURI()))
+        ).print(media.attribute("path", request.getRequestURI()))
             .with("error", request.getParameter("error") != null);
     }
 }

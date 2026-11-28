@@ -95,7 +95,7 @@ final class UserControllerTest {
                         String.format(
                             """
                             {"uid":%d,"credentials":{"username":"%s"},
-                            "roles":{"list":[{"uid":%d,"name":"BASIC_MAKER"}]},
+                            "roles":[{"uid":%d,"name":"BASIC_MAKER"}],
                             "info":{"corporate":false,"alive":true},"admin":false}
                             """,
                             created.uid(), name, created.roles().list().getFirst().uid()

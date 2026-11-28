@@ -94,7 +94,7 @@ final class XsLoadsTest {
         MatcherAssert.assertThat(
             new XsClasspath("xslt/class-loads.xsl", "list-fragment").transform(
                 String.format(
-                    "%s%s", document.substring(0, document.indexOf("<load>")),
+                    "%s%s", document.substring(0, document.indexOf("<load ")),
                     document.substring(document.indexOf("</load>") + "</load>".length())
                 )
             ),
@@ -109,17 +109,17 @@ final class XsLoadsTest {
     private static String document() {
         return """
             <surok>
-                <school id="3"><name>Школа</name><schedules><schedule>
-                    <id>9</id><name>Учебный год</name>
+                <school id="3"><name>Школа</name><schedules><schedule id="9"
+                    ><name>Учебный год</name>
                 </schedule></schedules></school>
-                <schedule><id>9</id><name>Учебный год</name></schedule>
+                <schedule id="9"><name>Учебный год</name></schedule>
                 <csrf><parameter>_csrf</parameter><token>token</token></csrf><error></error>
-                <classes><school-class><id>10</id><name>5А</name></school-class></classes>
-                <subjects><subject><id>30</id><name>Математика</name></subject></subjects>
+                <classes><school-class id="10"><name>5А</name></school-class></classes>
+                <subjects><subject id="30"><name>Математика</name></subject></subjects>
                 <loads offset="1" limit="15" total="30"
-                    totalPages="2" hasNext="true" hasPrev="false"><load>
-                <id>7</id><schoolClass><id>10</id><name>5А</name></schoolClass>
-                    <subject><id>30</id><name>Математика</name><origin>FEDERAL</origin></subject>
+                    totalPages="2" hasNext="true" hasPrev="false"><load id="7"
+                ><schoolClass id="10"><name>5А</name></schoolClass>
+                    <subject id="30"><origin>FEDERAL</origin><name>Математика</name></subject>
                     <hours>5</hours>
                 </load></loads>
             </surok>

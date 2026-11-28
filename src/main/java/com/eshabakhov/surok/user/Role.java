@@ -17,7 +17,7 @@ public interface Role extends Printable {
 
     @Override
     default <T> Media<T> print(final Media<T> media) {
-        return media.with("uid", this.uid()).with("name", this.name());
+        return media.attribute("uid", this.uid()).with("name", this.name());
     }
 
     /**

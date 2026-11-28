@@ -3,7 +3,7 @@
     <xsl:param name="version"/>
     <xsl:template name="page-description">Surok - система управления школьными расписаниями</xsl:template>
     <xsl:template name="canonical">
-        <link rel="canonical" href="{concat('https://surok.com', /surok/path)}"/>
+        <link rel="canonical" href="{concat('https://surok.com', /surok/@path)}"/>
     </xsl:template>
     <xsl:template name="base-styles"><link rel="stylesheet" href="/css/main.css"/></xsl:template>
     <xsl:template name="sidebar"/>

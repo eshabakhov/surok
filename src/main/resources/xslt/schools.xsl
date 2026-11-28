@@ -96,7 +96,7 @@
                            type="text"
                            placeholder="Поиск школы...">
                         <xsl:attribute name="value">
-                            <xsl:value-of select="/surok/schools/filters/item[name = 'name']/value"/>
+                            <xsl:value-of select="/surok/schools/filters/filter[name = 'name']/value"/>
                         </xsl:attribute>
                     </input>
                 </label>
@@ -165,7 +165,7 @@
         <xsl:param name="label"/>
         <xsl:param name="title"/>
         <xsl:variable name="direction"
-                      select="/surok/schools/sorts/item[name = $field]/direction"/>
+                      select="/surok/schools/sorts/sort[name = $field]/direction"/>
         <button type="button">
             <xsl:attribute name="class">
                 <xsl:text>schools-sort</xsl:text>
