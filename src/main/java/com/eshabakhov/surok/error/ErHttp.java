@@ -9,7 +9,6 @@ import com.eshabakhov.surok.media.MdXml;
 import com.eshabakhov.surok.media.XsClasspath;
 import jakarta.servlet.http.HttpServletRequest;
 import java.nio.charset.StandardCharsets;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import org.springframework.http.HttpHeaders;
@@ -93,43 +92,27 @@ public final class ErHttp {
     }
 
     private ResponseEntity<String> print(final MediaType selected) {
-        final String timestamp = Instant.now().toString();
-        final String title = ErHttp.title(this.status);
+        final SimpleError error = new SimpleError(this.message);
         final String body;
         final MediaType type;
         if (MediaType.TEXT_HTML.isCompatibleWith(selected)) {
             type = MediaType.TEXT_HTML;
             body = new XsClasspath("xslt/error.xsl", "error").transform(
-                new MdXml("surok").attribute("path", this.request.getRequestURI())
-                    .attribute("status", this.status.value())
-                    .with("title", title).with("message", this.message).print()
+                error.print(
+                    new MdXml("surok").attribute("path", this.request.getRequestURI())
+                        .with("login", this.status == HttpStatus.UNAUTHORIZED)
+                ).print()
             );
         } else if (selected.getSubtype().endsWith("json")) {
             type = MediaType.APPLICATION_JSON;
-            body = new MdJson().attribute("status", this.status.value()).with("title", title)
-                .with("message", this.message).attribute("timestamp", timestamp).print().toString();
+            body = error.print(new MdJson()).print().toString();
         } else {
             type = MediaType.APPLICATION_XML;
-            body = new MdXml("error").attribute("status", this.status.value()).with("title", title)
-                .with("message", this.message).attribute("timestamp", timestamp).print();
+            body = error.print(new MdXml("error")).print();
         }
         return ResponseEntity.status(this.status)
             .contentType(new MediaType(type, StandardCharsets.UTF_8))
             .varyBy(HttpHeaders.ACCEPT).body(body);
-    }
-
-    private static String title(final HttpStatus status) {
-        return switch (status) {
-            case BAD_REQUEST -> "Некорректный запрос";
-            case UNAUTHORIZED -> "Необходима авторизация";
-            case FORBIDDEN -> "Доступ запрещён";
-            case NOT_FOUND -> "Страница не найдена";
-            case METHOD_NOT_ALLOWED -> "Метод не поддерживается";
-            case NOT_ACCEPTABLE -> "Формат ответа не поддерживается";
-            case CONFLICT -> "Конфликт данных";
-            case UNSUPPORTED_MEDIA_TYPE -> "Формат запроса не поддерживается";
-            default -> "Ошибка обработки запроса";
-        };
     }
 
     private static String description(final HttpStatus status) {

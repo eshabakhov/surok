@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.regex.Pattern;
+import javax.xml.XMLConstants;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.jooq.DSLContext;
@@ -123,6 +124,39 @@ final class CrsHttpTest {
                 TRUNCATE TABLE public.federal_curriculum RESTART IDENTITY CASCADE
                 """
         ).execute();
+    }
+
+    /**
+     * Keeps missing descriptions distinct from empty text in both V2 formats.
+     *
+     * @param description Stored description
+     * @param marker Expected XML nil attribute
+     * @throws Exception If either representation cannot be read
+     */
+    @ParameterizedTest
+    @CsvSource(value = {"NULL,true", "'',''"}, nullValues = "NULL")
+    void distinguishesMissingAndEmptyDescriptions(final String description, final String marker)
+        throws Exception {
+        this.ctx.execute("UPDATE federal_curriculum SET description = ? WHERE id = 1", description);
+        final String path = "/federal/curriculums/1";
+        final MockHttpSession session = this.session();
+        this.mvc.perform(
+            MockMvcRequestBuilders.get(path).session(session)
+                .accept("application/vnd.surok.federal-curriculum-v2+json")
+        ).andExpect(MockMvcResultMatchers.status().isOk()).andExpect(
+            MockMvcResultMatchers.jsonPath("$.description").hasJsonPath()
+        ).andExpect(MockMvcResultMatchers.jsonPath("$.description").value(description));
+        this.mvc.perform(
+            MockMvcRequestBuilders.get(path).session(session)
+                .accept("application/vnd.surok.federal-curriculum-v2+xml")
+        ).andExpect(MockMvcResultMatchers.status().isOk()).andExpect(
+            MockMvcResultMatchers.xpath("/curriculum/description").string("")
+        ).andExpect(
+            MockMvcResultMatchers.xpath(
+                "string(/curriculum/description/@xsi:nil)",
+                Map.of("xsi", XMLConstants.W3C_XML_SCHEMA_INSTANCE_NS_URI)
+            ).string(marker)
+        ).andExpect(MockMvcResultMatchers.xpath("/curriculum/description").nodeCount(1));
     }
 
     /**

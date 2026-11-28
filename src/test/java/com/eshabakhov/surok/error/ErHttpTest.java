@@ -25,17 +25,19 @@ final class ErHttpTest {
     @ParameterizedTest
     @CsvSource(
         {
-            "401, Необходима авторизация", "403, Доступ запрещён",
-            "404, Страница не найдена", "500, Ошибка обработки запроса"
+            "401, Для доступа к этой странице нужно войти в систему.",
+            "403, У вас нет прав для просмотра этой страницы.",
+            "404, Такой страницы не существует или она была удалена.",
+            "500, Не удалось выполнить запрос. Попробуйте ещё раз позднее."
         }
     )
-    void printsErrorPage(final int status, final String title) {
+    void printsErrorPage(final int status, final String message) {
         MatcherAssert.assertThat(
             new ErHttp(ErHttpTest.request("text/html"), HttpStatus.valueOf(status))
                 .response().getBody(),
             Matchers.allOf(
-                Matchers.containsString(String.format("<title>%d - Surok</title>", status)),
-                Matchers.containsString(title),
+                Matchers.containsString(message),
+                Matchers.not(Matchers.containsString("class=\"error-code\"")),
                 Matchers.containsString("href=\"/css/main.css\""),
                 Matchers.containsString("href=\"/css/error.css\""),
                 Matchers.containsString("class=\"error-card\""),
@@ -67,9 +69,9 @@ final class ErHttpTest {
             ),
             Matchers.allOf(
                 Matchers.hasEntry("type", "application/json;charset=UTF-8"),
-                Matchers.hasEntry(Matchers.is("body"), Matchers.containsString("\"status\":404")),
-                Matchers.hasEntry(Matchers.is("body"), Matchers.containsString("\"message\":")),
-                Matchers.hasEntry(Matchers.is("body"), Matchers.containsString("\"timestamp\":"))
+                Matchers.hasEntry(
+                    "body", "{\"message\":\"Такой страницы не существует или она была удалена.\"}"
+                )
             )
         );
     }
@@ -79,12 +81,8 @@ final class ErHttpTest {
     void printsXmlEnvelope(final String accept) {
         MatcherAssert.assertThat(
             new ErHttp(ErHttpTest.request(accept), HttpStatus.FORBIDDEN).response().getBody(),
-            Matchers.allOf(
-                Matchers.startsWith("<error status=\"403\" timestamp=\""),
-                Matchers.containsString("<title>"),
-                Matchers.containsString("<message>"),
-                Matchers.not(Matchers.containsString("<timestamp>")),
-                Matchers.not(Matchers.containsString("<html"))
+            Matchers.is(
+                "<error><message>У вас нет прав для просмотра этой страницы.</message></error>"
             )
         );
     }

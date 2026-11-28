@@ -270,8 +270,7 @@ public final class UrsHttp {
         return ResponseEntity.ok(
             this.operations.operation("UserRoles.list").permission(actor)
                 .permit(new UrsPostgres(this.ctx)).identification(user)
-                .roles()
-                .print(new MdJson()).print().path("items")
+                .roles().print(new MdJson()).print()
         );
     }
 
@@ -606,7 +605,7 @@ public final class UrsHttp {
             .permission(actor, new SlPostgres(this.ctx, school)).permit(actor)
             .schools().school(school).users();
         return ResponseEntity.ok(
-            members.roles(members.identification(user)).print(new MdJson()).print().path("items")
+            members.roles(members.identification(user)).print(new MdJson()).print()
         );
     }
 

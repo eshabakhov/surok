@@ -79,7 +79,7 @@ final class RestResponseEntityExceptionHandlerTest {
             )
         ).andExpect(MockMvcResultMatchers.status().isNotFound()).andExpect(
             MockMvcResultMatchers.content().contentTypeCompatibleWith(MediaType.TEXT_HTML)
-        ).andExpect(RestResponseEntityExceptionHandlerTest.page(404));
+        ).andExpect(RestResponseEntityExceptionHandlerTest.page());
     }
 
     @Test
@@ -103,7 +103,7 @@ final class RestResponseEntityExceptionHandlerTest {
                     SecurityMockMvcRequestPostProcessors.user(this.administrator())
                 )
         ).andExpect(MockMvcResultMatchers.status().isBadRequest())
-            .andExpect(RestResponseEntityExceptionHandlerTest.page(400));
+            .andExpect(RestResponseEntityExceptionHandlerTest.page());
     }
 
     @Test
@@ -116,7 +116,7 @@ final class RestResponseEntityExceptionHandlerTest {
                     SecurityMockMvcRequestPostProcessors.user(this.administrator())
                 )
         ).andExpect(MockMvcResultMatchers.status().isBadRequest())
-            .andExpect(MockMvcResultMatchers.jsonPath("$.status").value(400))
+            .andExpect(MockMvcResultMatchers.jsonPath("$.*").value(Matchers.hasSize(1)))
             .andExpect(MockMvcResultMatchers.jsonPath("$.message").isNotEmpty());
     }
 
@@ -127,7 +127,7 @@ final class RestResponseEntityExceptionHandlerTest {
                 .with(SecurityMockMvcRequestPostProcessors.csrf())
         ).andExpect(MockMvcResultMatchers.status().isMethodNotAllowed()).andExpect(
             MockMvcResultMatchers.header().string("Allow", Matchers.containsString("GET"))
-        ).andExpect(RestResponseEntityExceptionHandlerTest.page(405));
+        ).andExpect(RestResponseEntityExceptionHandlerTest.page());
     }
 
     @Test
@@ -137,7 +137,7 @@ final class RestResponseEntityExceptionHandlerTest {
                 .contentType(MediaType.APPLICATION_XML).content("<account/>")
                 .with(SecurityMockMvcRequestPostProcessors.csrf())
         ).andExpect(MockMvcResultMatchers.status().isUnsupportedMediaType())
-            .andExpect(RestResponseEntityExceptionHandlerTest.page(415));
+            .andExpect(RestResponseEntityExceptionHandlerTest.page());
     }
 
     @ParameterizedTest
@@ -149,9 +149,8 @@ final class RestResponseEntityExceptionHandlerTest {
             MockMvcResultMatchers.content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON)
         ).andExpect(
             MockMvcResultMatchers.header().string("WWW-Authenticate", "Basic realm=\"Surok\"")
-        ).andExpect(MockMvcResultMatchers.jsonPath("$.status").value(401))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.message").isNotEmpty())
-            .andExpect(MockMvcResultMatchers.jsonPath("$.timestamp").isNotEmpty());
+        ).andExpect(MockMvcResultMatchers.jsonPath("$.*").value(Matchers.hasSize(1)))
+            .andExpect(MockMvcResultMatchers.jsonPath("$.message").isNotEmpty());
     }
 
     @Test
@@ -160,7 +159,7 @@ final class RestResponseEntityExceptionHandlerTest {
             MockMvcRequestBuilders.get("/users/1/roles").accept(MediaType.APPLICATION_XML)
         ).andExpect(MockMvcResultMatchers.status().isUnauthorized()).andExpect(
             MockMvcResultMatchers.content().contentTypeCompatibleWith(MediaType.APPLICATION_XML)
-        ).andExpect(MockMvcResultMatchers.xpath("/error/@status").string("401"));
+        ).andExpect(MockMvcResultMatchers.xpath("/error/message").exists());
     }
 
     @Test
@@ -169,7 +168,7 @@ final class RestResponseEntityExceptionHandlerTest {
             MockMvcRequestBuilders.post("/users").accept(MediaType.TEXT_HTML)
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
         ).andExpect(MockMvcResultMatchers.status().isForbidden())
-            .andExpect(RestResponseEntityExceptionHandlerTest.page(403));
+            .andExpect(RestResponseEntityExceptionHandlerTest.page());
     }
 
     @Test
@@ -184,7 +183,7 @@ final class RestResponseEntityExceptionHandlerTest {
                     SecurityMockMvcRequestPostProcessors.user(new UrAcAuth(actor))
                 )
         ).andExpect(MockMvcResultMatchers.status().isForbidden())
-            .andExpect(RestResponseEntityExceptionHandlerTest.page(403));
+            .andExpect(RestResponseEntityExceptionHandlerTest.page());
     }
 
     @Test
@@ -237,7 +236,7 @@ final class RestResponseEntityExceptionHandlerTest {
                 Matchers.hasProperty("redirectedUrl", Matchers.nullValue()),
                 Matchers.hasProperty(
                     "contentAsString", Matchers.allOf(
-                        Matchers.containsString("500"),
+                        Matchers.containsString("Не удалось выполнить запрос"),
                         Matchers.not(Matchers.containsString("Секретная")),
                         Matchers.not(Matchers.containsString("SQL"))
                     )
@@ -269,7 +268,7 @@ final class RestResponseEntityExceptionHandlerTest {
                 SecurityMockMvcRequestPostProcessors.user(this.administrator())
             )
         ).andExpect(MockMvcResultMatchers.status().isNotFound())
-            .andExpect(MockMvcResultMatchers.jsonPath("$.status").value(404));
+            .andExpect(MockMvcResultMatchers.jsonPath("$.message").isNotEmpty());
     }
 
     /**
@@ -291,9 +290,9 @@ final class RestResponseEntityExceptionHandlerTest {
         registry.add("spring.liquibase.enabled", () -> true);
     }
 
-    private static ResultMatcher page(final int status) {
+    private static ResultMatcher page() {
         return MockMvcResultMatchers.content().string(
-            Matchers.containsString(String.format("<title>%d - Surok</title>", status))
+            Matchers.containsString("<title>Ошибка - Surok</title>")
         );
     }
 
