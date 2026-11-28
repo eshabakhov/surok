@@ -53,8 +53,6 @@ local development. **Try it out** includes the application's CSRF token.
 Maintain the OpenAPI description in `src/main/resources/openapi.yml`.
 The server filters that document by the current user's permissions for
 `/api-docs` (JSON) and `/api-docs.yaml` (YAML).
-Follow the [resource representation conventions](docs/representations.md)
-when changing JSON, XML, or XSLT output.
 
 Administrators can open `/permissions` to inspect resource access by role.
 The page supports searching actions and endpoints; `✓*` means access within the

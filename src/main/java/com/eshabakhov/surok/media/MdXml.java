@@ -11,7 +11,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
-import org.springframework.web.util.HtmlUtils;
+import java.util.regex.Pattern;
 
 /**
  * XML implementation of {@link Media}.
@@ -19,6 +19,11 @@ import org.springframework.web.util.HtmlUtils;
  * @since 0.0.1
  */
 public final class MdXml implements Media<String> {
+
+    /** Characters outside the XML 1.0 Char production. */
+    private static final Pattern INVALID = Pattern.compile(
+        "[^\\x09\\x0A\\x0D\\x20-\\x{D7FF}\\x{E000}-\\x{FFFD}\\x{10000}-\\x{10FFFF}]"
+    );
 
     /** XML root element. */
     private final String root;
@@ -84,10 +89,9 @@ public final class MdXml implements Media<String> {
             }
             String printed = "";
             if (value != null) {
-                printed = HtmlUtils.htmlEscape(value)
+                printed = MdXml.escape(value)
                     .replace("\t", "&#9;")
-                    .replace(String.valueOf('\n'), "&#10;")
-                    .replace(String.valueOf('\r'), "&#13;");
+                    .replace(String.valueOf('\n'), "&#10;");
             }
             copied.put(name, printed);
         }
@@ -128,7 +132,7 @@ public final class MdXml implements Media<String> {
     public MdXml with(final String name, final String value) {
         String printed = "";
         if (value != null) {
-            printed = HtmlUtils.htmlEscape(value);
+            printed = MdXml.escape(value);
         }
         final Map<String, String> copied = new LinkedHashMap<>(this.elements);
         if (this.allowed(name)) {
@@ -223,6 +227,21 @@ public final class MdXml implements Media<String> {
         return String.format(
             "<%s>%s</%s>", opening, String.join("", this.elements.values()), this.root
         );
+    }
+
+    /*
+     * Escape XML markup and preserve carriage returns across parser normalization.
+     */
+    private static String escape(final String value) {
+        if (MdXml.INVALID.matcher(value).find()) {
+            throw new IllegalArgumentException("Value contains a character forbidden in XML 1.0");
+        }
+        return value.replace("&", "&amp;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+            .replace("\"", "&quot;")
+            .replace("'", "&apos;")
+            .replace(String.valueOf('\r'), "&#13;");
     }
 
     private boolean allowed(final String name) {

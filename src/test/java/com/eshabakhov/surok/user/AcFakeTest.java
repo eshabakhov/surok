@@ -3,6 +3,7 @@
  */
 package com.eshabakhov.surok.user;
 
+import com.eshabakhov.surok.media.MdXml;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assertions;
@@ -24,6 +25,15 @@ final class AcFakeTest {
         MatcherAssert.assertThat(
             "A representative account could be used to log in",
             new AcFake(role).alive(), Matchers.is(false)
+        );
+    }
+
+    @Test
+    void printsOnlyTheRepresentedRole() {
+        MatcherAssert.assertThat(
+            "The representative account printed unexpected fields",
+            new AcFake(Roles.RoleEnum.TEACHER).print(new MdXml("account")).print(),
+            Matchers.equalTo("<account><role>TEACHER</role></account>")
         );
     }
 

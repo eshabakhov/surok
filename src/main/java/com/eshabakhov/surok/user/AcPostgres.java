@@ -3,6 +3,7 @@
  */
 package com.eshabakhov.surok.user;
 
+import com.eshabakhov.surok.Media;
 import com.eshabakhov.surok.sql.ClasspathSql;
 import org.jooq.DSLContext;
 
@@ -29,6 +30,14 @@ public final class AcPostgres implements Account {
     public AcPostgres(final DSLContext ctx, final long user) {
         this.ctx = ctx;
         this.user = user;
+    }
+
+    @Override
+    public <T> Media<T> print(final Media<T> media) throws Exception {
+        final Roles roles = new Roles.RlsPostgres(this.ctx, this.user);
+        return media.attribute("uid", this.user).with("credentials", this::credentials)
+            .with("roles", roles).with("info", this::status)
+            .with("admin", roles.contains(Roles.RoleEnum.ADMIN));
     }
 
     @Override
@@ -59,5 +68,19 @@ public final class AcPostgres implements Account {
                 new ClasspathSql("user/find-alive.sql").text(), this.user
             ).fetchOneInto(Boolean.class)
         );
+    }
+
+    /*
+     * Print the public login name.
+     */
+    private <T> Media<T> credentials(final Media<T> media) {
+        return media.with("username", this.username());
+    }
+
+    /*
+     * Print the account status flags.
+     */
+    private <T> Media<T> status(final Media<T> media) {
+        return media.with("corporate", this.corporate()).with("alive", this.alive());
     }
 }

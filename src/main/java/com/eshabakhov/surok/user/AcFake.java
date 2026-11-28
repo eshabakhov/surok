@@ -3,6 +3,8 @@
  */
 package com.eshabakhov.surok.user;
 
+import com.eshabakhov.surok.Media;
+
 /**
  * Representative account for the permission matrix without stored credentials.
  * For example, a representative director can be inspected without inventing a password.
@@ -21,6 +23,11 @@ public final class AcFake implements Account {
      */
     public AcFake(final Roles.RoleEnum role) {
         this.role = role;
+    }
+
+    @Override
+    public <T> Media<T> print(final Media<T> media) {
+        return media.with("role", this.role.name());
     }
 
     @Override

@@ -5,6 +5,7 @@ package com.eshabakhov.surok.user;
 
 import com.eshabakhov.surok.School;
 import com.eshabakhov.surok.UrAccount;
+import com.eshabakhov.surok.media.MdXml;
 import com.eshabakhov.surok.school.SlsPostgres;
 import com.eshabakhov.surok.school.input.SlInput;
 import com.eshabakhov.surok.school.input.SlInputName;
@@ -101,6 +102,37 @@ final class UserControllerTest {
                             created.uid(), name, created.roles().list().getFirst().uid()
                         )
                     )
+                )
+            )
+        );
+    }
+
+    /**
+     * Prints the registration fields and an empty role collection through the XML medium.
+     *
+     * @param ctx Database context
+     * @throws Exception If registration or printing fails
+     */
+    @Test
+    void preservesTheRegistrationShapeWithNoRoles(@Autowired final DSLContext ctx)
+        throws Exception {
+        final String name = String.format("Lycée & %s", UUID.randomUUID());
+        final UrAccount user = new UrsPostgres(ctx).register(
+            name, "ValidPassword1!", String.format("%s@example.org", UUID.randomUUID()), false
+        );
+        user.roles().revoke(user.roles().list().getFirst().uid());
+        MatcherAssert.assertThat(
+            "The public registration representation lost fields or exposed private account data",
+            user.account().print(new MdXml("account")).print(),
+            Matchers.equalTo(
+                String.format(
+                    String.join(
+                        "",
+                        "<account uid=\"%d\"><credentials><username>%s</username></credentials>",
+                        "<roles></roles><info><corporate>false</corporate><alive>true</alive>",
+                        "</info><admin>false</admin></account>"
+                    ),
+                    user.uid(), name.replace("&", "&amp;")
                 )
             )
         );
